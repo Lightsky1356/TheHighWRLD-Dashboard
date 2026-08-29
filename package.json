@@ -9,7 +9,10 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win",
-    "dist:dir": "electron-builder --win --dir"
+    "dist:dir": "electron-builder --win --dir",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux AppImage deb",
+    "dist:all": "electron-builder --win --mac --linux"
   },
   "dependencies": {},
   "devDependencies": {
@@ -47,6 +50,27 @@
     },
     "portable": {
       "artifactName": "TheHighWRLD-Dashboard-Portable-${version}.${ext}"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.music",
+      "icon": "resources/icon.png",
+      "hardenedRuntime": false
+    },
+    "dmg": {
+      "artifactName": "TheHighWRLD-Dashboard-${version}.${ext}"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "AudioVideo",
+      "icon": "resources/icon.png",
+      "executableName": "thehighwrld-dashboard"
+    },
+    "appImage": {
+      "artifactName": "TheHighWRLD-Dashboard-${version}.${ext}"
+    },
+    "deb": {
+      "artifactName": "thehighwrld-dashboard_${version}_amd64.${ext}"
     }
   }
 }
