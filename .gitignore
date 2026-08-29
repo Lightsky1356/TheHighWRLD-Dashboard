@@ -11,3 +11,5 @@ ptb.*
 # OS
 .DS_Store
 Thumbs.db
+# Release binaries are published as GitHub Release assets (not committed)
+release/*.exe
