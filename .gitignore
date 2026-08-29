@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Build outputs (regenerated; releases published to GitHub Releases)
+dist/
+thw-test.*
+ptb.*
+*.log
+*.err
+
+# OS
+.DS_Store
+Thumbs.db

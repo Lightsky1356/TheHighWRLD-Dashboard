@@ -1,0 +1,52 @@
+{
+  "name": "thehighwrld-dashboard-desktop",
+  "version": "1.0.0",
+  "description": "TheHighWRLD Dashboard — the Juice WRLD community dashboard as a native desktop app.",
+  "main": "main.js",
+  "author": "TheHighWRLD",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "dist:dir": "electron-builder --win --dir"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.thehighwrld.dashboard",
+    "productName": "TheHighWRLD Dashboard",
+    "asar": true,
+    "directories": {
+      "output": "../../dist/windows"
+    },
+    "files": [
+      "main.js",
+      "resources/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "resources/icon.ico",
+      "publisherName": "TheHighWRLD",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TheHighWRLD Dashboard",
+      "artifactName": "TheHighWRLD-Dashboard-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "TheHighWRLD-Dashboard-Portable-${version}.${ext}"
+    }
+  }
+}
