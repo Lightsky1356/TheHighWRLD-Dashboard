@@ -1,0 +1,25 @@
+name = "thehighwrlddashboard"
+compatibility_date = "2025-07-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "."
+
+# ---------- D1 (persistent data: auth, community, wanted vault) ----------
+# Configured on the Pages project via dashboard; listed here for local `pages dev`.
+[[d1_databases]]
+binding = "wanted_vault"
+database_name = "wanted-vault"
+database_id = "e9e51af3-b1e7-472e-8b98-4b4649df7179"
+
+# ---------- Durable Object (realtime hub) ----------
+# The CommunityHub class lives in a standalone Worker ("thehighwrld-community-hub",
+# see wrangler-community.jsonc). Pages only BINDS to that namespace — Pages cannot
+# host a Durable Object class itself. Configure this same binding in the Pages
+# project dashboard under Settings > Bindings > Durable Object.
+[[durable_objects.bindings]]
+name = "COMMUNITY_HUB"
+class_name = "CommunityHub"
+script_name = "thehighwrld-community-hub"
+
+# ---------- Secrets / env (set via dashboard, never committed) ----------
+# OWNER_DISCORD_ID, HCAPTCHA_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
+# DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SESSION_SECRET

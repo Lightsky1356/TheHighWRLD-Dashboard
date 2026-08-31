@@ -1,0 +1,2 @@
+ALTER TABLE replies ADD COLUMN parent_id INTEGER;
+ALTER TABLE replies ADD COLUMN reply_to TEXT NOT NULL DEFAULT '';

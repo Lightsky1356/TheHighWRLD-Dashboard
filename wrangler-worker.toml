@@ -1,0 +1,17 @@
+name = "thehighwrlddashboard-worker"
+main = "workers/community-do.js"
+compatibility_date = "2025-07-23"
+
+[[d1_databases]]
+binding = "wanted_vault"
+database_name = "wanted-vault"
+database_id = "e9e51af3-b1e7-472e-8b98-4b4649df7179"
+
+[durable_objects]
+bindings = [
+  { name = "COMMUNITY_DOODLE", class_name = "CommunityDurableObject" }
+]
+
+[[routes]]
+pattern = "thehighwrlddashboard.pages.dev/api/realtime"
+zone_name = "thehighwrlddashboard.pages.dev"

@@ -1,0 +1,26 @@
+.player-settings-cog{
+  position:absolute;
+  top:12px;
+  right:12px;
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.06);
+  color:rgba(212,165,116,0.8);
+  font-size:13px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:transform .5s cubic-bezier(.16,1,.3,1),color .2s,background .2s;
+  z-index:10
+}
+.player-settings-cog:hover{
+  color:#d4a574;
+  background:rgba(212,165,116,.1);
+  transform:rotate(180deg)
+}
+.player-settings-cog:active{
+  transform:rotate(270deg) scale(.9)
+}

@@ -1,0 +1,117 @@
+<!-- Community Replies UI - Insert this into the community page section -->
+
+<div class="community-replies-section max-w-3xl mx-auto mt-8">
+  <div class="hub-panel p-6">
+    <h3 class="text-lg font-bold text-white/90 mb-4">Community Discussion</h3>
+
+    <!-- Typing Indicator -->
+    <div id="community-typing-indicator" class="text-xs text-amber-300/70 mb-3 hidden"></div>
+
+    <!-- Replies List -->
+    <div id="community-replies-list" class="space-y-4 mb-6 max-h-[400px] overflow-y-auto">
+      <!-- Replies will be rendered here by JavaScript -->
+      <p class="text-xs text-gray-500 italic">No replies yet - start the conversation!</p>
+    </div>
+
+    <!-- Reply Form -->
+    <form id="community-reply-form" class="flex gap-3">
+      <input
+        id="community-reply-input"
+        type="text"
+        placeholder="Share your thoughts..."
+        maxlength="500"
+        class="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-400/30 transition-colors"
+      />
+      <button
+        type="submit"
+        class="px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-lg text-sm text-amber-300 hover:bg-amber-500/30 transition-colors"
+      >
+        Reply
+      </button>
+    </form>
+  </div>
+</div>
+
+<style>
+.community-reply {
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s ease;
+}
+
+.community-reply.optimistic {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.community-reply-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.community-reply-author {
+  font-weight: 600;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.community-reply-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  font-family: monospace;
+}
+
+.community-reply-body {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.community-reply-edited {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+.community-reply-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.community-reply-reaction {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.community-reply-reaction:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.community-reaction-count {
+  font-weight: 600;
+}
+
+.community-reply-votes {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  font-family: monospace;
+}
+</style>

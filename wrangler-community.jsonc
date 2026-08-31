@@ -1,0 +1,32 @@
+{
+  "name": "thehighwrld-community-hub",
+  "main": "workers/community-hub.js",
+  "compatibility_date": "2025-07-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "d1_databases": [
+    {
+      "binding": "wanted_vault",
+      "database_name": "wanted-vault",
+      "database_id": "e9e51af3-b1e7-472e-8b98-4b4649df7179",
+      "migrations_dir": "./migrations"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "COMMUNITY_HUB",
+        "class_name": "CommunityHub"
+      }
+    ]
+  },
+  "exports": {
+    "CommunityHub": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  }
+}

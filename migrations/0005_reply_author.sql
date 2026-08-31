@@ -1,0 +1,1 @@
+ALTER TABLE replies ADD COLUMN discord_id TEXT NOT NULL DEFAULT '';

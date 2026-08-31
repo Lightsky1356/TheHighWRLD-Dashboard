@@ -1,0 +1,24 @@
+# Node / npm
+node_modules/
+npm-debug.log*
+package-lock.json
+*.log
+
+# Build outputs (releases hosted on GitHub Releases, not the repo)
+dist/
+apps/desktop/dist/
+apps/desktop/thw-test.*
+apps/desktop/ptb.*
+apps/desktop/*.log
+apps/desktop/*.err
+
+# Cloudflare / wrangler state
+.wrangler/
+state.v3/
+.dev.vars
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
