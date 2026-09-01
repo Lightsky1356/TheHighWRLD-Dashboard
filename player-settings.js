@@ -45,7 +45,7 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', function(){
+  function init(){
     var cog = document.getElementById('player-settings-cog');
     if(cog) cog.addEventListener('click', function(){ window.togglePlayerSettings(); });
 
@@ -67,8 +67,10 @@
     if(rpToggle) rpToggle.addEventListener('change', function(){ set('repeat', this.checked); });
 
     var drpToggle = document.getElementById('ps-drp-toggle');
+    var drpDesc = document.getElementById('ps-drp-desc');
     if(drpToggle){
       if(isElectron){
+        if(drpDesc) drpDesc.textContent = 'Shows the Current song you are playing on the WRLD Player';
         window.highwrld.getStatus().then(function(s){
           drpToggle.checked = !!(s && s.enabled);
         }).catch(function(){});
@@ -77,8 +79,8 @@
         });
       } else {
         drpToggle.disabled = true;
-        drpToggle.closest('.psp-row').style.opacity = '0.4';
-        drpToggle.closest('.psp-row').title = 'Desktop app only';
+        if(drpDesc) drpDesc.textContent = 'Only Available for the EXE version Windows, MacOS, and Linux';
+        drpToggle.closest('.psp-row').style.opacity = '0.5';
       }
     }
 
@@ -87,11 +89,16 @@
         if(kbToggle) kbToggle.checked = !!(s && s.enabled);
         set('keyboardShortcuts', !!(s && s.enabled));
       }).catch(function(){});
-      if(kbToggle) kbToggle.removeEventListener('change', function(){});
       if(kbToggle) kbToggle.addEventListener('change', function(){
         set('keyboardShortcuts', this.checked);
         window.highwrld.setKeyboardShortcutsEnabled(this.checked).catch(function(){});
       });
     }
-  });
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();

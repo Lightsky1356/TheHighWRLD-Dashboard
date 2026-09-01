@@ -79,3 +79,4 @@
 .psp-toggle input:checked + .slider{background:linear-gradient(135deg,#d4a574,#f59e0b)}
 .psp-toggle input:checked + .slider::before{transform:translateX(20px)}
 .psp-toggle input:focus-visible + .slider{outline:2px solid #d4a574;outline-offset:2px}
+.psp-desc{font-size:10px;color:rgba(255,255,255,.35);line-height:1.4;margin-top:2px;padding-left:2px}
