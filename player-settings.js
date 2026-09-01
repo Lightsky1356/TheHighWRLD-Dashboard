@@ -22,7 +22,21 @@
     }
   };
 
+  function bindClick(selector, fn){
+    var el = document.querySelector(selector);
+    if(el) el.addEventListener('click', fn);
+  }
+
   document.addEventListener('DOMContentLoaded', function(){
+    var cog = document.getElementById('player-settings-cog');
+    if(cog) cog.addEventListener('click', function(){ window.togglePlayerSettings(); });
+
+    var overlay = document.getElementById('player-settings-overlay');
+    if(overlay) overlay.addEventListener('click', function(e){ if(e.target === overlay) window.togglePlayerSettings(); });
+
+    var closeBtn = overlay ? overlay.querySelector('.psp-close') : null;
+    if(closeBtn) closeBtn.addEventListener('click', function(){ window.togglePlayerSettings(); });
+
     var kbToggle = document.getElementById('ps-keyboard-toggle');
     var shToggle = document.getElementById('ps-shuffle-toggle');
     var rpToggle = document.getElementById('ps-repeat-toggle');
