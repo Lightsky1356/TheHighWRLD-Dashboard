@@ -22,3 +22,12 @@ state.v3/
 Thumbs.db
 .vscode/
 .idea/
+
+# Audio files (too large for git, served via CDN/Pages)
+Audio/
+*.mp3
+*.wav
+*.flac
+
+# Cover art images (served via CDN/Pages)
+Covers/
