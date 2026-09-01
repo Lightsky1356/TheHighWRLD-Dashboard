@@ -68,3 +68,14 @@
   font-weight:600;color:rgba(255,255,255,.8)
 }
 .psp-label i{color:#d4a574;font-size:12px;width:16px;text-align:center}
+.player-settings-overlay.open{overflow:hidden}
+.player-settings-overlay.open body,
+.player-settings-overlay.open html{overflow:hidden!important}
+
+.psp-toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.psp-toggle input{opacity:0;width:0;height:0;position:absolute}
+.psp-toggle .slider{position:absolute;inset:0;border-radius:999px;background:rgba(255,255,255,.12);transition:background .2s;cursor:pointer}
+.psp-toggle .slider::before{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s cubic-bezier(.16,1,.3,1);box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.psp-toggle input:checked + .slider{background:linear-gradient(135deg,#d4a574,#f59e0b)}
+.psp-toggle input:checked + .slider::before{transform:translateX(20px)}
+.psp-toggle input:focus-visible + .slider{outline:2px solid #d4a574;outline-offset:2px}
