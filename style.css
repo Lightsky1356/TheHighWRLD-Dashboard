@@ -80,3 +80,13 @@
 .psp-toggle input:checked + .slider::before{transform:translateX(20px)}
 .psp-toggle input:focus-visible + .slider{outline:2px solid #d4a574;outline-offset:2px}
 .psp-desc{font-size:10px;color:rgba(255,255,255,.35);line-height:1.4;margin-top:2px;padding-left:2px}
+
+main.w-full{display:flex;flex-direction:column;min-height:calc(100vh - 60px)}
+.app-page{display:none}
+.app-page.active{display:block;flex:1 0 auto}
+footer{flex-shrink:0}
+
+.site-online-badge{position:fixed;bottom:16px;left:16px;z-index:90;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;background:rgba(10,8,22,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:600;color:rgba(255,255,255,.55);cursor:default;transition:opacity .2s}
+.site-online-badge .ps-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 6px rgba(34,197,94,.5)}
+.site-online-badge b{color:#fff}
+@media(max-width:767px){.site-online-badge{bottom:auto;top:auto;left:12px;bottom:76px}}
