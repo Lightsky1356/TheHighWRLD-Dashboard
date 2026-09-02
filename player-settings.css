@@ -316,7 +316,7 @@ footer .hub-panel select{border-color:var(--th-border2)}
 .cmp-profile-host .pl-empty-card p{font-size:11px;color:var(--ac-dim);margin:0}
 
 /* In-app legal pages (TOS / PP / DMCA) */
-.legal-page{max-width:800px;margin:26px auto 60px;padding:30px 34px;background:linear-gradient(160deg,rgba(255,255,255,.09) 0,rgba(255,255,255,.025) 40%,rgba(34,211,238,.015) 100%);border:1px solid rgba(255,255,255,.08);border-radius:24px;box-shadow:0 32px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);position:relative}
+.legal-page{max-width:800px;margin:80px auto 60px;padding:30px 34px;background:linear-gradient(160deg,rgba(255,255,255,.09) 0,rgba(255,255,255,.025) 40%,rgba(34,211,238,.015) 100%);border:1px solid rgba(255,255,255,.08);border-radius:24px;box-shadow:0 32px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);position:relative}
 .legal-page .legal-page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.06)}
 .legal-page .legal-page-title{margin:0;font-size:20px;font-weight:900;letter-spacing:-.02em;background:linear-gradient(90deg,#60a5fa,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent}
 .legal-page .legal-page-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.55);background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:6px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit}
@@ -331,7 +331,7 @@ footer .hub-panel select{border-color:var(--th-border2)}
 .legal-page ul li{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:5px}
 .legal-page ol{margin:0 0 12px;padding-left:20px}
 .legal-page ol li{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:5px}
-@media (max-width:640px){.legal-page{padding:22px 18px;margin:14px auto 40px;border-radius:16px}.legal-page .legal-page-title{font-size:16px}}
+@media (max-width:640px){.legal-page{padding:22px 18px;margin:70px auto 40px;border-radius:16px}.legal-page .legal-page-title{font-size:16px}}
 
 /* === DISCORD-STYLE REPLY SYSTEM === */
 .wanted-reply-ref{
