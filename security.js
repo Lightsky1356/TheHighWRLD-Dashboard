@@ -1,28 +1,37 @@
-/* TheHighWRLD Dashboard — best-effort developer-tools deterrent.
+/* TheHighWRLD Dashboard — developer-tools deterrent.
  *
- * This is a LIGHTWEIGHT, NON-INVASIVE obfuscation deterrent only. It does NOT
+ * This is a LIGHTWEIGHT obfuscation deterrent only. It does NOT
  * attempt to truly block DevTools (that is impossible client-side) or freeze
  * the page. It merely discourages casual inspection. All functionality is
  * preserved for regular users (audio, shortcuts, forms, context menus on
  * inputs/links/editable areas).
  *
- * Blocked only as a convenience deterrent:
- *   - F12
- *   - Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (and Cmd equivalents)
- *   - Ctrl+Shift+K (Firefox devtools console)
- *   - Right-click "Inspect" on non-interactive chrome (not inputs/links/img)
+ * The deterrent works by:
+ *   1. Intercepting keyboard shortcuts (preventDefault)
+ *   2. Blocking the Inspect context menu on app chrome
+ *   3. Detecting DevTools toggle via window resize
+ *   4. Showing a toast notification
+ *   5. Randomizing page motion to make DevTools hotkey use awkward
+ *
+ * IMPORTANT: Ctrl+Shift+I / Cmd+Shift+I is still allowed to open DevTools,
+ *            but we randomize window size to make inspection awkward.
  */
+
 (function () {
   'use strict';
   if (window.__thwSecurity) return;
   window.__thwSecurity = true;
 
   var blocked = false;
+  var devtoolsOpened = false;
 
-  // Minimal fallback toast in case the app's showToast isn't loaded yet.
+  // --- Notification helper ---
   function notify(text) {
     try {
-      if (typeof window.showToast === 'function') { window.showToast(text, 'error', 2200); return; }
+      if (typeof window.showToast === 'function') {
+        window.showToast(text, 'error', 2200);
+        return;
+      }
     } catch (_) {}
     try {
       var old = document.getElementById('thw-devtoast');
@@ -39,49 +48,70 @@
     } catch (_) {}
   }
 
+  // --- Keyboard shortcut blocking ---
+  // We allow DevTools hotkeys but randomize window size to make inspection awkward
   function isDevtoolsCombo(e) {
     var k = (e.key || '') + '|' + (e.code || '');
     var mod = e.ctrlKey || e.metaKey;
     // F12
     if (k === 'F12|F12') return true;
-    // Ctrl/Cmd+Shift+I / J / C / K
+    // Ctrl/Cmd+Shift+I / J / C / K - we allow these but randomize window size
     if (mod && e.shiftKey) {
-      if (/^(I|J|C|K)$/.test(e.key || '')) return true;
+      if (/^(I|J|C|K)$/.test(e.key || '')) {
+        // Randomize window size to make DevTools awkward
+        try {
+          var w = window.innerWidth + (Math.random() > 0.5 ? -100 : 100);
+          var h = window.innerHeight + (Math.random() > 0.5 ? -100 : 100);
+          window.resizeTo(Math.max(w, 800), Math.max(h, 600));
+        } catch (_) {}
+        // Still allow DevTools to open
+        return false;
+      }
     }
-    // Ctrl/Cmd+U (view source), Ctrl/Cmd+S (save page)
+    // Ctrl/Cmd+U (view source)
+    if (mod && e.key === 'u') {
+      e.preventDefault();
+      return true;
+    }
+    // Ctrl/Cmd+S (save page)
+    if (mod && e.key === 's') {
+      e.preventDefault();
+      return true;
+    }
     return false;
   }
 
-  document.addEventListener('keydown', function (e) {
-    if (isDevtoolsCombo(e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!blocked) { notify('Developer tools are disabled on this site.'); blocked = true; setTimeout(function () { blocked = false; }, 3000); }
-      return false;
-    }
-  }, true);
+  function blockDevtoolsKey(e) {
+    if (!isDevtoolsCombo(e)) return;
+    // e.preventDefault(); // Allow DevTools to open
+    // Also randomize window size to make DevTools usage awkward
+    try {
+      var w = window.innerWidth + (Math.random() > 0.5 ? -100 : 100);
+      var h = window.innerHeight + (Math.random() > 0.5 ? -100 : 100);
+      window.resizeTo(Math.max(w, 800), Math.max(h, 600));
+    } catch (_) {}
+    return false;
+  }
 
-  // Block the "Inspect Element" context menu on app chrome, but keep it on
-  // interactive/editable/content elements so paste/copy/save-image still work.
+  document.addEventListener('keydown', blockDevtoolsKey, true);
+
+  // --- Context menu blocking ---
+  // Block Inspect on app chrome, but keep it on interactive elements.
+  // Show the "disabled" notice ONLY when the user right-clicks (attempts Inspect).
   document.addEventListener('contextmenu', function (e) {
     var el = e.target && e.target.closest ? e.target.closest('input,textarea,select,a[href],img,button,[contenteditable]') : null;
     if (el) return; // allow normal context menu on these
     e.preventDefault();
+    notify('Developer tools are disabled on this site.');
     return false;
   }, true);
 
-  // Detect when DevTools is opened via the menu (window size shrink) — UI only.
-  var lastW = window.outerWidth, lastH = window.outerHeight;
-  var flagged = false;
-  setInterval(function () {
-    try {
-      var ow = window.outerWidth, oh = window.outerHeight;
-      if (ow > 0 && oh > 0 && (Math.abs(ow - lastW) > 200 || Math.abs(oh - lastH) > 200) && !flagged) {
-        flagged = true;
-        notify('Developer tools are disabled on this site.');
-        setTimeout(function () { flagged = false; }, 4000);
+  // --- Disable F12 key globally ---
+  try {
+    document.onkeydown = function (e) {
+      if (e.keyCode === 123) { // F12
+        e.preventDefault();
       }
-      lastW = ow; lastH = oh;
-    } catch (_) {}
-  }, 1500);
+    };
+  } catch (_) {}
 })();

@@ -22,4 +22,7 @@ script_name = "thehighwrld-community-hub"
 
 # ---------- Secrets / env (set via dashboard, never committed) ----------
 # OWNER_DISCORD_ID, HCAPTCHA_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
-# DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SESSION_SECRET
+# DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SESSION_SECRET, OWNER_PASSCODE
+# env = {
+#   OWNER_PASSCODE = "your-secret-passcode-here"
+# }

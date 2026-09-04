@@ -506,7 +506,7 @@
     year: "2018"
   },
   {
-    title: "Don't Care (Junkie) (Sessions)",
+    title: "Don't Care (Sessions)",
     tag: "Don't Care (Junkie) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",
@@ -583,13 +583,13 @@
     year: "2019"
   },
   {
-    title: "Eyes Closed (v1)",
+    title: "Eyes Closed",
     tag: "Eyes Closed (Wherever I Go) (v1) (GB&GR)",
     artist: "Juice WRLD",
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Eyes Closed (v1).mp3",
     duration: 187,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Eye's Closed.png",
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Eyes Closed.png",
     producer: "CBMIX",
     year: "2018"
   },
@@ -1925,7 +1925,7 @@
     year: "2017"
   },
   {
-    title: "Soda Pop (Apparent)",
+    title: "Soda Pop",
     tag: "Soda Pop (Apparent) (DRFL)",
     artist: "Juice WRLD, Marshmello",
     category: "leaks",
@@ -2156,7 +2156,7 @@
     year: "2019"
   },
   {
-    title: "Twins (Luigi)",
+    title: "Twins",
     tag: "Twins (Luigi) (WOD)",
     artist: "Juice WRLD",
     category: "leaks",
@@ -2459,7 +2459,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Devil Horns (Angel With Devil Horns) (Sessions) (GB&GR).mp3",
     duration: 971,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Devil_Horns.png",
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Devil Horns.png",
     producer: "Fincw & Nick Mira",
     year: "2018"
   },

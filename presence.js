@@ -3,7 +3,9 @@
  *
  * Sends a heartbeat POST every 15 s and fetches the live count via GET.
  * No WebSocket / Durable Object required — works purely with D1.
+ * Bot deterrence removed — all visitors counted regardless of suspected bot status.
  */
+
 (function () {
   'use strict';
 
@@ -59,13 +61,17 @@
   function start() {
     if (started) return;
     started = true;
+
     heartbeat();
     heartbeatTimer = setInterval(heartbeat, 15000);
     pollTimer = setInterval(poll, 10000);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') { heartbeat(); poll(); }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        heartbeat(); poll();
+      }
     });
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener('beforeunload', function () {
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       if (pollTimer) clearInterval(pollTimer);
     });
