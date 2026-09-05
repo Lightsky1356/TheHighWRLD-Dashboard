@@ -90,3 +90,37 @@ footer{flex-shrink:0}
 .site-online-badge .ps-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 6px rgba(34,197,94,.5)}
 .site-online-badge b{color:#fff}
 @media(max-width:767px){.site-online-badge{bottom:auto;top:auto;left:12px;bottom:76px}}
+
+/* ===== Scroll lock: hide the scrollbar so it can't be dragged ===== */
+body.ps-locked,
+html.ps-locked{overflow:hidden!important}
+
+/* Hide the WRLD Player Settings cog + panel on mobile web */
+@media(max-width:767px){
+  .player-settings-cog{display:none!important}
+  #player-settings-overlay{display:none!important}
+}
+
+/* ===== DRP nav indicator (next to the logo, desktop only) ===== */
+body.drp-desktop #ps-nav-drp{display:inline-flex}
+#ps-nav-drp{
+  display:none;align-items:center;gap:6px;
+  padding:4px 11px;border-radius:999px;
+  font-size:10px;font-weight:800;letter-spacing:.02em;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.05);
+  cursor:pointer;transition:background .18s ease,border-color .18s;
+  white-space:nowrap;user-select:none;
+}
+#ps-nav-drp:hover{background:rgba(255,255,255,.1)}
+#ps-nav-drp .drp-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+#ps-nav-drp .drp-ico{font-size:10px}
+#ps-nav-drp.drp-off{color:rgba(255,255,255,.45)}
+#ps-nav-drp.drp-off .drp-dot{background:#64748b}
+#ps-nav-drp.drp-wait{color:#fbbf24}
+#ps-nav-drp.drp-wait .drp-dot{background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.6)}
+#ps-nav-drp.drp-wait .drp-ico{animation:drpSpin 1s linear infinite}
+#ps-nav-drp.drp-ok{color:#4ade80;border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.08)}
+#ps-nav-drp.drp-ok .drp-dot{background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,.6)}
+@keyframes drpSpin{to{transform:rotate(360deg)}}
+@media(max-width:767px){#ps-nav-drp{display:none!important}}

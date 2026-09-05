@@ -1,5 +1,7 @@
 (function(){
-  var defaults = { keyboardShortcuts: true };
+  var defaults = {
+    keyboardShortcuts: true
+  };
   var storageKey = 'wrldPlayerSettings';
   var settings = {};
   try { settings = JSON.parse(localStorage.getItem(storageKey)) || {}; } catch(e){ settings = {}; }
@@ -11,6 +13,8 @@
   window.wrldPlayerSettings = { get: get, set: set };
 
   function lockScroll(){
+    document.body.classList.add('ps-locked');
+    document.documentElement.classList.add('ps-locked');
     if(!window.__psLk){
       window.__psLk = function(e){
         if(e.type === 'keydown'){
@@ -26,6 +30,8 @@
     }
   }
   function unlockScroll(){
+    document.body.classList.remove('ps-locked');
+    document.documentElement.classList.remove('ps-locked');
     if(window.__psLk){
       window.removeEventListener('wheel', window.__psLk, { capture:true });
       window.removeEventListener('touchmove', window.__psLk, { capture:true });
@@ -45,9 +51,11 @@
       drpToggle.checked = false;
       if(row) row.style.opacity = '0.5';
       if(window.highwrld && window.highwrld.setEnabled) window.highwrld.setEnabled(false).catch(function(){});
-      if(drpDesc) drpDesc.textContent = 'Display what you\'re listening to in the WRLD Player on your Discord profile. (ONLY ON THE EXE - NOT FOR THE WEB OR MOBILE)';
+      if(drpDesc) drpDesc.textContent = 'Display what you\'re listening to in the WRLD Player on your Discord profile. (Desktop app only - Windows, macOS & Linux)';
+      refreshDrpStatus();
       return;
     }
+    document.body.classList.add('drp-desktop');
     if(!signedIn){
       drpToggle.disabled = true;
       drpToggle.checked = false;
@@ -61,7 +69,35 @@
     if(drpDesc) drpDesc.textContent = 'Display what you\'re listening to in the WRLD Player on your Discord profile. (Connect Discord to your account)';
     window.highwrld.getStatus().then(function(s){
       drpToggle.checked = !!(s && s.enabled);
+      refreshDrpStatus(s);
     }).catch(function(){});
+  }
+
+  function refreshDrpStatus(status){
+    var el = document.getElementById('ps-nav-drp');
+    if(!el) return;
+    var txtEl = el.querySelector('.drp-txt');
+    if(!isElectron){
+      el.className = 'drp-off';
+      if(txtEl) txtEl.textContent = 'Off';
+      return;
+    }
+    document.body.classList.add('drp-desktop');
+    var s = status || {};
+    var enabled = !!s.enabled;
+    var connected = !!(s.loggedIn && s.available);
+    if(!enabled){
+      el.className = 'drp-off';
+      if(txtEl) txtEl.textContent = 'Off';
+      return;
+    }
+    if(connected){
+      el.className = 'drp-ok';
+      if(txtEl) txtEl.textContent = 'Connected';
+      return;
+    }
+    el.className = 'drp-wait';
+    if(txtEl) txtEl.textContent = 'Connecting\u2026';
   }
 
   function togglePlayerSettings(){
@@ -121,12 +157,16 @@
             this.checked = false;
             return;
           }
+          if(this.checked){
+            refreshDrpStatus({enabled:true});
+          }
           window.highwrld.setEnabled(this.checked).catch(function(){});
         }
       });
     }
 
     if(isElectron){
+      document.body.classList.add('drp-desktop');
       window.highwrld.getKeyboardShortcutsEnabled().then(function(s){
         if(kbToggle) kbToggle.checked = !!(s && s.enabled);
         set('keyboardShortcuts', !!(s && s.enabled));
@@ -135,6 +175,14 @@
         set('keyboardShortcuts', this.checked);
         window.highwrld.setKeyboardShortcutsEnabled(this.checked).catch(function(){});
       });
+      if(window.highwrld.onStatus){
+        window.highwrld.onStatus(function(status){ refreshDrpStatus(status); });
+      }
+      if(window.highwrld.getStatus){
+        window.highwrld.getStatus().then(function(s){ refreshDrpStatus(s); }).catch(function(){});
+      }
+    } else {
+      refreshDrpStatus();
     }
   }
 
