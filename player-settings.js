@@ -160,7 +160,7 @@
           if(this.checked){
             refreshDrpStatus({enabled:true});
           }
-          window.highwrld.setEnabled(this.checked).catch(function(){});
+          window.highwrld.setEnabled(this.checked).then(function(){if(window.highwrld.getStatus){window.highwrld.getStatus().then(function(s){refreshDrpStatus(s);}).catch(function(){});}}).catch(function(){});
         }
       });
     }
