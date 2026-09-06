@@ -2748,5 +2748,115 @@
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Minus.png",
     producer: "WOD",
     year: "2018"
+  },
+  {
+    title: "Analog",
+    tag: "Analog",
+    artist: "Juice WRLD",
+    category: "leaks",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Analog.mp3",
+    duration: 208,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Analog.png",
+    producer: "Nick Mira",
+    year: "2019"
+  },
+  {
+    title: "By Myself (Sessions)",
+    tag: "By Myself (Sessions)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/By%20Myself%20(Sessions).mp3",
+    duration: 184,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/By%20Myself.png",
+    producer: "Rex Kudo & Charlie Handsome",
+    year: "2019"
+  },
+  {
+    title: "Flintstones (Wartime)",
+    tag: "Flinstones (Wartime)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Flinstones.mp3",
+    duration: 195,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Flintstones.png",
+    producer: "Ineza Beats & Nick Mira",
+    year: "2024"
+  },
+  {
+    title: "Circles (Sessions)",
+    tag: "Circles (Sessions)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Circles%20(Sessions).mp3",
+    duration: 216,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Circles.png",
+    producer: "Dilip & Danny Wolf",
+    year: "2022"
+  },
+  {
+    title: "Dark Queen (Death Penalty)",
+    tag: "Dark Queen (Death Penalty)",
+    artist: "Juice WRLD",
+    category: "leaks",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Dark%20Queen.mp3",
+    duration: 144,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Dark%20Queen.png",
+    producer: "Mega Beats",
+    year: "2020"
+  },
+  {
+    title: "Dummy",
+    tag: "Dummy",
+    artist: "Juice WRLD",
+    category: "leaks",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Dummy.mp3",
+    duration: 134,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Dummy.png",
+    producer: "Nick Mira & Taz Taylor",
+    year: "2019"
+  },
+  {
+    title: "Flaws And Sins (Sessions)",
+    tag: "Flaws And Sins (Sessions)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Flaws%20And%20Sins%20(Sessions).mp3",
+    duration: 218,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Flaws%20%26%20Sins.png",
+    producer: "Nick Mira",
+    year: "2018"
+  },
+  {
+    title: "Already Dead (Sessions)",
+    tag: "Already Dead (Sessions)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Already%20Dead%20(Sessions).mp3",
+    duration: 231,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Already%20Dead.png",
+    producer: "Nick Mira & DT",
+    year: "2018"
+  },
+  {
+    title: "In Zone (Time Anymore)",
+    tag: "In Zone (Time Anymore)",
+    artist: "Juice WRLD",
+    category: "leaks",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/In%20Zone.mp3",
+    duration: 170,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/In%20Zone.png",
+    producer: "SS.Kev",
+    year: "2020"
+  },
+  {
+    title: "Submission",
+    tag: "Submission",
+    artist: "Juice WRLD",
+    category: "leaks",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Submission.mp3",
+    duration: 195,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Submission.png",
+    producer: "Rio Mac & B Young",
+    year: "2021"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});
