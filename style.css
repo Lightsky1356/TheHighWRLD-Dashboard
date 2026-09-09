@@ -152,9 +152,9 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
   #community-updates .juice-bio-chips{justify-content:center}
   #community-updates .juice-bio-chips span{font-size:11px;padding:7px 12px}
 }
-/* ===== Hide THW wordmark on mobile ===== */
+/* ===== Hide all brand wordmarks on mobile (nav THW + page eyebrows) ===== */
 @media (max-width:768px){
-  .nav-home .brand-text{display:none !important}
+  .brand-text{display:none !important}
 }
 /* ===== Compact presence badges on small screens ===== */
 @media (max-width:640px){
