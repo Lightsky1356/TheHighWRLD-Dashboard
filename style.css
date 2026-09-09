@@ -178,3 +178,8 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
   .mbn-item.active::before{content:"";position:absolute;top:3px;left:50%;transform:translateX(-50%);width:16px;height:3px;border-radius:99px;background:linear-gradient(90deg,#22d3ee,#a855f7);box-shadow:0 0 8px rgba(34,211,238,.7)}
   .mbn-item.active i{background:linear-gradient(135deg,#67e8f9,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 6px rgba(34,211,238,.45))}
 }
+
+/* ===== Queue (+Q) buttons hidden on mobile ===== */
+@media (max-width:768px){
+  .queue-add-btn{display:none !important}
+}
