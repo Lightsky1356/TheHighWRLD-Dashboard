@@ -179,7 +179,8 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
   .mbn-item.active i{background:linear-gradient(135deg,#67e8f9,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 6px rgba(34,211,238,.45))}
 }
 
-/* ===== Queue (+Q) buttons hidden on mobile ===== */
+/* ===== Queue buttons hidden on mobile (per-track +Q and player toggle) ===== */
 @media (max-width:768px){
   .queue-add-btn{display:none !important}
+  #queue-btn{display:none !important}
 }
