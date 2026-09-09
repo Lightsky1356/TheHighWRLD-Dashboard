@@ -168,8 +168,9 @@
     if(isElectron){
       document.body.classList.add('drp-desktop');
       window.highwrld.getKeyboardShortcutsEnabled().then(function(s){
-        if(kbToggle) kbToggle.checked = !!(s && s.enabled);
-        set('keyboardShortcuts', !!(s && s.enabled));
+        if(!s || typeof s.enabled !== 'boolean') return;
+        if(kbToggle) kbToggle.checked = !!s.enabled;
+        set('keyboardShortcuts', !!s.enabled);
       }).catch(function(){});
       if(kbToggle) kbToggle.addEventListener('change', function(){
         set('keyboardShortcuts', this.checked);

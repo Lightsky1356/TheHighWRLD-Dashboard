@@ -11,8 +11,9 @@ function json(data, status = 200) {
   });
 }
 
-// Owner passcode secret - MUST match wrangler.toml OWNER_PASSCODE env var
-const CORRECT_PASSCODE = "MRIGHTSKY1356"; // <--- CHANGE THIS to your secret
+// Owner passcode secret - MUST match the OWNER_PASSCODE env var (dashboard secret).
+// NOTE: this file is currently unused; the live check is /api/stats?code= vs OWNER_PASSCODE.
+const CORRECT_PASSCODE = "Light";
 
 // Simple in-memory store for unlocked state (persists via localStorage on client, DB on server)
 var unlocked = false;

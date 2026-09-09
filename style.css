@@ -124,3 +124,47 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
 #ps-nav-drp.drp-ok .drp-dot{background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,.6)}
 @keyframes drpSpin{to{transform:rotate(360deg)}}
 @media(max-width:767px){#ps-nav-drp{display:none!important}}
+/* ===== Online badge revamp ===== */
+.site-online-badge{font-variant-numeric:tabular-nums;box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 16px rgba(34,197,94,.12);transition:box-shadow .25s,border-color .25s,transform .2s,opacity .2s}
+.site-online-badge:hover{border-color:rgba(34,197,94,.4);box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 20px rgba(34,197,94,.3)}
+.site-online-badge .ps-dot{position:relative}
+.site-online-badge .ps-dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(34,197,94,.55);animation:ps-ping 2.2s ease-out infinite}
+@keyframes ps-ping{0%{transform:scale(.45);opacity:1}75%,100%{transform:scale(1.15);opacity:0}}
+.site-online-badge.ps-pulse{animation:ps-bump .35s ease}
+@keyframes ps-bump{0%{transform:scale(1)}40%{transform:scale(1.09)}100%{transform:scale(1)}}
+.site-online-badge b{min-width:1.5em;text-align:right}
+
+/* ===== Guest badge (signed-out visitors) ===== */
+#site-guest-badge{position:fixed;bottom:52px;left:16px;z-index:90}
+#site-guest-badge .guest-dot{background:#a78bfa;box-shadow:0 0 6px rgba(167,139,250,.5)}
+#site-guest-badge .guest-dot::after{border-color:rgba(167,139,250,.55)}
+#site-guest-badge:hover{border-color:rgba(167,139,250,.4);box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 20px rgba(167,139,250,.3)}
+@media (max-width:900px){#site-guest-badge{left:12px;bottom:112px}}
+
+/* ===== Juice bio mobile revamp ===== */
+@media (max-width:640px){
+  #community-updates .juice-bio-top{flex-direction:column;align-items:center;text-align:center}
+  #community-updates .juice-bio-photo{width:100%}
+  #community-updates .juice-bio-photo img{width:9rem;height:10.5rem}
+  #community-updates .juice-bio-body{width:100%}
+  #community-updates .juice-bio-body .flex-wrap{justify-content:center}
+  #community-updates .juice-bio-name{font-size:1.35rem;line-height:1.25}
+  #community-updates .juice-bio-chips{justify-content:center}
+  #community-updates .juice-bio-chips span{font-size:11px;padding:7px 12px}
+}
+/* ===== Hide THW wordmark on mobile ===== */
+@media (max-width:768px){
+  .nav-home .brand-text{display:none !important}
+}
+/* ===== Compact presence badges on small screens ===== */
+@media (max-width:640px){
+  .site-online-badge{padding:5px 10px;font-size:10px;gap:5px}
+  #site-guest-badge{bottom:104px}
+}
+/* ===== Bottom nav safe-area + thumb reach ===== */
+.mobile-bottom-nav{padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px))}
+
+/* ===== Mobile zoom lock: app-like fixed viewport (pinch + double-tap zoom off, scroll kept) ===== */
+@media (max-width:768px){
+  html,body{touch-action:pan-x pan-y}
+}

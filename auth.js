@@ -87,6 +87,13 @@
     if (mUp) mUp.style.display = "none";
     if (mIn) mIn.style.display = "none";
     if (mOut) mOut.style.display = "";
+    var ppUp = $("ppSignupBtn"), ppIn = $("ppSigninBtn"), ppPr = $("ppProfileBtn"), ppAc = $("ppAccountBtn"), ppSe = $("ppSep"), ppOut = $("ppSignoutBtn");
+    if (ppUp) ppUp.style.display = "none";
+    if (ppIn) ppIn.style.display = "none";
+    if (ppPr) ppPr.style.display = "";
+    if (ppAc) ppAc.style.display = "";
+    if (ppSe) ppSe.style.display = "";
+    if (ppOut) ppOut.style.display = "";
     var av = $("navAvatarInner");
     if (av) {
       var name = u.name || u.email || "9";
@@ -111,6 +118,13 @@
     if (mUp) mUp.style.display = "";
     if (mIn) mIn.style.display = "";
     if (mOut) mOut.style.display = "none";
+    var ppUp2 = $("ppSignupBtn"), ppIn2 = $("ppSigninBtn"), ppPr2 = $("ppProfileBtn"), ppAc2 = $("ppAccountBtn"), ppSe2 = $("ppSep"), ppOut2 = $("ppSignoutBtn");
+    if (ppUp2) ppUp2.style.display = "";
+    if (ppIn2) ppIn2.style.display = "";
+    if (ppPr2) ppPr2.style.display = "none";
+    if (ppAc2) ppAc2.style.display = "none";
+    if (ppSe2) ppSe2.style.display = "none";
+    if (ppOut2) ppOut2.style.display = "none";
     var av = $("navAvatarInner");
     if (av) av.textContent = "9";
     if (typeof window.setNotifBell === "function") window.setNotifBell(false);

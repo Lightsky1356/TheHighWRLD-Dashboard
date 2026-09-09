@@ -27,6 +27,13 @@ export async function onRequest(context) {
     if (session && session.uid) {
       uid = session.uid;
       auth = 1;
+    } else if (db && uid) {
+      // Linked-Discord identity counts as signed in (matches /api/online).
+      // Runs once per socket handshake — never per message.
+      const link = await db.prepare(
+        "SELECT display_name FROM discord_links WHERE site_uid = ?"
+      ).bind(uid).first();
+      if (link && link.display_name) auth = 1;
     }
   } catch (_) {}
 

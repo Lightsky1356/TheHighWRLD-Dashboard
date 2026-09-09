@@ -122,7 +122,7 @@ export class CommunityHub extends DurableObject {
       type: "connected",
       ts: Date.now(),
       typing: this.typingSnapshot(conversationId),
-      presence: { online: this.presenceOnlineCount(), users: this.presenceSnapshot() },
+      presence: { online: this.presenceOnlineCount(), users: this.presenceSnapshot(), counts: this.presenceCounts() },
     });
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -330,6 +330,19 @@ export class CommunityHub extends DurableObject {
     return this.presence.size;
   }
 
+  // Split presence into signed-in (auth) vs signed-out (anon) visitors.
+  // Fresh (non-stale) entries only, so counters match what clients display.
+  presenceCounts() {
+    const now = Date.now();
+    let authed = 0, total = 0;
+    for (const info of this.presence.values()) {
+      if (now - info.lastSeen > PRESENCE_TTL_MS) continue;
+      total++;
+      if (info.type === "auth") authed++;
+    }
+    return { online: authed, guests: Math.max(0, total - authed) };
+  }
+
   presenceSnapshot() {
     const now = Date.now();
     const out = [];
@@ -341,7 +354,7 @@ export class CommunityHub extends DurableObject {
   }
 
   onPresenceChanged() {
-    this.fanout({ type: "presence:update", presence: { online: this.presenceOnlineCount(), users: this.presenceSnapshot() } });
+    this.fanout({ type: "presence:update", presence: { online: this.presenceOnlineCount(), users: this.presenceSnapshot(), counts: this.presenceCounts() } });
     this.ensureAlarm();
   }
 

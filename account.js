@@ -311,12 +311,11 @@
   function applyOwner() {
     var group = document.getElementById("navOwnerGroup");
     var crownM = document.getElementById("owner-crown-btn-m");
+    var ppOwner = document.getElementById("mobile-profile-owner");
     var isOwner = !!(_data && _data.isOwner);
-    var hasKey = false;
-    try { hasKey = !!localStorage.getItem("ownerCode") || localStorage.getItem("ownerByUser") === "1"; } catch (e) {}
-    var show = isOwner || hasKey;
-    if (group) group.style.display = show ? "" : "none";
-    if (crownM) crownM.style.display = show ? "" : "none";
+    if (group) group.style.display = isOwner ? "" : "none";
+    if (crownM) crownM.style.display = isOwner ? "" : "none";
+    if (ppOwner) ppOwner.style.display = isOwner ? "" : "none";
   }
   function bindOwnerClose() {
     var pan = document.getElementById("owner-panel");
@@ -330,7 +329,48 @@
     if (cb) cb.onclick = close;
     if (bak) bak.onclick = close;
     window.closeOwnerPanel = close;
+    initOwnerOverlay();
   }
+  function initOwnerOverlay() {
+    if (window.__ownerScrollSync) return;
+    window.__ownerScrollSync = true;
+    var prevOverflow = "";
+    var getBak = function () { return document.getElementById("owner-backdrop"); };
+    try {
+      var bakEl = getBak();
+      var panEl = document.getElementById("owner-panel");
+      if (bakEl && bakEl.parentNode !== document.body) document.body.appendChild(bakEl);
+      if (panEl && panEl.parentNode !== document.body) document.body.appendChild(panEl);
+    } catch (e) {}
+    var syncOwnerScroll = function () {
+      var bak = getBak();
+      var open = !!(bak && bak.classList.contains("show"));
+      try {
+        if (open) {
+          if (document.body.style.overflow !== "hidden") prevOverflow = document.body.style.overflow || "";
+          document.body.style.overflow = "hidden";
+          document.documentElement.classList.add("scroll-locked");
+        } else {
+          document.body.style.overflow = prevOverflow;
+          document.documentElement.classList.remove("scroll-locked");
+        }
+      } catch (e) {}
+    };
+    try {
+      var bakObs = getBak();
+      if (window.MutationObserver && bakObs) {
+        new MutationObserver(syncOwnerScroll).observe(bakObs, { attributes: true, attributeFilter: ["class"] });
+      }
+    } catch (e) {}
+    syncOwnerScroll();
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        var bak = getBak();
+        if (bak && bak.classList.contains("show") && window.closeOwnerPanel) window.closeOwnerPanel();
+      }
+    });
+  }
+  window.initOwnerOverlay = initOwnerOverlay;
   window.openOwnerPanel = function () {
     var pan = document.getElementById("owner-panel");
     if (!pan) return;
@@ -341,6 +381,10 @@
     var cb = document.getElementById("ownerCloseBtn");
     if (cb) cb.style.display = "";
     bindOwnerClose();
+    try {
+      document.body.style.overflow = "hidden";
+      document.documentElement.classList.add("scroll-locked");
+    } catch (e) {}
     if (window.ownerUnlockByUser && uid) window.ownerUnlockByUser(uid);
     else if (window.ownerAutoUnlock) window.ownerAutoUnlock();
   };
@@ -1818,6 +1862,7 @@ window.profileSectionShown = function () {
             var ci = typeof currentTrackIndex !== "undefined" ? currentTrackIndex : -1;
             var t = tl && ci >= 0 ? tl[ci] : null;
             if (t && t.title) {
+              try { if (!localStorage.getItem("wantedAuthUser")) return; } catch (e) {}
               api({ action: "listen", title: t.title, seconds: 45 });
             }
           } catch (e) {}
@@ -1878,8 +1923,8 @@ window.profileSectionShown = function () {
   function startPolling() {
     stopPolling();
     _pollTimer = setInterval(function () {
-      if (_visible && uid) loadAccount();
-    }, 15000);
+      if (_visible && uid && !document.hidden) loadAccount();
+    }, 45000);
   }
   function stopPolling() { if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; } }
 
@@ -1983,15 +2028,27 @@ window.profileSectionShown = function () {
     bindCollapseTabs();
     bindSectionCollapse();
     buildSidebar();
+    try { if (window.initOwnerOverlay) window.initOwnerOverlay(); } catch (e) {}
     showAcView(_acView);
-    try {
-      if (localStorage.getItem("ownerCode") || localStorage.getItem("ownerByUser") === "1") {
-        var og = document.getElementById("navOwnerGroup");
-        if (og) og.style.display = "";
-        var crownM = document.getElementById("owner-crown-btn-m");
-        if (crownM) crownM.style.display = "";
-      }
-    } catch (e) {}
+    (function () {
+      var og = document.getElementById("navOwnerGroup");
+      var crownM = document.getElementById("owner-crown-btn-m");
+      var ppOwner = document.getElementById("mobile-profile-owner");
+      var hide = function () { if (og) og.style.display = "none"; if (crownM) crownM.style.display = "none"; if (ppOwner) ppOwner.style.display = "none"; };
+      var show = function () { if (og) og.style.display = ""; if (crownM) crownM.style.display = ""; if (ppOwner) ppOwner.style.display = ""; };
+      var claimsOwner = false;
+      try { claimsOwner = !!(localStorage.getItem("ownerCode") || localStorage.getItem("ownerByUser") === "1"); } catch (e) {}
+      if (!uid || !claimsOwner) { hide(); return; }
+      try {
+        fetch("/api/wanted?user=" + encodeURIComponent(uid), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+          if (d && d.owner) { show(); }
+          else {
+            hide();
+            try { localStorage.removeItem("ownerCode"); localStorage.removeItem("ownerByUser"); } catch (e) {}
+          }
+        }).catch(function () { show(); });
+      } catch (e) { show(); }
+    })();
     if (uid) loadAccount();
     wrapSwitchAppPage();
     var ppath = (location.pathname || "").replace(/\/+$/, "") || "/";

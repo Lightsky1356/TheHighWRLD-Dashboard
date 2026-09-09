@@ -949,3 +949,80 @@ body[data-accent="amber"] .hero-stat-value{background:linear-gradient(135deg,#f5
   .cmp-qstats{gap:.6rem;padding:12px 0}
   .cmp-qstat b{font-size:1rem}
 }
+
+/* ===== Account Settings v2 polish ===== */
+#account-page .ac-shell-header{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(34,211,238,.10),rgba(168,85,247,.10) 55%,rgba(245,158,11,.08));border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:22px 24px}
+#account-page .ac-shell-header::after{content:"";position:absolute;top:-60px;right:-40px;width:220px;height:220px;background:radial-gradient(circle,rgba(34,211,238,.25),transparent 70%);pointer-events:none}
+#account-page .ac-shell-header-icon{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;background:linear-gradient(135deg,#06b6d4,#8b5cf6);box-shadow:0 8px 24px rgba(34,211,238,.35)}
+#account-page .ac-shell-eyebrow{letter-spacing:.28em;font-size:10px;font-weight:800;color:rgba(34,211,238,.8)}
+#account-page .acv-sidebar{position:sticky;top:16px;align-self:start;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px}
+#account-page .acv-subnav-item{border-radius:10px;transition:background .15s}
+#account-page .acv-subnav-item:hover{background:rgba(255,255,255,.06)}
+#account-page .acv-subnav-item span{width:6px;height:6px;border-radius:99px;background:rgba(255,255,255,.2);transition:background .15s}
+#account-page .acv-subnav-item:hover span{background:#22d3ee}
+#account-page .card.set-card{position:relative;background:rgba(255,255,255,.032);border:1px solid rgba(255,255,255,.08);border-radius:16px;transition:border-color .2s,box-shadow .2s}
+#account-page .card.set-card:hover{border-color:rgba(255,255,255,.14);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+#account-page .sec-ico{box-shadow:0 6px 18px rgba(0,0,0,.35)}
+#account-page .sec-title{font-size:15px;font-weight:800}
+#account-page .field label{font-size:11px;font-weight:700;letter-spacing:.04em;color:rgba(255,255,255,.6);text-transform:uppercase}
+#account-page .field input,#account-page .field textarea,#account-page .field select{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);border-radius:11px;transition:border-color .15s,box-shadow .15s}
+#account-page .field input:focus,#account-page .field textarea:focus,#account-page .field select:focus{border-color:rgba(34,211,238,.55);box-shadow:0 0 0 3px rgba(34,211,238,.14);outline:none}
+#account-page .btn-gold{background:linear-gradient(135deg,#f59e0b,#f97316);border:none;box-shadow:0 6px 20px rgba(245,158,11,.3);transition:transform .15s,box-shadow .15s}
+#account-page .btn-gold:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(245,158,11,.4)}
+#account-page .conn-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed rgba(255,255,255,.07)}
+#account-page .conn-row:last-child{border-bottom:none}
+#account-page .conn-val{display:inline-flex;align-items:center;gap:6px}
+#account-page .conn-val::before{content:"";width:7px;height:7px;border-radius:99px;background:rgba(255,255,255,.25)}
+#account-page .conn-val.ok::before{background:#34d399;box-shadow:0 0 8px rgba(52,211,153,.8)}
+#account-page .disc-avatar-box{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(88,101,242,.25),rgba(14,165,233,.18));color:rgba(255,255,255,.6);font-size:26px}
+#account-page .ac-danger-card{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.05)}
+#account-page .device{transition:background .15s;border-radius:12px}
+#account-page .device:hover{background:rgba(255,255,255,.04)}
+#account-page .ac-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:22px;color:rgba(255,255,255,.45);font-size:12px}
+#account-page .table-wrap table{border-collapse:separate;border-spacing:0}
+#account-page .table-wrap tbody tr{transition:background .15s}
+#account-page .table-wrap tbody tr:hover{background:rgba(255,255,255,.035)}
+@media (max-width:900px){#account-page .acv-sidebar{position:static}#account-page .ac-shell-header{padding:18px}}
+
+/* ===== Owner Dashboard revamp ===== */
+#owner-panel.owner-active{width:min(760px,94vw);background:linear-gradient(180deg,rgba(27,21,48,.98),rgba(12,10,26,.98));border:1px solid rgba(251,191,36,.22);border-radius:24px;box-shadow:0 40px 100px rgba(0,0,0,.65),0 0 70px rgba(251,191,36,.08);padding:22px}
+#owner-panel.owner-active::before{content:"";display:block;height:3px;margin:-22px -22px 16px;border-radius:24px 24px 0 0;background:linear-gradient(90deg,transparent,rgba(251,191,36,.7),rgba(236,72,153,.5),transparent)}
+#owner-panel .owner-top{margin-bottom:16px;padding-right:40px}
+#owner-panel .owner-title{font-size:17px}
+#owner-panel .owner-title i{color:#fbbf24;filter:drop-shadow(0 0 8px rgba(251,191,36,.7))}
+#owner-panel .owner-close{width:32px;height:32px;border-radius:11px;transition:all .18s}
+#owner-panel .owner-close:hover{color:#fca5a5;border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.12);transform:rotate(90deg)}
+#owner-panel.owner-active .owner-grid{gap:10px}
+#owner-panel.owner-active .owner-stat{position:relative;overflow:hidden;padding:14px 10px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);transition:transform .18s,border-color .18s}
+#owner-panel.owner-active .owner-stat:hover{transform:translateY(-2px)}
+#owner-panel.owner-active .owner-stat:nth-child(1){border-color:rgba(251,191,36,.3)}
+#owner-panel.owner-active .owner-stat:nth-child(2){border-color:rgba(52,211,153,.3)}
+#owner-panel.owner-active .owner-stat:nth-child(3){border-color:rgba(167,139,250,.3)}
+#owner-panel.owner-active .owner-stat-num{font-size:22px;font-weight:800;background:linear-gradient(135deg,#fde68a,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent}
+#owner-panel.owner-active .owner-stat:nth-child(2) .owner-stat-num{background:linear-gradient(135deg,#a7f3d0,#34d399);-webkit-background-clip:text;background-clip:text}
+#owner-panel.owner-active .owner-stat:nth-child(3) .owner-stat-num{background:linear-gradient(135deg,#ddd6fe,#a78bfa);-webkit-background-clip:text;background-clip:text}
+#owner-panel.owner-active .owner-stat-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-top:4px;display:block}
+#owner-panel.owner-active .owner-block{margin-bottom:10px;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.08)}
+#owner-panel.owner-active .owner-block-title{font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#c4b5fd;margin:0 0 10px;padding-left:10px;position:relative}
+#owner-panel.owner-active .owner-block-title::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:3px;border-radius:99px;background:linear-gradient(180deg,#fbbf24,#ec4899)}
+#owner-panel .owner-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 9px;border-radius:9px;font-size:12.5px;transition:background .15s}
+#owner-panel .owner-row:hover{background:rgba(255,255,255,.045)}
+#owner-panel .owner-row-k{color:rgba(255,255,255,.72);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#owner-panel .owner-row-v{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;flex-shrink:0}
+#owner-panel .owner-empty{color:rgba(255,255,255,.35);font-style:italic;font-size:12px}
+#owner-panel.owner-active .owner-day{display:grid;grid-template-columns:88px 1fr 54px;align-items:center;gap:10px;padding:7px 8px;text-align:left;background:none;border:none;border-radius:10px}
+#owner-panel.owner-active .owner-day:hover{background:rgba(255,255,255,.04)}
+#owner-panel .owner-day-date{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:rgba(255,255,255,.5)}
+#owner-panel .owner-day-bar{display:block;height:9px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+#owner-panel .owner-day-fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#b98a3c,#e879a8);box-shadow:0 0 10px rgba(232,121,168,.35);transition:width .5s ease}
+#owner-panel .owner-day-num{font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;color:#fff;text-align:right;font-variant-numeric:tabular-nums}
+#owner-panel .owner-login-row input:focus{border-color:rgba(251,191,36,.6);box-shadow:0 0 0 3px rgba(251,191,36,.14)}
+#owner-panel .owner-login-row button{box-shadow:0 6px 20px rgba(245,158,11,.3)}
+#owner-panel::-webkit-scrollbar{width:10px}
+#owner-panel::-webkit-scrollbar-thumb{background:rgba(251,191,36,.25);border-radius:99px;border:2px solid transparent;background-clip:content-box}
+#owner-panel::-webkit-scrollbar-track{background:transparent}
+/* blur everything behind the owner panel except the mini player */
+body:has(#owner-backdrop.show)>*:not(#mini-player):not(#mini-shortcuts):not(#owner-panel):not(#owner-backdrop):not(#toasts):not(#gate-modal-overlay):not(script):not(style):not(link):not(meta):not(audio):not(noscript):not(template){filter:blur(8px) brightness(.62)}
+
+#owner-panel.owner-active .owner-stat:nth-child(4){border-color:rgba(34,211,238,.3)}
+#owner-panel.owner-active .owner-stat:nth-child(4) .owner-stat-num{background:linear-gradient(135deg,#a5f3fc,#22d3ee);-webkit-background-clip:text;background-clip:text}

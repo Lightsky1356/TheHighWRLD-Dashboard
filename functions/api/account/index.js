@@ -184,6 +184,18 @@ export async function onRequestPost(context) {
   const db = context.env.wanted_vault;
   const uid = String(body.user || "").slice(0, 40);
   if (!uid) return json({ error: "missing user" }, 400);
+  const authed = await (async () => {
+    try {
+      const session = await getSessionUser(db, context.request);
+      if (session && session.uid) return true;
+    } catch (_) {}
+    try {
+      const link = await getDiscordLink(db, uid);
+      if (link && link.display_name) return true;
+    } catch (_) {}
+    return false;
+  })();
+  if (!authed) return json({ error: "sign in required" }, 401);
   try {
     switch (body.action) {
       case "updateProfile": {

@@ -27,6 +27,11 @@ export async function onRequestGet(context) {
     const env = context.env;
     const db = env.wanted_vault;
 
+    // Bound table growth so owner stats scans stay cheap: keep 90 days.
+    try {
+      await db.prepare("DELETE FROM analytics_visits WHERE ts < datetime('now', '-90 days')").run();
+    } catch (_) {}
+
     const totals = await db.prepare(
       "SELECT COUNT(*) as visits, COUNT(DISTINCT uid) as uniques FROM analytics_visits"
     ).first();

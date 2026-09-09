@@ -1,3 +1,5 @@
+import { getSessionUser } from "../_lib/auth.js";
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -24,6 +26,18 @@ export async function onRequestPost(context) {
     const ua = clamp(body.ua, 300);
     const ip = context.request.headers.get("CF-Connecting-IP") || "";
     const country = context.request.headers.get("CF-IPCountry") || "";
+    let authed = false;
+    try {
+      const session = await getSessionUser(env.wanted_vault, context.request);
+      if (session && session.uid) authed = true;
+      else {
+        const link = await env.wanted_vault.prepare(
+          "SELECT display_name FROM discord_links WHERE site_uid = ?"
+        ).bind(uid).first();
+        if (link && link.display_name) authed = true;
+      }
+    } catch (_) {}
+    if (!authed) return json({ ok: true, tracked: false });
     await env.wanted_vault.prepare(
       "INSERT INTO analytics_visits (uid, page, ua, ip, country, ts) VALUES (?, ?, ?, ?, ?, ?)"
     ).bind(uid, page, ua, ip, country, new Date().toISOString()).run();

@@ -18,7 +18,7 @@ function json(data, status = 200) {
 async function loadState(env, user) {
   const tracks = await env.wanted_vault.prepare("SELECT title, note FROM tracks").all();
   const votes = await env.wanted_vault.prepare(
-    "SELECT track_id, COUNT(*) as n FROM votes GROUP BY track_id"
+    "SELECT track_id, SUM(value) as n FROM votes GROUP BY track_id"
   ).all();
   const replies = await env.wanted_vault.prepare(
     "SELECT id, track_id, user_name, avatar, discord_id, body, created_at, edited_at, parent_id, reply_to FROM replies ORDER BY created_at ASC"
@@ -58,10 +58,10 @@ async function loadState(env, user) {
 
   if (user) {
     const my = await env.wanted_vault.prepare(
-      "SELECT track_id FROM votes WHERE user_id = ?"
+      "SELECT track_id, value FROM votes WHERE user_id = ?"
     ).bind(user).all();
     const myMap = {};
-    for (const v of my.results) myMap[v.track_id] = true;
+    for (const v of my.results) myMap[v.track_id] = v.value === -1 ? -1 : 1;
     state.myVotes = myMap;
 
     const myrv = await env.wanted_vault.prepare(
@@ -132,14 +132,20 @@ export async function onRequestPost(context) {
         const link = await db.prepare(
           "SELECT 1 FROM discord_links WHERE site_uid = ?"
         ).bind(user).first();
-        if (!link) return json({ error: "Link Discord to vote" }, 403);
+        if (!link) return json({ error: "discord_link_required", message: "Voting in the Wanted Vault requires a LINKED Discord Account" }, 403);
+        const rawV = Number(body.value);
+        const v = rawV === -1 ? -1 : (rawV === 0 ? 0 : 1);
         const existing = await db.prepare(
-          "SELECT id FROM votes WHERE track_id = ? AND user_id = ?"
+          "SELECT id, value FROM votes WHERE track_id = ? AND user_id = ?"
         ).bind(track, user).first();
         if (existing) {
-          await db.prepare("DELETE FROM votes WHERE id = ?").bind(existing.id).run();
-        } else {
-          await db.prepare("INSERT INTO votes (track_id, user_id) VALUES (?, ?)").bind(track, user).run();
+          if (v === 0 || existing.value === v) {
+            await db.prepare("DELETE FROM votes WHERE id = ?").bind(existing.id).run();
+          } else {
+            await db.prepare("UPDATE votes SET value = ? WHERE id = ?").bind(v, existing.id).run();
+          }
+        } else if (v !== 0) {
+          await db.prepare("INSERT INTO votes (track_id, user_id, value) VALUES (?, ?, ?)").bind(track, user, v).run();
           try {
             await db.prepare(
               "INSERT INTO activity (uid, type, label, detail, track_id) VALUES (?, 'vote', ?, '', ?)"
@@ -290,8 +296,10 @@ export async function onRequestPost(context) {
         const link = await db.prepare(
           "SELECT discord_id FROM discord_links WHERE site_uid = ?"
         ).bind(user).first();
-        if (!link || !row.discord_id || link.discord_id !== row.discord_id) {
-          return json({ error: "not your reply" }, 403);
+        const ownerDiscordId = env.OWNER_DISCORD_ID || OWNER_DISCORD_ID_DEFAULT;
+        const isAdmin = !!(link && link.discord_id && link.discord_id === ownerDiscordId);
+        if (!link || !row.discord_id || (link.discord_id !== row.discord_id && !isAdmin)) {
+          return json({ error: "not authorized" }, 403);
         }
         await db.prepare("UPDATE replies SET parent_id = NULL WHERE parent_id = ?").bind(rid).run();
         await db.prepare("DELETE FROM replies WHERE id = ?").bind(rid).run();
@@ -322,7 +330,21 @@ export async function onRequestPost(context) {
         const exists = await db.prepare("SELECT id FROM tracks WHERE title = ?").bind(String(track).slice(0, 80)).first();
         if (exists) return json({ error: "already nominated" }, 409);
         await db.prepare("INSERT INTO tracks (title, note) VALUES (?, ?)")
-          .bind(String(track).slice(0, 80), String(note || "nominated by you").slice(0, 120)).run();
+          .bind(String(track).slice(0, 80), String(note || "Juice WRLD").slice(0, 120)).run();
+        break;
+      }
+      case "deleteTrack": {
+        const { track, user } = body;
+        if (!track || !user) return json({ error: "missing track or user" }, 400);
+        const link = await db.prepare("SELECT discord_id FROM discord_links WHERE site_uid = ?").bind(user).first();
+        const ownerDiscordId = env.OWNER_DISCORD_ID || OWNER_DISCORD_ID_DEFAULT;
+        if (!link || !link.discord_id || link.discord_id !== ownerDiscordId) {
+          return json({ error: "admin only" }, 403);
+        }
+        await db.prepare("DELETE FROM votes WHERE track_id = ?").bind(track).run();
+        await db.prepare("UPDATE replies SET parent_id = NULL WHERE parent_id IN (SELECT id FROM replies WHERE track_id = ?)").bind(track).run();
+        await db.prepare("DELETE FROM replies WHERE track_id = ?").bind(track).run();
+        await db.prepare("DELETE FROM tracks WHERE title = ?").bind(track).run();
         break;
       }
       default:
