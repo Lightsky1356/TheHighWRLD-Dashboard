@@ -1,12 +1,14 @@
 # Caching for TheHighWRLD Dashboard static assets
 # HTML keeps Cloudflare Pages default (max-age=0, must-revalidate) so deploys show immediately.
-# JS/CSS revalidate after 1 hour (frequent deploys) + stale-while-revalidate for instant repeat loads.
-# Fonts/icons are immutable (stable filenames) - cache for a year.
+# JS/CSS stay fresh only 5 minutes (multiple deploys per day) with a 60s stale
+# window - repeat loads stay instant, but updates can never get stuck for days.
+# Fonts keep a long cache (hashed names). Images last a day so refreshed art
+# (covers, logos) actually reaches everyone.
 /*.js
-  Cache-Control: public, max-age=3600, stale-while-revalidate=604800
+  Cache-Control: public, max-age=300, stale-while-revalidate=60
 /*.css
-  Cache-Control: public, max-age=3600, stale-while-revalidate=604800
+  Cache-Control: public, max-age=300, stale-while-revalidate=60
 /*.woff2
   Cache-Control: public, max-age=31536000, immutable
 /*.png
-  Cache-Control: public, max-age=3600, stale-while-revalidate=3600
+  Cache-Control: public, max-age=86400, stale-while-revalidate=300
