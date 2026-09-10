@@ -509,3 +509,13 @@ footer .hub-panel select{border-color:var(--th-border2)}
 #nav-account-btn:hover .nav-avatar-ring{box-shadow:0 0 0 2px rgba(34,211,238,.55),0 0 18px rgba(34,211,238,.4)}
 #nav-account-menu .nam-link .nav-caret,#nav-account-btn .nav-caret{transition:transform .2s ease}
 .nav-account-wrap.open #nav-account-btn .nav-caret{transform:rotate(180deg)}
+
+/* ===== Mobile: force single-line track rows ===== */
+@media (max-width:768px){
+  .playlist-item{flex-wrap:nowrap !important}
+  .playlist-item>.flex.items-center.gap-1.flex-shrink-0.font-mono.text-\[9px\].font-bold{flex-wrap:nowrap !important}
+  .playlist-item .min-w-0{overflow:hidden}
+  .playlist-item .playlist-title,.playlist-item .text-\[10px\]{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .playlist-item .playlist-cat-dot{display:none !important}
+  .playlist-item .track-duration{display:none !important}
+}
