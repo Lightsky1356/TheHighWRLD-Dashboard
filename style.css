@@ -184,3 +184,13 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
   .queue-add-btn{display:none !important}
   #queue-btn{display:none !important}
 }
+
+/* ===== Mobile player list: no + buttons, wrapping toolbar ===== */
+@media (max-width:768px){
+  .add-to-playlist-btn{display:none !important}
+}
+@media (max-width:640px){
+  .playlist-sticky-controls>div{flex-wrap:wrap;gap:8px}
+  .player-search-wrap{flex:1 1 100%}
+  .player-search-wrap input{width:100%}
+}
