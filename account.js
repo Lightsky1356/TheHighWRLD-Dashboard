@@ -541,6 +541,11 @@
     if (i >= 0) return i;
     try {
       if (typeof trackList === "undefined" || !trackList) return -1;
+      var ns = String(title || "").trim();
+      if (/^[0-9]+$/.test(ns)) { var ni = parseInt(ns, 10); if (ni >= 0 && ni < trackList.length) return ni; return -1; }
+    } catch (e) {}
+    try {
+      if (typeof trackList === "undefined" || !trackList) return -1;
       var base = String(title || "").replace(/\s*\(.*\)\s*/, "").trim().toLowerCase();
       if (!base) return -1;
       for (var k = 0; k < trackList.length; k++) {
