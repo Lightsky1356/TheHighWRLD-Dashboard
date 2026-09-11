@@ -261,7 +261,9 @@
     var banner = pr.banner ? '<img src="' + esc(pr.banner) + '" alt="" onerror="this.style.display=\'none\'">' : '';
     var links = (d.links || []).filter(function (l) { return l && l.url; });
     var plays = (d.topPlays || []).slice(0, 5).map(function (t) {
-      return '<div class="pv-top"><span class="pv-top-num">' + esc(t.track_id) + '</span><span class="pv-top-cnt">' + (Number(t.n) || 0) + ' plays</span></div>';
+      var pi = trackIndexByTitle(t.track_id);
+      var pname = (pi >= 0 && trackList[pi] && trackList[pi].title) ? trackList[pi].title : t.track_id;
+      return '<div class="pv-top"' + (pi >= 0 ? ' data-play-idx="' + pi + '" role="button" tabindex="0" title="Play"' : '') + '>' + '<span class="pv-top-num">' + esc(pname) + '</span><span class="pv-top-cnt">' + (Number(t.n) || 0) + ' plays</span></div>';
     }).join("") || '<p class="pv-none">No plays recorded yet</p>';
     var pls = (d.playlists || []).slice(0, 6).map(function (p) {
       return '<div class="pv-pl" data-openpl="' + p.id + '" role="button" tabindex="0" title="' + esc(_tt("openTitle", "Open")) + '" style="background:linear-gradient(135deg,' + (p.color ? esc(p.color) : "#a855f7") + ',rgba(20,12,40,.9))"><i class="fas fa-play pv-pl-play" data-playpl="' + p.id + '"></i><div class="pv-pl-info"><b>' + esc(p.name) + '</b><span>' + (p.count || 0) + ' tracks</span></div></div>';
@@ -2025,6 +2027,12 @@ window.profileSectionShown = function () {
     if (!window.__profileLinkBound) {
       window.__profileLinkBound = true;
       document.addEventListener("click", function (e) {
+        var pv = (e.target && e.target.closest) ? e.target.closest(".pv-top[data-play-idx]") : null;
+        if (pv) {
+          var pi2 = parseInt(pv.getAttribute("data-play-idx"), 10);
+          if (!isNaN(pi2) && pi2 >= 0 && window.selectTrackFromList) { window.selectTrackFromList(pi2); if (window.showMiniPlayer) window.showMiniPlayer(); }
+          return;
+        }
         var t = (e.target && e.target.closest) ? e.target.closest("[data-profile-link]") : null;
         if (!t) return;
         var id = t.getAttribute("data-profile-link");

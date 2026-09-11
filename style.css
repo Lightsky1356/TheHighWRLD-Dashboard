@@ -224,3 +224,7 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
 /* ===== Clickable profile names ===== */
 [data-profile-link]{cursor:pointer}
 [data-profile-link]:hover{color:#fff;text-decoration:underline}
+
+/* ===== Clickable top-play rows ===== */
+.pv-top[data-play-idx]{cursor:pointer;transition:background .15s}
+.pv-top[data-play-idx]:hover{background:rgba(255,255,255,.05)}
