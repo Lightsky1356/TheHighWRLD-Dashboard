@@ -230,7 +230,7 @@
       avatarHtml +
       '<div class="wanted-reply-main">' +
         '<div class="wanted-reply-head">' +
-          '<span class="wanted-reply-user">' + esc((r.u && r.u !== 'Anonymous') ? r.u : '🖥️System') + '</span>' +
+          '<span class="wanted-reply-user"' + (r.d ? ' data-profile-link="' + esc(r.d) + '" data-profile-discord="1"' : ((r.u && r.u !== 'Anonymous') ? ' data-profile-link="' + esc(r.u) + '"' : '')) + '>' + esc((r.u && r.u !== 'Anonymous') ? r.u : '🖥️System') + '</span>' +
           replyTo +
           '<span class="wanted-reply-time">' + relTime(r.t) + '</span>' +
           editedBadge +
@@ -366,7 +366,7 @@
         (p.altName ? '<p class="wanted-card-alt">Also known as: ' + esc(p.altName) + '</p>' : '') +
         (p.description ? '<p class="wanted-card-desc">' + esc(p.description) + '</p>' : '') +
         '<div class="wanted-card-footer">' +
-          '<span class="wanted-author">' + esc((p.authorName && p.authorName !== 'Anonymous') ? p.authorName : '🖥️System') + '</span>' +
+          '<span class="wanted-author"' + (((p.authorUid || p.authorName) && p.authorName !== 'Anonymous') ? ' data-profile-link="' + esc(p.authorUid || p.authorName) + '"' : '') + '>' + esc((p.authorName && p.authorName !== 'Anonymous') ? p.authorName : '🖥️System') + '</span>' +
           adminBtns +
         '</div>' +
       '</div>' +

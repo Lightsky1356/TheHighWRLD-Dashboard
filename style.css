@@ -220,3 +220,7 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
   .fav-card:hover .fav-art img.fav-art-img{transform:none}
   .playlist-item:hover{transform:none}
 }
+
+/* ===== Clickable profile names ===== */
+[data-profile-link]{cursor:pointer}
+[data-profile-link]:hover{color:#fff;text-decoration:underline}

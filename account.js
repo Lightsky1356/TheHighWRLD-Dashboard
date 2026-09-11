@@ -2022,6 +2022,17 @@ window.profileSectionShown = function () {
     bindSectionCollapse();
     buildSidebar();
     try { if (window.initOwnerOverlay) window.initOwnerOverlay(); } catch (e) {}
+    if (!window.__profileLinkBound) {
+      window.__profileLinkBound = true;
+      document.addEventListener("click", function (e) {
+        var t = (e.target && e.target.closest) ? e.target.closest("[data-profile-link]") : null;
+        if (!t) return;
+        var id = t.getAttribute("data-profile-link");
+        if (!id || !window.openProfile) return;
+        e.preventDefault();
+        window.openProfile(id, t.getAttribute("data-profile-discord") === "1");
+      });
+    }
     showAcView(_acView);
     (function () {
       var og = document.getElementById("navOwnerGroup");

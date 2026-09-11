@@ -189,7 +189,7 @@
             '<h3 class="sugg-card-title">' + esc(s.title) + '</h3>' +
             (s.description ? '<p class="sugg-card-desc">' + esc(s.description) + '</p>' : '') +
             '<div class="sugg-card-footer">' +
-              '<span class="sugg-author">' + esc((s.authorName && s.authorName !== 'Anonymous') ? s.authorName : '🖥️System') + '</span>' +
+              '<span class="sugg-author"' + (((s.authorUid || s.authorName) && s.authorName !== 'Anonymous') ? ' data-profile-link="' + esc(s.authorUid || s.authorName) + '"' : '') + '>' + esc((s.authorName && s.authorName !== 'Anonymous') ? s.authorName : '🖥️System') + '</span>' +
               adminBtns +
             '</div>' +
           '</div>' +

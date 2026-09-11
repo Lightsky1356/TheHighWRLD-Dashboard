@@ -184,7 +184,7 @@
         <div class="comm-post-head">
           <img class="comm-ava" src="${esc(p.avatar) || 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2212%22 fill=%22%236366f1%22/><text x=%2212%22 y=%2216%22 font-size=%2210%22 text-anchor=%22middle%22 fill=%22white%22>?</text></svg>'}" alt="">
           <div class="comm-post-who">
-            <span class="comm-post-author">${esc(p.user_name)}</span>
+            <span class="comm-post-author"${(p.author_uid || p.user_name) ? ` data-profile-link="${esc(p.author_uid || p.user_name)}"` : ``}>${esc(p.user_name)}</span>
             <span class="comm-post-time">${timeAgo(p.created_at)}</span>
           </div>
           ${p.pinned ? '<span class="comm-pin"><i class="fas fa-thumbtack"></i></span>' : ''}
@@ -261,7 +261,7 @@
       <div class="comm-reply-head">
         <img class="comm-ava" src="${esc(r.avatar) || 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2212%22 fill=%22%236366f1%22/></svg>'}" alt="">
         <div class="comm-reply-who">
-          <span class="comm-reply-author">${esc(dispName)}</span>
+          <span class="comm-reply-author"${(r.author_uid || dispName) ? ` data-profile-link="${esc(r.author_uid || dispName)}"` : ``}>${esc(dispName)}</span>
           <span class="comm-reply-time">${timeAgo(r.created_at)}${r.edited_at ? ' · edited' : ''}</span>
         </div>
         ${isMine ? `<button class="comm-del" data-reply-del="${esc(r.id)}" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
