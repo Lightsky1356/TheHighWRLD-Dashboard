@@ -261,7 +261,7 @@
     var banner = pr.banner ? '<img src="' + esc(pr.banner) + '" alt="" onerror="this.style.display=\'none\'">' : '';
     var links = (d.links || []).filter(function (l) { return l && l.url; });
     var plays = (d.topPlays || []).slice(0, 5).map(function (t) {
-      var pi = trackIndexByTitle(t.track_id);
+      var pi = trackIndexByTitleFuzzy(t.track_id);
       var pname = (pi >= 0 && trackList[pi] && trackList[pi].title) ? trackList[pi].title : t.track_id;
       return '<div class="pv-top"' + (pi >= 0 ? ' data-play-idx="' + pi + '" role="button" tabindex="0" title="Play"' : '') + '>' + '<span class="pv-top-num">' + esc(pname) + '</span><span class="pv-top-cnt">' + (Number(t.n) || 0) + ' plays</span></div>';
     }).join("") || '<p class="pv-none">No plays recorded yet</p>';
@@ -536,6 +536,20 @@
     }
     return -1;
   }
+  function trackIndexByTitleFuzzy(title) {
+    var i = trackIndexByTitle(title);
+    if (i >= 0) return i;
+    try {
+      if (typeof trackList === "undefined" || !trackList) return -1;
+      var base = String(title || "").replace(/\s*\(.*\)\s*/, "").trim().toLowerCase();
+      if (!base) return -1;
+      for (var k = 0; k < trackList.length; k++) {
+        var tn = trackList[k] && trackList[k].title ? String(trackList[k].title) : "";
+        if (tn.replace(/\s*\(.*\)\s*/, "").trim().toLowerCase() === base) return k;
+      }
+    } catch (e) {}
+    return -1;
+  }
   function coverForTitle(title) {
     var idx = trackIndexByTitle(title);
     return idx >= 0 && trackList[idx] && trackList[idx].cover ? trackList[idx].cover : "";
@@ -545,12 +559,12 @@
     if (!grid) return;
     if (!rows || !rows.length) { grid.innerHTML = '<p class="ac-empty" style="grid-column:1/-1">' + esc(_tt("noFavorites", "No favorites yet - tap the heart on any song to save it here.")) + '</p>'; return; }
     grid.innerHTML = rows.map(function (f) {
-      var idx = trackIndexByTitle(f.title);
-      var cov = coverForTitle(f.title);
+      var idx = trackIndexByTitleFuzzy(f.title);
+      var cov = (idx >= 0 && trackList[idx] && trackList[idx].cover) ? trackList[idx].cover : "";
       var initials = String(f.title || "??").split(/\s+/).map(function (w) { return w.charAt(0); }).join("").slice(0, 2).toUpperCase() || "??";
       var art = cov ? '<img class="fav-art-img" src="' + esc(cov) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '<span class="fav-initials">' + esc(initials) + '</span>';
       var like = own ? '<button class="fav-like" data-fav="' + esc(f.title) + '" title="' + esc(_tt("unfavorite", "Unfavorite")) + '"><i class="fas fa-heart"></i></button>' : '<span class="fav-like off"><i class="fas fa-heart"></i></span>';
-      var tg = ""; try { var _ti = trackIndexByTitle(f.title); if (_ti >= 0 && typeof trackList !== "undefined" && trackList[_ti]) tg = trackList[_ti].tag || trackList[_ti].category || ""; } catch (e) {} var tagHtml = tg ? '<div class="fav-tag">' + esc(String(tg).slice(0, 80)) + '</div>' : ''; return '<div class="fav-card" data-play-idx="' + idx + '" role="button" tabindex="0"><div class="fav-art">' + art + '<div class="fav-zoom"><span class="fav-play-btn"><i class="fas fa-play"></i></span></div></div>' + '<div class="fav-info"><div class="fav-main"><div class="fav-text"><div class="fav-name">' + esc(f.title) + '</div>' + tagHtml + '</div>' + like + '</div><div class="fav-sub">' + esc(_tt("saved", "saved")) + ' &middot; ' + esc(fmtDate(f.created_at)) + '</div></div></div>';
+      var tg = (idx >= 0 && trackList[idx]) ? (trackList[idx].tag || trackList[idx].category || "") : ""; var tagHtml = tg ? '<div class="fav-tag">' + esc(String(tg).slice(0, 80)) + '</div>' : ''; return '<div class="fav-card" data-play-idx="' + idx + '" role="button" tabindex="0"><div class="fav-art">' + art + '<div class="fav-zoom"><span class="fav-play-btn"><i class="fas fa-play"></i></span></div></div>' + '<div class="fav-info"><div class="fav-main"><div class="fav-text"><div class="fav-name">' + esc(f.title) + '</div>' + tagHtml + '</div>' + like + '</div><div class="fav-sub">' + esc(_tt("saved", "saved")) + ' &middot; ' + esc(fmtDate(f.created_at)) + '</div></div></div>';
     }).join("");
   }
   function applyFavorites() {
