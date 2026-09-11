@@ -97,7 +97,7 @@
     var av = $("navAvatarInner");
     if (av) {
       var name = u.name || u.email || "9";
-      av.textContent = name.trim().charAt(0).toUpperCase();
+      av.textContent = name.trim().charAt(0).toUpperCase();var mbni = $("mbnAvatarInner"); if (mbni) mbni.textContent = name.trim().charAt(0).toUpperCase();
     }
     if (typeof window.setNotifBell === "function") window.setNotifBell(true);
   }
@@ -126,7 +126,7 @@
     if (ppSe2) ppSe2.style.display = "none";
     if (ppOut2) ppOut2.style.display = "none";
     var av = $("navAvatarInner");
-    if (av) av.textContent = "9";
+    if (av) av.textContent = "9";var mbo = $("mbnAvatarInner"); if (mbo) mbo.innerHTML = '<i class="fas fa-user"></i>';
     if (typeof window.setNotifBell === "function") window.setNotifBell(false);
   }
 

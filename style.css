@@ -191,3 +191,8 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
   .player-search-wrap{flex:1 1 100%}
   .player-search-wrap input{width:100%}
 }
+
+/* ===== Mobile profile tab avatar ===== */
+.mbn-avatar{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:11px;font-weight:800;color:rgba(255,255,255,.75)}
+.mbn-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.mbn-avatar i{font-size:16px}
