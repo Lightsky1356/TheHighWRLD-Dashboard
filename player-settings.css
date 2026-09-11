@@ -517,5 +517,6 @@ footer .hub-panel select{border-color:var(--th-border2)}
   .playlist-item .min-w-0{overflow:hidden}
   .playlist-item .playlist-title,.playlist-item .text-\[10px\]{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .playlist-item .playlist-cat-dot{display:none !important}
-  .playlist-item .track-duration{display:none !important}
+  .playlist-item .track-duration{display:inline-block !important;width:30px !important;font-size:8px !important;text-align:right;flex-shrink:0}
 }
+

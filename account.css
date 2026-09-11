@@ -1026,3 +1026,5 @@ body:has(#owner-backdrop.show)>*:not(#mini-player):not(#mini-shortcuts):not(#own
 
 #owner-panel.owner-active .owner-stat:nth-child(4){border-color:rgba(34,211,238,.3)}
 #owner-panel.owner-active .owner-stat:nth-child(4) .owner-stat-num{background:linear-gradient(135deg,#a5f3fc,#22d3ee);-webkit-background-clip:text;background-clip:text}
+/* mobile duration restore (see player-settings single-line block) */
+@media (max-width:768px){.playlist-item .track-duration{display:inline-block !important;width:30px !important;font-size:8px !important;text-align:right;flex-shrink:0}}
