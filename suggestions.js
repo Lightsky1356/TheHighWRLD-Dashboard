@@ -191,6 +191,7 @@
             '<div class="sugg-card-footer">' +
               '<span class="sugg-author"' + (((s.authorUid || s.authorName) && s.authorName !== 'Anonymous') ? ' data-profile-link="' + esc(s.authorUid || s.authorName) + '"' : '') + '>' + esc((s.authorName && s.authorName !== 'Anonymous') ? s.authorName : '🖥️System') + '</span>' +
               adminBtns +
+            '<button class="report-flag-btn" data-report="suggestion:' + s.id + '" title="Report"><i class="fas fa-flag"></i></button>' +
             '</div>' +
           '</div>' +
         '</div>' +

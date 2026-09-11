@@ -124,6 +124,7 @@
       let msg = null;
       try { msg = JSON.parse(ev.data); } catch (_) { return; }
       if (!msg || typeof msg.type !== 'string') return;
+      if (msg.type === 'report:created' || msg.type === 'report:updated' || msg.type === 'report:deleted') { try { window.dispatchEvent(new CustomEvent('thw:report', { detail: msg })); } catch (_) {} return; }
       if (msg.type !== 'connected' && msg.type !== 'presence:update') return;
       const counts = msg.presence && msg.presence.counts;
       if (!counts) return;

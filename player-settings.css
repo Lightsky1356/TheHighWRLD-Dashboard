@@ -520,3 +520,69 @@ footer .hub-panel select{border-color:var(--th-border2)}
   .playlist-item .track-duration{display:inline-block !important;width:30px !important;font-size:8px !important;text-align:right;flex-shrink:0}
 }
 
+
+/* ===== Report flag buttons ===== */
+.report-flag-btn{background:none;border:none;color:rgba(255,255,255,.28);cursor:pointer;padding:4px 6px;border-radius:8px;font-size:11px;transition:all .2s}
+.report-flag-btn:hover{color:#fbbf24;background:rgba(251,191,36,.1)}
+/* ===== Report modal ===== */
+.report-modal-overlay{position:fixed;inset:0;z-index:400;background:rgba(5,2,12,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px}
+.report-modal{max-width:420px;width:100%;background:rgba(20,12,28,.97);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:22px 20px;box-shadow:0 20px 60px rgba(0,0,0,.5);max-height:88vh;overflow-y:auto}
+.report-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.report-modal-head h3{font-size:15px;font-weight:800;color:#fff;margin:0}
+.report-modal-x{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:13px}
+.report-modal-x:hover{color:#fff}
+.report-target-label{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin:0 0 4px}
+.report-target-title{font-size:13px;font-weight:700;color:#fff;margin:0 0 14px;line-height:1.4}
+.report-label{display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);margin:0 0 6px}
+.report-label .report-opt{font-weight:400;color:rgba(255,255,255,.35)}
+.report-select,.report-textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:13px;padding:9px 12px;outline:none;margin-bottom:12px;box-sizing:border-box}
+.report-select:focus,.report-textarea:focus{border-color:rgba(251,191,36,.5)}
+.report-select option{background:#17122b}
+.report-textarea{resize:vertical;min-height:80px;font-family:inherit}
+.report-error{font-size:12px;color:#f87171;margin:0 0 10px}
+.report-success{font-size:12px;color:#4ade80;margin:0 0 10px}
+.report-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}
+.report-submit-btn{background:rgba(251,191,36,.18);border:1px solid rgba(251,191,36,.4);color:#fde68a;font-size:12px;font-weight:700;border-radius:10px;padding:9px 16px;cursor:pointer}
+.report-submit-btn:hover{background:rgba(251,191,36,.3)}
+.report-submit-btn:disabled{opacity:.5;cursor:wait}
+.report-gate-msg{font-size:13px;color:rgba(255,255,255,.75);text-align:center;margin:6px 0 16px;line-height:1.5}
+/* ===== Owner tabs ===== */
+.owner-tabs{display:flex;gap:8px;margin:0 0 14px}
+.owner-tab{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.55);font-size:12px;font-weight:700;border-radius:10px;padding:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.owner-tab.on{background:rgba(251,191,36,.14);border-color:rgba(251,191,36,.35);color:#fde68a}
+.owner-report-badge{background:#ef4444;color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:1px 7px}
+/* ===== Staff report list ===== */
+.report-filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.report-filter{flex:1;margin-bottom:0;font-size:12px;padding:7px 10px}
+.report-count{font-size:11px;color:rgba(255,255,255,.45);white-space:nowrap}
+.report-list{display:flex;flex-direction:column;gap:10px;max-height:46vh;overflow-y:auto;padding-right:2px}
+.report-empty{font-size:12px;color:rgba(255,255,255,.4);text-align:center;padding:18px 0}
+.report-row{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:12px}
+.report-row-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+.report-id{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:rgba(255,255,255,.45)}
+.report-type-badge{font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:2px 8px}
+.rep-t-wanted{background:rgba(244,114,182,.12);border:1px solid rgba(244,114,182,.3);color:#f9a8d4}
+.rep-t-sugg{background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.28);color:#67e8f9}
+.report-status-badge{font-size:9px;font-weight:800;letter-spacing:.06em;border-radius:999px;padding:2px 8px}
+.rep-st-open{background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.35);color:#fca5a5}
+.rep-st-reviewing{background:rgba(251,191,36,.13);border:1px solid rgba(251,191,36,.35);color:#fcd34d}
+.rep-st-resolved{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.32);color:#6ee7b7}
+.rep-st-dismissed{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.5)}
+.report-time{margin-left:auto;font-size:10px;color:rgba(255,255,255,.35)}
+.report-row-title{font-size:13px;font-weight:700;color:#fff;margin:0 0 4px;line-height:1.4}
+.report-row-meta{font-size:11px;color:rgba(255,255,255,.55);margin-bottom:6px}
+.report-row-meta b{color:rgba(255,255,255,.85)}
+.report-row-details{font-size:12px;color:rgba(255,255,255,.7);background:rgba(255,255,255,.04);border-radius:8px;padding:8px 10px;margin-bottom:6px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.report-row-snap{font-size:11px;color:rgba(255,255,255,.45);margin-bottom:8px;line-height:1.5;max-height:60px;overflow:hidden}
+.report-notes-input{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:12px;padding:7px 10px;box-sizing:border-box;resize:vertical;font-family:inherit}
+.report-notes-input:focus{border-color:rgba(251,191,36,.5);outline:none}
+.report-row-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.report-act-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.65);font-size:11px;font-weight:700;border-radius:8px;padding:6px 11px;cursor:pointer}
+.report-act-btn:hover:not(:disabled){color:#fff;border-color:rgba(255,255,255,.25)}
+.report-act-btn:disabled{opacity:.5;cursor:wait}
+.report-act-btn.ok{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.3);color:#6ee7b7}
+.report-act-btn.danger{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#fca5a5}
+.report-pager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px}
+.report-page-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:11px;font-weight:700;border-radius:8px;padding:6px 14px;cursor:pointer}
+.report-page-btn:disabled{opacity:.35;cursor:default}
+.report-page-info{font-size:11px;color:rgba(255,255,255,.45)}

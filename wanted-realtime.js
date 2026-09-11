@@ -368,6 +368,7 @@
         '<div class="wanted-card-footer">' +
           '<span class="wanted-author"' + (((p.authorUid || p.authorName) && p.authorName !== 'Anonymous') ? ' data-profile-link="' + esc(p.authorUid || p.authorName) + '"' : '') + '>' + esc((p.authorName && p.authorName !== 'Anonymous') ? p.authorName : '🖥️System') + '</span>' +
           adminBtns +
+        '<button class="report-flag-btn" data-report="wanted:' + p.id + '" title="Report"><i class="fas fa-flag"></i></button>' +
         '</div>' +
       '</div>' +
       '<div class="wanted-item-bar">' +
