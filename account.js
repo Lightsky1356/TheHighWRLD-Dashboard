@@ -568,7 +568,7 @@
       var cov = (idx >= 0 && trackList[idx] && trackList[idx].cover) ? trackList[idx].cover : "";
       var initials = String(f.title || "??").split(/\s+/).map(function (w) { return w.charAt(0); }).join("").slice(0, 2).toUpperCase() || "??";
       var art = cov ? '<img class="fav-art-img" src="' + esc(cov) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '<span class="fav-initials">' + esc(initials) + '</span>';
-      var like = own ? '<button class="fav-like" data-fav="' + esc(f.title) + '" title="' + esc(_tt("unfavorite", "Unfavorite")) + '"><i class="fas fa-heart"></i></button>' : '<span class="fav-like off"><i class="fas fa-heart"></i></span>';
+      var like = own ? '<button class="fav-like" data-fav="' + esc(f.title) + '" title="' + esc(_tt("unfavorite", "Unfavorite")) + '"><i class="fas fa-heart"></i></button>' : (idx >= 0 ? '<button class="fav-info-btn" data-trackinfo="' + idx + '" title="Info"><i class="fas fa-circle-info"></i></button>' : '<span class="fav-like off"><i class="fas fa-heart"></i></span>');
       var showTitle = (idx >= 0 && trackList[idx] && trackList[idx].title) ? trackList[idx].title : f.title;
       var tg = (idx >= 0 && trackList[idx]) ? (trackList[idx].tag || trackList[idx].category || "") : ""; var tagHtml = tg ? '<div class="fav-tag">' + esc(String(tg).slice(0, 80)) + '</div>' : ''; return '<div class="fav-card" data-play-idx="' + idx + '" role="button" tabindex="0"><div class="fav-art">' + art + '<div class="fav-zoom"><span class="fav-play-btn"><i class="fas fa-play"></i></span></div></div>' + '<div class="fav-info"><div class="fav-main"><div class="fav-text"><div class="fav-name">' + esc(showTitle) + '</div>' + tagHtml + '</div>' + like + '</div><div class="fav-sub">' + esc(_tt("saved", "saved")) + ' &middot; ' + esc(fmtDate(f.created_at)) + '</div></div></div>';
     }).join("");
@@ -1776,6 +1776,8 @@
   function bindPvFavGrid(fg) {
     if (!fg) return;
     fg.addEventListener("click", function (e) {
+      var info = e.target.closest("[data-trackinfo]");
+      if (info) { var ii = parseInt(info.getAttribute("data-trackinfo"), 10); if (!isNaN(ii) && window.showTrackInfo) window.showTrackInfo(ii); return; }
       if (e.target.closest(".fav-like")) return;
       var play = e.target.closest("[data-play-idx]");
       if (play) {
