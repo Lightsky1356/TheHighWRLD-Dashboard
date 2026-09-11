@@ -209,3 +209,14 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
   .cmp-profile-host .fav-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   [data-fav-toggle]{display:none}
 }
+
+/* ===== Fav heart lives in the info panel, not on the art ===== */
+.fav-main{display:flex;align-items:center;gap:10px}
+.fav-text{flex:1;min-width:0}
+.fav-card .fav-like{position:static;flex-shrink:0}
+/* ===== Touch devices: no stuck-hover jumping ===== */
+@media (hover:none){
+  .fav-card:hover{transform:none}
+  .fav-card:hover .fav-art img.fav-art-img{transform:none}
+  .playlist-item:hover{transform:none}
+}

@@ -211,17 +211,10 @@
     html += '<div class="cmp-handle">@' + esc(String(uname).toLowerCase()) + '</div>';
     html += '<div class="cmp-meta">' + esc(stLabel(p.status || "Online")) + (p.joined ? ' &middot; ' + esc(_tt("joinedWord", "Joined")) + ' ' + esc(fmtDate(p.joined)) : '') + '<span class="cmp-site-presence" data-uid="' + esc(String(uid)) + '"></span></div></div></div>';
     html += '<div class="cmp-bio">' + esc(p.bio || _tt("cmpNoBio", "No bio yet - let the 999s know who you are.")) + '</div>';
-    var dlSet = {}; var dlN = 0;
-    ((_data && _data.downloads) || []).forEach(function (d) { if (d && d.title && !dlSet[d.title]) { dlSet[d.title] = 1; dlN++; } });
-    var archPct = Math.min(100, Math.round(dlN / Math.max(1, vaultTracks()) * 100));
     html += '<div class="cmp-qstats">';
     html += qstat((Number(st.plays) || 0).toLocaleString(), _tt("qstatPlays", "Plays"));
     html += '<div class="cmp-qdiv"></div>';
-    html += qstat(String(dlN), _tt("songsCompleted", "Songs Completed"));
-    html += '<div class="cmp-qdiv"></div>';
     html += qstat(ppTime(st.hours), _tt("listenedWord", "Listened"));
-    html += '<div class="cmp-qdiv"></div>';
-    html += qstat(archPct + "%", _tt("archiveCompletion", "Archive Completion"));
     html += '</div>';
     html += '<div class="cmp-actions">';
     html += '<a class="cmp-btn" href="#" onclick="event.preventDefault();if(window.switchAppPage)window.switchAppPage(\'player\')"><i class="fas fa-play"></i>' + esc(_tt("cmpPlayer", "WRLD Player")) + '</a>';
@@ -555,7 +548,7 @@
       var initials = String(f.title || "??").split(/\s+/).map(function (w) { return w.charAt(0); }).join("").slice(0, 2).toUpperCase() || "??";
       var art = cov ? '<img class="fav-art-img" src="' + esc(cov) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '<span class="fav-initials">' + esc(initials) + '</span>';
       var like = own ? '<button class="fav-like" data-fav="' + esc(f.title) + '" title="' + esc(_tt("unfavorite", "Unfavorite")) + '"><i class="fas fa-heart"></i></button>' : '<span class="fav-like off"><i class="fas fa-heart"></i></span>';
-      var tg = ""; try { var _ti = trackIndexByTitle(f.title); if (_ti >= 0 && typeof trackList !== "undefined" && trackList[_ti]) tg = trackList[_ti].tag || trackList[_ti].category || ""; } catch (e) {} var tagHtml = tg ? '<div class="fav-tag">' + esc(String(tg).slice(0, 80)) + '</div>' : ''; return '<div class="fav-card" data-play-idx="' + idx + '" role="button" tabindex="0"><div class="fav-art">' + art + '<div class="fav-zoom"><span class="fav-play-btn"><i class="fas fa-play"></i></span></div>' + like + '</div><div class="fav-info"><div class="fav-name">' + esc(f.title) + '</div>' + tagHtml + '<div class="fav-sub">' + esc(_tt("saved", "saved")) + ' &middot; ' + esc(fmtDate(f.created_at)) + '</div></div></div>';
+      var tg = ""; try { var _ti = trackIndexByTitle(f.title); if (_ti >= 0 && typeof trackList !== "undefined" && trackList[_ti]) tg = trackList[_ti].tag || trackList[_ti].category || ""; } catch (e) {} var tagHtml = tg ? '<div class="fav-tag">' + esc(String(tg).slice(0, 80)) + '</div>' : ''; return '<div class="fav-card" data-play-idx="' + idx + '" role="button" tabindex="0"><div class="fav-art">' + art + '<div class="fav-zoom"><span class="fav-play-btn"><i class="fas fa-play"></i></span></div></div>' + '<div class="fav-info"><div class="fav-main"><div class="fav-text"><div class="fav-name">' + esc(f.title) + '</div>' + tagHtml + '</div>' + like + '</div><div class="fav-sub">' + esc(_tt("saved", "saved")) + ' &middot; ' + esc(fmtDate(f.created_at)) + '</div></div></div>';
     }).join("");
   }
   function applyFavorites() {
