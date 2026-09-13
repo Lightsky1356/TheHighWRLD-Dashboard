@@ -19,7 +19,7 @@ function esc(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-const VALID_TYPES = ["WANTED", "SUGGESTION"];
+const VALID_TYPES = ["WANTED", "SUGGESTION", "REPLY", "NOM"];
 const VALID_STATUSES = ["OPEN", "REVIEWING", "RESOLVED", "DISMISSED"];
 const VALID_REASONS = [
   "Spam",
@@ -36,6 +36,7 @@ const DETAILS_REQUIRED = ["Other", "Copyright Concern"];
 const MAX_DETAILS = 1000;
 const MIN_DETAILS_WHEN_REQUIRED = 10;
 const RATE_LIMIT_MAX = 10;
+const MAX_TITLE_FALLBACK = 120;
 
 async function isAdmin(db, uid, env) {
   if (!uid) return false;
@@ -87,6 +88,15 @@ export async function onRequestGet(context) {
   try {
     const db = context.env.wanted_vault;
     const url = new URL(context.request.url);
+    if (url.searchParams.get("check") === "1") {
+      const cid = await resolveSiteUid(db, context.request, url.searchParams.get("user") || "");
+      let linked = false;
+      if (cid) {
+        const l = await db.prepare("SELECT discord_id FROM discord_links WHERE site_uid = ?").bind(cid).first();
+        linked = !!(l && l.discord_id);
+      }
+      return json({ ok: true, linked });
+    }
     const uid = await resolveSiteUid(db, context.request, url.searchParams.get("user") || "");
     if (!uid || !(await isStaff(db, uid, context.env))) return json({ error: "staff only" }, 403);
     const status = (url.searchParams.get("status") || "all").toUpperCase();
@@ -146,13 +156,32 @@ export async function onRequestPost(context) {
       if (!post) return json({ error: "reported content not found" }, 404);
       snapTitle = post.title || "";
       snapBody = [post.alt_name, post.description].filter(Boolean).join("\n").slice(0, MAX_DETAILS);
-    } else {
+    } else if (targetType === "SUGGESTION") {
       const sug = await db.prepare(
         "SELECT title, description FROM suggestions_v2 WHERE id = ?"
       ).bind(Number(targetId) || 0).first();
       if (!sug) return json({ error: "reported content not found" }, 404);
       snapTitle = sug.title || "";
       snapBody = String(sug.description || "").slice(0, MAX_DETAILS);
+    } else if (targetType === "REPLY") {
+      const rep = await db.prepare(
+        "SELECT track_id, user_name, body FROM replies WHERE id = ?"
+      ).bind(Number(targetId) || 0).first();
+      if (!rep) return json({ error: "reported content not found" }, 404);
+      snapTitle = "Reply on " + (rep.track_id || "");
+      snapBody = ((rep.user_name || "Someone") + ": " + (rep.body || "")).slice(0, MAX_DETAILS);
+    } else {
+      const track = await db.prepare(
+        "SELECT title, note FROM tracks WHERE LOWER(title) = LOWER(?)"
+      ).bind(targetId).first();
+      if (track) {
+        snapTitle = track.title || targetId;
+        snapBody = String(track.note || "").slice(0, MAX_DETAILS);
+      } else {
+        if (!targetId) return json({ error: "invalid target" }, 400);
+        snapTitle = targetId.slice(0, MAX_TITLE_FALLBACK);
+        snapBody = "";
+      }
     }
 
     // Duplicate protection: same reporter + item + reason.
@@ -208,7 +237,9 @@ async function notifyStaff(env, r) {
     console.log(JSON.stringify({ level: "info", msg: "report created (no webhook configured)", id: r.id }));
     return;
   }
-  const typeLabel = r.targetType === "WANTED" ? "Wanted Vault" : "Suggestion";
+  const typeLabel = r.targetType === "WANTED" ? "Wanted Vault"
+    : r.targetType === "REPLY" ? "Wanted Reply"
+    : r.targetType === "NOM" ? "Nomination" : "Suggestion";
   const now = new Date().toISOString();
   const payload = {
     embeds: [{

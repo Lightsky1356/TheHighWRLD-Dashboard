@@ -221,6 +221,7 @@
       }
     }
 
+    var reportBtn = (r.u && r.u !== 'Anonymous' && r.u !== '🖥️System') ? '<button class="report-flag-btn" data-report="reply:' + r.id + '" title="Report"><i class="fas fa-flag"></i></button>' : '';
     var html = '<div class="wanted-reply' + (depth > 0 ? ' wanted-reply-nested' : '') + '" data-rid="' + r.id + '">' +
       '<div class="wanted-vote-box">' +
         '<button class="wanted-vote-arrow' + (r.myVote === 1 ? ' on' : '') + '" data-rvote="' + r.id + '" data-rval="1"><i class="fas fa-caret-up"></i></button>' +
@@ -232,6 +233,7 @@
         '<div class="wanted-reply-head">' +
           '<span class="wanted-reply-user"' + (r.d ? ' data-profile-link="' + esc(r.d) + '" data-profile-discord="1"' : ((r.u && r.u !== 'Anonymous') ? ' data-profile-link="' + esc(r.u) + '"' : '')) + '>' + esc((r.u && r.u !== 'Anonymous') ? r.u : '🖥️System') + '</span>' +
           replyTo +
+          reportBtn +
           '<span class="wanted-reply-time">' + relTime(r.t) + '</span>' +
           editedBadge +
         '</div>' +
@@ -312,6 +314,7 @@
       nomText = nomText.replace(/you$/i, sv.me.discord);
     }
     nomText = nomText.replace(/^nominated by/i, 'Nominated by');
+    var nomReportBtn = item.c === 'nom' ? '<button class="report-flag-btn" data-report="nom:' + item.id + '" title="Report"><i class="fas fa-flag"></i></button>' : '';
     var adminBtns = isOwner ? '<button class="wanted-delete-track-btn" data-deletetrack="' + esc(item.t) + '" title="Delete track"><i class="fas fa-trash text-[10px]"></i></button>' : '';
 
     return '<div class="wanted-item wanted-item-v2 hub-panel" data-idx="' + idx + '" data-cat="' + item.c + '">' +
@@ -319,7 +322,7 @@
         '<div class="wanted-rank">' + (idx + 1) + '</div>' +
         '<div class="flex-1 min-w-0">' +
           '<div class="wanted-title-row">' +
-            '<p class="wanted-song-title">' + esc(item.t) + '</p>' + badge + adminBtns +
+            '<p class="wanted-song-title">' + esc(item.t) + '</p>' + badge + adminBtns + nomReportBtn +
           '</div>' +
           '<p class="wanted-song-sub">' + nomText + '</p>' +
         '</div>' +
@@ -368,7 +371,7 @@
         '<div class="wanted-card-footer">' +
           '<span class="wanted-author"' + (((p.authorUid || p.authorName) && p.authorName !== 'Anonymous') ? ' data-profile-link="' + esc(p.authorUid || p.authorName) + '"' : '') + '>' + esc((p.authorName && p.authorName !== 'Anonymous') ? p.authorName : '🖥️System') + '</span>' +
           adminBtns +
-        '<button class="report-flag-btn" data-report="wanted:' + p.id + '" title="Report"><i class="fas fa-flag"></i></button>' +
+        ((p.authorName && p.authorName !== 'Anonymous' && p.authorName !== '🖥️System') ? '<button class="report-flag-btn" data-report="wanted:' + p.id + '" title="Report"><i class="fas fa-flag"></i></button>' : '') +
         '</div>' +
       '</div>' +
       '<div class="wanted-item-bar">' +

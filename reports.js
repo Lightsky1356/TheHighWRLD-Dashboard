@@ -55,6 +55,7 @@
           '<div class="report-form">' +
             '<p class="report-target-label">Target</p>' +
             '<p class="report-target-title"></p>' +
+            '<p class="report-loading" style="display:none">Checking Discord link...</p>' +
             '<label class="report-label" for="report-reason">Reason</label>' +
             '<select id="report-reason" class="report-select">' + opts + '</select>' +
             '<label class="report-label" for="report-details">Additional Details <span class="report-opt">(optional)</span></label>' +
@@ -104,20 +105,51 @@
     if (el) { el.textContent = msg || ''; el.style.display = msg ? '' : 'none'; }
   }
 
-  function openReportModal(type, id, title) {
+  function typeLabel(ty) {
+    if (ty === 'WANTED') return 'Wanted: ';
+    if (ty === 'REPLY') return 'Reply: ';
+    if (ty === 'NOM') return 'Nomination: ';
+    return 'Suggestion: ';
+  }
+
+  function showFormLoading(on) {
+    var ov = ensureModal();
+    var l = ov.querySelector('.report-loading');
+    if (l) l.style.display = on ? '' : 'none';
+    var f = ov.querySelector('.report-form');
+    if (f) f.style.visibility = on ? 'hidden' : '';
+  }
+
+  async function checkLinked() {
+    var uid = getUid();
+    if (!uid) return false;
+    try {
+      const r = await fetch(API + '?check=1&user=' + encodeURIComponent(uid), { cache: 'no-store' });
+      const d = await r.json().catch(function () { return {}; });
+      return !!(d && d.linked);
+    } catch (e) {
+      return true;
+    }
+  }
+
+  async function openReportModal(type, id, title) {
     cur = { type: type, id: String(id), title: title || '' };
     var ov = ensureModal();
     ov.querySelector('.report-target-title').textContent =
-      (type === 'WANTED' ? 'Wanted: ' : 'Suggestion: ') + (title || ('#' + id));
+      typeLabel(type) + (title || ('#' + id));
     ov.querySelector('#report-reason').selectedIndex = 0;
     ov.querySelector('#report-details').value = '';
     ov.querySelector('.report-opt').textContent = '(optional)';
     showError('');
     ov.querySelector('.report-success').style.display = 'none';
-    if (!getUid()) { showGate(); return; }
     ov.querySelector('.report-gate').style.display = 'none';
     ov.querySelector('.report-form').style.display = '';
     ov.style.display = 'flex';
+    if (!getUid()) { showGate(); return; }
+    showFormLoading(true);
+    var linked = await checkLinked();
+    showFormLoading(false);
+    if (!linked) showGate();
   }
 
   async function submitReport() {
