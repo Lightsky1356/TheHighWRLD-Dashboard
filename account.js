@@ -278,7 +278,7 @@
     html += '<div class="pv-top-row"><div class="pv-avatar">' + avatar + '<span class="pv-dot" style="background:' + dotC + ';box-shadow:0 0 12px ' + dotC + '"></span></div>';
     html += '<div class="pv-id"><div class="pv-name-row"><h3>' + esc(name) + '</h3>' + cmpVerifiedHtml(verified) + '</div>';
     html += '<p class="pv-handle">@' + esc(String(uname).toLowerCase()) + '</p>';
-    html += '<span class="pv-status" style="color:' + dotC + '"><i class="fas fa-circle" style="font-size:6px"></i> ' + esc(status) + '</span><span class="cmp-site-presence" data-uid="' + esc(String(d.uid || "")) + '"></span></div></div>';
+    html += '<span class="pv-status" style="color:' + dotC + '"><i class="fas fa-circle" style="font-size:6px"></i> ' + esc(status) + '</span><span class="cmp-site-presence" data-uid="' + esc(String(d.uid || "")) + '"></span><span class="um-profile-status" data-uid="' + esc(String(d.uid || "")) + '"></span></div></div>';
     html += (pr.joined ? '<p class="pv-joined"><i class="fas fa-calendar"></i> ' + esc(_tt("joinedWord", "Joined")) + ' ' + esc(String(pr.joined).slice(0, 10)) + '</p>' : '');
     html += (pr.bio ? '<div class="cmp-bio">' + esc(pr.bio) + '</div>' : '');
     html += '<div class="cmp-qstats">';
@@ -290,7 +290,14 @@
     html += '<div class="cmp-qdiv"></div>';
     html += qstat((Number(st.votes) || 0).toLocaleString(), _tt("votesWord", "Votes"));
     html += '</div>';
-    html += '<div class="cmp-actions" style="margin-top:12px"><a class="cmp-btn" href="#" onclick="event.preventDefault();if(window.closeWantedProfile)window.closeWantedProfile();if(window.switchAppPage)window.switchAppPage(\'player\')"><i class="fas fa-play"></i> ' + esc(_tt("cmpPlayer", "WRLD Player")) + '</a></div>';
+    html += '<div class="cmp-actions" style="margin-top:12px"><a class="cmp-btn" href="#" onclick="event.preventDefault();if(window.closeWantedProfile)window.closeWantedProfile();if(window.switchAppPage)window.switchAppPage(\'player\')"><i class="fas fa-play"></i> ' + esc(_tt("cmpPlayer", "WRLD Player")) + '</a>';
+    if (d.uid && String(d.uid) !== String(typeof uid !== "undefined" ? uid : "") && _data && _data.discord && _data.discord.linked) {
+      html += '<button type="button" class="cmp-btn report-flag-btn" data-report="profile:u:' + esc(String(d.uid)) + '" data-report-title="' + esc(name) + '" title="Report this profile" style="margin-left:8px"><i class="fas fa-flag"></i> Report</button>';
+    }
+    if (d.uid && String(d.uid) !== String(typeof uid !== "undefined" ? uid : "")) {
+      html += '<button type="button" class="cmp-btn user-menu-btn" data-user-menu data-uid="' + esc(String(d.uid)) + '" data-name="' + esc(name) + '" aria-label="More user actions" title="More user actions" style="margin-left:8px"><i class="fas fa-ellipsis"></i></button>';
+    }
+    html += '</div>';
     html += '<div class="pv-block"><div class="pv-block-title">Links</div><div class="cmp-links">' + (links.map(function (l) { return '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow"><i class="fas fa-link"></i>' + esc(l.label || l.url) + '<i class="fas fa-arrow-up-right-from-square" style="margin-left:auto"></i></a>'; }).join("") || '<p class="pv-none">No links shared</p>') + '</div></div>';
     html += '<div class="pv-block"><div class="pv-block-title">Top plays</div><div class="pv-tops">' + plays + '</div></div>';
     html += '<div class="pv-block"><div class="pv-block-title">Playlists</div><div class="pv-pls">' + pls + '</div></div>';
@@ -815,40 +822,6 @@
       var ok = document.getElementById("discordLinkOk");
       if (ok) { ok.style.display = ""; setTimeout(function () { ok.style.display = "none"; }, 6000); }
     }
-  });
-
-  /* ---------- Last.FM ---------- */
-  function applyLastFm() {
-    var lf = (_data && _data.lastfm) || null;
-    var st = document.getElementById("lfStatus");
-    if (st) { st.textContent = lf && lf.linked ? _tt("connectedWord", "Connected") : _tt("notConnected", "Not connected"); st.className = lf && lf.linked ? "conn-val ok" : "conn-val"; }
-    var user = document.getElementById("lfUser");
-    if (user) user.textContent = lf && lf.linked ? (lf.username || "—") : "—";
-    var unLf = document.getElementById("unlinkLastFmBtn");
-    if (unLf) unLf.style.display = lf && lf.linked ? "" : "none";
-  }
-  function linkLastFm() {
-    var w = window.open("/api/lastfm/login?uid=" + encodeURIComponent(uid) + "&mode=popup", "lastFmAuth", "width=520,height=680");
-    if (!w) window.location.href = "/api/lastfm/login?uid=" + encodeURIComponent(uid);
-  }
-  var lfLinkBtn = document.getElementById("linkLastFmBtn");
-  if (lfLinkBtn) lfLinkBtn.addEventListener("click", linkLastFm);
-  window.addEventListener("message", function (ev) {
-    if (ev.data && ev.data.type === "lastfm-linked") {
-      if (ev.origin !== window.location.origin) return;
-      loadAccount();
-      toast(_tt("toastLastfmLinked", "Last.FM linked"), "success");
-      var ok = document.getElementById("lastfmLinkOk");
-      if (ok) { ok.style.display = ""; setTimeout(function () { ok.style.display = "none"; }, 6000); }
-    }
-  });
-  var unLfBtn = document.getElementById("unlinkLastFmBtn");
-  if (unLfBtn) unLfBtn.addEventListener("click", function () {
-    btnBusy(unLfBtn, true);
-    api({ action: "unlinkLastfm" }).then(function (d) {
-      btnBusy(unLfBtn, false);
-      if (d && d.ok) { loadAccount(); toast(_tt("toastLastfmUnlinked", "Last.FM unlinked"), "success"); }
-    }).catch(function () { btnBusy(unLfBtn, false); });
   });
 
   /* ---------- Account info (settings panels) ---------- */
@@ -1744,6 +1717,7 @@
       if (fg) renderFavRows(_profilePage.data.favorites || [], false, fg);
       bindPvFavGrid(fg);
       bindPvPls();
+      if (window.userMenu && window.userMenu.profileRendered) window.userMenu.profileRendered(_profilePage.data);
       return;
     }
     body.innerHTML = profilePageLoading();
@@ -1760,6 +1734,7 @@
         if (fg) renderFavRows(d.favorites || [], false, fg);
         bindPvFavGrid(fg);
         bindPvPls();
+        if (window.userMenu && window.userMenu.profileRendered) window.userMenu.profileRendered(d);
       })
       .catch(function () { body.innerHTML = profilePageError(); });
   }
@@ -1910,7 +1885,6 @@ window.profileSectionShown = function () {
     applyDownloads();
     applyLogins();
     applyDiscord();
-    applyLastFm();
     applyAccountInfo();
     applyPasswordMode();
     applyThemeLang();

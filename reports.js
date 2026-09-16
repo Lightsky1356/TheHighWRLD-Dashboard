@@ -4,7 +4,9 @@
   'use strict';
 
   var API = '/api/reports';
-  var REASONS = ['Spam', 'Duplicate', 'Incorrect Information', 'Harassment', 'Inappropriate Content', 'Copyright Concern', 'Scam / Malicious Content', 'Other'];
+  var REASONS = ['Spam', 'Duplicate', 'Incorrect Information', 'Harassment', 'Impersonation', 'Inappropriate Behavior', 'Inappropriate Content', 'Scamming', 'Malicious Activity', 'Scam / Malicious Content', 'Copyright Concern', 'Other'];
+  var USER_REASONS = ['Spam', 'Harassment', 'Impersonation', 'Inappropriate Behavior', 'Scamming', 'Malicious Activity', 'Other'];
+  var REASON_SETS = { USER: USER_REASONS };
   var NEEDS_DETAILS = { 'Other': true, 'Copyright Concern': true };
   var MAX_DETAILS = 1000;
 
@@ -70,6 +72,11 @@
         '</div>' +
       '</div>';
     document.body.appendChild(ov);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && document.getElementById('report-modal-overlay') && document.getElementById('report-modal-overlay').style.display !== 'none') {
+        closeModal();
+      }
+    });
     ov.addEventListener('click', function (e) {
       if (e.target === ov) { closeModal(); return; }
       if (e.target.closest('.report-modal-x') || e.target.closest('.report-cancel-btn')) { closeModal(); return; }
@@ -87,9 +94,26 @@
     return ov;
   }
 
+  function lockScroll() {
+    try {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.classList.add('scroll-locked');
+    } catch (e) {}
+  }
+
+  function unlockScroll() {
+    try {
+      document.body.style.overflow = '';
+      document.documentElement.classList.remove('scroll-locked');
+    } catch (e) {}
+  }
+
   function closeModal() {
     var ov = document.getElementById('report-modal-overlay');
-    if (ov) ov.style.display = 'none';
+    if (ov && ov.style.display !== 'none') {
+      ov.style.display = 'none';
+      unlockScroll();
+    }
   }
 
   function showGate() {
@@ -97,6 +121,7 @@
     ov.querySelector('.report-gate').style.display = '';
     ov.querySelector('.report-form').style.display = 'none';
     ov.style.display = 'flex';
+    lockScroll();
   }
 
   function showError(msg) {
@@ -109,6 +134,9 @@
     if (ty === 'WANTED') return 'Wanted: ';
     if (ty === 'REPLY') return 'Reply: ';
     if (ty === 'NOM') return 'Nomination: ';
+    if (ty === 'TRACK') return 'Track: ';
+    if (ty === 'PROFILE') return 'Profile: ';
+    if (ty === 'USER') return 'User: ';
     return 'Suggestion: ';
   }
 
@@ -138,6 +166,8 @@
     ov.querySelector('.report-target-title').textContent =
       typeLabel(type) + (title || ('#' + id));
     ov.querySelector('#report-reason').selectedIndex = 0;
+    var reasons = REASON_SETS[type] || REASONS;
+    ov.querySelector('#report-reason').innerHTML = reasons.map(function (r) { return '<option value="' + esc(r) + '">' + esc(r) + '</option>'; }).join('');
     ov.querySelector('#report-details').value = '';
     ov.querySelector('.report-opt').textContent = '(optional)';
     showError('');
@@ -145,6 +175,7 @@
     ov.querySelector('.report-gate').style.display = 'none';
     ov.querySelector('.report-form').style.display = '';
     ov.style.display = 'flex';
+    lockScroll();
     if (!getUid()) { showGate(); return; }
     showFormLoading(true);
     var linked = await checkLinked();
@@ -202,13 +233,14 @@
       if (!b) return;
       e.preventDefault();
       var parts = (b.getAttribute('data-report') || '').split(':');
-      var type = (parts[0] || '').toUpperCase() === 'WANTED' ? 'WANTED' : 'SUGGESTION';
+      var raw = (parts[0] || '').toUpperCase();
+      var type = raw === 'WANTED' ? 'WANTED' : raw === 'REPLY' ? 'REPLY' : raw === 'NOM' ? 'NOM' : raw === 'PROFILE' ? 'PROFILE' : raw === 'TRACK' ? 'TRACK' : raw === 'USER' ? 'USER' : 'SUGGESTION';
       var id = parts.slice(1).join(':');
       if (!id) return;
-      var title = '';
-      var card = b.closest('.sugg-card, .wanted-card');
+      var title = b.getAttribute('data-report-title') || '';
+      var card = b.closest('.sugg-card, .wanted-card, .wanted-item, .wanted-reply');
       if (card) {
-        var h = card.querySelector('.sugg-card-title, .wanted-card-title');
+        var h = card.querySelector('.sugg-card-title, .wanted-card-title, .wanted-song-title, .wanted-reply-text');
         if (h) title = h.textContent.trim().slice(0, 120);
       }
       openReportModal(type, id, title);
@@ -233,7 +265,8 @@
   }
 
   function typeBadge(ty) {
-    return '<span class="report-type-badge ' + (ty === 'WANTED' ? 'rep-t-wanted' : 'rep-t-sugg') + '">' + esc(ty === 'WANTED' ? 'Wanted' : 'Suggestion') + '</span>';
+    var label = ty === 'WANTED' ? 'Wanted' : ty === 'REPLY' ? 'Reply' : ty === 'NOM' ? 'Nom' : ty === 'TRACK' ? 'Track' : ty === 'PROFILE' ? 'Profile' : ty === 'USER' ? 'User' : 'Suggestion';
+    return '<span class="report-type-badge ' + (ty === 'WANTED' ? 'rep-t-wanted' : ty === 'USER' || ty === 'PROFILE' ? 'rep-t-user' : 'rep-t-sugg') + '">' + esc(label) + '</span>';
   }
 
   async function apiCall(method, url, body) {
@@ -264,6 +297,11 @@
           '<option value="all"' + (staff.type === 'all' ? ' selected' : '') + '>All types</option>' +
           '<option value="WANTED"' + (staff.type === 'WANTED' ? ' selected' : '') + '>Wanted</option>' +
           '<option value="SUGGESTION"' + (staff.type === 'SUGGESTION' ? ' selected' : '') + '>Suggestions</option>' +
+          '<option value="REPLY"' + (staff.type === 'REPLY' ? ' selected' : '') + '>Replies</option>' +
+          '<option value="NOM"' + (staff.type === 'NOM' ? ' selected' : '') + '>Nominations</option>' +
+          '<option value="TRACK"' + (staff.type === 'TRACK' ? ' selected' : '') + '>Tracks</option>' +
+          '<option value="PROFILE"' + (staff.type === 'PROFILE' ? ' selected' : '') + '>Profiles</option>' +
+          '<option value="USER"' + (staff.type === 'USER' ? ' selected' : '') + '>Users</option>' +
         '</select>' +
         '<span class="report-count"></span>' +
       '</div>' +

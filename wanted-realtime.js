@@ -28,6 +28,9 @@
     alert((title ? title + ': ' : '') + (message || 'This action requires a LINKED Discord Account'));
   }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function blockedNote(key) {
+    return '<div class="wanted-reply um-blocked-note" role="note"><i class="fas fa-eye-slash"></i> This content is hidden because you blocked this user. <button type="button" class="um-unblock-link" data-ubkey="' + esc(String(key)) + '">Unblock to view</button></div>';
+  }
   function relTime(ts) {
     if (!ts) return '';
     var d = Date.now() - Date.parse(ts);
@@ -75,6 +78,10 @@
       var d2 = await r2.json();
       if (!d2.error) state.oldServer = d2;
     } catch (e) {}
+
+    if (window.userRelations && window.userRelations.refresh) {
+      try { await window.userRelations.refresh(); } catch (e) {}
+    }
 
     buildMerged();
     render();
@@ -192,6 +199,9 @@
   function renderReply(r, depth, allReplies) {
     depth = depth || 0;
     allReplies = allReplies || [];
+    if (r && r.d && window.userRelations && window.userRelations.blockedDiscord(r.d)) {
+      return blockedNote(r.d);
+    }
     var v = r.v || 0;
     var isOwner = r.d && state.isOwner;
     var isAuthor = r.d && getUid() && state.oldServer.me && r.d === state.oldServer.me.id;
@@ -221,7 +231,7 @@
       }
     }
 
-    var reportBtn = (r.u && r.u !== 'Anonymous' && r.u !== '🖥️System') ? '<button class="report-flag-btn" data-report="reply:' + r.id + '" title="Report"><i class="fas fa-flag"></i></button>' : '';
+    var reportBtn = hasLinkedDiscord() ? '<button class="report-flag-btn" data-report="reply:' + r.id + '" title="Report"><i class="fas fa-flag"></i></button>' : '';
     var html = '<div class="wanted-reply' + (depth > 0 ? ' wanted-reply-nested' : '') + '" data-rid="' + r.id + '">' +
       '<div class="wanted-vote-box">' +
         '<button class="wanted-vote-arrow' + (r.myVote === 1 ? ' on' : '') + '" data-rvote="' + r.id + '" data-rval="1"><i class="fas fa-caret-up"></i></button>' +
@@ -314,7 +324,7 @@
       nomText = nomText.replace(/you$/i, sv.me.discord);
     }
     nomText = nomText.replace(/^nominated by/i, 'Nominated by');
-    var nomReportBtn = item.c === 'nom' ? '<button class="report-flag-btn" data-report="nom:' + item.id + '" title="Report"><i class="fas fa-flag"></i></button>' : '';
+    var nomReportBtn = hasLinkedDiscord() ? '<button class="report-flag-btn" data-report="' + (item.c === 'nom' ? 'nom:' : 'track:') + esc(item.t) + '" title="Report"><i class="fas fa-flag"></i></button>' : '';
     var adminBtns = isOwner ? '<button class="wanted-delete-track-btn" data-deletetrack="' + esc(item.t) + '" title="Delete track"><i class="fas fa-trash text-[10px]"></i></button>' : '';
 
     return '<div class="wanted-item wanted-item-v2 hub-panel" data-idx="' + idx + '" data-cat="' + item.c + '">' +
@@ -345,6 +355,9 @@
 
   function renderPostItem(item, idx) {
     var p = item.post;
+    if (p && p.authorUid && window.userRelations && window.userRelations.blockedUid(p.authorUid)) {
+      return '<div class="wanted-card um-blocked-note" role="note"><i class="fas fa-eye-slash"></i> This content is hidden because you blocked this user. <button type="button" class="um-unblock-link" data-ubkey="' + esc(String(p.authorUid)) + '">Unblock to view</button></div>';
+    }
     var stClass = item.statusClass;
     var stLabel = item.statusLabel;
     var open = state.openThreads['p' + p.id] === true;
@@ -371,7 +384,7 @@
         '<div class="wanted-card-footer">' +
           '<span class="wanted-author"' + (((p.authorUid || p.authorName) && p.authorName !== 'Anonymous') ? ' data-profile-link="' + esc(p.authorUid || p.authorName) + '"' : '') + '>' + esc((p.authorName && p.authorName !== 'Anonymous') ? p.authorName : '🖥️System') + '</span>' +
           adminBtns +
-        ((p.authorName && p.authorName !== 'Anonymous' && p.authorName !== '🖥️System') ? '<button class="report-flag-btn" data-report="wanted:' + p.id + '" title="Report"><i class="fas fa-flag"></i></button>' : '') +
+        (hasLinkedDiscord() ? '<button class="report-flag-btn" data-report="wanted:' + p.id + '" title="Report"><i class="fas fa-flag"></i></button>' : '') +
         '</div>' +
       '</div>' +
       '<div class="wanted-item-bar">' +
@@ -776,5 +789,8 @@
   document.addEventListener('DOMContentLoaded', function () {
     var sec = document.getElementById('page-section-wanted');
     if (sec && sec.classList.contains('active')) init();
+  });
+  document.addEventListener('thw:relations-changed', function () {
+    if (document.getElementById('page-section-wanted') && document.getElementById('page-section-wanted').classList.contains('active')) load();
   });
 })();

@@ -19,16 +19,20 @@ function esc(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-const VALID_TYPES = ["WANTED", "SUGGESTION", "REPLY", "NOM"];
+const VALID_TYPES = ["WANTED", "SUGGESTION", "REPLY", "NOM", "PROFILE", "TRACK", "USER"];
 const VALID_STATUSES = ["OPEN", "REVIEWING", "RESOLVED", "DISMISSED"];
 const VALID_REASONS = [
   "Spam",
   "Duplicate",
   "Incorrect Information",
   "Harassment",
+  "Impersonation",
+  "Inappropriate Behavior",
   "Inappropriate Content",
-  "Copyright Concern",
+  "Scamming",
+  "Malicious Activity",
   "Scam / Malicious Content",
+  "Copyright Concern",
   "Other",
 ];
 // Reasons that are meaningless without an explanation.
@@ -170,6 +174,34 @@ export async function onRequestPost(context) {
       if (!rep) return json({ error: "reported content not found" }, 404);
       snapTitle = "Reply on " + (rep.track_id || "");
       snapBody = ((rep.user_name || "Someone") + ": " + (rep.body || "")).slice(0, MAX_DETAILS);
+    } else if (targetType === "PROFILE" || targetType === "USER") {
+      // targetId is "d:<discordId>" or "u:<siteUid>" (unprefixed falls back to either).
+      let discordId = targetId;
+      let siteUid = "";
+      if (targetId.startsWith("d:")) discordId = targetId.slice(2);
+      else if (targetId.startsWith("u:")) { siteUid = targetId.slice(2); discordId = ""; }
+      let person = null;
+      if (discordId) {
+        person = await db.prepare(
+          "SELECT site_uid, discord_id, display_name FROM discord_links WHERE discord_id = ?"
+        ).bind(discordId).first();
+      }
+      if (!person && siteUid) {
+        person = await db.prepare(
+          "SELECT site_uid, discord_id, display_name FROM discord_links WHERE site_uid = ?"
+        ).bind(siteUid).first();
+      }
+      if (!person && !targetId.includes(":")) {
+        person = await db.prepare(
+          "SELECT site_uid, discord_id, display_name FROM discord_links WHERE discord_id = ? OR site_uid = ?"
+        ).bind(targetId, targetId).first();
+      }
+      if (!person) return json({ error: "reported content not found" }, 404);
+      if (reporter.uid && person.site_uid && person.site_uid === reporter.uid) {
+        return json({ error: "cannot_perform_on_self", message: "You cannot perform this action on yourself." }, 400);
+      }
+      snapTitle = person.display_name || person.discord_id;
+      snapBody = ("Discord profile: " + (person.discord_id || "")).slice(0, MAX_DETAILS);
     } else {
       const track = await db.prepare(
         "SELECT title, note FROM tracks WHERE LOWER(title) = LOWER(?)"
@@ -184,10 +216,20 @@ export async function onRequestPost(context) {
       }
     }
 
-    // Duplicate protection: same reporter + item + reason.
-    const dup = await db.prepare(
-      "SELECT id FROM reports WHERE reporter_discord_id = ? AND target_type = ? AND target_id = ? AND reason = ?"
-    ).bind(reporter.discordId, targetType, targetId, reason).first();
+    // Duplicate protection: same reporter + item + reason. User reports use
+    // both USER and PROFILE as the same logical target, and rows may hold
+    // either a prefixed ("u:<uid>") or canonical (uid) target id.
+    let dup = null;
+    if (targetType === "USER" || targetType === "PROFILE") {
+      const canonicalId = targetId.indexOf(":") >= 0 ? targetId.slice(targetId.indexOf(":") + 1) : targetId;
+      dup = await db.prepare(
+        "SELECT id FROM reports WHERE reporter_discord_id = ? AND target_type IN ('USER','PROFILE') AND (target_id = ? OR target_id = ?) AND reason = ? LIMIT 1"
+      ).bind(reporter.discordId, targetId, canonicalId, reason).first();
+    } else {
+      dup = await db.prepare(
+        "SELECT id FROM reports WHERE reporter_discord_id = ? AND target_type = ? AND target_id = ? AND reason = ?"
+      ).bind(reporter.discordId, targetType, targetId, reason).first();
+    }
     if (dup) return json({ error: "duplicate", message: "This report has already been submitted." }, 409);
 
     // Server-side rate limit (per reporter, rolling hour).
@@ -239,7 +281,10 @@ async function notifyStaff(env, r) {
   }
   const typeLabel = r.targetType === "WANTED" ? "Wanted Vault"
     : r.targetType === "REPLY" ? "Wanted Reply"
-    : r.targetType === "NOM" ? "Nomination" : "Suggestion";
+    : r.targetType === "NOM" ? "Nomination"
+    : r.targetType === "TRACK" ? "Vault Track"
+    : r.targetType === "PROFILE" ? "User Profile"
+    : r.targetType === "USER" ? "User" : "Suggestion";
   const now = new Date().toISOString();
   const payload = {
     embeds: [{

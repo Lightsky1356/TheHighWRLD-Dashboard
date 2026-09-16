@@ -144,6 +144,9 @@
 
   async function loadPosts() {
     const list = $id('commPostList'); if (!list) return;
+    if (window.userRelations && window.userRelations.refresh) {
+      try { await window.userRelations.refresh(); } catch (_) {}
+    }
     try {
       const data = await fetchJSON('/api/community/posts');
       STATE.posts.clear();
@@ -179,6 +182,9 @@
     $id('commEmpty') && ($id('commEmpty').classList.toggle('hidden', !!posts.length));
     if (!posts.length) { list.innerHTML = ''; return; }
     list.innerHTML = posts.map((p) => {
+      if (p.author_uid && window.userRelations && window.userRelations.blockedUid(p.author_uid)) {
+        return `<div class="comm-post um-blocked-note" role="note"><i class="fas fa-eye-slash"></i> This content is hidden because you blocked this user. <button type="button" class="um-unblock-link" data-ubkey="${esc(p.author_uid)}">Unblock to view</button></div>`;
+      }
       const isMine = p.author_uid && p.author_uid === STATE.uid;
       return `<div class="comm-post" data-post-id="${esc(p.id)}">
         <div class="comm-post-head">
@@ -254,6 +260,9 @@
   }
 
   function replyHtml(r) {
+    if (window.userRelations && ((r.author_uid && window.userRelations.blockedUid(r.author_uid)) || (r.discord_id && window.userRelations.blockedDiscord(r.discord_id)))) {
+      return `<div class="comm-reply um-blocked-note" role="note" data-reply-id="${esc(r.id)}"><i class="fas fa-eye-slash"></i> This content is hidden because you blocked this user. <button type="button" class="um-unblock-link" data-ubkey="${esc(r.author_uid || r.discord_id || '')}">Unblock to view</button></div>`;
+    }
     const isMine = r.author_uid && r.author_uid === STATE.uid;
     const tmp = !!r._optimistic;
     const dispName = isMine ? 'You' : (r.user_name || 'Guest');
@@ -570,4 +579,10 @@
     if (!STATE.initialized) { STATE.initialized = true; init(); }
     else { ensurePage(); loadPosts(); }
   };
+  document.addEventListener('thw:relations-changed', function () {
+    if (STATE.initialized || document.getElementById('page-section-community')) {
+      if (STATE.activePostId) loadReplies(STATE.activePostId);
+      loadPosts();
+    }
+  });
 })();

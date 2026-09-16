@@ -2858,5 +2858,171 @@
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Submission.png",
     producer: "Rio Mac",
     year: "2018"
+  },
+  {
+    title: "Wishing Well (Sessions)",
+    tag: "Wishing Well (I Can't Breathe) (Lauryn Hill) (Sessions) (GB&GR)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Wishing%20Well%20(Sessions).mp3",
+    duration: 340,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Wishing%20Well.png",
+    producer: "Chopsquad DJ & Dr. Luke",
+    year: "2018"
+  },
+  {
+    title: "Smile (Sessions)",
+    tag: "Smile (Sad) (Sessions) (WOD)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Smile%20(Sessions).mp3",
+    duration: 682,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/WOD.png",
+    producer: "Nick Mira",
+    year: "2018"
+  },
+  {
+    title: "Jeffrey (Sessions)",
+    tag: "Jeffrey (Money On Me) (Sessions) (GB&GR)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Jeffrey%20(Sessions).mp3",
+    duration: 1073,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/GB&GR.png",
+    producer: "Nick Mira",
+    year: "2018"
+  },
+  {
+    title: "Cigarettes (Sessions)",
+    tag: "Cigarettes (Sessions) (GB&GR)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Cigarettes%20(Sessions).mp3",
+    duration: 982,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Cigarettes.png",
+    producer: "BradoSanz & Nick Mira",
+    year: "2018"
+  },
+  {
+    title: "734 (Sessions)",
+    tag: "734 (7.3.4) (7/3/4) (Think Too Much) (Sessions) (GB&GR)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/734%20(Sessions).mp3",
+    duration: 1235,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/734.png",
+    producer: "InpyJK & Nick Mira",
+    year: "2018"
+  },
+  {
+    title: "Won't Let Go (Sessions)",
+    tag: "Won't Let Go (Sessions) (DRFL)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Won't%20Let%20Go%20(Sessions).mp3",
+    duration: 205,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DRFL.png",
+    producer: "Morgoth Beatz & Purps On The Beat",
+    year: "2019"
+  },
+  {
+    title: "Hear Me Calling (Sessions)",
+    tag: "Hear Me Calling (1 And Only) (One And Only) (Sessions) (DRFL)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Hear%20Me%20Calling%20(Sessions).mp3",
+    duration: 195,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DRFL.png",
+    producer: "J.Views & Purps On The Beat",
+    year: "2019"
+  },
+  {
+    title: "Feeling (Sessions)",
+    tag: "Feeling (Feelin') (Feelin' About U) (Feelin' About You) (Sessions) (DRFL)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Feeling%20(Sessions).mp3",
+    duration: 252,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Feeling.png",
+    producer: "Nick Mira",
+    year: "2019"
+  },
+  {
+    title: "Empty (Sessions)",
+    tag: "Empty (From The Unknown) (Sessions) (DRFL)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Empty%20(Sessions).mp3",
+    duration: 248,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DRFL.png",
+    producer: "Nick Mira",
+    year: "2018"
+  },
+  {
+    title: "Legends (Sessions)",
+    tag: "Legends (Sessions) (WOD)",
+    artist: "Juice WRLD",
+    altnames: ["legends :("],
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Legends%20(Sessions).mp3",
+    duration: 536,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Legends.png",
+    producer: "Russell Chell & Take A Daytrip",
+    year: "2018"
+  },
+  {
+    title: "Sometimes (Sessions)",
+    tag: "Sometimes (Hate The World) (Sessions) (DRFL)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Sometimes%20(Sessions).mp3",
+    duration: 504,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Sometimes.png",
+    producer: "Danny Wolf & Otxhello",
+    year: "2018"
+  },
+  {
+    title: "Rockstar In His Prime (Sessions)",
+    tag: "Rockstar In His Prime (Deal With This Hurt) (Sessions) (DRFL)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Rockstar%20In%20His%20Prime%20(Sessions).mp3",
+    duration: 355,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DRFL.png",
+    producer: "Dee Jae & T-Minus",
+    year: "2018"
+  },
+  {
+    title: "My Life In A Nutshell (Sessions)",
+    tag: "My Life In A Nutshell (Milan) (Pain Heal) (Sessions) (GB&GR)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/My%20Life%20In%20A%20Nutshell%20(Sessions).mp3",
+    duration: 284,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/My%20Life%20In%20A%20Nutshell.png",
+    producer: "Nick Mira & Novo Amor",
+    year: "2018"
+  },
+  {
+    title: "Maze (Sessions)",
+    tag: "Maze (Sessions) (DRFL)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Maze%20(Sessions).mp3",
+    duration: 211,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DRFL.png",
+    producer: "Boi-1da, Don Mills & Jahaan Sweet",
+    year: "2019"
+  },
+  {
+    title: "Candles (Sessions)",
+    tag: "Candles (Insecure) (Sessions) (GB&GR)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Candles%20(Sessions).mp3",
+    duration: 307,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Candles.png",
+    producer: "Jo L'Z, Nick Mira & Taz Taylor",
+    year: "2018"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});
