@@ -31,3 +31,7 @@ Audio/
 
 # Cover art images (served via CDN/Pages)
 Covers/
+
+# Desktop app (keep the lockfile for reproducible builds)
+electron-app/release/
+!electron-app/package-lock.json

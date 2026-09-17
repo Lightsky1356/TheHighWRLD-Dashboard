@@ -1,0 +1,53 @@
+{
+  "name": "thehighwrld-dashboard",
+  "productName": "TheHighWRLD Dashboard",
+  "version": "1.0.0",
+  "description": "TheHighWRLD Dashboard desktop app",
+  "main": "main.js",
+  "author": "TheHighWRLD",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^26.6.10",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.thehighwrld.dashboard",
+    "productName": "TheHighWRLD Dashboard",
+    "files": [
+      "main.js",
+      "offline.html",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.music",
+      "identity": null
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Audio"
+    }
+  }
+}
