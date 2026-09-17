@@ -223,8 +223,52 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
 
 /* ===== Clickable profile names ===== */
 [data-profile-link]{cursor:pointer}
+
+#scrollable-playlist .playlist-item{height:64px;box-sizing:border-box;contain:layout paint}
 [data-profile-link]:hover{color:#fff;text-decoration:underline}
 
 /* ===== Clickable top-play rows ===== */
 .pv-top[data-play-idx]{cursor:pointer;transition:background .15s}
 .pv-top[data-play-idx]:hover{background:rgba(255,255,255,.05)}
+
+/* ===== Native Vault discography ===== */
+.vault-view-switch{box-sizing:border-box;display:flex;gap:3px;margin:0;max-width:100%;padding:8px 24px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(7,12,25,.42)}
+.vault-bio-content>.vault-view-switch{background:rgba(7,12,25,.3)}
+.vault-bio-content.vault-bio-hidden>.vault-view-switch{display:flex}
+.vault-bio-content.vault-bio-hidden>*:not(.vault-view-switch){display:none!important}
+.vault-view-btn{border:1px solid transparent;border-radius:7px;background:transparent;color:rgba(255,255,255,.48);cursor:pointer;font:600 11px/1 inherit;padding:8px 13px;transition:background .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease}
+.vault-view-btn:hover{color:rgba(255,255,255,.86);background:rgba(255,255,255,.045)}
+.vault-view-btn.active{background:linear-gradient(135deg,rgba(34,211,238,.18),rgba(168,85,247,.17));border-color:rgba(103,232,249,.24);color:#d6fbff;box-shadow:0 0 16px rgba(34,211,238,.1)}
+.vault-discography-view{box-sizing:border-box;border-radius:0!important;margin:0;min-width:0;padding:24px;width:100%}
+.vault-discography-intro{border-bottom:1px solid rgba(255,255,255,.09);margin-bottom:18px;padding:0 2px 14px}
+.vault-discography-intro span{color:#67e8f9;font:700 10px/1.2 monospace;letter-spacing:.2em}
+.vault-discography-intro h2{color:rgba(255,255,255,.94);font-size:clamp(1.2rem,2.5vw,1.65rem);margin:6px 0 3px}
+.vault-discography-intro p{color:rgba(156,163,175,.85);font-size:12px;margin:0}
+.vault-discography-section{margin:0 0 18px;min-width:0}
+.vault-section-heading{align-items:center;display:flex;gap:8px;margin-bottom:8px}
+.vault-section-heading span{background:linear-gradient(180deg,#22d3ee,#a855f7);border-radius:3px;display:block;height:21px;width:3px}
+.vault-section-heading h3{color:rgba(255,255,255,.82);font-size:12px;letter-spacing:.15em;margin:0;text-transform:uppercase}
+.vault-release-grid{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.vault-release-card{align-items:flex-start;background:linear-gradient(135deg,rgba(255,255,255,.065),rgba(255,255,255,.018));border:1px solid rgba(255,255,255,.1);border-radius:8px;display:flex;gap:9px;min-width:0;padding:10px;transition:border-color .2s ease,transform .2s ease,background .2s ease;position:relative;overflow:hidden}
+.vault-release-card::after{background:linear-gradient(90deg,transparent,rgba(103,232,249,.22),transparent);content:"";height:1px;left:12px;opacity:.55;position:absolute;right:12px;top:0}
+.vault-release-card:hover{background:rgba(255,255,255,.075);border-color:rgba(34,211,238,.28);transform:translateY(-2px)}
+.vault-release-mark{align-items:center;background:linear-gradient(135deg,rgba(34,211,238,.18),rgba(168,85,247,.2));border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#9aeefa;display:flex;flex:0 0 30px;height:30px;justify-content:center}
+.vault-release-card h3{color:rgba(255,255,255,.92);font-size:11px;line-height:1.3;margin:0 0 3px;overflow-wrap:anywhere}
+.vault-release-date,.vault-release-label{color:rgba(156,163,175,.78);font-size:9px;margin:0 0 4px}
+.vault-release-type{background:rgba(34,211,238,.09);border:1px solid rgba(34,211,238,.16);border-radius:5px;color:#8eeaf5;display:inline-block;font:600 9px/1.2 monospace;padding:4px 6px;text-transform:uppercase}
+.vault-release-label{margin-top:5px}
+.vault-fact-list{display:grid;gap:6px;grid-template-columns:repeat(2,minmax(0,1fr));list-style:none;margin:0;padding:0}
+.vault-fact-list li{background:rgba(255,255,255,.04);border-left:2px solid rgba(168,85,247,.55);border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:2px;min-width:0;padding:8px 10px;transition:background .2s ease,border-color .2s ease}
+.vault-fact-list li:hover{background:rgba(255,255,255,.07);border-left-color:#67e8f9}
+.vault-fact-list strong{color:rgba(255,255,255,.86);font-size:10px;overflow-wrap:anywhere}
+.vault-fact-list span{color:rgba(156,163,175,.72);font-size:9px;line-height:1.3;overflow-wrap:anywhere}
+#vault-biography-view[hidden],#vault-discography-view[hidden]{display:none!important}
+@media (max-width:640px){
+  .vault-view-switch{padding:7px 14px}
+  .vault-view-btn{padding:8px 11px}
+  .vault-release-grid,.vault-fact-list{grid-template-columns:1fr}
+  .vault-discography-view{padding:24px}
+}
+@media (min-width:640px){
+  .vault-discography-view{padding:28px}
+}

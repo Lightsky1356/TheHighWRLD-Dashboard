@@ -78,7 +78,7 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    }).then(function (r) { return r.json(); });
+    }).then(function (r) { return r.json().catch(function () { return null; }); });
   }
   function loadAccount() {
     if (!uid) return Promise.resolve(null);
@@ -87,6 +87,12 @@
       .then(function (d) { if (d && d.ok) { _data = d; renderAll(); } })
       .catch(function () {});
   }
+  function plLiveSync() {
+    if (window._plHydrate) { try { window._plHydrate(true); } catch (e) {} }
+    if (window.renderSidebarPlaylists) { try { window.renderSidebarPlaylists(); } catch (e) {} }
+    if (window.renderHubPlaylists) { try { window.renderHubPlaylists(); } catch (e) {} }
+  }
+  window._plRefreshAccount = function () { loadAccount(); };
 
   /* ---------- Small helpers ---------- */
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -1310,7 +1316,7 @@
     if (nb) nb.style.display = own ? "" : "none";
     if (!rows || !rows.length) {
       if (!own) { grid.innerHTML = '<p class="ac-empty" style="grid-column:1/-1">' + esc(_tt("noPlaylists", "No playlists yet")) + '</p>'; return; }
-      grid.innerHTML = '<div class="card pl-empty-card"><i class="fas fa-list-music"></i><b>' + esc(_tt("noPlaylists", "No playlists yet")) + '</b><p>' + esc(_tt("plEmptySub", "Create a playlist and it will sync across every device you use.")) + '</p><button class="btn btn-gold btn-sm" id="plNewBtnEmpty"><i class="fas fa-plus"></i>' + esc(_tt("createFirstPl", "Create your first playlist")) + '</button></div>'; bindPlNew(); return;
+      grid.innerHTML = '<div class="card pl-empty-card"><i class="fas fa-list-music"></i><b>' + esc(_tt("noPlaylists", "No playlists yet")) + '</b><p>' + esc(_tt("plEmptySub", "Create a playlist and it will sync across every device you use.")) + '</p><button class="btn btn-gold btn-sm" id="plNewBtnEmpty"><i class="fas fa-plus"></i>' + esc(_tt("createPlaylist", "Create Playlist")) + '</button></div>'; bindPlNew(); return;
     }
     var pal = ["#a855f7", "#ec4899", "#f59e0b", "#22d3ee", "#22c55e", "#3b82f6", "#ef4444"];
     grid.innerHTML = rows.map(function (p, i) {
@@ -1412,8 +1418,10 @@
         var card = del.closest(".pl-card");
         if (card) { card.style.transition = "all .3s"; card.style.opacity = "0"; card.style.transform = "scale(.92)"; }
         setTimeout(function () {
-          api({ action: "deletePlaylist", id: id }).then(function () {
+          api({ action: "deletePlaylist", id: id }).then(function (d) {
+            if (!d || d.error) { toast((d && d.error) || _tt("errGeneric", "Something went wrong"), "error"); return; }
             loadAccount();
+            plLiveSync();
             toast(_tt("toastPlDeleted", "Playlist deleted"), "info");
           });
         }, 280);
@@ -1449,15 +1457,19 @@
       var desc = (document.getElementById("plDesc").value || "").trim();
       if (!name) { toast(_tt("toastEnterPlName", "Enter a playlist name"), "error"); return; }
       if (_plEditId) {
-        api({ action: "renamePlaylist", id: _plEditId, name: name, desc: desc, color: _plColor }).then(function () {
+        api({ action: "renamePlaylist", id: _plEditId, name: name, desc: desc, color: _plColor }).then(function (d) {
+          if (!d || d.error) { toast((d && d.error) || _tt("errGeneric", "Something went wrong"), "error"); return; }
           closeModal("editPlModal");
           loadAccount();
+          plLiveSync();
           toast(_tt("toastPlUpdated", "Playlist updated"), "success");
         });
       } else {
-        api({ action: "createPlaylist", name: name, desc: desc, color: _plColor }).then(function () {
+        api({ action: "createPlaylist", name: name, desc: desc, color: _plColor }).then(function (d) {
+          if (!d || d.error) { toast((d && d.error) || _tt("errGeneric", "Something went wrong"), "error"); return; }
           closeModal("editPlModal");
           loadAccount();
+          plLiveSync();
           toast(_tt("toastPlCreated", "Playlist created"), "success");
         });
       }
@@ -1466,9 +1478,11 @@
     if (detailAdd) detailAdd.addEventListener("click", function () {
       var title = (document.getElementById("plAddTitle").value || "").trim();
       if (!_plDetailId || !title) { toast(_tt("toastEnterSongTitle", "Enter a song title"), "error"); return; }
-      api({ action: "addPlaylistTrack", playlist_id: _plDetailId, title: title }).then(function () {
+      api({ action: "addPlaylistTrack", playlist_id: _plDetailId, title: title }).then(function (d) {
+        if (!d || d.error) { toast((d && d.error) || _tt("errGeneric", "Something went wrong"), "error"); return; }
         document.getElementById("plAddTitle").value = "";
         loadAccount();
+        plLiveSync();
         setTimeout(function () { openPlDetail(_plDetailId); }, 100);
       });
     });
@@ -1490,8 +1504,10 @@
         return;
       }
       if (del) {
-        api({ action: "removePlaylistTrack", track_id: parseInt(del.getAttribute("data-pltrackdel"), 10) }).then(function () {
+        api({ action: "removePlaylistTrack", track_id: parseInt(del.getAttribute("data-pltrackdel"), 10) }).then(function (d) {
+          if (!d || d.error) { toast((d && d.error) || _tt("errGeneric", "Something went wrong"), "error"); return; }
           loadAccount();
+          plLiveSync();
           setTimeout(function () { openPlDetail(_plDetailId); }, 100);
         });
       }
