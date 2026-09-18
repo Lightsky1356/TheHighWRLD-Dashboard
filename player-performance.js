@@ -1,6 +1,6 @@
 (function () {
   var ROW_HEIGHT = 64;
-  var OVERSCAN = 12;
+  var OVERSCAN = 6;
   var WINDOW_STEP = 4;
   var state = { indexes: [], top: null, bottom: null, frame: 0, bound: false, start: -1, end: -1 };
   var searchCache = [];

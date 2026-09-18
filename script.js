@@ -31,30 +31,55 @@ window.MATURE_COVERS = [
     for (var i = 0; i < list.length; i++) { if (list[i] && src.indexOf(norm(list[i])) !== -1) return true; }
     return false;
   }
-  function apply(img) {
+  var _applied = window.WeakSet ? new WeakSet() : null;
+  function apply(img, force) {
     if (!img || img.nodeType !== 1) return;
+    if (!force && _applied && _applied.has(img)) return;
     if (isFlagged(img)) {
       if (blurEnabled()) img.classList.add("cov-mature");
       else img.classList.remove("cov-mature");
     }
+    if (_applied) _applied.add(img);
   }
-  function scan(root) {
+  function scan(root, force) {
     root = root || document;
     if (!root.querySelectorAll) return;
     var imgs = root.querySelectorAll("img");
+    for (var i = 0; i < imgs.length; i++) apply(imgs[i], force);
+  }
+  function scanNode(node) {
+    if (!node || node.nodeType !== 1) return;
+    if (node.tagName === "IMG") { apply(node); return; }
+    if (!node.querySelectorAll) return;
+    var imgs = node.querySelectorAll("img");
     for (var i = 0; i < imgs.length; i++) apply(imgs[i]);
   }
-  var timer = null;
-  function schedule() { if (timer) return; timer = setTimeout(function () { timer = null; scan(); }, 120); }
+  var timer = null, _pending = [];
+  function schedule(nodes) {
+    if (nodes) for (var i = 0; i < nodes.length; i++) _pending.push(nodes[i]);
+    if (timer) return;
+    timer = setTimeout(function () {
+      timer = null;
+      var batch = _pending;
+      _pending = [];
+      if (typeof document.hidden !== "undefined" && document.hidden) return;
+      for (var i = 0; i < batch.length; i++) scanNode(batch[i]);
+    }, 120);
+  }
   var mo = window.MutationObserver ? new MutationObserver(function (muts) {
-    var dirty = false;
-    for (var i = 0; i < muts.length && !dirty; i++) {
+    var added = null;
+    for (var i = 0; i < muts.length; i++) {
       var m = muts[i];
       if (m.type !== "childList") continue;
       var nodes = m.addedNodes || [];
-      for (var j = 0; j < nodes.length; j++) { if (nodes[j] && nodes[j].nodeType === 1) { dirty = true; break; } }
+      for (var j = 0; j < nodes.length; j++) {
+        if (nodes[j] && nodes[j].nodeType === 1) {
+          if (!added) added = [];
+          added.push(nodes[j]);
+        }
+      }
     }
-    if (dirty) schedule();
+    if (added) schedule(added);
   }) : null;
   if (mo) mo.observe(document.body || document.documentElement, { childList: true, subtree: true });
   document.addEventListener("load", function (e) { if (e.target && e.target.tagName === "IMG") apply(e.target); }, true);
@@ -72,15 +97,15 @@ window.MATURE_COVERS = [
   document.addEventListener("change", function (e) {
     if (e.target && e.target.id === "matureBlurToggle") {
       try { localStorage.setItem(KEY, e.target.checked ? "1" : "0"); } catch (err) {}
-      scan();
+      scan(null, true);
     }
   });
   window.setMatureBlur = function (on) {
     try { localStorage.setItem(KEY, on ? "1" : "0"); } catch (err) {}
-    scan();
+    scan(null, true);
     syncToggle();
   };
-  function boot() { syncToggle(); scan(); }
+  function boot() { syncToggle(); scan(null, true); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();
