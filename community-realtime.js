@@ -513,6 +513,13 @@
         renderReplies();
         break;
       }
+      case 'post:deleted': {
+        if (msg.postId) {
+          STATE.posts.delete(String(msg.postId));
+          renderPosts(Array.from(STATE.posts.values()));
+        }
+        break;
+      }
       case 'reaction:added':
       case 'reaction:removed':
         break;
@@ -574,6 +581,31 @@
     });
     window.addEventListener('beforeunload', () => { try { STATE.ws && STATE.ws.close(); } catch (_) {} stopHb(); });
   }
+
+  // Deep-link from notifications: open a post thread (and flash a reply).
+  window.openCommunityPost = async function (postId, replyId) {
+    try {
+      if (!STATE.initialized) { STATE.initialized = true; init(); }
+      else ensurePage();
+      if (!STATE.posts.has(String(postId))) {
+        try { await loadPosts(); } catch (_) {}
+      }
+      openPost(postId);
+      if (replyId) {
+        const target = String(replyId);
+        for (let i = 0; i < 20; i++) {
+          if (STATE.replies.has(target)) break;
+          await new Promise((r) => setTimeout(r, 250));
+        }
+        const el = document.querySelector('[data-reply-id="' + target + '"]');
+        if (el) {
+          try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (_) {}
+          el.classList.add('notif-flash');
+          setTimeout(() => el.classList.remove('notif-flash'), 2600);
+        }
+      }
+    } catch (_) {}
+  };
 
   window.initCommunityRealtime = function () {
     if (!STATE.initialized) { STATE.initialized = true; init(); }

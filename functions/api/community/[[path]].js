@@ -10,6 +10,8 @@
 
 import { getSessionUser } from "../../_lib/auth.js";
 import { hubBroadcast } from "../../_lib/realtime.js";
+import { banRejection } from "../../_lib/bans.js";
+import { moderateContent } from "../../_lib/automod.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -104,6 +106,17 @@ export async function onRequest(context) {
   const method = request.method;
 
   try {
+    // Ban enforcement: all writes (POST/PATCH/DELETE) require a clean record.
+    // Reads stay public. Session lookup failure = signed out = handlers 401.
+    if (method === "POST" || method === "PATCH" || method === "DELETE") {
+      try {
+        const gate = await requireSession(db, env, request);
+        if (gate && gate.uid) {
+          const rej = await banRejection(db, gate.uid);
+          if (rej) return rej.response;
+        }
+      } catch (_) {}
+    }
     // ----- posts -----
     if (parts[0] === "posts" && parts.length === 1 && method === "GET") {
       return listPosts(db, url);
@@ -151,6 +164,18 @@ export async function onRequest(context) {
 
 /* ----------------------------- posts ----------------------------- */
 
+// Posts in the last 10 minutes, used only for the flooding signal.
+async function recentPostCount(db, uid) {
+  try {
+    const r = await db.prepare(
+      "SELECT COUNT(*) AS n FROM community_posts WHERE author_uid = ? AND created_at >= datetime('now','-10 minutes')"
+    ).bind(uid).first();
+    return r ? Number(r.n) : 0;
+  } catch (_) {
+    return null;
+  }
+}
+
 async function listPosts(db, url) {
   const only = url.searchParams.get("pinned");
   let q = `SELECT cp.*,
@@ -190,8 +215,30 @@ async function createPost(request, env, db) {
     "INSERT INTO community_posts (author_uid, user_name, avatar, discord_id, title, body, pinned) VALUES (?, ?, ?, ?, ?, ?, ?)"
   ).bind(auth.uid, auth.name, auth.avatar, auth.discordId, title, text, pinned).run();
   const pid = ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0;
+
+  if (auth && auth.uid) {
+    try {
+      await db.prepare(
+        "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'info', ?, ?, ?, '', '')"
+      ).bind(auth.uid, "Your post is live in the community", "community:post:" + pid, String(pid)).run();
+    } catch (_) {}
+  }
+
   const row = await db.prepare("SELECT * FROM community_posts WHERE id = ?").bind(pid).first();
   const post = mapPost(row || {}, 0);
+  // Automated moderation: records a review flag when rules/AI hit. Never blocks
+  // the post itself and never bans — a human decides in the automod queue.
+  const flag = await moderateContent(db, env, {
+    targetType: "post", targetId: String(pid), uid: auth.uid,
+    text: title + "\n" + text, author: auth.name, recentCount: await recentPostCount(db, auth.uid),
+  });
+  if (flag) {
+    try {
+      await db.prepare(
+        "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'moderation', ?, ?, ?, ?, 'Automated moderation')"
+      ).bind(auth.uid, "Your post was flagged for staff review (" + flag.category + ")", "community:post:" + pid, String(pid), flag.severity).run();
+    } catch (_) {}
+  }
   await hubBroadcast(env, { type: "post:created", post });
   const event = { type: "post:created", post };
   return json({ ok: true, post, event, clientTempId: body.clientTempId || null });
@@ -243,6 +290,18 @@ async function createReply(request, env, db, postIdRaw) {
   const row = await db.prepare("SELECT * FROM community_replies WHERE id = ?").bind(rid).first();
   const reply = mapReply(row || {});
 
+  const rflag = await moderateContent(db, env, {
+    targetType: "reply", targetId: String(rid), uid: auth.uid,
+    text, author: auth.name, recentCount: await recentPostCount(db, auth.uid),
+  });
+  if (rflag) {
+    try {
+      await db.prepare(
+        "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'moderation', ?, ?, ?, ?, 'Automated moderation')"
+      ).bind(auth.uid, "Your reply was flagged for staff review (" + rflag.category + ")", "community:post:" + pid, String(pid), rflag.severity).run();
+    } catch (_) {}
+  }
+
   // Broadcast instantly to all connected clients (dedup via server id on client).
   const event = {
     type: "reply:created",
@@ -275,6 +334,51 @@ async function createReply(request, env, db, postIdRaw) {
       },
     });
   }
+
+  // @mentions in the reply body: notify mentioned users (max 5, deduped,
+  // never self, never anyone already notified above for this reply).
+  try {
+    const seen = new Set();
+    const rx = /(?:^|\W)@([A-Za-z0-9_]{3,32})/g;
+    let m;
+    let count = 0;
+    while ((m = rx.exec(text)) && count < 5) {
+      const handle = m[1];
+      const key = handle.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      let target = await db.prepare(
+        "SELECT site_uid FROM user_profiles WHERE LOWER(name) = LOWER(?) LIMIT 1"
+      ).bind(handle).first();
+      if (!target || !target.site_uid) {
+        const u = await db.prepare(
+          "SELECT uid AS site_uid FROM users WHERE LOWER(name) = LOWER(?) LIMIT 1"
+        ).bind(handle).first();
+        if (u && u.site_uid) target = u;
+      }
+      if (!target || !target.site_uid) {
+        const dl = await db.prepare(
+          "SELECT site_uid FROM discord_links WHERE LOWER(display_name) = LOWER(?) LIMIT 1"
+        ).bind(handle).first();
+        if (dl && dl.site_uid) target = dl;
+      }
+      const tuid = target && target.site_uid ? String(target.site_uid) : "";
+      if (!tuid || tuid === auth.uid || notifyTargets.has(tuid)) continue;
+      count++;
+      const msg = auth.name + " mentioned you in \"" + String(post.title).slice(0, 60) + "\"";
+      const n = await db.prepare(
+        "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'mention', ?, ?, ?, ?, ?)"
+      ).bind(tuid, auth.uid, auth.name, msg, pid, rid).run();
+      await hubBroadcast(env, {
+        type: "notification:created",
+        recipientUid: tuid,
+        notification: {
+          id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
+          type: "mention", message: msg, post_id: pid, reply_id: rid, actor: auth.name,
+        },
+      });
+    }
+  } catch (_) {}
 
   return json({ ok: true, reply, replyId: rid, event, clientTempId: body.clientTempId || null });
 }

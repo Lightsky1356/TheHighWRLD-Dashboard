@@ -394,9 +394,15 @@
         });
         var st = document.getElementById('owner-stats');
         var rp = document.getElementById('owner-reports');
-        if (st) st.style.display = which === 'reports' ? 'none' : '';
+        var bn = document.getElementById('owner-bans');
+        var am = document.getElementById('owner-automod');
+        if (st) st.style.display = which === 'stats' ? '' : 'none';
         if (rp) rp.style.display = which === 'reports' ? '' : 'none';
+        if (bn) bn.style.display = which === 'bans' ? '' : 'none';
+        if (am) am.style.display = which === 'automod' ? '' : 'none';
         if (which === 'reports') loadReports(1);
+        if (which === 'bans' && window.loadBansView) { try { window.loadBansView(1); } catch (e) {} }
+        if (which === 'automod' && window.loadAutomodView) { try { window.loadAutomodView(1); } catch (e) {} }
         return;
       }
       var act = (e.target && e.target.closest) ? e.target.closest('[data-raction]') : null;
