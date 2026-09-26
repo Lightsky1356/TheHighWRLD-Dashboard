@@ -192,7 +192,29 @@
     return avatar ? '<img src="' + esc(avatar) + '" alt="">' : esc(initial(name));
   }
   function cmpVerifiedHtml(linked) {
-    return linked ? '<span class="cmp-verified"><i class="fab fa-discord"></i> ' + esc(_tt("verifiedBadge", "Verified")) + '</span>' : '';
+    return linked ? '<span class="cmp-verified"><i class="fab fa-discord"></i> ' + esc(_tt("verifiedBadge", "Verified")) + '</span>' : '';  }
+  /* Public standing badge (Phase 6D). The server only ever sends this for the
+   * positive "trusted" tier, so nothing negative can be inferred. */
+  function cmpStandingHtml(standing) {
+    if (!standing) return "";
+    if (standing.badge === "trusted") {
+      return '<span class="cmp-standing-badge" title="Trusted member"><i class="fas fa-shield-halved"></i> ' +
+        esc(_tt("trustedMember", "Trusted")) + "</span>";
+    }
+    if (standing.tier) {
+      var map = {
+        trusted: ["fa-shield-halved", "Trusted member", "#4ade80"],
+        standard: ["fa-circle-info", "Standard standing", "#22d3ee"],
+        "new": ["fa-user-clock", "New member", "#fbbf24"],
+        restricted: ["fa-triangle-exclamation", "Restricted standing", "#fb7185"]
+      };
+      var m = map[standing.tier] || null;
+      if (m) {
+        return '<span class="cmp-standing-badge" style="color:' + m[2] + ';border-color:' + m[2] + '55;background:' + m[2] + '14" title="Your community standing">' +
+          '<i class="fas ' + m[0] + '"></i> ' + esc(m[1]) + "</span>";
+      }
+    }
+    return "";
   }
   function compactProfileHtml(includeSections) {
     if (!uid) {
@@ -213,7 +235,7 @@
     html += '<div class="cmp-page">';
     html += '<div class="cmp-head">';
     html += '<div class="cmp-top"><span class="cmp-avatar-wrap"><span class="cmp-avatar-ring"><span class="cmp-avatar">' + cmpAvatarHtml(p.avatar, p.name) + '</span></span><span class="cmp-online" style="background:' + dotC + ';box-shadow:0 0 10px ' + dotC + '"></span></span>';
-    html += '<div class="cmp-id"><div class="cmp-name-row"><h2 class="cmp-name">' + esc(p.name || "999_" + uidSuffix) + '</h2>' + cmpVerifiedHtml(!!d.linked) + '</div>';
+    html += '<div class="cmp-id"><div class="cmp-name-row"><h2 class="cmp-name">' + esc(p.name || "999_" + uidSuffix) + '</h2>' + cmpVerifiedHtml(!!d.linked) + '<span class="cmp-standing-slot"></span></div>';
     html += '<div class="cmp-handle">@' + esc(String(uname).toLowerCase()) + '</div>';
     html += '<div class="cmp-meta">' + esc(stLabel(p.status || "Online")) + (p.joined ? ' &middot; ' + esc(_tt("joinedWord", "Joined")) + ' ' + esc(fmtDate(p.joined)) : '') + '<span class="cmp-site-presence" data-uid="' + esc(String(uid)) + '"></span></div></div></div>';
     html += '<div class="cmp-bio">' + esc(p.bio || _tt("cmpNoBio", "No bio yet - let the 999s know who you are.")) + '</div>';
@@ -283,7 +305,7 @@
     html += '<div class="pv-banner-wrap">' + banner + '</div>';
     html += '<div class="pv-body">';
     html += '<div class="pv-top-row"><div class="pv-avatar">' + avatar + '<span class="pv-dot" style="background:' + dotC + ';box-shadow:0 0 12px ' + dotC + '"></span></div>';
-    html += '<div class="pv-id"><div class="pv-name-row"><h3>' + esc(name) + '</h3>' + cmpVerifiedHtml(verified) + '</div>';
+    html += '<div class="pv-id"><div class="pv-name-row"><h3>' + esc(name) + '</h3>' + cmpVerifiedHtml(verified) + cmpStandingHtml(d.standing) + '</div>';
     html += '<p class="pv-handle">@' + esc(String(uname).toLowerCase()) + '</p>';
     html += '<span class="pv-status" style="color:' + dotC + '"><i class="fas fa-circle" style="font-size:6px"></i> ' + esc(status) + '</span><span class="cmp-site-presence" data-uid="' + esc(String(d.uid || "")) + '"></span><span class="um-profile-status" data-uid="' + esc(String(d.uid || "")) + '"></span></div></div>';
     html += (pr.joined ? '<p class="pv-joined"><i class="fas fa-calendar"></i> ' + esc(_tt("joinedWord", "Joined")) + ' ' + esc(String(pr.joined).slice(0, 10)) + '</p>' : '');
@@ -1653,6 +1675,7 @@
     ["email", "Email & Verifications", "fa-envelope", "Email & Verifications", "Change your email and view account information", "emailTitle", "acSubEmail"],
     ["password", "Password", "fa-key", "Password", "Update your password, active devices & recent logins", "pwTitle", "acSubPassword"],
     ["connected", "Connected Accounts", "fa-link", "Connected Accounts", "Link or unlink Discord and Google", "connectedTitle", "acSubConnected"],
+["myReports", "My Reports", "fa-flag", "My Reports", "Track the status of reports you have filed", "myReportsTitle", "acSubMyReports"],
     ["danger", "Danger Zone", "fa-triangle-exclamation", "Danger Zone", "Irreversible account actions", "dangerTitle", "acSubDanger"]
   ];
   var _acViewValid = false;
@@ -1836,6 +1859,9 @@
         if (s.automod_pending) why.push(s.automod_pending + " item awaiting review");
         if (s.account_age_days != null && s.account_age_days < 14) why.push("account under 14 days old");
         if (!why.length && s.posts) why.push(s.posts + " community post" + (s.posts === 1 ? "" : "s"));
+        // Mirror the tier next to the display name (self view).
+        var slot = document.querySelector(".cmp-standing-slot");
+        if (slot) slot.innerHTML = cmpStandingHtml({ tier: rep.tier, score: rep.score });
         host.innerHTML =
           '<div class="cmp-standing-row">' +
             '<span class="cmp-standing-chip" style="color:' + t.color + ';border-color:' + t.color + '55;background:' + t.color + '14">' +
@@ -1843,9 +1869,29 @@
             '<span class="cmp-standing-score">Score ' + Number(rep.score || 0) + '/100</span>' +
           '</div>' +
           (why.length ? '<p class="cmp-standing-why">' + esc(why.join(" · ")) + '</p>' : '') +
+          limitsHtml(d.limits, rep.tier) +
           '<p class="cmp-standing-note">Standing sets your posting and reporting limits. It is based only on your activity and moderation history on this site.</p>';
       })
       .catch(function () { try { host.innerHTML = ""; } catch (e) {} });
+  }
+
+  /* Current budgets for the signed-in member, so limits are never a mystery. */
+  var SCOPE_LABEL = { post: "Posts", reply: "Replies", report: "Reports" };
+  function limitsHtml(limits, tier) {
+    if (!limits) return "";
+    try {
+      return Object.keys(limits).map(function (k) {
+        var cfg = limits[k];
+        if (!cfg) return "";
+        var n = Number(cfg[tier] != null ? cfg[tier] : cfg.standard);
+        var win = Number(cfg.windowSec) >= 3600
+          ? Math.round(Number(cfg.windowSec) / 3600) + "h"
+          : Math.round(Number(cfg.windowSec) / 60) + "m";
+        return '<span class="cmp-standing-limit">' + esc(SCOPE_LABEL[k] || k) + ': <b>' + n + "</b>/" + win + "</span>";
+      }).join("");
+    } catch (e) {
+      return "";
+    }
   }
   function renderProfilePageBody() {
     var body = document.getElementById("profilePageBody");

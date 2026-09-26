@@ -1,5 +1,6 @@
 import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
 import { rateLimit } from "../_lib/reputation.js";
+import { getSessionUser } from "../_lib/auth.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -101,13 +102,17 @@ export async function onRequestGet(context) {
       return json({ ok: true, linked });
     }
     const uid = await resolveSiteUid(db, context.request, url.searchParams.get("user") || "");
-    // Own-report status view: any linked user sees ONLY their reports' status.
+    // Own-report status view. Identity comes from the session ONLY - a
+    // client-supplied `user` param must never be able to read someone else's
+    // report history. Returns status columns only: no notes, no reviewer, no
+    // target id.
     if (url.searchParams.get("mine") === "1") {
-      if (!uid) return json({ error: "sign in required" }, 401);
-      const link = await db.prepare("SELECT discord_id FROM discord_links WHERE site_uid = ?").bind(uid).first();
+      const me = await getSessionUser(db, context.request).catch(() => null);
+      if (!me || !me.uid) return json({ error: "sign in required" }, 401);
+      const link = await db.prepare("SELECT discord_id FROM discord_links WHERE site_uid = ?").bind(me.uid).first();
       if (!link || !link.discord_id) return json({ ok: true, reports: [] });
       const mine = await db.prepare(
-        "SELECT id, target_type, target_id, reason, status, created_at, reviewed_at FROM reports " +
+        "SELECT id, target_type, reason, status, created_at, reviewed_at FROM reports " +
         "WHERE reporter_discord_id = ? ORDER BY id DESC LIMIT 30"
       ).bind(link.discord_id).all();
       return json({ ok: true, reports: mine.results || [] });
