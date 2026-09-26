@@ -228,6 +228,7 @@
     html += '<button type="button" class="cmp-btn" onclick="if(window.openEditProfile)window.openEditProfile()"><i class="fas fa-pen"></i>' + esc(_tt("editProfile", "Edit Profile")) + '</button>';
     html += '<button type="button" class="cmp-btn gold" data-cmp-signout="1"><i class="fas fa-right-from-bracket"></i>' + esc(_tt("signOut", "Sign Out")) + '</button>';
     html += '</div>';
+    html += '<div class="cmp-standing" id="cmpStanding"></div>';
     var links = (_data && _data.links) || [];
     if (links.length) {
       html += '<div class="cmp-links">' + links.map(function (l) { return l && l.url ? '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow"><i class="fas fa-link"></i>' + esc(l.label || l.url) + '<i class="fas fa-arrow-up-right-from-square" style="margin-left:auto"></i></a>' : ''; }).join("") + '</div>';
@@ -1806,6 +1807,45 @@
     if (!body) return;
     body.innerHTML = compactProfileHtml(true);
     wireCompactHost(body, true);
+    loadStanding();
+  }
+
+  /* Community standing (Phase 6C) - own reputation only, session-derived. */
+  var STANDING = {
+    trusted: { label: "Trusted member", color: "#4ade80", ico: "fa-shield-halved" },
+    standard: { label: "Standard standing", color: "#22d3ee", ico: "fa-circle-info" },
+    new: { label: "New member", color: "#fbbf24", ico: "fa-user-clock" },
+    restricted: { label: "Restricted standing", color: "#fb7185", ico: "fa-triangle-exclamation" }
+  };
+  function loadStanding() {
+    var host = document.getElementById("cmpStanding");
+    if (!host) return;
+    fetch("/api/reputation", { cache: "no-store", credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!host.isConnected) return;
+        if (!d || !d.ok || !d.reputation) { host.innerHTML = ""; return; }
+        var rep = d.reputation;
+        var t = STANDING[rep.tier] || STANDING.standard;
+        var s = rep.signals || {};
+        var why = [];
+        if (s.active_strikes) why.push(s.active_strikes + " active strike" + (s.active_strikes === 1 ? "" : "s"));
+        if (s.ban_active) why.push("active restriction");
+        if (s.reports_upheld) why.push(s.reports_upheld + " upheld report" + (s.reports_upheld === 1 ? "" : "s"));
+        if (s.false_reports) why.push(s.false_reports + " dismissed report" + (s.false_reports === 1 ? "" : "s"));
+        if (s.automod_pending) why.push(s.automod_pending + " item awaiting review");
+        if (s.account_age_days != null && s.account_age_days < 14) why.push("account under 14 days old");
+        if (!why.length && s.posts) why.push(s.posts + " community post" + (s.posts === 1 ? "" : "s"));
+        host.innerHTML =
+          '<div class="cmp-standing-row">' +
+            '<span class="cmp-standing-chip" style="color:' + t.color + ';border-color:' + t.color + '55;background:' + t.color + '14">' +
+              '<i class="fas ' + t.ico + '"></i> ' + esc(t.label) + '</span>' +
+            '<span class="cmp-standing-score">Score ' + Number(rep.score || 0) + '/100</span>' +
+          '</div>' +
+          (why.length ? '<p class="cmp-standing-why">' + esc(why.join(" · ")) + '</p>' : '') +
+          '<p class="cmp-standing-note">Standing sets your posting and reporting limits. It is based only on your activity and moderation history on this site.</p>';
+      })
+      .catch(function () { try { host.innerHTML = ""; } catch (e) {} });
   }
   function renderProfilePageBody() {
     var body = document.getElementById("profilePageBody");

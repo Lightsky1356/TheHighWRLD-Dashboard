@@ -1,4 +1,5 @@
 import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
+import { rateLimit } from "../_lib/reputation.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -39,9 +40,7 @@ const VALID_REASONS = [
 const DETAILS_REQUIRED = ["Other", "Copyright Concern"];
 const MAX_DETAILS = 1000;
 const MIN_DETAILS_WHEN_REQUIRED = 10;
-const RATE_LIMIT_MAX = 10;
 const MAX_TITLE_FALLBACK = 120;
-
 async function isAdmin(db, uid, env) {
   if (!uid) return false;
   const link = await db.prepare("SELECT discord_id FROM discord_links WHERE site_uid = ?").bind(uid).first();
@@ -243,12 +242,16 @@ export async function onRequestPost(context) {
     }
     if (dup) return json({ error: "duplicate", message: "This report has already been submitted." }, 409);
 
-    // Server-side rate limit (per reporter, rolling hour).
-    const recent = await db.prepare(
-      "SELECT COUNT(*) as n FROM reports WHERE reporter_discord_id = ? AND created_at >= datetime('now','-1 hour')"
-    ).bind(reporter.discordId).first();
-    if (recent && recent.n >= RATE_LIMIT_MAX) {
-      return json({ error: "slow down - too many reports recently" }, 429);
+    // Adaptive rate limit (Phase 6C): the per-hour budget scales with the
+    // reporter's reputation tier, so trusted members aren't punished alongside
+    // brand-new or repeatedly-dismissed reporters.
+    const rl = await rateLimit(db, "report", reporter.uid);
+    if (!rl.allowed) {
+      return json({
+        error: "slow down - too many reports recently",
+        message: "Report limit reached. Try again in " + rl.retryAfterSec + "s.",
+        retry_after: rl.retryAfterSec,
+      }, 429);
     }
 
     let ins;

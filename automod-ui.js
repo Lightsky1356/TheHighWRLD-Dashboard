@@ -168,6 +168,7 @@
           '<div class="am-content' + (f.content_exists ? "" : " gone") + '">' + esc(f.content) + "</div>" +
           '<div class="am-meta">Signal: <b>' + esc(f.detail) + '</b> &middot; Confidence: <b>' + conf + '%</b>' +
             (f.uid ? ' &middot; User: <b>' + esc(f.uid) + '</b>' : "") +
+            (f.trust ? ' &middot; Standing: <b>' + esc(f.trust.tier) + " " + Number(f.trust.score) + "</b>" : "") +
             (f.status !== "pending" ? ' &middot; <b>' + esc(f.status) + "</b>" : "") +
           "</div>" +
           (f.ai_verdict ? '<div class="am-ai">AI: ' + esc(f.ai_verdict) + "</div>" : "") +
