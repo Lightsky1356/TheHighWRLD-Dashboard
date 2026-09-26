@@ -307,6 +307,13 @@
     html += '<div class="pv-block"><div class="pv-block-title">Links</div><div class="cmp-links">' + (links.map(function (l) { return '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow"><i class="fas fa-link"></i>' + esc(l.label || l.url) + '<i class="fas fa-arrow-up-right-from-square" style="margin-left:auto"></i></a>'; }).join("") || '<p class="pv-none">No links shared</p>') + '</div></div>';
     html += '<div class="pv-block"><div class="pv-block-title">Top plays</div><div class="pv-tops">' + plays + '</div></div>';
     html += '<div class="pv-block"><div class="pv-block-title">Playlists</div><div class="pv-pls">' + pls + '</div></div>';
+    if (!d.visibility || d.visibility.activity !== false) {
+      var acts = (d.activity || []).map(function (a) {
+        var aico = ACT_ICON[a.type] || "fa-bolt";
+        return '<div class="tl-item"><div class="tl-time">' + esc(relTime(a.ts)) + '</div><div class="tl-txt"><i class="fas ' + aico + ' tl-ico"></i>' + esc(a.label) + '</div></div>';
+      }).join("") || '<p class="pv-none">No recent activity</p>';
+      html += '<div class="pv-block"><div class="pv-block-title">Recent activity</div><div class="pv-act">' + acts + '</div></div>';
+    }
     html += favBlock;
     html += '</div>';
     return html;
@@ -444,6 +451,36 @@
   }
   window.setNotifBell = setNotifBell;
   function gotoNotif(n) {
+    if (n.type === "playlist" && n.post_id) {
+      if (window.openSharedPlaylistById) { try { window.openSharedPlaylistById(Number(n.post_id)); } catch (e) {} }
+      return;
+    }
+    if (n.type === "drop") {
+      if (window.switchAppPage) switchAppPage("home");
+      setTimeout(function () {
+        try {
+          var sec = document.getElementById("drops-sec");
+          if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (e) {}
+      }, 400);
+      return;
+    }
+    if (n.post_id) {
+      if (window.switchAppPage) switchAppPage("community");
+      if (window.openCommunityPost) { try { window.openCommunityPost(n.post_id, n.reply_id || null); } catch (e) {} }
+      return;
+    }
+    if (n.type === "suggestion") { if (window.switchAppPage) switchAppPage("suggestions"); return; }
+    if (n.type === "wanted") { if (window.switchAppPage) switchAppPage("wanted"); return; }
+    if (n.type === "announcement") return;
+    if (n.type === "moderation") return;
+    if (n.type === "appeal") return;
+    if (n.type === "warning") return;
+    if (n.type === "ban") return;
+    if (n.type === "follow" && n.actor_uid) {
+      if (window.openProfile) { try { window.openProfile(n.actor_uid); } catch (e) {} }
+      return;
+    }
     if (n.reply_id) { try { sessionStorage.setItem("ac_notif_reply", n.reply_id); } catch (e) {} }
     if (n.track_id) { try { sessionStorage.setItem("ac_notif_track", n.track_id); } catch (e) {} }
     if (window.switchAppPage) switchAppPage("wanted");
@@ -473,11 +510,54 @@
       }
     }, 120);
   }
+  /* Community reply notifications (/api/notifications, session-authed).
+     Merged into the same bell; refetched at most every 30s. */
+  function refreshCommNotifs() {
+    if (window.__commNotifsLoading) return;
+    var now = Date.now();
+    if (window.__commNotifsTs && now - window.__commNotifsTs < 30000) return;
+    window.__commNotifsTs = now;
+    window.__commNotifsLoading = true;
+    fetch("/api/notifications", { cache: "no-store", credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .catch(function () { return { ok: false }; })
+      .then(function (d) {
+        window.__commNotifsLoading = false;
+        if (d && d.ok === true) {
+          window.__commNotifs = (d.notifications || []).map(function (n) {
+            return { id: "c" + n.id, type: n.type || "reply", message: n.message, actor: n.actor, ts: n.ts, post_id: n.post_id, reply_id: n.reply_id, read: !!n.read, comm: true };
+          });
+        }
+        fetch("/api/announcements", { cache: "no-store" })
+          .then(function (r) { return r.json(); })
+          .catch(function () { return { ok: false }; })
+          .then(function (a) {
+            if (a && a.ok === true) window.__annNotifs = a.announcements || [];
+            applyNotifications();
+          });
+      });
+  }
+  function commNotifRead(nid) {
+    var id = Number(String(nid || "").replace(/^c/, "")) || 0;
+    if (!id) return;
+    try { fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ action: "read", id: id }) }).catch(function () {}); } catch (e) {}
+  }
+  function commNotifReadAll() {
+    try { fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ action: "readAll" }) }).catch(function () {}); } catch (e) {}
+  }
   function applyNotifications() {
     var wrap = document.getElementById("nav-notif-wrap");
     if (!wrap) return;
-    var rows = (_data && _data.notifications) || [];
+    var rows = ((_data && _data.notifications) || []).slice();
     var unread = (_data && _data.unread ? _data.unread : 0);
+    var comm = window.__commNotifs || [];
+    if (comm.length) {
+      rows = comm.concat(rows);
+      for (var ci = 0; ci < comm.length; ci++) if (!comm[ci].read) unread++;
+    }
+    var ann = window.__annNotifs || [];
+    if (ann.length) rows = ann.concat(rows);
+    refreshCommNotifs();
     var badge = document.getElementById("navNotifBadge");
     if (badge) { badge.textContent = unread > 99 ? "99+" : String(unread); badge.style.display = unread > 0 ? "" : "none"; }
     var list = document.getElementById("navNotifList");
@@ -488,8 +568,8 @@
         try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch (e) {}
         if (n.read) return;
         try {
-          var nt = new Notification("TheHighWRLD - " + (n.type === "reply" ? _tt("notifReply", "New reply") : n.type === "leak" ? _tt("notifLeak", "New leak") : _tt("notifUpdate", "Update")), { body: String(n.message).slice(0, 140), tag: "acn" + n.id });
-          nt.onclick = function () { window.focus(); if (window.gotoNotif) gotoNotif({ track_id: n.track_id || "", reply_id: n.reply_id ? Number(n.reply_id) : null }); };
+          var nt = new Notification("TheHighWRLD - " + (n.type === "reply" ? _tt("notifReply", "New reply") : n.type === "mention" ? _tt("notifMention", "You were mentioned") : n.type === "suggestion" ? _tt("notifSugg", "Suggestion update") : n.type === "wanted" ? _tt("notifWanted", "Wanted update") : n.type === "announcement" ? _tt("notifAnn", "Announcement") : n.type === "appeal" ? _tt("notifAppeal", "Appeal update") : n.type === "warning" ? _tt("notifWarn", "Moderation warning") : n.type === "ban" ? _tt("notifBan", "Account notice") : n.type === "follow" ? _tt("notifFollow", "New follower") : n.type === "moderation" ? _tt("notifMod", "Moderation update") : n.type === "leak" ? _tt("notifLeak", "New leak") : _tt("notifUpdate", "Update")), { body: String(n.message).slice(0, 140), tag: "acn" + n.id });
+          nt.onclick = function () { window.focus(); if (window.gotoNotif) gotoNotif({ type: n.type || "", actor_uid: n.actor_uid || "", track_id: n.track_id || "", reply_id: n.reply_id ? Number(n.reply_id) : null, post_id: n.post_id || null }); };
         } catch (e) {}
       });
     }
@@ -498,8 +578,8 @@
       return;
     }
     list.innerHTML = rows.slice(0, 40).map(function (n) {
-      var ico = n.type === "reply" ? "fa-comment" : n.type === "leak" ? "fa-fire" : n.type === "vote" ? "fa-vote-yea" : "fa-bell";
-      return '<button type="button" class="nav-notif-item' + (n.read ? " read" : " unread") + '" data-nid="' + n.id + '" data-track="' + esc(n.track_id || "") + '" data-rid="' + (n.reply_id || "") + '"><span class="nni-ico"><i class="fas ' + ico + '"></i></span><span class="nni-main"><span class="nni-txt">' + esc(n.message) + '</span><span class="nni-time">' + esc(relTime(n.ts)) + (n.actor ? " &middot; " + esc(n.actor) : "") + '</span></span>' + (n.read ? "" : '<span class="unread-dot"></span>') + '</button>';
+      var ico = n.type === "reply" ? "fa-comment" : n.type === "mention" ? "fa-at" : n.type === "playlist" ? "fa-list-music" : n.type === "drop" ? "fa-ticket" : n.type === "suggestion" ? "fa-lightbulb" : n.type === "wanted" ? "fa-fire" : n.type === "announcement" ? "fa-bullhorn" : n.type === "appeal" ? "fa-scale-balanced" : n.type === "warning" ? "fa-triangle-exclamation" : n.type === "ban" ? "fa-ban" : n.type === "follow" ? "fa-user-plus" : n.type === "moderation" ? "fa-shield-halved" : n.type === "leak" ? "fa-fire" : n.type === "vote" ? "fa-vote-yea" : "fa-bell";
+      return '<button type="button" class="nav-notif-item' + (n.read ? " read" : " unread") + '" data-nid="' + n.id + '" data-ntype="' + esc(n.type || "") + '" data-actor="' + esc(n.actor_uid || "") + '" data-track="' + esc(n.track_id || "") + '" data-rid="' + (n.reply_id || "") + '" data-post="' + (n.post_id || "") + '"><span class="nni-ico"><i class="fas ' + ico + '"></i></span><span class="nni-main"><span class="nni-txt">' + esc(n.message) + '</span><span class="nni-time">' + esc(relTime(n.ts)) + (n.actor ? " &middot; " + esc(n.actor) : "") + '</span></span>' + (n.read ? "" : '<span class="unread-dot"></span>') + '</button>';
     }).join("");
   }
   function bindNotifications() {
@@ -508,21 +588,27 @@
       var row = e.target.closest(".nav-notif-item");
       if (!row) return;
       var nid = row.getAttribute("data-nid");
+      var ntype = row.getAttribute("data-ntype") || "";
+      var nactor = row.getAttribute("data-actor") || "";
       var track = row.getAttribute("data-track") || "";
       var rid = row.getAttribute("data-rid") || "";
+      var post = row.getAttribute("data-post") || "";
       var wrap = row.closest(".nav-notif-wrap");
       if (wrap) wrap.classList.remove("open");
       if (!row.classList.contains("read")) {
         row.classList.add("read");
         row.classList.remove("unread");
-        api({ action: "markNotifRead", id: nid });
+        if (post) commNotifRead(nid);
+        else api({ action: "markNotifRead", id: nid });
       }
-      gotoNotif({ track_id: track, reply_id: rid ? Number(rid) : null });
+      if (post) { gotoNotif({ type: ntype, actor_uid: nactor, post_id: Number(post), reply_id: rid ? Number(rid) : null }); return; }
+      gotoNotif({ type: ntype, actor_uid: nactor, track_id: track, reply_id: rid ? Number(rid) : null });
     });
     var markBtn = document.getElementById("navNotifMarkAll");
     if (markBtn) markBtn.addEventListener("click", function (e) {
       e.stopPropagation();
       api({ action: "markAllNotif" }).then(function () { loadAccount(); toast(_tt("toastMarkAllRead", "All notifications marked as read"), "success"); });
+      commNotifReadAll();
     });
     var btn = document.getElementById("navNotifBtn");
     if (btn) btn.addEventListener("click", function () {

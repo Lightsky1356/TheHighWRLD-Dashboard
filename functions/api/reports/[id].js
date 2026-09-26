@@ -98,6 +98,66 @@ export async function onRequestPatch(context) {
     vals.push(id);
     await db.prepare("UPDATE reports SET " + sets.join(", ") + " WHERE id = ?").bind(...vals).run();
     await hubBroadcast(context.env, { type: "report:updated", reportId: id });
+    // Report-resolved notice: tell the reporter their report was reviewed.
+    try {
+      if (body.status !== undefined) {
+        const st = String(body.status || "").toUpperCase();
+        if (st === "RESOLVED" || st === "DISMISSED") {
+          const rep = await db.prepare(
+            "SELECT reporter_discord_id FROM reports WHERE id = ?"
+          ).bind(id).first();
+          if (rep && rep.reporter_discord_id) {
+            const who = await db.prepare(
+              "SELECT site_uid FROM discord_links WHERE discord_id = ?"
+            ).bind(rep.reporter_discord_id).first();
+            if (who && who.site_uid) {
+              const msg = st === "RESOLVED"
+                ? "Your report was reviewed — thanks for keeping the WRLD clean."
+                : "Your report was reviewed with no action taken.";
+              const n = await db.prepare(
+                "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'moderation', '', 'Staff', ?, NULL, NULL)"
+              ).bind(who.site_uid, msg).run();
+              await hubBroadcast(context.env, {
+                type: "notification:created",
+                recipientUid: who.site_uid,
+                notification: {
+                  id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
+                  type: "moderation", message: msg, post_id: null, reply_id: null, actor: "Staff",
+                },
+              });
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    // Moderation notice: tell the reporter their report was reviewed.
+    try {
+      if (body.status !== undefined) {
+        const rep = await db.prepare(
+          "SELECT reporter_discord_id, reporter_name, target_type, snapshot_title FROM reports WHERE id = ?"
+        ).bind(id).first();
+        if (rep && rep.reporter_discord_id) {
+          const who = await db.prepare(
+            "SELECT site_uid FROM discord_links WHERE discord_id = ?"
+          ).bind(rep.reporter_discord_id).first();
+          if (who && who.site_uid) {
+            const st = String(body.status || "").toUpperCase();
+            const msg = "Your report on " + String(rep.snapshot_title || rep.target_type || "content").slice(0, 60) + " was reviewed (" + st + ")";
+            const n = await db.prepare(
+              "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'moderation', '', 'Staff', ?, NULL, NULL)"
+            ).bind(who.site_uid, msg).run();
+            await hubBroadcast(context.env, {
+              type: "notification:created",
+              recipientUid: who.site_uid,
+              notification: {
+                id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
+                type: "moderation", message: msg, post_id: null, reply_id: null, actor: "Staff",
+              },
+            });
+          }
+        }
+      }
+    } catch (_) {}
     const r = await db.prepare("SELECT " + REPORT_COLS + " FROM reports WHERE id = ?").bind(id).first();
     return json({ ok: true, report: rowToJson(r) });
   } catch (err) {

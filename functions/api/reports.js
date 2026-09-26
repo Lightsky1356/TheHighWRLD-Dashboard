@@ -102,6 +102,17 @@ export async function onRequestGet(context) {
       return json({ ok: true, linked });
     }
     const uid = await resolveSiteUid(db, context.request, url.searchParams.get("user") || "");
+    // Own-report status view: any linked user sees ONLY their reports' status.
+    if (url.searchParams.get("mine") === "1") {
+      if (!uid) return json({ error: "sign in required" }, 401);
+      const link = await db.prepare("SELECT discord_id FROM discord_links WHERE site_uid = ?").bind(uid).first();
+      if (!link || !link.discord_id) return json({ ok: true, reports: [] });
+      const mine = await db.prepare(
+        "SELECT id, target_type, target_id, reason, status, created_at, reviewed_at FROM reports " +
+        "WHERE reporter_discord_id = ? ORDER BY id DESC LIMIT 30"
+      ).bind(link.discord_id).all();
+      return json({ ok: true, reports: mine.results || [] });
+    }
     if (!uid || !(await isStaff(db, uid, context.env))) return json({ error: "staff only" }, 403);
     const status = (url.searchParams.get("status") || "all").toUpperCase();
     const type = (url.searchParams.get("type") || "all").toUpperCase();
