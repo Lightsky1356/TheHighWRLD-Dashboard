@@ -2,10 +2,29 @@
   var ROW_HEIGHT = 64;
   var OVERSCAN = 6;
   var WINDOW_STEP = 4;
-  var state = { indexes: [], top: null, bottom: null, frame: 0, bound: false, start: -1, end: -1 };
+  var FULL_RENDER_MAX = 400;
+  var measuredRowHeight = 0;
+  var state = { indexes: [], top: null, bottom: null, frame: 0, bound: false, start: -1, end: -1, sig: null };
   var searchCache = [];
   var indexSig = null;
   var coverMemo = {};
+
+  /* The row height is not a constant: the list is 64px, but the card/grid
+   * layout is ~160px and the phone breakpoints shrink it again. Dividing
+   * scrollTop by a stale 64 made the window overshoot the end of the list, the
+   * render loop produced nothing, and every row was removed - a blank list that
+   * only came back after a click. So learn it from the DOM and keep measuring
+   * whenever the layout can have changed. */
+  function rowHeight() {
+    if (measuredRowHeight > 0) return measuredRowHeight;
+    var node = state.top ? state.top.nextSibling : null;
+    while (node && node !== state.bottom) {
+      if (node.offsetHeight > 0) { measuredRowHeight = node.offsetHeight; break; }
+      node = node.nextSibling;
+    }
+    return measuredRowHeight || ROW_HEIGHT;
+  }
+  function forgetRowHeight() { measuredRowHeight = 0; }
 
   /* Cover gradients are static, so the accent/gradient lookups (2 regex hits
    * each) are memoized instead of re-running for every rendered row. */
@@ -101,19 +120,39 @@
       }
     }
     var indexes = state.indexes;
-    var firstRow = Math.floor(container.scrollTop / ROW_HEIGHT);
-    var viewStart = Math.max(0, Math.floor(firstRow / WINDOW_STEP) * WINDOW_STEP - OVERSCAN);
-    var visibleRows = Math.ceil(container.clientHeight / ROW_HEIGHT);
-    var viewEnd = Math.min(indexes.length, viewStart + visibleRows + OVERSCAN * 2);
-    var sig = state.start + ":" + state.end + "|" + paintSig();
+    var rowH = rowHeight();
+    var viewStart = 0;
+    var viewEnd = indexes.length;
+    /* Some breakpoints turn the scroller off (overflow:visible, max-height:none)
+     * and let the page scroll instead. A window can't help there because
+     * scrollTop never moves, so render the whole (bounded) set instead of
+     * showing the first slice and nothing else. */
+    var scrollable = indexes.length > FULL_RENDER_MAX || container.scrollHeight > container.clientHeight + 4;
+    if (scrollable && indexes.length) {
+      var firstRow = Math.floor(container.scrollTop / rowH);
+      viewStart = Math.max(0, Math.floor(firstRow / WINDOW_STEP) * WINDOW_STEP - OVERSCAN);
+      var visibleRows = Math.ceil(container.clientHeight / rowH) + 1;
+      viewEnd = Math.min(indexes.length, viewStart + visibleRows + OVERSCAN * 2);
+      /* The hard stop: a window that starts past the last track renders an
+       * empty string and then deletes every row, which is the blank list. */
+      var lastStart = Math.max(0, indexes.length - 1);
+      if (viewStart > lastStart) {
+        viewStart = Math.max(0, Math.floor(Math.max(0, indexes.length - visibleRows) / WINDOW_STEP) * WINDOW_STEP);
+        if (viewStart > lastStart) viewStart = lastStart;
+      }
+      if (viewEnd <= viewStart) viewEnd = Math.min(indexes.length, viewStart + 1);
+    } else if (viewEnd > FULL_RENDER_MAX) {
+      viewEnd = FULL_RENDER_MAX;
+    }
+    var sig = viewStart + ":" + viewEnd + "|" + paintSig();
     if (state.sig === sig) return;
     state.sig = sig;
     state.start = viewStart;
     state.end = viewEnd;
     var html = "";
     for (var i = viewStart; i < viewEnd; i++) html += rowHtml(indexes[i]);
-    state.top.style.height = (viewStart * ROW_HEIGHT) + "px";
-    state.bottom.style.height = ((indexes.length - viewEnd) * ROW_HEIGHT) + "px";
+    state.top.style.height = (viewStart * rowH) + "px";
+    state.bottom.style.height = Math.max(0, (indexes.length - viewEnd) * rowH) + "px";
     var node = state.top.nextSibling;
     while (node && node !== state.bottom) { var next = node.nextSibling; node.remove(); node = next; }
     container.insertBefore(document.createRange().createContextualFragment(html), state.bottom);
@@ -138,6 +177,11 @@
     if (sig !== indexSig) {
       rebuildIndexes();
       indexSig = sig;
+      /* The old scroll offset can point past the end of a shorter result set,
+       * so start at the top and force a repaint. */
+      var container = getContainer();
+      if (container && container.scrollTop) container.scrollTop = 0;
+      state.sig = null;
     }
     renderVisible();
   }
@@ -158,6 +202,6 @@
   var resizeTimer = 0;
   window.addEventListener("resize", function () {
     if (resizeTimer) clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () { resizeTimer = 0; state.sig = null; optimizedRender(); }, 150);
+    resizeTimer = setTimeout(function () { resizeTimer = 0; forgetRowHeight(); state.sig = null; optimizedRender(); }, 150);
   }, { passive: true });
 })();
