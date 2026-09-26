@@ -4,7 +4,6 @@
 
 import { getSessionUser } from "../_lib/auth.js";
 import { hubBroadcast } from "../_lib/realtime.js";
-import { getReputation } from "../_lib/reputation.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -105,20 +104,12 @@ export async function onRequestGet(context) {
     const flags = [];
     for (const r of (rows.results || [])) {
       const c = await loadContent(db, r.target_type, r.target_id);
-      // Trust context (Phase 6C) so staff weigh a first offence differently
-      // from a repeat offender. Cached, so this stays cheap.
-      let trust = null;
-      if (r.uid) {
-        const rep = await getReputation(db, r.uid).catch(() => null);
-        if (rep) trust = { score: rep.score, tier: rep.tier, active_strikes: rep.signals ? rep.signals.active_strikes : 0, ban_active: rep.signals ? rep.signals.ban_active : 0 };
-      }
       flags.push({
         id: r.id, target_type: r.target_type, target_id: r.target_id, uid: r.uid,
         category: r.category, confidence: r.confidence, severity: r.severity,
         recommended_action: r.recommended_action, detail: r.detail, ai_verdict: r.ai_verdict,
         status: r.status, created_at: r.created_at, reviewed_at: r.reviewed_at, reviewed_by: r.reviewed_by,
         content: c ? c.text : "(unavailable)", content_exists: c ? c.exists : false,
-        trust,
       });
     }
     const counts = await db.prepare(

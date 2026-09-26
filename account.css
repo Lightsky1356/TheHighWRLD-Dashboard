@@ -924,15 +924,6 @@ body[data-accent="amber"] .hero-stat-value{background:linear-gradient(135deg,#f5
 .cmp-qstat b{font-size:1.15rem;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1.1}
 .cmp-qstat span{font-size:.64rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.34)}
 .cmp-qdiv{width:1px;background:rgba(255,255,255,.08);flex-shrink:0}
-.cmp-standing{margin-top:12px}
-.cmp-standing-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.cmp-standing-chip{display:inline-flex;align-items:center;gap:6px;font-size:.68rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 11px;border-radius:9999px;border:1px solid}
-.cmp-standing-score{font-size:.7rem;font-weight:700;color:rgba(255,255,255,.45)}
-.cmp-standing-why{margin:7px 0 0;font-size:.72rem;color:rgba(255,255,255,.55);line-height:1.55}
-.cmp-standing-note{margin:4px 0 0;font-size:.64rem;color:rgba(255,255,255,.32);line-height:1.5}
-.cmp-standing-limit{display:inline-block;margin:7px 8px 0 0;font-size:.66rem;font-weight:700;color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);border-radius:9999px;padding:2px 9px}
-.cmp-standing-limit b{color:#fff}
-.cmp-standing-badge{display:inline-flex;align-items:center;gap:5px;font-size:.62rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 9px;border-radius:9999px;border:1px solid rgba(74,222,128,.3);background:rgba(74,222,128,.12);color:#4ade80;vertical-align:middle}
 .dbi-hint{margin:0 0 12px;padding:10px 12px;border:1px solid rgba(88,101,242,.28);border-radius:10px;background:rgba(88,101,242,.08);color:rgba(255,255,255,.62);font-size:.74rem;line-height:1.55}
 #discordBioModal .m-head h3{display:flex;align-items:center;gap:9px}
 #discordBioModal .m-head h3 i{color:#5865f2;font-size:1.05em}

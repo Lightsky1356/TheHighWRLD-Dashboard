@@ -193,29 +193,6 @@
   }
   function cmpVerifiedHtml(linked) {
     return linked ? '<span class="cmp-verified"><i class="fab fa-discord"></i> ' + esc(_tt("verifiedBadge", "Verified")) + '</span>' : '';  }
-  /* Public standing badge (Phase 6D). The server only ever sends this for the
-   * positive "trusted" tier, so nothing negative can be inferred. */
-  function cmpStandingHtml(standing) {
-    if (!standing) return "";
-    if (standing.badge === "trusted") {
-      return '<span class="cmp-standing-badge" title="Trusted member"><i class="fas fa-shield-halved"></i> ' +
-        esc(_tt("trustedMember", "Trusted")) + "</span>";
-    }
-    if (standing.tier) {
-      var map = {
-        trusted: ["fa-shield-halved", "Trusted member", "#4ade80"],
-        standard: ["fa-circle-info", "Standard standing", "#22d3ee"],
-        "new": ["fa-user-clock", "New member", "#fbbf24"],
-        restricted: ["fa-triangle-exclamation", "Restricted standing", "#fb7185"]
-      };
-      var m = map[standing.tier] || null;
-      if (m) {
-        return '<span class="cmp-standing-badge" style="color:' + m[2] + ';border-color:' + m[2] + '55;background:' + m[2] + '14" title="Your community standing">' +
-          '<i class="fas ' + m[0] + '"></i> ' + esc(m[1]) + "</span>";
-      }
-    }
-    return "";
-  }
   function compactProfileHtml(includeSections) {
     if (!uid) {
       return '<div class="cmp-page"><div class="cmp-signin"><i class="fas fa-user-circle" style="font-size:26px;color:#22d3ee"></i><div>' + esc(_tt("cmpSignIn", "Sign in to show your profile here.")) + ' <a href="#" onclick="event.preventDefault();if(window.switchAppPage)window.switchAppPage(\'account\')">' + esc(_tt("signIn", "Sign In")) + '</a></div></div></div>';
@@ -235,7 +212,7 @@
     html += '<div class="cmp-page">';
     html += '<div class="cmp-head">';
     html += '<div class="cmp-top"><span class="cmp-avatar-wrap"><span class="cmp-avatar-ring"><span class="cmp-avatar">' + cmpAvatarHtml(p.avatar, p.name) + '</span></span><span class="cmp-online" style="background:' + dotC + ';box-shadow:0 0 10px ' + dotC + '"></span></span>';
-    html += '<div class="cmp-id"><div class="cmp-name-row"><h2 class="cmp-name">' + esc(p.name || "999_" + uidSuffix) + '</h2>' + cmpVerifiedHtml(!!d.linked) + '<span class="cmp-standing-slot"></span></div>';
+    html += '<div class="cmp-id"><div class="cmp-name-row"><h2 class="cmp-name">' + esc(p.name || "999_" + uidSuffix) + '</h2>' + cmpVerifiedHtml(!!d.linked) + '</div>';
     html += '<div class="cmp-handle">@' + esc(String(uname).toLowerCase()) + '</div>';
     html += '<div class="cmp-meta">' + esc(stLabel(p.status || "Online")) + (p.joined ? ' &middot; ' + esc(_tt("joinedWord", "Joined")) + ' ' + esc(fmtDate(p.joined)) : '') + '<span class="cmp-site-presence" data-uid="' + esc(String(uid)) + '"></span></div></div></div>';
     html += '<div class="cmp-bio">' + esc(p.bio || _tt("cmpNoBio", "No bio yet - let the 999s know who you are.")) + '</div>';
@@ -250,7 +227,6 @@
     html += '<button type="button" class="cmp-btn" onclick="if(window.openEditProfile)window.openEditProfile()"><i class="fas fa-pen"></i>' + esc(_tt("editProfile", "Edit Profile")) + '</button>';
     html += '<button type="button" class="cmp-btn gold" data-cmp-signout="1"><i class="fas fa-right-from-bracket"></i>' + esc(_tt("signOut", "Sign Out")) + '</button>';
     html += '</div>';
-    html += '<div class="cmp-standing" id="cmpStanding"></div>';
     var links = (_data && _data.links) || [];
     if (links.length) {
       html += '<div class="cmp-links">' + links.map(function (l) { return l && l.url ? '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow"><i class="fas fa-link"></i>' + esc(l.label || l.url) + '<i class="fas fa-arrow-up-right-from-square" style="margin-left:auto"></i></a>' : ''; }).join("") + '</div>';
@@ -305,7 +281,7 @@
     html += '<div class="pv-banner-wrap">' + banner + '</div>';
     html += '<div class="pv-body">';
     html += '<div class="pv-top-row"><div class="pv-avatar">' + avatar + '<span class="pv-dot" style="background:' + dotC + ';box-shadow:0 0 12px ' + dotC + '"></span></div>';
-    html += '<div class="pv-id"><div class="pv-name-row"><h3>' + esc(name) + '</h3>' + cmpVerifiedHtml(verified) + cmpStandingHtml(d.standing) + '</div>';
+    html += '<div class="pv-id"><div class="pv-name-row"><h3>' + esc(name) + '</h3>' + cmpVerifiedHtml(verified) + '</div>';
     html += '<p class="pv-handle">@' + esc(String(uname).toLowerCase()) + '</p>';
     html += '<span class="pv-status" style="color:' + dotC + '"><i class="fas fa-circle" style="font-size:6px"></i> ' + esc(status) + '</span><span class="cmp-site-presence" data-uid="' + esc(String(d.uid || "")) + '"></span><span class="um-profile-status" data-uid="' + esc(String(d.uid || "")) + '"></span></div></div>';
     html += (pr.joined ? '<p class="pv-joined"><i class="fas fa-calendar"></i> ' + esc(_tt("joinedWord", "Joined")) + ' ' + esc(String(pr.joined).slice(0, 10)) + '</p>' : '');
@@ -1830,69 +1806,8 @@
     if (!body) return;
     body.innerHTML = compactProfileHtml(true);
     wireCompactHost(body, true);
-    loadStanding();
   }
 
-  /* Community standing (Phase 6C) - own reputation only, session-derived. */
-  var STANDING = {
-    trusted: { label: "Trusted member", color: "#4ade80", ico: "fa-shield-halved" },
-    standard: { label: "Standard standing", color: "#22d3ee", ico: "fa-circle-info" },
-    new: { label: "New member", color: "#fbbf24", ico: "fa-user-clock" },
-    restricted: { label: "Restricted standing", color: "#fb7185", ico: "fa-triangle-exclamation" }
-  };
-  function loadStanding() {
-    var host = document.getElementById("cmpStanding");
-    if (!host) return;
-    fetch("/api/reputation", { cache: "no-store", credentials: "same-origin" })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (!host.isConnected) return;
-        if (!d || !d.ok || !d.reputation) { host.innerHTML = ""; return; }
-        var rep = d.reputation;
-        var t = STANDING[rep.tier] || STANDING.standard;
-        var s = rep.signals || {};
-        var why = [];
-        if (s.active_strikes) why.push(s.active_strikes + " active strike" + (s.active_strikes === 1 ? "" : "s"));
-        if (s.ban_active) why.push("active restriction");
-        if (s.reports_upheld) why.push(s.reports_upheld + " upheld report" + (s.reports_upheld === 1 ? "" : "s"));
-        if (s.false_reports) why.push(s.false_reports + " dismissed report" + (s.false_reports === 1 ? "" : "s"));
-        if (s.automod_pending) why.push(s.automod_pending + " item awaiting review");
-        if (s.account_age_days != null && s.account_age_days < 14) why.push("account under 14 days old");
-        if (!why.length && s.posts) why.push(s.posts + " community post" + (s.posts === 1 ? "" : "s"));
-        // Mirror the tier next to the display name (self view).
-        var slot = document.querySelector(".cmp-standing-slot");
-        if (slot) slot.innerHTML = cmpStandingHtml({ tier: rep.tier, score: rep.score });
-        host.innerHTML =
-          '<div class="cmp-standing-row">' +
-            '<span class="cmp-standing-chip" style="color:' + t.color + ';border-color:' + t.color + '55;background:' + t.color + '14">' +
-              '<i class="fas ' + t.ico + '"></i> ' + esc(t.label) + '</span>' +
-            '<span class="cmp-standing-score">Score ' + Number(rep.score || 0) + '/100</span>' +
-          '</div>' +
-          (why.length ? '<p class="cmp-standing-why">' + esc(why.join(" · ")) + '</p>' : '') +
-          limitsHtml(d.limits, rep.tier) +
-          '<p class="cmp-standing-note">Standing sets your posting and reporting limits. It is based only on your activity and moderation history on this site.</p>';
-      })
-      .catch(function () { try { host.innerHTML = ""; } catch (e) {} });
-  }
-
-  /* Current budgets for the signed-in member, so limits are never a mystery. */
-  var SCOPE_LABEL = { post: "Posts", reply: "Replies", report: "Reports" };
-  function limitsHtml(limits, tier) {
-    if (!limits) return "";
-    try {
-      return Object.keys(limits).map(function (k) {
-        var cfg = limits[k];
-        if (!cfg) return "";
-        var n = Number(cfg[tier] != null ? cfg[tier] : cfg.standard);
-        var win = Number(cfg.windowSec) >= 3600
-          ? Math.round(Number(cfg.windowSec) / 3600) + "h"
-          : Math.round(Number(cfg.windowSec) / 60) + "m";
-        return '<span class="cmp-standing-limit">' + esc(SCOPE_LABEL[k] || k) + ': <b>' + n + "</b>/" + win + "</span>";
-      }).join("");
-    } catch (e) {
-      return "";
-    }
-  }
   function renderProfilePageBody() {
     var body = document.getElementById("profilePageBody");
     if (!body) return;

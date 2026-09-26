@@ -6,7 +6,6 @@ function json(data, status = 200) {
 }
 
 import { getSessionUser } from "../_lib/auth.js";
-import { getReputation } from "../_lib/reputation.js";
 function initial(name) {
   const s = String(name || "9").trim();
   return s ? s.charAt(0).toUpperCase() : "9";
@@ -170,18 +169,6 @@ export async function onRequestGet(context) {
       }
     } catch (_) {}
 
-    // Standing (Phase 6D). Public-safe projection: only the positive "trusted"
-    // state is ever exposed to other members, so a new, standard or restricted
-    // account leaks nothing. Self-viewers get their real tier.
-    let standing = null;
-    try {
-      const rep = await getReputation(db, uid);
-      if (rep) {
-        if (isSelfViewer) standing = { tier: rep.tier, score: rep.score };
-        else if (rep.tier === "trusted") standing = { badge: "trusted" };
-      }
-    } catch (_) {}
-
     return json({
       ok: true,
       uid,
@@ -190,7 +177,6 @@ export async function onRequestGet(context) {
       discord: link ? { linked: true, name: link.display_name || "" } : { linked: false, name: "" },
       links: links.results,
       visibility: vis,
-      standing,
       stats: {
         plays: vis.stats ? listens.n || 0 : 0,
         hours: vis.stats ? Math.round(((listens.s || 0) / 3600) * 10) / 10 : 0,

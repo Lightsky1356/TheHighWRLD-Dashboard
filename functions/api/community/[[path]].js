@@ -12,7 +12,6 @@ import { getSessionUser } from "../../_lib/auth.js";
 import { hubBroadcast } from "../../_lib/realtime.js";
 import { banRejection } from "../../_lib/bans.js";
 import { moderateContent } from "../../_lib/automod.js";
-import { rateLimit } from "../../_lib/reputation.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -212,16 +211,6 @@ async function createPost(request, env, db) {
   const canPin = await isOwner(env, db, auth);
   const pinned = canPin ? (body.pinned ? 1 : 0) : 0;
 
-  // Adaptive rate limit (Phase 6C). Staff exempt; counter outage fails open.
-  const rl = await rateLimit(db, "post", auth.uid, { exempt: canPin });
-  if (!rl.allowed) {
-    return json({
-      error: "rate limited",
-      message: "You are posting too quickly. Try again in " + rl.retryAfterSec + "s.",
-      retry_after: rl.retryAfterSec,
-    }, 429);
-  }
-
   const ins = await db.prepare(
     "INSERT INTO community_posts (author_uid, user_name, avatar, discord_id, title, body, pinned) VALUES (?, ?, ?, ?, ?, ?, ?)"
   ).bind(auth.uid, auth.name, auth.avatar, auth.discordId, title, text, pinned).run();
@@ -278,16 +267,6 @@ async function createReply(request, env, db, postIdRaw) {
   if (!pid) return json({ error: "malformed post id" }, 400);
   const post = await db.prepare("SELECT * FROM community_posts WHERE id = ?").bind(pid).first();
   if (!post) return json({ error: "post not found" }, 404);
-
-  // Adaptive rate limit (Phase 6C). Staff exempt; counter outage fails open.
-  const rlim = await rateLimit(db, "reply", auth.uid, { exempt: await isOwner(env, db, auth) });
-  if (!rlim.allowed) {
-    return json({
-      error: "rate limited",
-      message: "You are replying too quickly. Try again in " + rlim.retryAfterSec + "s.",
-      retry_after: rlim.retryAfterSec,
-    }, 429);
-  }
 
   let parentId = null;
   let replyTo = "";
