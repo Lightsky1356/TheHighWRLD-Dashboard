@@ -4,6 +4,31 @@
   var WINDOW_STEP = 4;
   var state = { indexes: [], top: null, bottom: null, frame: 0, bound: false, start: -1, end: -1 };
   var searchCache = [];
+  var indexSig = null;
+  var coverMemo = {};
+
+  /* Cover gradients are static, so the accent/gradient lookups (2 regex hits
+   * each) are memoized instead of re-running for every rendered row. */
+  function accentFor(cover) {
+    var m = coverMemo[cover];
+    if (!m) m = coverMemo[cover] = { accent: getGradientAccentColor(cover), gradient: getCoverGradientStyle(cover) };
+    return m;
+  }
+
+  /* Counted with a loop rather than Object.keys() because paintSig() runs on
+   * every scroll frame and shouldn't allocate. */
+  function favSig() {
+    var n = 0;
+    try { for (var k in favorites) if (Object.prototype.hasOwnProperty.call(favorites, k)) n++; } catch (e) {}
+    return n;
+  }
+
+  /* Play/pause state and favourites change the row markup but not the row
+   * window, so they're part of the render key (otherwise the visible rows keep
+   * a stale play icon until you scroll). */
+  function paintSig() {
+    return currentTrackIndex + "|" + (isPlaying ? 1 : 0) + "|" + favSig();
+  }
 
   function getContainer() { return document.getElementById("scrollable-playlist"); }
   function getFilter(container) {
@@ -26,8 +51,9 @@
   function rowHtml(index) {
     var track = trackList[index];
     var cover = track.cover || "Juice-WRLD.png";
-    var accent = getGradientAccentColor(cover);
-    var gradient = getCoverGradientStyle(cover);
+    var tones = accentFor(cover);
+    var accent = tones.accent;
+    var gradient = tones.gradient;
     var favorite = isFavorite(index);
     var playing = index === currentTrackIndex && isPlaying;
     return '<div class="playlist-item p-3 flex items-center justify-between gap-3" data-idx="' + index + '" data-category="' + track.category + '">' +
@@ -79,7 +105,9 @@
     var viewStart = Math.max(0, Math.floor(firstRow / WINDOW_STEP) * WINDOW_STEP - OVERSCAN);
     var visibleRows = Math.ceil(container.clientHeight / ROW_HEIGHT);
     var viewEnd = Math.min(indexes.length, viewStart + visibleRows + OVERSCAN * 2);
-    if (state.start === viewStart && state.end === viewEnd) return;
+    var sig = state.start + ":" + state.end + "|" + paintSig();
+    if (state.sig === sig) return;
+    state.sig = sig;
     state.start = viewStart;
     state.end = viewEnd;
     var html = "";
@@ -95,16 +123,41 @@
     var input = document.getElementById("playlist-search");
     if (empty) empty.classList.toggle("visible", !!(input && input.value) && !indexes.length);
   }
-  function optimizedRender() { rebuildIndexes(); renderVisible(); }
+  /* Only rescan the library when the search text, filter or favourites can
+   * actually change the result set. Play/pause, track changes and queue edits
+   * all route through here, and used to pay a full 280-track scan each time. */
+  function listSig() {
+    var input = document.getElementById("playlist-search");
+    var container = getContainer();
+    var cat = "";
+    try { cat = typeof playerCurrentCategoryFilter === "undefined" ? "" : playerCurrentCategoryFilter; } catch (e) {}
+    return (input ? input.value : "") + "|" + (container ? container.className : "") + "|" + cat + "|" + favSig();
+  }
+  function optimizedRender() {
+    var sig = listSig();
+    if (sig !== indexSig) {
+      rebuildIndexes();
+      indexSig = sig;
+    }
+    renderVisible();
+  }
   for (var i = 0; i < trackList.length; i++) {
     var track = trackList[i];
     searchCache[i] = (track.title + " " + (track.artist || "") + " " + getTrackAlbum(track) + " " + (track.producer || "") + " " + (track.recorded || "") + " " + (track.category || "")).toLowerCase();
   }
   window.renderPlaylistUI = optimizedRender;
+  /* script.js already debounces keystrokes (100ms) before calling this, so the
+   * search path stays immediate here rather than stacking a second delay. */
   window.applySearchFilter = optimizedRender;
   var panel = document.getElementById("playlist-panel");
   if (panel) panel.addEventListener("click", function (event) {
     if (event.target.closest && event.target.closest(".player-tab")) setTimeout(optimizedRender, 150);
   });
-  window.addEventListener("resize", optimizedRender, { passive: true });
+  /* Resize used to rebuild the whole index set on every resize event, which
+   * fires continuously while a window is being dragged. */
+  var resizeTimer = 0;
+  window.addEventListener("resize", function () {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { resizeTimer = 0; state.sig = null; optimizedRender(); }, 150);
+  }, { passive: true });
 })();
