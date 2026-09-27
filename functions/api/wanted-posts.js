@@ -1,5 +1,8 @@
 import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
 import { getSessionUser } from "../_lib/auth.js";
+import { banRejection } from "../_lib/bans.js";
+import { moderateContent } from "../_lib/automod.js";
+import { evaluateSurfaceRules, recordRuleFlags } from "../_lib/submissionRules.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -32,6 +35,43 @@ async function isAdmin(db, uid, env) {
   const link = await db.prepare("SELECT discord_id FROM discord_links WHERE site_uid = ?").bind(uid).first();
   const ownerDiscordId = env.OWNER_DISCORD_ID || "1016529053659967629";
   return !!(link && link.discord_id && link.discord_id === ownerDiscordId);
+}
+
+// Wanted requests in the last 10 minutes, for the flooding detector.
+async function recentCount(db, uid) {
+  if (!uid) return null;
+  const row = await db.prepare(
+    "SELECT COUNT(*) as n FROM wanted_posts WHERE author_uid = ? AND created_at >= datetime('now','-10 minutes')"
+  ).bind(uid).first().catch(() => null);
+  return row ? Number(row.n) : null;
+}
+
+// Vault submission rules: flag for human review, never block. The vault is
+// official-releases-only, so a request for a leak or another artist is the
+// main thing this catches.
+async function flagSubmission(db, env, targetId, uid, fields) {
+  const violations = evaluateSurfaceRules("wanted", fields);
+  const generic = await moderateContent(db, env, {
+    targetType: "wanted", targetId: String(targetId || ""), uid,
+    text: String(fields.title || "") + "\n" + String(fields.altName || "") + "\n" +
+      String(fields.description || "") + "\n" + String(fields.era || ""),
+    author: fields.author, recentCount: fields.recentCount,
+  });
+  let rule = null;
+  if (violations.length) rule = await recordRuleFlags(db, { surface: "wanted", targetId, uid, violations });
+  if (rule || generic) {
+    const codes = violations.map((v) => v.code);
+    if (generic) codes.push(generic.category);
+    const severity = (rule && rule.severity) || (generic && generic.severity) || "low";
+    try {
+      await db.prepare(
+        "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'moderation', ?, ?, ?, ?, 'Automated moderation')"
+      ).bind(uid, "Your wanted request was sent to staff review (" + codes.join(", ") + ")",
+        "wanted-posts:" + targetId, String(targetId || ""), severity).run();
+    } catch (_) {}
+    return { severity, codes };
+  }
+  return null;
 }
 
 async function loadPosts(env, params) {
@@ -104,6 +144,16 @@ export async function onRequestPost(context) {
   const env = context.env;
   const db = env.wanted_vault;
   let liveEvent = null;
+  let ruleFlag = null;
+
+  // Ban enforcement: every action here mutates (create/edit/delete/status).
+  try {
+    const gateUid = await resolveSiteUid(db, context.request, body.user);
+    if (gateUid) {
+      const rej = await banRejection(db, gateUid);
+      if (rej) return rej.response;
+    }
+  } catch (_) {}
 
   try {
     switch (body.action) {
@@ -116,6 +166,13 @@ export async function onRequestPost(context) {
         const altName = String(body.altName || "").trim().slice(0, MAX_ALT);
         const description = String(body.description || "").trim().slice(0, MAX_DESC);
         const era = String(body.era || "").trim().slice(0, MAX_ERA);
+        if (uid) {
+          try {
+            await db.prepare(
+              "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'info', ?, ?, ?, ?, ?)"
+            ).bind(uid, "Wanted request posted — good hunting in the vault", "wanted-posts:create", "", "", String(body.authorName || "System").slice(0, 40)).run();
+          } catch (_) {}
+        }
         let authorName = "🖥️System";
         if (uid) {
           const link = await db.prepare("SELECT display_name FROM discord_links WHERE site_uid = ?").bind(uid).first();
@@ -134,6 +191,10 @@ export async function onRequestPost(context) {
         ).bind(title, altName, description, era, uid || "", authorName).run();
         const postId = ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0;
         const post = await db.prepare("SELECT * FROM wanted_posts WHERE id = ?").bind(postId).first();
+        // Vault rules: never blocks the request, only flags it for staff.
+        ruleFlag = await flagSubmission(db, env, postId, uid, {
+          title, altName, description, era, author: authorName, recentCount: await recentCount(db, uid),
+        });
         liveEvent = {
           type: "wanted:created",
           post: post ? {
@@ -153,6 +214,23 @@ export async function onRequestPost(context) {
         if (!uid || !(await isAdmin(db, uid, env))) return json({ error: "admin only" }, 403);
         await db.prepare("UPDATE wanted_posts SET status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?").bind(newStatus, postId).run();
         liveEvent = { type: "wanted:status", postId, status: newStatus };
+        try {
+          const tgt = await db.prepare("SELECT author_uid, title FROM wanted_posts WHERE id = ?").bind(postId).first();
+          if (tgt && tgt.author_uid && tgt.author_uid !== uid) {
+            const msg = 'Your wanted post "' + String(tgt.title || "").slice(0, 60) + '" is now ' + newStatus;
+            const n = await db.prepare(
+              "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'wanted', ?, ?, ?, NULL, NULL)"
+            ).bind(tgt.author_uid, uid, "Staff", msg).run();
+            await hubBroadcast(env, {
+              type: "notification:created",
+              recipientUid: tgt.author_uid,
+              notification: {
+                id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
+                type: "wanted", message: msg, post_id: null, reply_id: null, actor: "Staff",
+              },
+            });
+          }
+        } catch (_) {}
         break;
       }
       case "edit": {
@@ -171,6 +249,9 @@ export async function onRequestPost(context) {
         if (title) {
           await db.prepare("UPDATE wanted_posts SET title=?, alt_name=?, description=?, era=?, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?")
             .bind(title, altName, description, era, postId).run();
+          ruleFlag = await flagSubmission(db, env, postId, uid, {
+            title, altName, description, era, author: uid, recentCount: null,
+          });
         }
         liveEvent = { type: "wanted:edited", postId };
         break;
@@ -188,7 +269,7 @@ export async function onRequestPost(context) {
         return json({ error: "unknown action" }, 400);
     }
     if (liveEvent) await hubBroadcast(env, liveEvent);
-    return json({ ok: true });
+    return json({ ok: true, flagged: ruleFlag });
   } catch (err) {
     return json({ error: String(err && err.message || err) }, 500);
   }

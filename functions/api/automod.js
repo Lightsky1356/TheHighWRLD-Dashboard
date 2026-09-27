@@ -61,6 +61,9 @@ async function notifyUser(db, env, uid, type, message) {
 }
 
 // Content is loaded live so the reviewer sees what exists now, not a stale copy.
+// Every target_type must be handled explicitly: guessing against
+// community_posts would show the wrong row (or a random one) for the Suggestions,
+// Wanted Vault, and Gallery flags.
 async function loadContent(db, type, id) {
   const n = Number(id) || 0;
   if (!n) return null;
@@ -68,8 +71,28 @@ async function loadContent(db, type, id) {
     const r = await db.prepare("SELECT * FROM community_replies WHERE id = ?").bind(n).first();
     return r ? { text: (r.user_name + ": " + r.body).slice(0, 500), exists: true, author: r.user_name, uid: r.author_uid } : { text: "(reply removed)", exists: false };
   }
-  const p = await db.prepare("SELECT * FROM community_posts WHERE id = ?").bind(n).first();
-  return p ? { text: (p.title + "\n" + p.body).slice(0, 500), exists: true, author: p.user_name, uid: p.author_uid } : { text: "(post removed)", exists: false };
+  if (type === "post") {
+    const p = await db.prepare("SELECT * FROM community_posts WHERE id = ?").bind(n).first();
+    return p ? { text: (p.title + "\n" + p.body).slice(0, 500), exists: true, author: p.user_name, uid: p.author_uid } : { text: "(post removed)", exists: false };
+  }
+  if (type === "suggestion") {
+    const s = await db.prepare("SELECT * FROM suggestions_v2 WHERE id = ?").bind(n).first();
+    return s ? { text: (s.title + "\n" + (s.description || "")).slice(0, 500), exists: true, author: s.author_name, uid: s.author_uid } : { text: "(suggestion removed)", exists: false };
+  }
+  if (type === "wanted") {
+    const w = await db.prepare("SELECT * FROM wanted_posts WHERE id = ?").bind(n).first();
+    return w ? { text: (w.title + "\n" + (w.description || "")).slice(0, 500), exists: true, author: w.author_name, uid: w.author_uid } : { text: "(wanted request removed)", exists: false };
+  }
+  if (type === "wanted_reply") {
+    const r = await db.prepare("SELECT * FROM replies WHERE id = ?").bind(n).first();
+    return r ? { text: (r.track_id + "\n" + r.user_name + ": " + r.body).slice(0, 500), exists: true, author: r.user_name, uid: r.author_uid } : { text: "(comment removed)", exists: false };
+  }
+  if (type === "gallery") {
+    // Never select the image blob here - just enough to judge the caption.
+    const g = await db.prepare("SELECT id, title, caption, user_name, uid, status FROM gallery_items WHERE id = ?").bind(n).first();
+    return g ? { text: (g.title + "\n" + (g.caption || "") + "\n[status: " + g.status + "]").slice(0, 500), exists: true, author: g.user_name, uid: g.uid } : { text: "(upload removed)", exists: false };
+  }
+  return { text: "(" + String(type || "item") + " #" + n + ")", exists: false };
 }
 
 export async function onRequestOptions() {
@@ -152,7 +175,7 @@ export async function onRequestPost(context) {
               postId: r ? r.post_id : null,
               conversationId: "post-" + (r ? r.post_id : 0),
             });
-          } else {
+          } else if (flag.target_type === "post") {
             const kids = await db.prepare("SELECT id FROM community_replies WHERE post_id = ?").all(t).catch(() => null);
             for (const k of (kids && kids.results ? kids.results : [])) {
               await db.prepare("DELETE FROM community_reactions WHERE reply_id = ?").bind(k.id).run().catch(() => null);
@@ -163,6 +186,27 @@ export async function onRequestPost(context) {
             await db.prepare("DELETE FROM community_notifications WHERE post_id = ?").bind(t).run().catch(() => null);
             await db.prepare("DELETE FROM community_posts WHERE id = ?").bind(t).run().catch(() => null);
             await hubBroadcast(context.env, { type: "post:deleted", postId: t });
+          } else if (flag.target_type === "suggestion") {
+            await db.prepare("DELETE FROM suggestion_votes WHERE suggestion_id = ?").bind(t).run().catch(() => null);
+            await db.prepare("DELETE FROM suggestions_v2 WHERE id = ?").bind(t).run().catch(() => null);
+            await hubBroadcast(context.env, { type: "suggestion:deleted", suggestionId: t });
+          } else if (flag.target_type === "wanted") {
+            await db.prepare("DELETE FROM wanted_posts WHERE id = ?").bind(t).run().catch(() => null);
+            await hubBroadcast(context.env, { type: "wanted:deleted", postId: t });
+          } else if (flag.target_type === "wanted_reply") {
+            const r = await db.prepare("SELECT track_id FROM replies WHERE id = ?").bind(t).first().catch(() => null);
+            await db.prepare("UPDATE replies SET parent_id = NULL WHERE parent_id = ?").bind(t).run().catch(() => null);
+            await db.prepare("DELETE FROM notifications WHERE reply_id = ?").bind(t).run().catch(() => null);
+            await db.prepare("DELETE FROM reply_votes WHERE reply_id = ?").bind(t).run().catch(() => null);
+            await db.prepare("DELETE FROM replies WHERE id = ?").bind(t).run().catch(() => null);
+            await hubBroadcast(context.env, {
+              type: "reply:deleted", replyId: t, postId: null,
+              conversationId: r ? r.track_id : null,
+            });
+          } else if (flag.target_type === "gallery") {
+            // Reject rather than hard-delete, matching the gallery queue's own
+            // moderation action, and drop the stored bytes either way.
+            await db.prepare("UPDATE gallery_items SET status = 'rejected', data = NULL WHERE id = ?").bind(t).run().catch(() => null);
           }
         }
         status = "removed";

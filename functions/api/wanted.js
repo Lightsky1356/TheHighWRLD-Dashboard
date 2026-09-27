@@ -1,4 +1,7 @@
 import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
+import { banRejection } from "../_lib/bans.js";
+import { moderateContent } from "../_lib/automod.js";
+import { evaluateSurfaceRules, recordRuleFlags } from "../_lib/submissionRules.js";
 
 const OWNER_DISCORD_ID_DEFAULT = "1016529053659967629";
 
@@ -122,9 +125,17 @@ export async function onRequestPost(context) {
   const request = context.request;
   let liveEvent = null;
   let createdReply = null;
+  let replyFlag = null;
   try {
     const uid = await resolveSiteUid(db, request, body.user);
     if (body.user && uid) body.user = uid;
+    // Ban enforcement on content mutations (presence heartbeat excluded).
+    if (body.action !== "disconnect" && uid) {
+      try {
+        const rej = await banRejection(db, uid);
+        if (rej) return rej.response;
+      } catch (_) {}
+    }
     switch (body.action) {
       case "vote": {
         const { track, user } = body;
@@ -203,6 +214,34 @@ export async function onRequestPost(context) {
         }, 0);
         createdReply.clientTempId = body.clientTempId || null;
         liveEvent = { type: "reply:created", reply: createdReply, conversationId: track, clientTempId: body.clientTempId || null };
+        // Vault comment rules: flag for human review only, never block. Catches
+        // the off-platform trading/download pitches that the no-scam rule is about.
+        {
+          const body500 = String(text).slice(0, 500);
+          const violations = evaluateSurfaceRules("wanted", { description: body500 });
+          const recent = await db.prepare(
+            "SELECT COUNT(*) as n FROM replies WHERE author_uid = ? AND created_at >= datetime('now','-10 minutes')"
+          ).bind(user).first().catch(() => null);
+          const generic = await moderateContent(db, env, {
+            targetType: "wanted_reply", targetId: String(replyId), uid: user,
+            text: String(track) + "\n" + body500, author: link.display_name,
+            recentCount: recent ? Number(recent.n) : null,
+          });
+          let rule = null;
+          if (violations.length) rule = await recordRuleFlags(db, { surface: "wanted", targetId: replyId, uid: user, violations });
+          if (rule || generic) {
+            const codes = violations.map((v) => v.code);
+            if (generic) codes.push(generic.category);
+            const severity = (rule && rule.severity) || (generic && generic.severity) || "low";
+            try {
+              await db.prepare(
+                "INSERT INTO notifications (uid, type, message, track_id, reply_id, actor) VALUES (?, 'moderation', ?, ?, ?, 'Automated moderation')"
+              ).bind(user, "Your comment was sent to staff review (" + codes.join(", ") + ")",
+                String(track).slice(0, 80), replyId, severity).run();
+            } catch (_) {}
+            replyFlag = { severity, codes };
+          }
+        }
         if (parentAuthorId && link.discord_id && parentAuthorId !== link.discord_id) {
           const target = await db.prepare(
             "SELECT site_uid FROM discord_links WHERE discord_id = ?"
@@ -325,12 +364,23 @@ export async function onRequestPost(context) {
         break;
       }
       case "nominate": {
-        const { track, note } = body;
+        const { track, note, user } = body;
         if (!track) return json({ error: "missing track" }, 400);
         const exists = await db.prepare("SELECT id FROM tracks WHERE title = ?").bind(String(track).slice(0, 80)).first();
         if (exists) return json({ error: "already nominated" }, 409);
         await db.prepare("INSERT INTO tracks (title, note) VALUES (?, ?)")
           .bind(String(track).slice(0, 80), String(note || "Juice WRLD").slice(0, 120)).run();
+        const nominee = String(body.user || "").slice(0, 36);
+        if (nominee) {
+          const link = await db.prepare("SELECT discord_id FROM discord_links WHERE site_uid = ?").bind(nominee).first();
+          if (link && link.discord_id) {
+            try {
+              await db.prepare(
+                "INSERT INTO notifications (uid, type, message, track_id, reply_id, actor, href) VALUES (?, 'info', ?, ?, NULL, ?, ?)"
+              ).bind(nominee, "You scouted the vault and nominated a track", String(track).slice(0, 80), link.display_name || "", "wanted:nominate").run();
+            } catch (e) {}
+          }
+        }
         break;
       }
       case "deleteTrack": {
@@ -350,8 +400,10 @@ export async function onRequestPost(context) {
       default:
         return json({ error: "unknown action: " + body.action }, 400);
     }
-    if (liveEvent) { await hubBroadcast(env, liveEvent); }
-    return json(await loadState(env, body.user || ""));
+  if (liveEvent) { await hubBroadcast(env, liveEvent); }
+  const state = await loadState(env, body.user || "");
+  if (replyFlag) state.replyFlag = replyFlag;
+  return json(state);
   } catch (err) {
     return json({ error: String(err && err.message || err) }, 500);
   }

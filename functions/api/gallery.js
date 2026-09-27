@@ -1,0 +1,245 @@
+// Fan Art / Community Gallery API.
+// Images are client-resized (max 1600px JPEG) and stored as D1 blobs with
+// strict validation: allowlist MIME, magic bytes, 800KB raw cap, rate limit.
+// Moderation: submissions land 'pending'; owners approve/reject with code.
+//
+// GET  /api/gallery?page=&limit=        -> approved items (no blobs)
+// GET  /api/gallery?id=<id>             -> raw image bytes (cached)
+// GET  /api/gallery?mine=1              -> own submissions (session)
+// GET  /api/gallery?pending=1&code=...  -> moderation queue (owner)
+// POST /api/gallery { action, ... }     -> submit|delete|report|moderate
+
+import { getSessionUser } from "../_lib/auth.js";
+import { banRejection } from "../_lib/bans.js";
+import { evaluateSurfaceRules, recordRuleFlags } from "../_lib/submissionRules.js";
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+const MAX_RAW = 819200; // 800KB
+const PAGE_CAP = 24;
+
+const MIME_OK = {
+  "image/jpeg": [0xff, 0xd8, 0xff],
+  "image/png": [0x89, 0x50, 0x4e, 0x47],
+  "image/gif": [0x47, 0x49, 0x46, 0x38],
+  "image/webp": null, // checked as RIFF....WEBP below
+};
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...CORS },
+  });
+}
+
+function magicOk(bytes, mime) {
+  try {
+    if (mime === "image/webp") {
+      return bytes.length > 12 &&
+        bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+        bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
+    }
+    const sig = MIME_OK[mime];
+    if (!sig) return false;
+    for (let i = 0; i < sig.length; i++) if (bytes[i] !== sig[i]) return false;
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function b64ToBytes(b64) {
+  const bin = atob(String(b64 || ""));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+export async function onRequestOptions() {
+  return new Response(null, { status: 204, headers: CORS });
+}
+
+export async function onRequestGet(context) {
+  try {
+    const db = context.env.wanted_vault;
+    const url = new URL(context.request.url);
+
+    const id = Number(url.searchParams.get("id")) || 0;
+    if (id > 0) {
+      const secret = context.env.OWNER_PASSCODE || "";
+      const asOwner = secret && url.searchParams.get("code") === secret;
+      const row = await db.prepare(
+        "SELECT data, mime FROM gallery_items WHERE id = ?" + (asOwner ? "" : " AND status = 'approved'")
+      ).bind(id).first();
+      if (!row || !row.data) return new Response("not found", { status: 404 });
+      return new Response(row.data, {
+        status: 200,
+        headers: {
+          "Content-Type": row.mime || "image/jpeg",
+          "Cache-Control": "public, max-age=31536000, immutable",
+          ...CORS,
+        },
+      });
+    }
+
+    if (url.searchParams.get("mine") === "1") {
+      const me = await getSessionUser(db, context.request);
+      if (!me) return json({ ok: false, error: "not signed in" }, 401);
+      const rows = await db.prepare(
+        "SELECT id, user_name, avatar, title, caption, mime, size, status, created_at " +
+        "FROM gallery_items WHERE uid = ? ORDER BY id DESC LIMIT 50"
+      ).bind(me.uid).all();
+      return json({ ok: true, items: rows.results || [] });
+    }
+
+    if (url.searchParams.get("pending") === "1") {
+      const secret = context.env.OWNER_PASSCODE || "";
+      if (!secret || url.searchParams.get("code") !== secret) {
+        return json({ ok: false, error: "forbidden" }, 403);
+      }
+      const rows = await db.prepare(
+        "SELECT id, uid, user_name, avatar, title, caption, mime, size, status, created_at " +
+        "FROM gallery_items WHERE status = 'pending' ORDER BY id ASC LIMIT 50"
+      ).all();
+      return json({ ok: true, items: rows.results || [] });
+    }
+
+    const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+    const limit = Math.max(1, Math.min(PAGE_CAP, Number(url.searchParams.get("limit")) || 12));
+    const rows = await db.prepare(
+      "SELECT id, uid, user_name, avatar, title, caption, mime, size, created_at " +
+      "FROM gallery_items WHERE status = 'approved' ORDER BY id DESC LIMIT ? OFFSET ?"
+    ).bind(limit, (page - 1) * limit).all();
+    const total = await db.prepare(
+      "SELECT COUNT(*) AS n FROM gallery_items WHERE status = 'approved'"
+    ).first();
+    return json({ ok: true, page, items: rows.results || [], total: total ? total.n : 0 });
+  } catch (err) {
+    return json({ ok: false, error: String((err && err.message) || err) }, 500);
+  }
+}
+
+export async function onRequestPost(context) {
+  try {
+    const db = context.env.wanted_vault;
+    const body = await context.request.json().catch(() => ({}));
+    const action = String(body.action || "");
+
+    if (action === "submit") {
+      const me = await getSessionUser(db, context.request);
+      if (!me) return json({ ok: false, error: "not signed in" }, 401);
+      try {
+        const rej = await banRejection(db, me.uid);
+        if (rej) return rej.response;
+      } catch (_) {}
+      const title = String(body.title || "").trim().slice(0, 80) || "Untitled";
+      const caption = String(body.caption || "").trim().slice(0, 300);
+      const mime = String(body.mime || "");
+      if (!MIME_OK[mime] && mime !== "image/webp") {
+        return json({ ok: false, error: "unsupported image type" }, 400);
+      }
+      let bytes;
+      try {
+        bytes = b64ToBytes(body.data);
+      } catch (_) {
+        return json({ ok: false, error: "bad image data" }, 400);
+      }
+      if (!bytes.length || bytes.length > MAX_RAW) {
+        return json({ ok: false, error: "image too large (800KB max after resize)" }, 400);
+      }
+      if (!magicOk(bytes, mime)) {
+        return json({ ok: false, error: "file is not a valid image" }, 400);
+      }
+      try {
+        const recent = await db.prepare(
+          "SELECT COUNT(*) AS n FROM gallery_items WHERE uid = ? AND created_at >= datetime('now', '-1 day')"
+        ).bind(me.uid).first();
+        if (recent && recent.n >= 10) return json({ ok: false, error: "daily limit reached" }, 429);
+      } catch (_) {}
+      const ins = await db.prepare(
+        "INSERT INTO gallery_items (uid, user_name, avatar, title, caption, mime, size, data, status) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')"
+      ).bind(me.uid, (me.name || "Guest").slice(0, 40), (me.avatar || "").slice(0, 300),
+        title, caption, mime, bytes.length, bytes.buffer).run();
+      const itemId = ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0;
+      // Uploads already land in the 'pending' queue for a human to look at. The
+      // caption ruleset adds a reason on the flag so the reviewer knows what the
+      // automated pass caught (handles, promo codes, links). Nothing is auto-rejected.
+      let ruleFlag = null;
+      const violations = evaluateSurfaceRules("gallery", { title, caption });
+      if (violations.length) {
+        ruleFlag = await recordRuleFlags(db, { surface: "gallery", targetId: itemId, uid: me.uid, violations });
+        if (ruleFlag) {
+          try {
+            await db.prepare(
+              "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'moderation', ?, ?, ?, ?, 'Automated moderation')"
+            ).bind(me.uid, "Your upload was sent to staff review (" + ruleFlag.codes.join(", ") + ")",
+              "gallery:" + itemId, String(itemId), ruleFlag.severity).run();
+          } catch (_) {}
+        }
+      }
+      return json({ ok: true, id: itemId, flagged: ruleFlag });
+    }
+
+    if (action === "delete") {
+      const me = await getSessionUser(db, context.request);
+      if (!me) return json({ ok: false, error: "not signed in" }, 401);
+      try {
+        const rej = await banRejection(db, me.uid);
+        if (rej) return rej.response;
+      } catch (_) {}
+      const id = Number(body.id) || 0;
+      if (!id) return json({ ok: false, error: "missing id" }, 400);
+      const row = await db.prepare("SELECT uid FROM gallery_items WHERE id = ?").bind(id).first();
+      if (!row) return json({ ok: false, error: "not found" }, 404);
+      const secret = context.env.OWNER_PASSCODE || "";
+      const isOwner = secret && String(body.code || "") === secret;
+      if (String(row.uid || "") !== String(me.uid) && !isOwner) {
+        return json({ ok: false, error: "forbidden" }, 403);
+      }
+      await db.prepare("DELETE FROM gallery_items WHERE id = ?").bind(id).run();
+      return json({ ok: true });
+    }
+
+    if (action === "report") {
+      const me = await getSessionUser(db, context.request);
+      if (!me) return json({ ok: false, error: "not signed in" }, 401);
+      const id = Number(body.id) || 0;
+      const reason = String(body.reason || "").trim().slice(0, 200) || "reported";
+      if (!id) return json({ ok: false, error: "missing id" }, 400);
+      const row = await db.prepare("SELECT title FROM gallery_items WHERE id = ?").bind(id).first();
+      if (!row) return json({ ok: false, error: "not found" }, 404);
+      await db.prepare(
+        "INSERT INTO reports (target_type, target_id, reporter_discord_id, reporter_name, reason, snapshot_title) " +
+        "VALUES ('gallery', ?, ?, ?, ?, ?)"
+      ).bind(String(id), "", (me.name || "").slice(0, 40), reason, String(row.title || "").slice(0, 120)).run();
+      return json({ ok: true });
+    }
+
+    if (action === "moderate") {
+      const secret = context.env.OWNER_PASSCODE || "";
+      if (!secret || String(body.code || "") !== secret) {
+        return json({ ok: false, error: "forbidden" }, 403);
+      }
+      const id = Number(body.id) || 0;
+      const status = String(body.status || "");
+      if (!id || (status !== "approved" && status !== "rejected")) {
+        return json({ ok: false, error: "bad id/status" }, 400);
+      }
+      if (status === "rejected") {
+        await db.prepare("UPDATE gallery_items SET status = 'rejected', data = NULL WHERE id = ?").bind(id).run();
+      } else {
+        await db.prepare("UPDATE gallery_items SET status = 'approved' WHERE id = ?").bind(id).run();
+      }
+      return json({ ok: true });
+    }
+
+    return json({ ok: false, error: "unknown action" }, 400);
+  } catch (err) {
+    return json({ ok: false, error: String((err && err.message) || err) }, 500);
+  }
+}

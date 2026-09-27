@@ -1,5 +1,8 @@
 import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
 import { getSessionUser } from "../_lib/auth.js";
+import { banRejection } from "../_lib/bans.js";
+import { moderateContent } from "../_lib/automod.js";
+import { evaluateSurfaceRules, recordRuleFlags } from "../_lib/submissionRules.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -37,6 +40,42 @@ async function isLinked(db, uid) {
   if (!uid) return false;
   const link = await db.prepare("SELECT display_name FROM discord_links WHERE site_uid = ?").bind(uid).first();
   return !!(link && link.display_name);
+}
+
+// Submissions in the last 10 minutes, for the flooding detector.
+async function recentCount(db, uid) {
+  if (!uid) return null;
+  const row = await db.prepare(
+    "SELECT COUNT(*) as n FROM suggestions_v2 WHERE author_uid = ? AND created_at >= datetime('now','-10 minutes')"
+  ).bind(uid).first().catch(() => null);
+  return row ? Number(row.n) : null;
+}
+
+// Run both moderation layers for a submission: the shared spam/shouting rules
+// (moderateContent) and the surface-specific ruleset. Either can flag, neither
+// can reject. Returns null when clean, or {severity, codes} for the UI notice.
+async function flagSubmission(db, env, surface, targetId, uid, fields) {
+  const violations = evaluateSurfaceRules(surface, fields);
+  const generic = await moderateContent(db, env, {
+    targetType: "suggestion", targetId: String(targetId || ""), uid,
+    text: String(fields.title || "") + "\n" + String(fields.description || ""),
+    author: fields.author, recentCount: fields.recentCount,
+  });
+  let rule = null;
+  if (violations.length) rule = await recordRuleFlags(db, { surface, targetId, uid, violations });
+  if (rule || generic) {
+    const codes = violations.map((v) => v.code);
+    if (generic) codes.push(generic.category);
+    const severity = (rule && rule.severity) || (generic && generic.severity) || "low";
+    try {
+      await db.prepare(
+        "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'moderation', ?, ?, ?, ?, 'Automated moderation')"
+      ).bind(uid, "Your suggestion was sent to staff review (" + codes.join(", ") + ")",
+        "suggestions:" + targetId, String(targetId || ""), severity).run();
+    } catch (_) {}
+    return { severity, codes };
+  }
+  return null;
 }
 
 async function loadSuggestions(env, params) {
@@ -120,6 +159,16 @@ export async function onRequestPost(context) {
   const env = context.env;
   const db = env.wanted_vault;
   let liveEvent = null;
+  let ruleFlag = null;
+
+  // Ban enforcement: every action here mutates (create/vote/edit/delete/status).
+  try {
+    const gateUid = await resolveSiteUid(db, context.request, body.user);
+    if (gateUid) {
+      const rej = await banRejection(db, gateUid);
+      if (rej) return rej.response;
+    }
+  } catch (_) {}
 
   try {
     switch (body.action) {
@@ -148,6 +197,11 @@ export async function onRequestPost(context) {
         ).bind(title, description, category, uid || "", authorName).run();
         const sugId = ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0;
         const sug = await db.prepare("SELECT * FROM suggestions_v2 WHERE id = ?").bind(sugId).first();
+        // Submission rules: the post is NOT blocked. Violations are recorded as
+        // a pending automod flag and the author is told, so a human decides.
+        ruleFlag = await flagSubmission(db, env, "suggestions", sugId, uid, {
+          title, description: String(body.description || ""), author: authorName, recentCount: await recentCount(db, uid),
+        });
         liveEvent = {
           type: "suggestion:created",
           suggestion: sug ? {
@@ -204,6 +258,23 @@ export async function onRequestPost(context) {
         if (!uid || !(await isAdmin(db, uid, env))) return json({ error: "admin only" }, 403);
         await db.prepare("UPDATE suggestions_v2 SET status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?").bind(newStatus, sugId).run();
         liveEvent = { type: "suggestion:status", suggestionId: sugId, status: newStatus };
+        try {
+          const tgt = await db.prepare("SELECT author_uid, title FROM suggestions_v2 WHERE id = ?").bind(sugId).first();
+          if (tgt && tgt.author_uid && tgt.author_uid !== uid) {
+            const msg = 'Your suggestion "' + String(tgt.title || "").slice(0, 60) + '" is now ' + newStatus;
+            const n = await db.prepare(
+              "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'suggestion', ?, ?, ?, NULL, NULL)"
+            ).bind(tgt.author_uid, uid, "Staff", msg).run();
+            await hubBroadcast(env, {
+              type: "notification:created",
+              recipientUid: tgt.author_uid,
+              notification: {
+                id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
+                type: "suggestion", message: msg, post_id: null, reply_id: null, actor: "Staff",
+              },
+            });
+          }
+        } catch (_) {}
         break;
       }
       case "edit": {
@@ -224,6 +295,11 @@ export async function onRequestPost(context) {
           if (category) { sets.push("category=?"); vals.push(category); }
           vals.push(sugId);
           await db.prepare("UPDATE suggestions_v2 SET " + sets.join(",") + " WHERE id=?").bind(...vals).run();
+          // Edits are re-checked: fixing the flagged text clears nothing, but
+          // new violations get a fresh flag for the reviewer.
+          ruleFlag = await flagSubmission(db, env, "suggestions", sugId, uid, {
+            title, description: String(body.description || ""), author: uid, recentCount: null,
+          });
         }
         liveEvent = { type: "suggestion:edited", suggestionId: sugId };
         break;
@@ -242,7 +318,7 @@ export async function onRequestPost(context) {
         return json({ error: "unknown action" }, 400);
     }
     if (liveEvent) await hubBroadcast(env, liveEvent);
-    return json({ ok: true });
+    return json({ ok: true, flagged: ruleFlag });
   } catch (err) {
     return json({ error: String(err && err.message || err) }, 500);
   }

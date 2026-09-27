@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v7';
+const VERSION = 'thw-v8';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -34,6 +34,7 @@ const PRECACHE = [
   './i18n.js',
   './script.js',
   './suggestions.js',
+  './submission-rules-ui.js',
   './auth.js',
   './wanted-realtime.js',
   './community-realtime.js',

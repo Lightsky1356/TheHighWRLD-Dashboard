@@ -263,6 +263,7 @@
         btn.disabled = false;
         if (r.ok) {
           showResult('Suggestion submitted!', true);
+          if (r.flagged && window.submissionRules) window.submissionRules.notice('suggestions', r.flagged);
           if (titleEl) titleEl.value = '';
           if (descEl) descEl.value = '';
           if (charCount) charCount.textContent = '0 / 600';

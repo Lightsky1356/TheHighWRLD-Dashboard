@@ -459,7 +459,8 @@
         var payload = { track: trackKey, text: inp.value.trim() };
         if (parent) payload.parent = parseInt(parent, 10);
         sendTypingStop(trackKey);
-        apiOld('reply', payload).then(function () {
+        apiOld('reply', payload).then(function (res) {
+          if (res && res.replyFlag && window.submissionRules) window.submissionRules.notice('wanted', res.replyFlag);
           inp.value = '';
           inp.placeholder = 'Write a reply...';
           inp.removeAttribute('data-parent');
@@ -539,7 +540,8 @@
             if (item && item.type === 'seed') trackKey = item.t;
           }
           if (trackKey) {
-            apiOld('reply', { track: trackKey, text: input.value.trim(), parent: parseInt(parent, 10) }).then(function () {
+            apiOld('reply', { track: trackKey, text: input.value.trim(), parent: parseInt(parent, 10) }).then(function (res) {
+              if (res && res.replyFlag && window.submissionRules) window.submissionRules.notice('wanted', res.replyFlag);
               input.value = '';
               input.placeholder = 'Write a reply...';
               input.removeAttribute('data-parent');
@@ -604,6 +606,7 @@
         btn.disabled = false;
         if (r.ok) {
           showResult('Wanted request submitted!', true);
+          if (r.flagged && window.submissionRules) window.submissionRules.notice('wanted', r.flagged);
           if (titleEl) titleEl.value = '';
           if (altEl) altEl.value = '';
           if (descEl) descEl.value = '';
