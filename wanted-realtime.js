@@ -196,6 +196,53 @@
     bindEvents(el);
   }
 
+  function wantedAvatarFallback() {
+    return '<div class="wanted-reply-avatar wanted-reply-avatar-fallback"><i class="fas fa-user"></i></div>';
+  }
+
+  function wantedAvatarFallbackEl() {
+    var d = document.createElement('div');
+    d.className = 'wanted-reply-avatar wanted-reply-avatar-fallback';
+    d.innerHTML = '<i class="fas fa-user"></i>';
+    return d;
+  }
+
+  // Discord default avatar for a numeric user id, or '' when it cannot be
+  // derived. Discord buckets a user id into one of six default avatars with
+  // (id >> 22) % 6, which never 404s unlike a stale custom-avatar hash.
+  function wantedDiscordAvatar(id) {
+    if (!/^\d{10,25}$/.test(id || '')) return '';
+    try {
+      return 'https://cdn.discordapp.com/embed/avatars/' + (Number((BigInt(id) >> 22n) % 6n)) + '.png';
+    } catch (e) { return ''; }
+  }
+
+  // Global error handler referenced from the inline onerror above. Keeps a
+  // real-looking picture in place instead of leaving a hole next to the name.
+  window.__wantedAvaFail = function (img) {
+    if (!img || !img.parentNode) return;
+    var parent = img.parentNode;
+    if (img.getAttribute('data-wa-tried') === '1') {
+      parent.replaceChild(wantedAvatarFallbackEl(), img);
+      return;
+    }
+    img.setAttribute('data-wa-tried', '1');
+    var alt = wantedDiscordAvatar(img.getAttribute('data-wa-discord') || '');
+    if (!alt) {
+      parent.replaceChild(wantedAvatarFallbackEl(), img);
+      return;
+    }
+    var next = document.createElement('img');
+    next.className = 'wanted-reply-avatar';
+    next.alt = '';
+    next.src = alt;
+    next.setAttribute('data-wa-tried', '2');
+    next.onerror = function () {
+      if (next.parentNode) next.parentNode.replaceChild(wantedAvatarFallbackEl(), next);
+    };
+    parent.replaceChild(next, img);
+  };
+
   function renderReply(r, depth, allReplies) {
     depth = depth || 0;
     allReplies = allReplies || [];
@@ -206,7 +253,13 @@
     var isOwner = r.d && state.isOwner;
     var isAuthor = r.d && getUid() && state.oldServer.me && r.d === state.oldServer.me.id;
     var canDelete = isOwner || isAuthor;
-    var avatarHtml = r.a ? '<img class="wanted-reply-avatar" src="' + esc(r.a) + '" alt="" onerror="this.style.display=\'none\'">' : '<div class="wanted-reply-avatar wanted-reply-avatar-fallback"><i class="fas fa-user"></i></div>';
+    // A stored Discord avatar URL goes stale whenever the user changes (or
+    // removes) their avatar. Hiding the <img> on error left a blank gap next to
+    // the name, so fall back to Discord's default avatar for that user id, and
+    // to the generic placeholder if even that is unavailable.
+    var avatarHtml = r.a
+      ? '<img class="wanted-reply-avatar" src="' + esc(r.a) + '" alt="" data-wa-discord="' + esc(r.d || '') + '" onerror="window.__wantedAvaFail&&window.__wantedAvaFail(this)">'
+      : wantedAvatarFallback();
     var editedBadge = r.e ? '<span class="wanted-edited-badge">edited</span>' : '';
 
     var replyTo = '';

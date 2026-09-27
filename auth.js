@@ -127,6 +127,13 @@
     if (ppOut2) ppOut2.style.display = "none";
     var av = $("navAvatarInner");
     if (av) av.textContent = "9";var mbo = $("mbnAvatarInner"); if (mbo) mbo.innerHTML = '<i class="fas fa-user"></i>';
+    // Owner entry points are only ever for a signed-in owner session. Hide them
+    // on sign-out so a stale owner flag left on the device cannot expose the
+    // dashboard to a signed-out visitor.
+    var owG = $("navOwnerGroup"), owC = $("owner-crown-btn-m"), owP = $("mobile-profile-owner");
+    if (owG) owG.style.display = "none";
+    if (owC) owC.style.display = "none";
+    if (owP) owP.style.display = "none";
     if (typeof window.setNotifBell === "function") window.setNotifBell(false);
   }
 

@@ -326,10 +326,17 @@
     var group = document.getElementById("navOwnerGroup");
     var crownM = document.getElementById("owner-crown-btn-m");
     var ppOwner = document.getElementById("mobile-profile-owner");
-    var isOwner = !!(_data && _data.isOwner);
+    var isOwner = isSignedInNow() && !!(_data && _data.isOwner);
     if (group) group.style.display = isOwner ? "" : "none";
     if (crownM) crownM.style.display = isOwner ? "" : "none";
     if (ppOwner) ppOwner.style.display = isOwner ? "" : "none";
+  }
+
+  // Single source of truth for "the user is signed in right now". Local owner
+  // flags and the wantedUserId persist after sign-out, so they must never be
+  // trusted on their own when deciding whether owner controls may show.
+  function isSignedInNow() {
+    try { return !!localStorage.getItem("wantedAuthUser"); } catch (e) { return false; }
   }
   function bindOwnerClose() {
     var pan = document.getElementById("owner-panel");
@@ -2149,16 +2156,19 @@ window.profileSectionShown = function () {
       var show = function () { if (og) og.style.display = ""; if (crownM) crownM.style.display = ""; if (ppOwner) ppOwner.style.display = ""; };
       var claimsOwner = false;
       try { claimsOwner = !!(localStorage.getItem("ownerCode") || localStorage.getItem("ownerByUser") === "1"); } catch (e) {}
-      if (!uid || !claimsOwner) { hide(); return; }
+      // Fail closed. The owner flags and wantedUserId above survive a sign-out,
+      // and both failure paths used to call show(), so an offline or throwing
+      // request could hand a signed-out visitor the Owner Dashboard.
+      if (!uid || !claimsOwner || !isSignedInNow()) { hide(); return; }
       try {
         fetch("/api/wanted?user=" + encodeURIComponent(uid), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
-          if (d && d.owner) { show(); }
+          if (d && d.owner && isSignedInNow()) { show(); }
           else {
             hide();
             try { localStorage.removeItem("ownerCode"); localStorage.removeItem("ownerByUser"); } catch (e) {}
           }
-        }).catch(function () { show(); });
-      } catch (e) { show(); }
+        }).catch(function () { hide(); });
+      } catch (e) { hide(); }
     })();
     if (uid) loadAccount();
     wrapSwitchAppPage();
