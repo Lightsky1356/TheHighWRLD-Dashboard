@@ -133,7 +133,7 @@
   },
   {
     title: "Benjamin (Sessions)",
-    tag: "Benjamin (Friends With Benefits) (Rick Ross) (Tesla) (Sessions)",
+    tag: "Benjamin (Friends With Benefits) (Rick Ross) (Tesla) (Sessions) (WOD)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Benjamin (Friends With Benefits) (Rick Ross) (Tesla) (Sessions).mp3",
@@ -551,7 +551,7 @@
   },
   {
     title: "Drown (Sessions)",
-    tag: "Drown (Pool Of My Sins) (Train Wreck) (Sessions)",
+    tag: "Drown (Pool Of My Sins) (Train Wreck) (Sessions (GB&GR))",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Drown (Pool Of My Sins) (Train Wreck) (Sessions).mp3",
@@ -694,7 +694,7 @@
   },
   {
     title: "Go (Sessions)",
-    tag: "Go (Sick Of You) (Sessions)",
+    tag: "Go (Sick Of You) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Go (Sick Of You) (Sessions).mp3",
@@ -704,15 +704,15 @@
     year: "2017"
   },
   {
-    title: "Golden (Sessions)",
-    tag: "Golden (Lean In The Soda) (Poltergeist) (Stuck Through) (Sessions)",
+    title: "Golden (Sessions) (GB&GR)",
+    tag: "Golden (Lean In The Soda) (Poltergeist) (Stuck Through) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Golden (Lean In The Soda) (Stuck Through) (Sessions).mp3",
     duration: 621,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Golden.png",
     producer: "DT & Nick Mira",
-    year: "2017"
+    year: "2018"
   },
   {
     title: "Golden X Get Away",
@@ -880,15 +880,15 @@
     year: "2017"
   },
   {
-    title: "I Wonder What's Wrong",
-    tag: "I Wonder What's Wrong",
+    title: "I Wonder",
+    tag: "I Wonder (Demons In My Mind) (WOD)",
     artist: "Juice WRLD",
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/I Wonder What's Wrong.mp3",
     duration: 184,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/I Wonder What's Wrong.png",
     producer: "Andrew Watt, Diablo, Diplo & Unknown",
-    year: ""
+    year: "2018"
   },
   {
     title: "In A Mix (Sessions)",
@@ -1449,7 +1449,7 @@
     duration: 1830,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/On On.png",
     producer: "DT & Nick Mira",
-    year: ""
+    year: "2017"
   },
   {
     title: "On My Ex",
@@ -1563,14 +1563,14 @@
   },
   {
     title: "Piguet Drip (Sessions)",
-    tag: "Piguet Drip (Never Sleep) (Sessions)",
+    tag: "Piguet Drip (Never Sleep) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Piguet Drip (Never Sleep) (Sessions).mp3",
     duration: 607,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Piguet Drip.png",
     producer: "Richie Souf & Yung Exclusive",
-    year: "2026"
+    year: "2018"
   },
   {
     title: "Plight (Sessions)",
@@ -1680,7 +1680,7 @@
     duration: 1110,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Pursuit.png",
     producer: "Unknown",
-    year: "N/A"
+    year: "2018"
   },
   {
     title: "Python",
@@ -2784,7 +2784,7 @@
   },
   {
     title: "Circles (Sessions)",
-    tag: "Circles (In The Mood) (Love And Leave Them) (Sessions)",
+    tag: "Circles (In The Mood) (Love And Leave Them) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Circles%20(Sessions).mp3",
@@ -2839,7 +2839,7 @@
   },
   {
     title: "In Zone",
-    tag: "In Zone (Time Anymore) (LND)",
+    tag: "In Zone (Time Anymore) (GB&GR)",
     artist: "Juice WRLD",
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/In%20Zone.mp3",
@@ -3023,6 +3023,61 @@
     duration: 307,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Candles.png",
     producer: "Jo L'Z, Nick Mira & Taz Taylor",
+    year: "2018"
+  },
+  {
+    title: "Quitter (Sessions)",
+    tag: "Quitter (No Good Women) (Na Na Na) (Sessions) (GB&GR)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Quitter%20(Sessions).mp3",
+    duration: 1111,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Quitter.png",
+    producer: "Josh Petruccio & Nick Mira",
+    year: "2018"
+  },
+  {
+    title: "Not Enough (Sessions)",
+    tag: "Not Enough (Gun Next To Me) (I Need You) (Out Of Luck) (Sessions) (GB&GR)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Not%20Enough%20(Sessions).mp3",
+    duration: 355,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/GB&GR.png",
+    producer: "JCraig & PD Beats",
+    year: "2018"
+  },
+  {
+    title: "Wasted (Sessions)",
+    tag: "Wasted (Sessions) (WOD)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Wasted%20(Sessions).mp3",
+    duration: 788,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/WOD.png",
+    producer: "1Mind, Dre Moon & Tyler Turner",
+    year: "2018"
+  },
+  {
+    title: "Move The Bale (The Bale) (Sessions)",
+    tag: "Move The Bale (Sessions) (ND)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Move%20The%20Bale%20(Sessions).mp3",
+    duration: 374,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Move The Bale.png",
+    producer: "Joey88",
+    year: "2017"
+  },
+  {
+    title: "Lean Wit' Me (Sessions)",
+    tag: "Lean Wit' Me (Die Young) (Lean With Me) (Sessions) (GB&GR)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Lean%20Wit%27%20Me%20(Sessions).mp3",
+    duration: 445,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/GB&GR.png",
+    producer: "Nick Mira",
     year: "2018"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});
