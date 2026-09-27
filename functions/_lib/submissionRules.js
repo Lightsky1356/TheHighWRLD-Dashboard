@@ -201,13 +201,19 @@ export function evaluateSurfaceRules(surface, fields) {
 // Record a surface-rule violation into the same automod queue the rest of the
 // site uses, so staff review everything in one place. status 'pending' +
 // recommended_action 'review'; nothing is actioned automatically.
+//
+// Follows the staged policy documented in _lib/automod.js: low -> allow with no
+// record, medium/high -> flag. Without this, a plain title-only wanted request
+// ("add this song") would write a queue row for every submission and the queue
+// would stop being worth reading.
 export async function recordRuleFlags(db, { surface, targetId, uid, violations }) {
   const s = SURFACES[surface];
   const list = (violations || []).filter((v) => v && v.code);
   if (!s || !list.length) return null;
-  const detail = list.map((v) => v.code + ": " + v.detail).join(" | ").slice(0, 200);
   const severity = list.some((v) => v.severity === "high") ? "high"
     : list.some((v) => v.severity === "medium") ? "medium" : "low";
+  if (severity === "low") return null;
+  const detail = list.map((v) => v.code + ": " + v.detail).join(" | ").slice(0, 200);
   try {
     const ins = await db.prepare(
       "INSERT INTO automod_flags (target_type, target_id, uid, category, confidence, severity, recommended_action, detail, ai_verdict, status) " +
