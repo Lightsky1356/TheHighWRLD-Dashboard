@@ -3049,11 +3049,22 @@
   },
   {
     title: "Wasted (Sessions)",
-    tag: "Wasted (Sessions) (WOD)",
+    tag: "Wasted (GTA Love) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Wasted%20(Sessions).mp3",
     duration: 788,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/GB&GR.png",
+    producer: "CBMIX",
+    year: "2018"
+  },
+  {
+    title: "I Want It (Sessions)",
+    tag: "I Want It (Water) (Sessions) (WOD)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/I%20Want%20It%20(Sessions).mp3",
+    duration: 388,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/WOD.png",
     producer: "1Mind, Dre Moon & Tyler Turner",
     year: "2018"
