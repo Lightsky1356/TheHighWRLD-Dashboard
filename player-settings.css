@@ -678,3 +678,39 @@ html.scroll-locked,html.scroll-locked body{overflow:hidden}
 #profilePageBody .cmp-qstats,
 #profilePageBody .cmp-actions{grid-column:1/-1}
 #profilePageBody #ws-panels{grid-column:1/-1}
+/* ===== Mobile bottom nav: content clearance + safe area (mobile only) ===== */
+@media (max-width:767px){
+  :root{
+    --mbn-safe: env(safe-area-inset-bottom, 0px);
+    --mbn-pad-t: 5px;
+    --mbn-pad-b: 5px;
+    --mbn-item-h: 45px;
+    --mbn-border: 1px;
+    --mbn-h: calc(var(--mbn-border) + var(--mbn-pad-t) + var(--mbn-item-h) + var(--mbn-pad-b) + var(--mbn-safe));
+  }
+  .mobile-bottom-nav{
+    padding: var(--mbn-pad-t) 4px calc(var(--mbn-pad-b) + var(--mbn-safe));
+  }
+  .mbn-item{
+    min-height: var(--mbn-item-h);
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  .mbn-avatar{
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+  body{
+    padding-bottom: calc(var(--mbn-h) + 12px) !important;
+  }
+  .site-online-badge{
+    bottom: calc(var(--mbn-h) + 8px);
+  }
+  #site-guest-badge{
+    bottom: calc(var(--mbn-h) + 39px);
+  }
+  .mobile-popup{
+    bottom: calc(var(--mbn-h) + 8px);
+  }
+}
