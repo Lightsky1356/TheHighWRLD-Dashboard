@@ -85,6 +85,9 @@ main.w-full{display:flex;flex-direction:column;min-height:calc(100vh - 60px)}
 .app-page{display:none}
 .app-page.active{display:block;flex:1 0 auto}
 footer{flex-shrink:0}
+@media (max-width:767px){
+  main.w-full{min-height:auto}
+}
 
 .site-online-badge{position:fixed;bottom:16px;left:16px;z-index:90;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;background:rgba(10,8,22,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:600;color:rgba(255,255,255,.55);cursor:default;transition:opacity .2s}
 .site-online-badge .ps-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 6px rgba(34,197,94,.5)}
@@ -162,22 +165,16 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
   #site-guest-badge{bottom:104px}
 }
 /* ===== Bottom nav safe-area + thumb reach ===== */
-.mobile-bottom-nav{padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px))}
+@media (min-width:769px){
+  .mobile-bottom-nav{padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px))}
+}
 
 /* ===== Mobile zoom lock: app-like fixed viewport (pinch + double-tap zoom off, scroll kept) ===== */
 @media (max-width:768px){
   html,body{touch-action:pan-x pan-y}
 }
 
-/* ===== Mobile bottom nav glow-up ===== */
-@media (max-width:768px){
-  .mobile-bottom-nav{left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));border-radius:22px;border:1px solid rgba(255,255,255,.12);background:rgba(14,12,28,.9);box-shadow:0 12px 40px rgba(0,0,0,.55),0 0 24px rgba(139,92,246,.1);padding:8px 6px}
-  .mbn-item{position:relative;flex:1;padding:7px 4px;border-radius:14px;font-size:9px}
-  .mbn-item i{font-size:17px}
-  .mbn-item.active{background:rgba(255,255,255,.06)}
-  .mbn-item.active::before{content:"";position:absolute;top:3px;left:50%;transform:translateX(-50%);width:16px;height:3px;border-radius:99px;background:linear-gradient(90deg,#22d3ee,#a855f7);box-shadow:0 0 8px rgba(34,211,238,.7)}
-  .mbn-item.active i{background:linear-gradient(135deg,#67e8f9,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 6px rgba(34,211,238,.45))}
-}
+/* ===== Mobile bottom nav: owned by player-settings.css (single source of truth) ===== */
 
 /* ===== Queue buttons hidden on mobile (per-track +Q and player toggle) ===== */
 @media (max-width:768px){
@@ -192,10 +189,10 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
   .player-search-wrap input{width:100%}
 }
 
-/* ===== Mobile profile tab avatar ===== */
-.mbn-avatar{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:11px;font-weight:800;color:rgba(255,255,255,.75)}
+/* ===== Mobile profile tab avatar (matches 23px nav icons) ===== */
+.mbn-avatar{width:23px;height:23px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:11px;font-weight:800;color:rgba(255,255,255,.75);margin-bottom:0}
 .mbn-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.mbn-avatar i{font-size:16px}
+.mbn-avatar i{font-size:12px}
 
 /* ===== Profile favorites: album tag shield under title ===== */
 .fav-tag{display:inline-block;max-width:100%;margin-top:4px;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.04em;color:rgba(196,181,253,.9);background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
