@@ -698,10 +698,10 @@ html.scroll-locked,html.scroll-locked body{overflow:hidden}
   .mobile-popup{
     bottom: calc(var(--mbn-h) + 8px);
   }
-  /* Fix Top scroll button position on mobile - below Night Light toggle */
+  /* Top scroll button sits just above the nav (tracks nav height + safe area), below Night Light toggle */
   #scrollTopBtn{
     position:fixed !important;
-    bottom:calc(120px) !important;
+    bottom:calc(var(--mbn-h) + 8px) !important;
     right:16px !important;
     z-index:99 !important;
   }
