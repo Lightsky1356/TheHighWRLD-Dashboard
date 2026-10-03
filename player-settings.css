@@ -820,26 +820,10 @@ html.scroll-locked,html.scroll-locked body{overflow:hidden}
   #controls-container #queue-btn{display:none !important}
   #controls-container #volume-container{display:none !important}
 
-  /* ---- Settings cog: docked on the player card corner ---- */
-  #player-container .player-settings-cog{
-    display:flex !important;
-    width:40px !important;
-    height:40px !important;
-    top:10px !important;
-    right:10px !important;
-    font-size:15px !important;
-    border-radius:12px !important;
-    background:rgba(8,12,24,.55) !important;
-    border-color:rgba(255,255,255,.14) !important;
-    color:rgba(212,165,116,.9) !important;
-    backdrop-filter:blur(8px);
-    -webkit-backdrop-filter:blur(8px);
-    z-index:7;
-  }
-  /* Re-enable the existing settings overlay on mobile so the cog opens it */
-  #player-settings-overlay:not(.hidden){
-    display:flex !important;
-  }
+  /* Settings cog + panel removed from the mobile player: DRP (desktop app
+     only) and keyboard shortcuts have no mobile use, so nothing is stranded */
+  #player-container .player-settings-cog{display:none !important}
+  #player-settings-overlay{display:none !important}
 
   /* ---- Toolbar: search row, then counter + controls row ---- */
   .playlist-sticky-controls > div:first-child{

@@ -104,6 +104,10 @@
     var overlay = document.getElementById('player-settings-overlay');
     if(!overlay) return;
     var opening = overlay.classList.contains('hidden');
+    /* settings UI is hidden on this platform (e.g. mobile web): never open an
+       invisible panel that would still lock scrolling */
+    var cog = document.getElementById('player-settings-cog');
+    if(opening && cog && !cog.offsetParent) return;
     overlay.classList.toggle('hidden');
     if(opening){
       overlay.classList.add('open');
