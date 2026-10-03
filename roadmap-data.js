@@ -135,10 +135,9 @@
     {
       id: "richer-profiles",
       title: "Richer profiles",
-      description: "Avatar upload, social links and an activity feed are already built, but not yet connected to the profile page.",
-      status: "planned",
+      description: "Your own profile now shows your real activity feed, and your picture and social links can be changed right on the profile page - saved to your account instead of the browser, with the platform and link checked server-side.",
+      status: "completed",
       category: ["profiles"],
-      progress: 30,
       lastUpdated: "2026-10-03"
     },
     {

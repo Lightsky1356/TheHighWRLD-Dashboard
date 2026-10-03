@@ -6,6 +6,85 @@ function json(data, status = 200) {
 }
 
 import { getSessionUser } from "../_lib/auth.js";
+import { banRejection } from "../_lib/bans.js";
+
+function nowIso() { return new Date().toISOString(); }
+
+/* Same shape as the account endpoint's recorder, kept local so this file does
+   not depend on another endpoint's internals. */
+async function recordActivity(db, uid, type, label, detail, track_id) {
+  try {
+    await db.prepare(
+      "INSERT INTO activity (uid, type, label, detail, track_id) VALUES (?, ?, ?, ?, ?)"
+    ).bind(uid, type, String(label).slice(0, 160), String(detail || "").slice(0, 300), String(track_id || "").slice(0, 80)).run();
+    await db.prepare(
+      "DELETE FROM activity WHERE uid = ? AND id NOT IN (SELECT id FROM activity WHERE uid = ? ORDER BY id DESC LIMIT 80)"
+    ).bind(uid, uid).run();
+  } catch (_) {}
+}
+
+/* Social platforms we accept. Anything else is rejected, so a profile can never
+   be used to smuggle in an arbitrary (or javascript:) link. */
+const SOCIAL_PLATFORMS = {
+  twitter:  { label: "X / Twitter", base: "https://twitter.com/",  hosts: ["twitter.com", "x.com"] },
+  instagram:{ label: "Instagram",    base: "https://instagram.com/", hosts: ["instagram.com"] },
+  youtube:  { label: "YouTube",      base: "https://youtube.com/@", hosts: ["youtube.com", "youtu.be"] },
+  soundcloud:{ label: "SoundCloud",  base: "https://soundcloud.com/", hosts: ["soundcloud.com"] },
+  spotify:  { label: "Spotify",      base: "https://open.spotify.com/user/", hosts: ["open.spotify.com", "spotify.com"] },
+  tiktok:   { label: "TikTok",       base: "https://tiktok.com/@", hosts: ["tiktok.com"] },
+  facebook: { label: "Facebook",     base: "https://facebook.com/", hosts: ["facebook.com", "fb.com"] },
+  website:  { label: "Website",      base: "", hosts: [] }
+};
+
+/* Accepts either a bare handle ("juice", "@juice") or a full URL. Full URLs must
+   be http(s) and, for a known platform, must actually be on that platform. */
+function normalizeSocial(platform, raw) {
+  const key = String(platform || "").trim().toLowerCase().slice(0, 40);
+  const def = SOCIAL_PLATFORMS[key];
+  if (!def) return { error: "unsupported platform" };
+
+  const value = String(raw || "").trim().replace(/^@+/, "").slice(0, 300);
+  if (!value) return { clear: true, key: key };
+
+  if (/^https?:\/\//i.test(value)) {
+    let u;
+    try { u = new URL(value); } catch (e) { return { error: "invalid link" }; }
+    if (u.protocol !== "http:" && u.protocol !== "https:") return { error: "invalid link" };
+    const host = (u.hostname || "").toLowerCase();
+    if (def.hosts.length && !def.hosts.some(function (h) { return host === h || host.endsWith("." + h); })) {
+      return { error: "link must be a " + def.label + " URL" };
+    }
+    return { key: key, url: u.href.slice(0, 500) };
+  }
+
+  if (!/^[A-Za-z0-9._-]+$/.test(value)) return { error: "invalid handle" };
+  if (value.length > 60) return { error: "handle too long" };
+  if (!def.base) return { error: def.label + " needs a full link" };
+  return { key: key, url: (def.base + value).slice(0, 500) };
+}
+
+/* Avatars are either an inline resized image (data URL) or a remote https URL.
+   Size is capped the same way /api/account caps it. */
+const AVATAR_MAX = 300000;
+function normalizeAvatar(raw) {
+  const v = String(raw || "").trim();
+  if (!v) return { error: "no avatar data" };
+  if (v.length > AVATAR_MAX) return { error: "image is too large" };
+  if (/^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(v)) return { value: v };
+  if (v.length <= 500 && /^https?:\/\/[^\s"']+$/i.test(v)) return { value: v };
+  return { error: "unsupported image format" };
+}
+
+export function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
+}
 function initial(name) {
   const s = String(name || "9").trim();
   return s ? s.charAt(0).toUpperCase() : "9";
@@ -40,24 +119,27 @@ export async function onRequestGet(context) {
     }
     if (!uid) return json({ error: "not found" }, 404);
 
-    // Activity-only endpoint for profile enhancements (session-authed)
+    // Activity-only read. Honours the requested profile (the old version always
+    // returned the session user's own rows) and the owner's visibility flag.
     if (activityOnly) {
-      const sessionUser = await getSessionUser(db, context.request);
-      if (!sessionUser) {
-        return json({ ok: false, error: "not signed in" }, 401);
+      const viewer = await getSessionUser(db, context.request).catch(function () { return null; });
+      const isSelf = !!(viewer && viewer.uid && viewer.uid === uid);
+      if (!isSelf) {
+        const pr = await db.prepare("SELECT show_activity FROM user_privacy WHERE uid = ?").bind(uid).first().catch(function () { return null; });
+        if (pr && Number(pr.show_activity) === 0) return json({ ok: true, hidden: true, uid: uid, activities: [] });
       }
-      
       const recentAct = await db.prepare(
-        "SELECT type, label, ts FROM activity WHERE uid = ? ORDER BY id DESC LIMIT 8"
-      ).bind(sessionUser.uid).all();
-      
-      const activities = (recentAct.results || []).map((act) => ({
-        type: act.type || "general",
-        text: act.label || "Activity",
-        time: formatTimeAgo(act.ts)
-      }));
-      
-      return json({ ok: true, activities });
+        "SELECT type, label, ts FROM activity WHERE uid = ? ORDER BY id DESC LIMIT 15"
+      ).bind(uid).all();
+      const activities = (recentAct.results || []).map(function (act) {
+        return {
+          type: act.type || "general",
+          text: act.label || "Activity",
+          ts: act.ts || "",
+          time: formatTimeAgo(act.ts),
+        };
+      });
+      return json({ ok: true, uid: uid, hidden: false, activities: activities });
     }
 
     const link = await db.prepare(
@@ -208,49 +290,64 @@ export async function onRequestPost(context) {
     const body = await context.request.json().catch(() => ({}));
     const action = String(body.action || "");
 
+    if (action === "update_avatar" || action === "update_social") {
+      try {
+        const rej = await banRejection(db, user.uid);
+        if (rej) return rej.response;
+      } catch (_) {}
+    }
+
     if (action === "update_avatar") {
-      const avatarData = String(body.avatar || "").trim();
-      if (!avatarData) return json({ ok: false, error: "no avatar data" }, 400);
-      
-      // Update in user_profiles
+      // Explicit clear removes the custom picture; the Discord one then shows again.
+      if (body.clear === true) {
+        await db.prepare(
+          "INSERT INTO user_profiles (site_uid, avatar, updated_at) VALUES (?, '', ?) " +
+          "ON CONFLICT(site_uid) DO UPDATE SET avatar = '', updated_at = excluded.updated_at"
+        ).bind(user.uid, nowIso()).run();
+        await recordActivity(db, user.uid, "profile", "You removed your profile picture", "avatar");
+        return json({ ok: true, avatar: "" });
+      }
+
+      const avatar = normalizeAvatar(body.avatar);
+      if (avatar.error) return json({ ok: false, error: avatar.error }, 400);
+
+      // Upsert: the old UPDATE-only version silently did nothing for members who
+      // had no user_profiles row yet.
       await db.prepare(
-        "UPDATE user_profiles SET avatar = ? WHERE site_uid = ?"
-      ).bind(avatarData, user.uid).run();
-      
-      // Also update in discord_links for consistency
-      await db.prepare(
-        "UPDATE discord_links SET avatar = ? WHERE site_uid = ?"
-      ).bind(avatarData, user.uid).run();
-      
+        "INSERT INTO user_profiles (site_uid, avatar, updated_at) VALUES (?, ?, ?) " +
+        "ON CONFLICT(site_uid) DO UPDATE SET avatar = excluded.avatar, updated_at = excluded.updated_at"
+      ).bind(user.uid, avatar.value, nowIso()).run();
+
+      await recordActivity(db, user.uid, "profile", "You updated your profile picture", "avatar");
       return json({ ok: true });
     }
 
     if (action === "update_social") {
       const platform = String(body.platform || "").trim();
-      const value = String(body.value || "").trim();
-      
       if (!platform) return json({ ok: false, error: "platform required" }, 400);
-      
-      // Check if social link already exists
+
+      const link = normalizeSocial(platform, body.value);
+      if (link.error) return json({ ok: false, error: link.error }, 400);
+
       const existing = await db.prepare(
         "SELECT id FROM profile_links WHERE uid = ? AND label = ?"
-      ).bind(user.uid, platform).first();
-      
-      if (existing) {
-        if (value) {
-          await db.prepare(
-            "UPDATE profile_links SET url = ? WHERE id = ?"
-          ).bind(value, existing.id).run();
-        } else {
-          await db.prepare("DELETE FROM profile_links WHERE id = ?").bind(existing.id).run();
-        }
-      } else if (value) {
-        await db.prepare(
-          "INSERT INTO profile_links (uid, label, url, sort) VALUES (?, ?, ?, 0)"
-        ).bind(user.uid, platform, value).run();
+      ).bind(user.uid, link.key).first();
+
+      if (link.clear) {
+        if (existing) await db.prepare("DELETE FROM profile_links WHERE id = ?").bind(existing.id).run();
+        await recordActivity(db, user.uid, "link", "You removed your " + (SOCIAL_PLATFORMS[link.key] || {}).label + " link", link.key);
+        return json({ ok: true, cleared: true });
       }
-      
-      return json({ ok: true });
+
+      if (existing) {
+        await db.prepare("UPDATE profile_links SET url = ? WHERE id = ?").bind(link.url, existing.id).run();
+      } else {
+        await db.prepare(
+          "INSERT INTO profile_links (uid, label, url, sort) VALUES (?, ?, ?, COALESCE((SELECT MAX(sort) + 1 FROM profile_links WHERE uid = ?), 0))"
+        ).bind(user.uid, link.key, link.url, user.uid).run();
+      }
+      await recordActivity(db, user.uid, "link", "You linked your " + (SOCIAL_PLATFORMS[link.key] || {}).label, link.key);
+      return json({ ok: true, url: link.url });
     }
 
     return json({ ok: false, error: "unknown action" }, 400);

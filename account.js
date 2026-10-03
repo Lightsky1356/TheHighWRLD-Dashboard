@@ -431,7 +431,7 @@
   }
 
   /* ---------- Activity ---------- */
-  var ACT_ICON = { vote: "fa-vote-yea", reply: "fa-comment", favorite: "fa-heart", download: "fa-download", profile: "fa-user-pen", security: "fa-shield-halved", listen: "fa-headphones" };
+  var ACT_ICON = { vote: "fa-vote-yea", reply: "fa-comment", favorite: "fa-heart", download: "fa-download", profile: "fa-user-pen", security: "fa-shield-halved", listen: "fa-headphones", playlist: "fa-list-music", bookmark: "fa-bookmark", community: "fa-users", link: "fa-link" };
   function applyActivity() {
     var box = document.getElementById("activityList");
     if (!box) return;
