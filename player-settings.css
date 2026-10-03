@@ -1227,6 +1227,32 @@ html.scroll-locked,html.scroll-locked body{overflow:hidden}
   .info-panel::before{display:none}
 }
 
+/* ---- Blank player state (no track selected): Favorite + Info are dead ends,
+       so both are hidden on desktop AND mobile. Derived from the existing
+       .player-blank class via :has() - no extra state to keep in sync. ---- */
+#page-section-player:has(#player-panel.player-blank) #fav-btn,
+#page-section-player:has(#player-panel.player-blank) #info-btn{
+  display:none !important;
+}
+
+/* ---- Scroll performance: pause decorative motion while scrolling ----
+   The page keeps 90+ always-animating blurred background layers (bg-motion,
+   lightning, sun). They are composited on every scroll frame and were the main
+   cost of scrolling (~58ms -> ~25ms per frame in the player track list once
+   paused). The is-scrolling class is toggled by one passive listener (see
+   player-performance.js); motion resumes ~140ms after scrolling stops. */
+html.is-scrolling #bg-motion,
+html.is-scrolling #bg-motion *,
+html.is-scrolling .player-lightning,
+html.is-scrolling .player-lightning *,
+html.is-scrolling .player-sun,
+html.is-scrolling .player-sun *,
+html.is-scrolling .join-bg-gradient,
+html.is-scrolling .ap-ambient,
+html.is-scrolling .bm-el{
+  animation-play-state:paused !important;
+}
+
 /* ---- Small phones: keep the panel compact and the CTA row tappable ---- */
 @media (max-width:375px){
   .info-panel-inner{padding:16px 14px 12px!important}

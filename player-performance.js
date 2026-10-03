@@ -214,3 +214,23 @@
     resizeTimer = setTimeout(function () { resizeTimer = 0; forgetRowHeight(); state.sig = null; optimizedRender(); }, 150);
   }, { passive: true });
 })();
+
+/* Pause the decorative background motion while the user is scrolling.
+ * The page keeps 90+ always-animating blurred layers, which are composited on
+ * every scroll frame; pausing them for the duration of a gesture roughly halves
+ * the frame time of the track list. One passive listener in the capture phase,
+ * so the window and every inner scroller (track list, queue, sidebar) trigger
+ * it, and motion resumes ~140ms after the last scroll event. Styling lives in
+ * player-settings.css (html.is-scrolling). */
+(function () {
+  var idle = 0;
+  window.addEventListener("scroll", function () {
+    var root = document.documentElement;
+    if (!root.classList.contains("is-scrolling")) root.classList.add("is-scrolling");
+    if (idle) clearTimeout(idle);
+    idle = setTimeout(function () {
+      idle = 0;
+      root.classList.remove("is-scrolling");
+    }, 140);
+  }, { passive: true, capture: true });
+})();

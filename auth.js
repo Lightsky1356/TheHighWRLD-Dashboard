@@ -32,13 +32,25 @@
   }
 
   /* ---------- hCaptcha ---------- */
+  /* Loaded on demand only. It used to be bundled as an eager <script> on every
+     page, which installed a scroll listener + navigator fingerprinting that ran
+     on every scroll event on every tab (the source of the scroll lag). The
+     hcaptcha.com CDN stays as a fallback if the vendored copy fails. */
   function loadCaptchaScript() {
     if (captchaLoaded || window.hcaptcha || !cfg.hcaptchaSiteKey) return;
     captchaLoaded = true;
     var s = document.createElement("script");
-    s.src = "https://hcaptcha.com/1/api.js?render=explicit&onload=__onHcaptchaReady";
+    s.src = "./api.js";
     s.async = true;
     s.defer = true;
+    s.onload = function () { try { if (window.__onHcaptchaReady) window.__onHcaptchaReady(); } catch (e) {} };
+    s.onerror = function () {
+      var f = document.createElement("script");
+      f.src = "https://hcaptcha.com/1/api.js?render=explicit&onload=__onHcaptchaReady";
+      f.async = true;
+      f.defer = true;
+      document.head.appendChild(f);
+    };
     document.head.appendChild(s);
   }
 
@@ -192,6 +204,7 @@
     if (typeof window.switchAppPage === "function") window.switchAppPage(view);
     setErr($("authError"), "");
     setErr($("authErrorReg"), "");
+    loadCaptchaScript();   /* start the lazy captcha load as soon as the form opens */
     renderCaptcha("hcaptcha-login");
     renderCaptcha("hcaptcha-register");
   };
@@ -268,7 +281,8 @@
       cfg.hcaptchaConfigured = !!d.hcaptchaConfigured;
       if (cfg.hcaptchaConfigured) {
         window.__onHcaptchaReady = function () { renderCaptcha("hcaptcha-login"); renderCaptcha("hcaptcha-register"); };
-        loadCaptchaScript();
+        /* no eager load here: the captcha script (with its scroll listener) is
+           fetched by showAuthPage() when someone actually opens a sign-in form */
       } else {
         renderCaptcha("hcaptcha-login");
         renderCaptcha("hcaptcha-register");
