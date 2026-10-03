@@ -189,10 +189,10 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
   .player-search-wrap input{width:100%}
 }
 
-/* ===== Mobile profile tab avatar (matches 23px nav icons) ===== */
-.mbn-avatar{width:23px;height:23px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:11px;font-weight:800;color:rgba(255,255,255,.75);margin-bottom:0}
+/* ===== Mobile profile tab avatar (matches 20px nav icons) ===== */
+.mbn-avatar{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:10px;font-weight:800;color:rgba(255,255,255,.75);margin-bottom:0}
 .mbn-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.mbn-avatar i{font-size:12px}
+.mbn-avatar i{font-size:10px}
 
 /* ===== Profile favorites: album tag shield under title ===== */
 .fav-tag{display:inline-block;max-width:100%;margin-top:4px;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.04em;color:rgba(196,181,253,.9);background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
