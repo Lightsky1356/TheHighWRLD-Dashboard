@@ -794,8 +794,7 @@ html.scroll-locked,html.scroll-locked body{overflow:hidden}
   #controls-container #play-btn{grid-area:1 / 2 / 1 / 4}
   #controls-container #next-btn{grid-area:1 / 4}
   #controls-container #shuffle-btn{grid-area:2 / 1}
-  #controls-container #repeat-btn{grid-row:2;grid-column:2 / 4}
-  #controls-container #queue-btn{grid-area:2 / 4}
+  #controls-container #repeat-btn{grid-area:2 / 4}
   #controls-container .control-btn{
     width:44px !important;
     height:44px !important;
@@ -817,9 +816,8 @@ html.scroll-locked,html.scroll-locked body{overflow:hidden}
     min-width:48px !important;
     min-height:48px !important;
   }
-  /* Queue toggle is the last control of the secondary row */
-  #controls-container #queue-btn{display:flex !important}
-  /* Volume slider + speaker button removed from the mobile controls */
+  /* Queue button + volume slider/speaker removed from the mobile controls */
+  #controls-container #queue-btn{display:none !important}
   #controls-container #volume-container{display:none !important}
 
   /* ---- Settings cog: docked on the player card corner ---- */
