@@ -1,20 +1,26 @@
 /* ============================================================================
-   Profile Enhancements - richer profiles on your own page.
+   Profile Enhancements - richer profiles + a working Edit profile button.
 
-   Adds three things that the profile page was missing, all backed by real
-   server state (nothing is stored in localStorage):
+   Adds four things to your own profile page, all backed by real server state
+   (nothing is stored in the browser):
 
-     1. Recent activity  - your own activity feed (plays, favorites, playlists,
-        votes, downloads, profile + security changes). Other members already
-        had this block; your own profile did not.
-     2. Social links     - inline editor for your links, saved through
-        POST /api/profile { action: "update_social" } which validates the
-        platform and the URL server-side.
-     3. Profile picture  - upload straight from the profile page, resized in
-        the browser and saved through update_avatar.
+     1. Edit profile   - the pencil button opens a real editor for name,
+                        status, bio and picture. The existing Edit Profile
+                        button used to call window.openEditProfile(), which
+                        opens #editProfileModal - a modal that lives inside
+                        #page-section-account and is therefore invisible from
+                        anywhere else, so the button did nothing. This file
+                        owns the button and opens an editor that is never
+                        trapped.
+     2. Recent activity - your own activity feed (plays, favorites, playlists,
+                        votes, downloads, profile + security changes).
+     3. Social links    - inline editor for your links, saved through
+                        POST /api/profile { action: "update_social" } which
+                        validates the platform and the URL server-side.
+     4. Profile picture - change or remove it, resized in the browser and
+                        saved through update_avatar.
 
-   Self profiles only: when you are looking at someone else's profile this file
-   does nothing at all.
+   Self profiles only: on anyone else's profile this file does nothing.
 
    Loaded as `<script src="./profile-enhancements.js" defer>` from index.html.
    ========================================================================== */
@@ -24,6 +30,8 @@
   window.__profileEnhancementsMounted = true;
 
   var WID = "profile-enhancements";
+  var EDITOR_ID = "pe-editor";
+  var STATUSES = ["Online", "Idle", "Do Not Disturb", "Invisible"];
 
   /* Platforms the API accepts (see functions/api/profile.js). Mirrored here
      only to build the right base URL as you type - the server re-validates. */
@@ -47,6 +55,10 @@
     listen: "fa-headphones", playlist: "fa-list-music", bookmark: "fa-bookmark",
     community: "fa-users", link: "fa-link",
   };
+
+  /* Latest known profile state, so the editor can pre-fill and save safely. */
+  var state = { uid: "", name: "", bio: "", status: "Online", avatar: "", banner: "", links: [], activity: [] };
+  var avatarDraft = "";
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -91,16 +103,50 @@
     } catch (e) { return false; }
   }
 
+  function onProfilePage() {
+    try {
+      var sec = document.getElementById("page-section-profile");
+      return !!(sec && sec.classList.contains("active")) && isSelfProfile();
+    } catch (e) { return false; }
+  }
+
   function myUid() {
     try { return localStorage.getItem("wantedUserId") || ""; } catch (e) { return ""; }
   }
 
-  /* -------------------------------------------------------------- css */
+  /* ------------------------------------------------------------------ css */
   function css() {
     if (document.getElementById("profile-enh-style")) return;
     var st = document.createElement("style");
     st.id = "profile-enh-style";
     st.textContent =
+      /* ---- editor overlay (lives on <body>, so it is never trapped) ---- */
+      "#pe-editor{position:fixed;inset:0;z-index:420;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(5,2,12,.78);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}" +
+      "#pe-editor.open{display:flex}" +
+      "#pe-editor .pe-panel{width:100%;max-width:520px;max-height:calc(100vh - 36px);overflow-y:auto;box-sizing:border-box;border-radius:22px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg,rgba(22,18,40,.98),rgba(12,10,24,.98));box-shadow:0 30px 90px rgba(0,0,0,.6);padding:22px}" +
+      "#pe-editor h3{margin:0;font-size:17px;font-weight:800;color:rgba(255,255,255,.95);display:flex;align-items:center;gap:9px}" +
+      "#pe-editor h3 i{color:var(--ac-gold,#d4a574);font-size:13px}" +
+      "#pe-editor .pe-x{margin-left:auto;width:32px;height:32px;flex:0 0 32px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}" +
+      "#pe-editor .pe-x:hover{color:#fff;background:rgba(255,255,255,.1)}" +
+      "#pe-editor .pe-fld{margin-top:16px;display:flex;flex-direction:column;gap:6px;min-width:0}" +
+      "#pe-editor .pe-lbl{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ac-dim,rgba(255,255,255,.5))}" +
+      "#pe-editor input[type=text],#pe-editor select,#pe-editor textarea{width:100%;box-sizing:border-box;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;font:400 13px/1.4 inherit;padding:11px 12px;outline:none}" +
+      "#pe-editor input[type=text]:focus,#pe-editor select:focus,#pe-editor textarea:focus{border-color:rgba(34,211,238,.5)}" +
+      "#pe-editor textarea{resize:vertical;min-height:82px}" +
+      "#pe-editor select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,rgba(255,255,255,.5) 50%),linear-gradient(135deg,rgba(255,255,255,.5) 50%,transparent 50%);background-position:calc(100% - 17px) 19px,calc(100% - 12px) 19px;background-size:5px 5px,5px 5px;background-repeat:no-repeat}" +
+      "#pe-editor .pe-count{font-size:10px;color:rgba(255,255,255,.4);text-align:right;font-variant-numeric:tabular-nums}" +
+      "#pe-editor .pe-avrow{display:flex;align-items:center;gap:14px}" +
+      "#pe-editor .pe-avprev{width:72px;height:72px;flex:0 0 72px;border-radius:20px;object-fit:cover;background:#1c1530;border:1px solid rgba(255,255,255,.12)}" +
+      "#pe-editor .pe-avbtns{display:flex;gap:8px;flex-wrap:wrap}" +
+      "#pe-editor .pe-hint{font-size:10px;color:rgba(255,255,255,.42);line-height:1.5;margin-top:7px}" +
+      "#pe-editor .pe-foot{display:flex;align-items:center;gap:10px;margin-top:22px;flex-wrap:wrap}" +
+      "#pe-editor .pe-foot .pe-msg{font-size:11px;flex:1;min-width:120px}" +
+      "#pe-editor .pe-save{margin-left:auto;min-height:44px;padding:10px 22px;border-radius:11px;border:1px solid rgba(212,165,116,.45);background:linear-gradient(135deg,rgba(212,165,116,.28),rgba(245,158,11,.2));color:#f0d5a8;font:700 13px/1 inherit;cursor:pointer;display:inline-flex;align-items:center;gap:8px}" +
+      "#pe-editor .pe-save:hover{background:linear-gradient(135deg,rgba(212,165,116,.4),rgba(245,158,11,.3))}" +
+      "#pe-editor .pe-cancel{min-height:44px;padding:10px 18px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.75);font:600 13px/1 inherit;cursor:pointer}" +
+      "#pe-editor .pe-cancel:hover{background:rgba(255,255,255,.1);color:#fff}" +
+      "#pe-editor .pe-save:disabled{opacity:.55;cursor:not-allowed}" +
+      "@media(max-width:480px){#pe-editor{padding:12px;align-items:flex-end}#pe-editor .pe-panel{max-height:88vh;border-radius:20px;padding:18px}}" +
       /* ---- activity feed ---- */
       ".pe-act-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05)}" +
       ".pe-act-item:last-child{border-bottom:none}" +
@@ -118,7 +164,6 @@
       ".pe-btn:hover{background:rgba(255,255,255,.1);color:#fff}" +
       ".pe-btn-gold{border-color:rgba(212,165,116,.4);background:rgba(212,165,116,.12);color:#e8c89a}" +
       ".pe-btn-gold:hover{background:rgba(212,165,116,.2)}" +
-      ".pe-btn:disabled{opacity:.5;cursor:not-allowed}" +
       ".pe-note{font-size:10px;color:rgba(255,255,255,.4);margin-top:7px;line-height:1.45}" +
       ".pe-note-err{color:#fca5a5}" +
       ".pe-note-ok{color:#86efac}" +
@@ -158,13 +203,11 @@
     return '<div class="pv-block"' + (id ? ' id="' + id + '"' : "") + '><div class="pv-block-title">' + esc(title) + "</div>" + inner + "</div>";
   }
 
-  /* Current links, keyed by platform, so the editor can pre-fill. */
-  function linksByPlatform(links) {
+  function currentLinks() {
     var out = {};
-    (links || []).forEach(function (l) {
+    (state.links || []).forEach(function (l) {
       if (!l || !l.url) return;
       var key = String(l.label || "").trim().toLowerCase();
-      if (!key) return;
       var def = PLATFORM_BY_KEY[key];
       if (!def) return;                       /* unknown platform: leave alone */
       var value = l.url;
@@ -194,8 +237,8 @@
     }).join("");
   }
 
-  function socialsHtml(links) {
-    var have = linksByPlatform(links);
+  function socialsHtml() {
+    var have = currentLinks();
     return '<div class="pe-socials">' + PLATFORMS.map(function (p) {
       var id = "pe-soc-" + p.key;
       return '<div class="pe-social-row">'
@@ -210,10 +253,9 @@
       + '<p class="pe-note" data-pe-soc-note>' + esc(tt("peSocNote", "Saved to your profile and visible on it for everyone. Clear a field to remove that link.")) + "</p>";
   }
 
-  function pictureHtml(avatar) {
-    var src = avatar || "Juice-WRLD.png";
+  function pictureHtml() {
     return '<div class="pe-pic-row">'
-      + '<img class="pe-pic-preview" id="pe-pic-preview" src="' + esc(src) + '" alt="">'
+      + '<img class="pe-pic-preview" id="pe-pic-preview" src="' + esc(state.avatar || "Juice-WRLD.png") + '" alt="">'
       + '<div class="pe-pic-side">'
       + '<input type="file" id="pe-pic-file" accept="image/jpeg,image/png,image/webp" style="display:none">'
       + '<div class="pe-pic-actions">'
@@ -225,7 +267,7 @@
   }
 
   /* ---------------------------------------------------------------- mount */
-  function mount(state) {
+  function mount() {
     var body = document.getElementById("profilePageBody");
     if (!body || !isSelfProfile() || !state.uid) return;
     css();
@@ -236,8 +278,8 @@
     var wrap = document.createElement("div");
     wrap.id = WID;
     wrap.innerHTML =
-      block(tt("pePicture", "Profile picture"), pictureHtml(state.avatar)) +
-      block(tt("peSocials", "Social links"), socialsHtml(state.links)) +
+      block(tt("pePicture", "Profile picture"), pictureHtml()) +
+      block(tt("peSocials", "Social links"), socialsHtml()) +
       block(tt("peActivity", "Recent activity"), '<div class="pv-act">' + activityHtml(state.activity) + "</div>", "pe-activity");
 
     /* Append at the end of the profile body, before the privacy block if it is
@@ -286,7 +328,7 @@
     if (file) file.addEventListener("change", function (e) { uploadPicture(wrap, e.target.files && e.target.files[0], picNote); });
   }
 
-  function currentValue(wrap, key) {
+  function fieldValue(wrap, key) {
     var input = wrap.querySelector('[data-pe-soc="' + key + '"]');
     return input ? input.value : "";
   }
@@ -316,7 +358,7 @@
 
   function saveSocial(wrap, key, note) {
     if (!PLATFORM_BY_KEY[key]) return;
-    var value = currentValue(wrap, key).trim();
+    var value = fieldValue(wrap, key).trim();
     setNote(note, tt("peSaving", "Saving..."), "");
 
     api("/api/profile", { action: "update_social", platform: key, value: value })
@@ -331,8 +373,19 @@
         var stored = d.cleared ? "" : (base && d.url && d.url.indexOf(base) === 0 ? d.url.slice(base.length) : (d.url || ""));
         acceptSaved(wrap, key, stored);
         setNote(note, tt("peSaved", "Saved"), "ok");
-        refreshLinks(wrap);
+        /* Keep our own copy current instead of re-fetching the whole account -
+           that would rebuild the block and flash the page on every save. */
+        updateStateLink(key, d.cleared ? "" : (d.url || ""));
+        syncLinks();
       });
+  }
+
+  function updateStateLink(key, url) {
+    var next = (state.links || []).filter(function (l) {
+      return String((l && l.label) || "").trim().toLowerCase() !== key;
+    });
+    if (url) next.push({ label: key, url: url });
+    state.links = next;
   }
 
   function setNote(el, text, kind) {
@@ -342,16 +395,15 @@
   }
 
   /* Keep the profile card's own link list in step with the editor. */
-  function refreshLinks(wrap) {
+  function syncLinks() {
+    var box = document.querySelector("#profilePageBody .cmp-links");
+    if (!box) return;
     var links = [];
     PLATFORMS.forEach(function (p) {
-      var input = wrap.querySelector('[data-pe-soc="' + p.key + '"]');
-      var v = input ? input.value.trim() : "";
+      var v = (currentLinks()[p.key] || "");
       if (!v) return;
       links.push({ label: p.key, url: /^https?:\/\//i.test(v) ? v : p.base + v });
     });
-    var box = document.querySelector("#profilePageBody .cmp-links");
-    if (!box) return;
     box.innerHTML = links.map(function (l) {
       return '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow">'
         + '<i class="fas fa-link"></i>' + esc(PLATFORM_BY_KEY[l.label] ? PLATFORM_BY_KEY[l.label].label : l.label)
@@ -403,6 +455,7 @@
           }
           var preview = wrap.querySelector("#pe-pic-preview");
           if (preview) preview.src = dataUrl;
+          state.avatar = dataUrl;
           applyAvatarEverywhere(dataUrl);
           setNote(note, tt("pePicSaved", "Profile picture updated"), "ok");
         });
@@ -420,6 +473,7 @@
         }
         var preview = wrap.querySelector("#pe-pic-preview");
         if (preview) preview.src = "Juice-WRLD.png";
+        state.avatar = "";
         applyAvatarEverywhere("");
         setNote(note, tt("pePicRemoved", "Picture removed"), "ok");
       });
@@ -444,10 +498,246 @@
     if (card) card.innerHTML = src ? '<img src="' + esc(src) + '" alt="">' : esc(initial(name));
   }
 
+  /* ============================================================== EDITOR == */
+  /* Owns the pencil button on the profile card. Built on <body> so it can never
+     be hidden by a page section, and it saves through the same endpoint the
+     Account Settings editor uses. */
+
+  function buildEditor() {
+    css();
+    if (document.getElementById(EDITOR_ID)) return document.getElementById(EDITOR_ID);
+
+    var ov = document.createElement("div");
+    ov.id = EDITOR_ID;
+    ov.setAttribute("role", "dialog");
+    ov.setAttribute("aria-modal", "true");
+    ov.setAttribute("aria-labelledby", "pe-editor-title");
+    ov.innerHTML =
+      '<div class="pe-panel">'
+      + '<h3 id="pe-editor-title"><i class="fas fa-pen" aria-hidden="true"></i> ' + esc(tt("editProfile", "Edit Profile")) + "</h3>"
+      + '<button type="button" class="pe-x" data-pe-close aria-label="' + esc(tt("cancel", "Close")) + '"><i class="fas fa-xmark" aria-hidden="true"></i></button>'
+      /* picture */
+      + '<div class="pe-fld"><span class="pe-lbl">' + esc(tt("pePicture", "Profile picture")) + "</span>"
+      + '<div class="pe-avrow">'
+      + '<img class="pe-avprev" id="pe-ed-av" alt="">'
+      + '<div class="pe-avbtns">'
+      + '<button type="button" class="pe-btn pe-btn-gold" id="pe-ed-av-btn"><i class="fas fa-camera" aria-hidden="true"></i> ' + esc(tt("peChangePic", "Change picture")) + "</button>"
+      + '<button type="button" class="pe-btn" id="pe-ed-av-remove"><i class="fas fa-eraser" aria-hidden="true"></i> ' + esc(tt("peRemovePic", "Remove")) + "</button>"
+      + '<input type="file" id="pe-ed-av-file" accept="image/jpeg,image/png,image/webp" style="display:none">'
+      + "</div></div>"
+      + '<p class="pe-hint">' + esc(tt("pePicNote", "JPG, PNG or WebP. Resized to 256x256 in your browser before upload.")) + "</p></div>"
+      /* name */
+      + '<div class="pe-fld"><label class="pe-lbl" for="pe-ed-name">' + esc(tt("name", "Name")) + "</label>"
+      + '<input type="text" id="pe-ed-name" maxlength="24" autocomplete="off" spellcheck="false"></div>'
+      /* status */
+      + '<div class="pe-fld"><label class="pe-lbl" for="pe-ed-status">' + esc(tt("status", "Status")) + "</label>"
+      + '<select id="pe-ed-status">' + STATUSES.map(function (s) { return '<option value="' + esc(s) + '">' + esc(s) + "</option>"; }).join("") + "</select></div>"
+      /* bio */
+      + '<div class="pe-fld"><label class="pe-lbl" for="pe-ed-bio">' + esc(tt("bio", "Bio")) + "</label>"
+      + '<textarea id="pe-ed-bio" rows="3" maxlength="300" placeholder="' + esc(tt("peBioPh", "Tell the 999s who you are")) + '"></textarea>'
+      + '<span class="pe-count" id="pe-ed-count">0/300</span></div>'
+      + '<p class="pe-hint">' + esc(tt("peLinksHint", "Social links are edited right below this panel on your profile.")) + "</p>"
+      /* footer */
+      + '<div class="pe-foot">'
+      + '<span class="pe-msg" id="pe-ed-msg" aria-live="polite"></span>'
+      + '<button type="button" class="pe-cancel" data-pe-close>' + esc(tt("cancel", "Cancel")) + "</button>"
+      + '<button type="button" class="pe-save" id="pe-ed-save"><i class="fas fa-check" aria-hidden="true"></i> ' + esc(tt("save", "Save")) + "</button>"
+      + "</div></div>";
+
+    document.body.appendChild(ov);
+
+    ov.addEventListener("click", function (e) {
+      if (e.target === ov) closeEditor();
+      if (e.target.closest && e.target.closest("[data-pe-close]")) closeEditor();
+      if (e.target.closest && e.target.closest("#pe-ed-av-btn")) { var f = document.getElementById("pe-ed-av-file"); if (f) f.click(); }
+      if (e.target.closest && e.target.closest("#pe-ed-av-remove")) { avatarDraft = ""; paintEditorAvatar(); setEditorMsg(tt("pePicWillClear", "Picture will be removed when you save."), ""); }
+    });
+    ov.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { e.stopPropagation(); closeEditor(); return; }
+      if (e.key !== "Tab") return;
+      /* keep focus inside the dialog while it is open */
+      var f = ov.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    var bio = document.getElementById("pe-ed-bio");
+    var count = document.getElementById("pe-ed-count");
+    if (bio && count) {
+      bio.addEventListener("input", function () { count.textContent = bio.value.length + "/300"; });
+    }
+
+    var fileIn = document.getElementById("pe-ed-av-file");
+    if (fileIn) fileIn.addEventListener("change", function (e) { editorAvatarFile(e.target.files && e.target.files[0]); });
+
+    var save = document.getElementById("pe-ed-save");
+    if (save) save.addEventListener("click", saveEditor);
+
+    return ov;
+  }
+
+  function paintEditorAvatar() {
+    var img = document.getElementById("pe-ed-av");
+    if (!img) return;
+    var src = avatarDraft || state.avatar;
+    if (src) img.src = src;
+    else img.removeAttribute("src");
+  }
+
+  function editorAvatarFile(file) {
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { setEditorMsg(tt("pePicType", "Only JPG, PNG and WebP images are allowed."), "err"); return; }
+    if (file.size > 8 * 1024 * 1024) { setEditorMsg(tt("pePicBig", "That image is too large (max 8MB)."), "err"); return; }
+    setEditorMsg(tt("pePicResizing", "Resizing..."), "");
+    resize(file, function (dataUrl) {
+      if (!dataUrl) { setEditorMsg(tt("pePicBad", "That image could not be read."), "err"); return; }
+      avatarDraft = dataUrl;
+      paintEditorAvatar();
+      setEditorMsg(tt("pePicReady", "Picture ready - press Save to keep it."), "ok");
+    });
+  }
+
+  function setEditorMsg(text, kind) {
+    var el = document.getElementById("pe-ed-msg");
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = kind === "err" ? "#fca5a5" : kind === "ok" ? "#86efac" : "rgba(255,255,255,.45)";
+  }
+
+  var lastFocus = null;
+
+  function openEditor() {
+    if (!state.uid) { load(function () { openEditor(); }); return; }
+    var ov = buildEditor();
+    var name = document.getElementById("pe-ed-name");
+    var status = document.getElementById("pe-ed-status");
+    var bio = document.getElementById("pe-ed-bio");
+    var count = document.getElementById("pe-ed-count");
+    if (name) name.value = state.name || "";
+    if (status) status.value = STATUSES.indexOf(state.status) >= 0 ? state.status : "Online";
+    if (bio) bio.value = state.bio || "";
+    if (count) count.textContent = (state.bio || "").length + "/300";
+    avatarDraft = state.avatar || "";
+    paintEditorAvatar();
+    setEditorMsg("", "");
+    lastFocus = document.activeElement;
+    ov.classList.add("open");
+    try { document.documentElement.classList.add("scroll-locked"); } catch (e) {}
+    if (name) setTimeout(function () { name.focus(); }, 30);
+  }
+
+  function closeEditor() {
+    var ov = document.getElementById(EDITOR_ID);
+    if (!ov) return;
+    ov.classList.remove("open");
+    try { document.documentElement.classList.remove("scroll-locked"); } catch (e) {}
+    avatarDraft = "";
+    /* Save is disabled while a save is in flight - always re-arm it, otherwise
+       the editor is dead the next time it is opened. */
+    var btn = document.getElementById("pe-ed-save");
+    if (btn) btn.disabled = false;
+    var msg = document.getElementById("pe-ed-msg");
+    if (msg) { msg.textContent = ""; msg.style.color = "rgba(255,255,255,.45)"; }
+    if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) {} }
+  }
+
+  function editorOpen() {
+    var ov = document.getElementById(EDITOR_ID);
+    return !!(ov && ov.classList.contains("open"));
+  }
+
+  function saveEditor() {
+    if (!state.uid) return;
+    var btn = document.getElementById("pe-ed-save");
+    if (btn) btn.disabled = true;
+    setEditorMsg(tt("peSaving", "Saving..."), "");
+
+    var nameEl = document.getElementById("pe-ed-name");
+    var statusEl = document.getElementById("pe-ed-status");
+    var bioEl = document.getElementById("pe-ed-bio");
+    var name = nameEl ? nameEl.value.trim().slice(0, 24) : "";
+    var status = statusEl ? statusEl.value : "Online";
+    var bio = bioEl ? bioEl.value.trim().slice(0, 300) : "";
+    /* An empty name would blank the profile, so keep the current one. */
+    if (!name) name = state.name;
+
+    /* avatar + banner go through the same action the Account Settings editor
+       uses. banner is echoed back so saving never clears it. */
+    var avatar = avatarDraft || state.avatar || "";
+
+    api("/api/account", { action: "updateProfile", name: name, status: status, bio: bio, avatar: avatar, banner: state.banner || "" })
+      .then(function (r) {
+        var d = r.data || {};
+        if (r.status < 200 || r.status >= 300 || d.ok === false) {
+          setEditorMsg((d.error || tt("peSaveFailed", "Could not save your profile")) + ".", "err");
+          if (btn) btn.disabled = false;
+          return;
+        }
+        state.name = name;
+        state.status = status;
+        state.bio = bio;
+        state.avatar = avatar;
+        applyProfileEverywhere();
+        setEditorMsg(tt("peSaved", "Saved"), "ok");
+        setTimeout(function () {
+          closeEditor();
+          toast(tt("peProfileSaved", "Profile updated"), "success");
+          load();
+        }, 450);
+      });
+  }
+
+  /* Push the new values into the profile card, the nav and the mobile tab. */
+  function applyProfileEverywhere() {
+    var card = document.getElementById("profilePageBody");
+    if (!card) return;
+    var nameNode = card.querySelector(".cmp-name");
+    if (nameNode && state.name) nameNode.textContent = state.name;
+    var bioNode = card.querySelector(".cmp-bio");
+    if (bioNode) bioNode.textContent = state.bio || tt("cmpNoBio", "No bio yet - let the 999s know who you are.");
+    var handle = card.querySelector(".cmp-handle");
+    if (handle) handle.textContent = "@" + String(state.name || state.uid).toLowerCase();
+    var dot = card.querySelector(".cmp-online");
+    if (dot) {
+      var c = state.status === "Online" ? "#10b981" : state.status === "Idle" ? "#f59e0b" : state.status === "Do Not Disturb" ? "#ef4444" : "#64748b";
+      dot.style.background = c;
+      dot.style.boxShadow = "0 0 10px " + c;
+    }
+    applyAvatarEverywhere(state.avatar || "");
+    var navName = document.getElementById("profileName");
+    if (navName && state.name) navName.textContent = state.name;
+    var navHandle = document.getElementById("profileHandle");
+    if (navHandle && state.name) navHandle.textContent = "@" + String(state.name).toLowerCase();
+  }
+
+  /* Take over the pencil button. The old handler opened #editProfileModal,
+     which lives inside the (hidden) Account section, so nothing appeared. */
+  function installEditorButton() {
+    var orig = window.openEditProfile;
+    var wrapped = function () {
+      /* On your own profile, edit right here. */
+      if (onProfilePage() && !editorOpen()) { openEditor(); return; }
+      /* Anywhere else the modal is trapped, so send the visitor to the page
+         that actually owns it first. */
+      var sec = document.getElementById("page-section-account");
+      var active = sec && sec.classList.contains("active");
+      if (!active) {
+        if (window.switchAppPage) window.switchAppPage("account");
+        setTimeout(function () { if (orig) orig(); else toast(tt("peGoToAccount", "Open Account Settings to edit your profile"), "info"); }, 260);
+        return;
+      }
+      if (orig) orig();
+    };
+    window.openEditProfile = wrapped;
+    window.openProfileEditor = openEditor;   /* also callable directly */
+  }
+
   /* ----------------------------------------------------------------- load */
   var loading = false;
-  function load() {
-    if (loading) return;
+  function load(cb) {
+    if (loading) { if (cb) setTimeout(cb, 300); return; }
     if (!isSelfProfile()) return;
     var uid = myUid();
     if (!uid) return;
@@ -462,17 +752,25 @@
            save would come back 401. isSessionOwner is decided by the server. */
         if (!d || !d.ok || !d.isSessionOwner) return;
         var prof = d.profile || {};
-        mount({
+        state = {
           uid: uid,
-          avatar: prof.avatar || (d.discord && d.discord.avatar) || "",
+          name: prof.name || "",
+          bio: prof.bio || "",
+          status: prof.status || "Online",
+          avatar: prof.avatar || ((d.discord && d.discord.avatar) || ""),
+          banner: prof.banner || "",
           links: d.links || [],
           activity: d.activity || [],
-        });
+        };
+        mount();
+        if (cb) cb();
       });
   }
 
   /* ----------------------------------------------------------------- boot */
   function boot() {
+    installEditorButton();
+
     /* account.js re-renders the profile body, so mount again after each render. */
     try {
       var orig = window.profileSectionShown;
