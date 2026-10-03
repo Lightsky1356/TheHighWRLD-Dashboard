@@ -927,3 +927,310 @@ html.scroll-locked,html.scroll-locked body{overflow:hidden}
 @media (max-width:480px){
   #view-toggle-btn{display:none !important}
 }
+
+/* ============================================================================
+   Track Information panel — redesigned (desktop + mobile)
+   Layering: page content -> #info-overlay (blur + translucent) -> #info-panel
+   (sharp). The panel itself never gets filter/backdrop-filter, so cover art,
+   text and buttons stay crisp while everything behind them is blurred.
+   ========================================================================= */
+
+/* ---- Backdrop (both viewports; mobile rules below re-enable it under the
+        mobile performance kill-switch) ---- */
+.info-overlay{
+  background:rgba(8,5,16,.5);
+  backdrop-filter:blur(18px) saturate(1.25);
+  -webkit-backdrop-filter:blur(18px) saturate(1.25);
+}
+
+/* ---- Panel shell ---- */
+.info-panel{
+  width:min(860px,92vw);
+  max-width:min(860px,92vw);
+  max-height:min(88vh,780px);
+  border-radius:26px;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 40px 120px rgba(0,0,0,.7),0 0 0 1px rgba(34,211,238,.05),inset 0 1px 0 rgba(255,255,255,.1);
+  overflow:hidden;
+}
+/* the animated top hairline stays (desktop); it is disabled on mobile below */
+.info-panel-inner{
+  /* static (not relative) so the close button anchors to the panel and does
+     not scroll away with long content */
+  position:static;
+  display:flex;
+  flex-direction:column;
+  max-height:min(88vh,780px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding:24px 28px 18px;
+}
+.info-panel-close{
+  top:16px;
+  right:16px;
+  width:34px;
+  height:34px;
+  font-size:12px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.55);
+}
+
+/* ---- Hero: cover + track identity (desktop: side by side) ---- */
+.info-hero{
+  display:grid;
+  grid-template-columns:168px minmax(0,1fr);
+  gap:14px 24px;
+  align-items:center;
+  padding-bottom:18px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.info-hero-art{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.info-panel-cover-row{display:block;margin:0}
+.info-panel-cover-wrap{
+  width:168px;
+  height:168px;
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 18px 44px rgba(0,0,0,.55),0 0 64px rgba(147,51,234,.16);
+}
+.info-panel-cover-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.info-cover-credit{
+  margin:0;
+  text-align:center;
+  font-size:10px;
+  letter-spacing:.2px;
+  color:rgba(255,255,255,.42);
+}
+.info-hero-id{min-width:0}
+.info-eyebrow{
+  margin:0 0 8px;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:rgba(34,211,238,.7);
+}
+#info-title.info-value-title{
+  margin:0;
+  font-size:26px;
+  line-height:1.18;
+  font-weight:800;
+  letter-spacing:-.02em;
+  color:#fff;
+  overflow-wrap:anywhere;
+}
+.info-byline{
+  margin:9px 0 0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  color:rgba(255,255,255,.72);
+}
+.info-byline i{font-size:10px;color:rgba(34,211,238,.65)}
+.info-tags{
+  margin-top:13px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+#info-era.info-value-tag{
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.1em;
+  padding:4px 11px;
+  border-radius:999px;
+  border:1px solid rgba(34,211,238,.28);
+  background:rgba(34,211,238,.1);
+  color:#a5f3fc;
+}
+#info-era.info-era-clickable{cursor:pointer;transition:background .2s,border-color .2s}
+#info-era.info-era-clickable:hover{background:rgba(34,211,238,.18);border-color:rgba(34,211,238,.5)}
+#info-era-desc{
+  font-size:11px;
+  color:rgba(255,255,255,.5);
+  letter-spacing:.02em;
+  white-space:normal;
+}
+
+/* ---- Content sections ---- */
+.info-sec{margin-top:18px;min-width:0}
+.info-sec-h{
+  margin:0 0 10px;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.42);
+}
+.info-altnames{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  font-size:12px;
+}
+.info-chip{
+  display:inline-flex;
+  align-items:center;
+  max-width:100%;
+  padding:5px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.82);
+  font-size:12px;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+.info-altnames.ti-na{
+  color:rgba(255,255,255,.38);
+  font-style:italic;
+}
+.info-album{
+  margin:0;
+  font-size:13px;
+  line-height:1.5;
+  color:rgba(255,255,255,.82);
+  overflow-wrap:anywhere;
+}
+.info-facts{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px 18px;
+}
+.info-fact{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+.info-fact .info-label{
+  width:auto;
+  font-size:8.5px;
+  font-weight:700;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.4);
+  background:none;
+  opacity:1;
+}
+.info-fact .info-value{
+  font-size:13px;
+  line-height:1.4;
+  color:rgba(255,255,255,.88);
+  overflow-wrap:anywhere;
+}
+
+/* ---- Footer (track number + small icon actions) ---- */
+.info-panel-stats{
+  margin-top:20px;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,.07);
+  font-size:10px;
+  color:rgba(255,255,255,.34);
+}
+.info-tracknum{display:inline-flex;align-items:center;gap:5px}
+.info-foot-actions{display:flex;align-items:center;gap:8px}
+.info-action-btn,
+.info-download-btn{
+  width:32px;
+  height:32px;
+  border-radius:9px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.55);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  margin:0;
+  transition:background .2s,color .2s,border-color .2s;
+}
+.info-action-btn:hover,
+.info-download-btn:hover{
+  background:rgba(34,211,238,.12);
+  border-color:rgba(34,211,238,.4);
+  color:#67e8f9;
+}
+
+/* ---- Tablet: tighter hero, 2-col facts ---- */
+@media (max-width:1023px) and (min-width:768px){
+  .info-panel{width:min(760px,90vw)}
+  .info-hero{grid-template-columns:136px minmax(0,1fr);gap:12px 18px}
+  .info-panel-cover-wrap{width:136px;height:136px;border-radius:18px}
+  #info-title.info-value-title{font-size:22px}
+  .info-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* ---- Mobile: dedicated vertical layout + real backdrop blur ----
+   The mobile block above disables backdrop-filter on every element for
+   performance, so the overlay re-enables it with !important here. The panel
+   stays unfiltered on purpose: only the backdrop is blurred. */
+@media (max-width:767px){
+  .info-overlay{
+    background:rgba(6,4,12,.48)!important;
+    backdrop-filter:blur(16px) saturate(1.2)!important;
+    -webkit-backdrop-filter:blur(16px) saturate(1.2)!important;
+  }
+  .info-panel{
+    width:min(94vw,430px)!important;
+    max-width:min(94vw,430px)!important;
+    max-height:86dvh!important;
+    overflow:hidden!important;
+    padding:0!important;
+    border-radius:24px;
+  }
+  .info-panel-inner{
+    max-height:86dvh!important;
+    padding:18px 18px 14px!important;
+    gap:0!important;
+  }
+  /* the legacy mobile block hard-codes label/value sizes with !important */
+  .info-label{width:auto!important;font-size:8.5px!important}
+  .info-value{font-size:13px!important}
+  .info-panel-stats{font-size:10px!important}
+  .info-panel-close{
+    top:12px;
+    right:12px;
+    width:40px;
+    height:40px;
+    font-size:14px;
+    background:rgba(10,8,20,.55);
+    border-color:rgba(255,255,255,.12);
+    color:rgba(255,255,255,.7);
+  }
+  .info-hero{
+    grid-template-columns:minmax(0,1fr);
+    justify-items:center;
+    text-align:center;
+    gap:14px;
+    padding-bottom:16px;
+  }
+  .info-panel-cover-wrap{width:150px!important;height:150px!important;border-radius:18px!important}
+  #info-title.info-value-title{font-size:21px!important;text-align:center}
+  .info-byline{justify-content:center}
+  .info-tags{justify-content:center}
+  .info-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+  .info-fact:last-child{grid-column:1 / -1}
+  .info-altnames{justify-content:center}
+  .info-album{text-align:center}
+  .info-sec-h{text-align:center}
+  /* the animated hairline is noise on mobile (animations are disabled there) */
+  .info-panel::before{display:none}
+}
+
+/* ---- Small phones: keep the panel compact and the CTA row tappable ---- */
+@media (max-width:375px){
+  .info-panel-inner{padding:16px 14px 12px!important}
+  .info-panel-cover-wrap{width:124px!important;height:124px!important;border-radius:16px!important}
+  #info-title.info-value-title{font-size:19px!important}
+  .info-sec{margin-top:15px}
+}
