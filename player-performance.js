@@ -157,7 +157,16 @@
     while (node && node !== state.bottom) { var next = node.nextSibling; node.remove(); node = next; }
     container.insertBefore(document.createRange().createContextualFragment(html), state.bottom);
     var counter = document.getElementById("playlist-track-counter");
-    if (counter) counter.textContent = indexes.length + " of " + trackList.length + " Tracks";
+    if (counter) {
+      /* Favorites mode counts favorites, not search/category matches, and has
+       * its own wording - without this the repaint counter text flipped from
+       * "N Favorited Tracks" to "N of M Tracks" the moment the list scrolled. */
+      var favMode = false;
+      try { favMode = typeof playerCurrentCategoryFilter !== "undefined" && playerCurrentCategoryFilter === "favorites"; } catch (e) {}
+      counter.textContent = favMode
+        ? indexes.length + " Favorited Track" + (indexes.length !== 1 ? "s" : "")
+        : indexes.length + " of " + trackList.length + " Tracks";
+    }
     var empty = document.getElementById("search-empty-state");
     var input = document.getElementById("playlist-search");
     if (empty) empty.classList.toggle("visible", !!(input && input.value) && !indexes.length);
