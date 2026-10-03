@@ -458,7 +458,9 @@
       .catch(function () { return null; })
       .then(function (d) {
         loading = false;
-        if (!d || !d.ok) return;
+        /* Editing tools need a real session: guests get a uid too, but every
+           save would come back 401. isSessionOwner is decided by the server. */
+        if (!d || !d.ok || !d.isSessionOwner) return;
         var prof = d.profile || {};
         mount({
           uid: uid,
