@@ -181,6 +181,54 @@
       ".pe-social-row .pe-social{flex:1 1 auto;min-width:0}" +
       /* visually hidden but read out by screen readers */
       ".pe-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}" +
+      /* ---- profile header: background panel, pencil, layout switch ---- */
+      /* The card renders no panel of its own, so the header gets one here. */
+      "#profilePageBody .cmp-head{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--ac-border,rgba(255,255,255,.08));background:linear-gradient(150deg,rgba(255,255,255,.05),rgba(255,255,255,.015));box-shadow:0 18px 44px rgba(0,0,0,.28);padding:16px 18px 14px;margin-bottom:14px}" +
+      "#profilePageBody .cmp-head .pe-cover{display:block;position:absolute;inset:0;z-index:0;opacity:.3;background-size:cover;background-position:center 30%;pointer-events:none}" +
+      "#profilePageBody .cmp-head>*:not(.pe-cover){position:relative;z-index:1}" +
+      "#profilePageBody .cmp-head .cmp-actions{display:none}" +
+      /* the pencil lives beside the name, not in a row of buttons */
+      "#profilePageBody .pe-pencil{width:30px;height:30px;flex:0 0 30px;margin-left:6px;border-radius:9px;border:1px solid var(--ac-border,rgba(255,255,255,.12));background:rgba(255,255,255,.06);color:rgba(255,255,255,.65);cursor:pointer;font-size:11px;display:inline-flex;align-items:center;justify-content:center;transition:background .15s,color .15s,border-color .15s}" +
+      "#profilePageBody .pe-pencil:hover{background:rgba(212,165,116,.16);border-color:rgba(212,165,116,.4);color:#e8c89a}" +
+      "#profilePageBody .pe-pencil:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}" +
+      /* layout switch */
+      "#profilePageBody .pe-layout{display:inline-flex;gap:3px;padding:3px;border-radius:999px;border:1px solid var(--ac-border,rgba(255,255,255,.1));background:rgba(255,255,255,.04);margin-left:auto}" +
+      "#profilePageBody .pe-layout button{min-height:26px;padding:4px 11px;border:none;border-radius:999px;background:transparent;color:rgba(255,255,255,.55);font:700 10px/1 inherit;letter-spacing:.04em;cursor:pointer;display:inline-flex;align-items:center;gap:5px}" +
+      "#profilePageBody .pe-layout button i{font-size:9px}" +
+      "#profilePageBody .pe-layout button:hover{color:rgba(255,255,255,.85)}" +
+      "#profilePageBody .pe-layout button[aria-pressed=true]{background:linear-gradient(90deg,rgba(34,211,238,.2),rgba(59,130,246,.18));color:#67e8f9;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}" +
+      "#profilePageBody .pe-layout button:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}" +
+      "#profilePageBody .pe-head-tools{display:flex;align-items:center;gap:8px;margin-top:12px}" +
+      /* ---- compact layout ---- */
+      /* the avatar is sized by .cmp-avatar-ring - shrinking the inner elements
+         instead would leave the ring at full size and overlap the text */
+      "#profilePageBody.pe-compact .cmp-head{padding:12px 14px 10px;border-radius:15px}" +
+      "#profilePageBody.pe-compact .cmp-top{gap:12px}" +
+      "#profilePageBody.pe-compact .cmp-avatar-ring{width:54px;height:54px}" +
+      "#profilePageBody.pe-compact .cmp-avatar{font-size:18px}" +
+      "#profilePageBody.pe-compact .cmp-name{font-size:1.15rem}" +
+      "#profilePageBody.pe-compact .cmp-bio{font-size:12px;margin-top:8px}" +
+      "#profilePageBody.pe-compact .cmp-qstats{margin-top:10px;padding:8px 10px}" +
+      "#profilePageBody.pe-compact .cmp-qstat b{font-size:1rem}" +
+      "#profilePageBody.pe-compact .pe-block,.pe-block{padding:12px 14px}" +
+      "#profilePageBody.pe-compact .pv-block{margin-top:14px}" +
+      "#profilePageBody.pe-compact .cmp-sec-card{padding:14px}" +
+      "#profilePageBody.pe-compact .cmp-page{gap:1rem}" +
+      /* ---- custom links in the editor ---- */
+      "#pe-editor .pe-links{display:flex;flex-direction:column;gap:8px}" +
+      "#pe-editor .pe-linkrow{display:flex;align-items:center;gap:7px}" +
+      "#pe-editor .pe-linkrow input[type=text]{flex:1;min-width:0}" +
+      "#pe-editor .pe-linklab{flex:0 0 118px}" +
+      "#pe-editor .pe-linkdel{width:34px;height:34px;flex:0 0 34px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}" +
+      "#pe-editor .pe-linkdel:hover{color:#fca5a5;border-color:rgba(252,165,165,.35);background:rgba(252,165,165,.1)}" +
+      "#pe-editor .pe-addlink{align-self:flex-start;min-height:36px;padding:8px 14px;border-radius:10px;border:1px dashed rgba(255,255,255,.2);background:rgba(255,255,255,.03);color:rgba(255,255,255,.7);font:600 11px/1 inherit;cursor:pointer;display:inline-flex;align-items:center;gap:7px}" +
+      "#pe-editor .pe-addlink:hover{background:rgba(255,255,255,.08);color:#fff}" +
+      "#pe-editor .pe-socialgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:7px}" +
+      "#pe-editor .pe-socrow{display:flex;align-items:center;gap:8px;min-height:40px;padding:5px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)}" +
+      "#pe-editor .pe-socrow i{width:17px;text-align:center;font-size:11px;color:var(--ac-dim,rgba(255,255,255,.55))}" +
+      "#pe-editor .pe-socrow input{flex:1;min-width:0;border:none;background:transparent;outline:none;color:#fff;font:400 12px/1.3 inherit;padding:6px 0}" +
+      "#pe-editor .pe-socrow input::placeholder{color:rgba(255,255,255,.3)}" +
+      "@media(max-width:560px){#pe-editor .pe-linkrow{flex-wrap:wrap}#pe-editor .pe-linklab{flex:1 1 100%}#pe-editor .pe-socialgrid{grid-template-columns:1fr}}" +
       "@media(max-width:480px){.pe-socials{grid-template-columns:1fr}.pe-act-ico{width:26px;height:26px;flex:0 0 26px}}" +
       "@media(hover:none){.pe-btn:hover{background:rgba(255,255,255,.05)}.pe-social-save:hover{background:rgba(255,255,255,.05)}}";
     (document.head || document.documentElement).appendChild(st);
@@ -275,6 +323,9 @@
     var old = document.getElementById(WID);
     if (old) old.remove();
 
+    dressHeader(body);
+    applyLayout(body);
+
     var wrap = document.createElement("div");
     wrap.id = WID;
     wrap.innerHTML =
@@ -289,6 +340,88 @@
     else body.appendChild(wrap);
 
     bind(wrap);
+  }
+
+  /* The profile card ships a row of buttons (WRLD Player, The Vault, Edit
+     Profile, Sign Out). They are gone: the pencil now lives in the header, and
+     Sign Out is in the account menu and the mobile profile popup. */
+  function stripActionRow(body) {
+    var row = body.querySelector(".cmp-actions");
+    if (row && row.parentNode) row.parentNode.removeChild(row);
+  }
+
+  /* Give the header a real panel, add the pencil beside the name, and put the
+     layout switch on the right. */
+  function dressHeader(body) {
+    stripActionRow(body);
+
+    var head = body.querySelector(".cmp-head");
+    if (!head) return;
+
+    /* cover art behind the header, when a banner is set */
+    var oldCover = head.querySelector(".pe-cover");
+    if (oldCover) oldCover.parentNode.removeChild(oldCover);
+    if (state.banner) {
+      var cover = document.createElement("span");
+      cover.className = "pe-cover";
+      cover.setAttribute("aria-hidden", "true");
+      cover.style.backgroundImage = 'url("' + state.banner.replace(/"/g, "%22") + '")';
+      head.insertBefore(cover, head.firstChild);
+    }
+
+    /* pencil beside the name */
+    var nameRow = head.querySelector(".cmp-name-row");
+    if (nameRow && !nameRow.querySelector(".pe-pencil")) {
+      var pen = document.createElement("button");
+      pen.type = "button";
+      pen.className = "pe-pencil";
+      pen.id = "pe-header-edit";
+      pen.title = tt("editProfile", "Edit Profile");
+      pen.setAttribute("aria-label", tt("editProfile", "Edit Profile"));
+      pen.innerHTML = '<i class="fas fa-pen" aria-hidden="true"></i>';
+      pen.addEventListener("click", function (e) { e.preventDefault(); openEditor(); });
+      nameRow.appendChild(pen);
+    }
+
+    /* layout switch */
+    var tools = head.querySelector(".pe-head-tools");
+    if (tools) tools.parentNode.removeChild(tools);
+    tools = document.createElement("div");
+    tools.className = "pe-head-tools";
+    tools.innerHTML = '<div class="pe-layout" role="group" aria-label="' + esc(tt("peLayout", "Profile layout")) + '">'
+      + '<button type="button" data-pe-layout="richer" aria-pressed="true"><i class="fas fa-tilt" aria-hidden="true"></i> ' + esc(tt("peRicher", "Richer")) + "</button>"
+      + '<button type="button" data-pe-layout="compact" aria-pressed="false"><i class="fas fa-compress" aria-hidden="true"></i> ' + esc(tt("peCompact", "Compact")) + "</button>"
+      + "</div>";
+    tools.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest("[data-pe-layout]") : null;
+      if (!b) return;
+      setLayout(b.getAttribute("data-pe-layout"), body);
+    });
+    head.appendChild(tools);
+  }
+
+  var LAYOUT_KEY = "pe_profile_layout";
+
+  function currentLayout() {
+    try { return localStorage.getItem(LAYOUT_KEY) === "compact" ? "compact" : "richer"; } catch (e) { return "richer"; }
+  }
+
+  function setLayout(mode, body) {
+    if (mode !== "compact") mode = "richer";
+    try { localStorage.setItem(LAYOUT_KEY, mode); } catch (e) {}
+    applyLayout(body || document.getElementById("profilePageBody"));
+  }
+
+  function applyLayout(body) {
+    if (!body) return;
+    var mode = currentLayout();
+    body.classList.toggle("pe-compact", mode === "compact");
+    var switcher = body.querySelector(".pe-layout");
+    if (switcher) {
+      switcher.querySelectorAll("[data-pe-layout]").forEach(function (b) {
+        b.setAttribute("aria-pressed", b.getAttribute("data-pe-layout") === mode ? "true" : "false");
+      });
+    }
   }
 
   /* ----------------------------------------------------------------- bind */
@@ -536,7 +669,16 @@
       + '<div class="pe-fld"><label class="pe-lbl" for="pe-ed-bio">' + esc(tt("bio", "Bio")) + "</label>"
       + '<textarea id="pe-ed-bio" rows="3" maxlength="300" placeholder="' + esc(tt("peBioPh", "Tell the 999s who you are")) + '"></textarea>'
       + '<span class="pe-count" id="pe-ed-count">0/300</span></div>'
-      + '<p class="pe-hint">' + esc(tt("peLinksHint", "Social links are edited right below this panel on your profile.")) + "</p>"
+      /* ---- links: the known platforms plus any custom ones ---- */
+      + '<div class="pe-fld"><span class="pe-lbl">' + esc(tt("peLinks", "Links")) + "</span>"
+      + '<div class="pe-socialgrid">' + PLATFORMS.map(function (p) {
+        return '<span class="pe-socrow"><i class="' + p.icon + '" aria-hidden="true"></i>'
+          + '<input type="text" data-pe-ed-soc="' + p.key + '" maxlength="300" spellcheck="false" autocomplete="off" placeholder="' + esc(p.base ? p.label + " username or link" : "https:// link") + '">'
+          + "</span>";
+      }).join("") + "</div>"
+      + '<div class="pe-links" id="pe-ed-links"></div>'
+      + '<button type="button" class="pe-addlink" id="pe-ed-addlink"><i class="fas fa-plus" aria-hidden="true"></i> ' + esc(tt("peAddCustomLink", "Add custom link")) + "</button>"
+      + '<p class="pe-hint">' + esc(tt("peLinksHint", "Social handles are expanded to full links for you. Custom links need a label and a full https:// address.")) + "</p></div>"
       /* footer */
       + '<div class="pe-foot">'
       + '<span class="pe-msg" id="pe-ed-msg" aria-live="polite"></span>'
@@ -551,6 +693,9 @@
       if (e.target.closest && e.target.closest("[data-pe-close]")) closeEditor();
       if (e.target.closest && e.target.closest("#pe-ed-av-btn")) { var f = document.getElementById("pe-ed-av-file"); if (f) f.click(); }
       if (e.target.closest && e.target.closest("#pe-ed-av-remove")) { avatarDraft = ""; paintEditorAvatar(); setEditorMsg(tt("pePicWillClear", "Picture will be removed when you save."), ""); }
+      if (e.target.closest && e.target.closest("#pe-ed-addlink")) { addCustomLinkRow(); return; }
+      var del = e.target.closest ? e.target.closest(".pe-linkdel") : null;
+      if (del) { var row = del.closest(".pe-linkrow"); if (row && row.parentNode) row.parentNode.removeChild(row); }
     });
     ov.addEventListener("keydown", function (e) {
       if (e.key === "Escape") { e.stopPropagation(); closeEditor(); return; }
@@ -576,6 +721,72 @@
     if (save) save.addEventListener("click", saveEditor);
 
     return ov;
+  }
+
+  /* ---- custom link rows ---- */
+  function customLinkRowHtml(label, url) {
+    return '<span class="pe-linkrow">'
+      + '<input type="text" class="pe-linklab" data-pe-link-label maxlength="40" placeholder="' + esc(tt("peLinkLabel", "Label")) + '" value="' + esc(label || "") + '" aria-label="' + esc(tt("peLinkLabel", "Label")) + '">'
+      + '<input type="text" data-pe-link-url maxlength="500" spellcheck="false" autocomplete="off" placeholder="https://" value="' + esc(url || "") + '" aria-label="' + esc(tt("peLinkUrl", "Link address")) + '">'
+      + '<button type="button" class="pe-linkdel" aria-label="' + esc(tt("peRemoveLink", "Remove link")) + '" title="' + esc(tt("peRemoveLink", "Remove link")) + '"><i class="fas fa-trash" aria-hidden="true"></i></button>'
+      + "</span>";
+  }
+
+  function addCustomLinkRow(label, url) {
+    var host = document.getElementById("pe-ed-links");
+    if (!host) return;
+    host.insertAdjacentHTML("beforeend", customLinkRowHtml(label, url));
+    var rows = host.querySelectorAll("[data-pe-link-label]");
+    if (rows.length) rows[rows.length - 1].focus();
+  }
+
+  /* Existing links that are not one of the known platforms are shown as custom
+     rows, so nothing that is already saved can be lost by editing here. */
+  function fillEditorLinks() {
+    var host = document.getElementById("pe-ed-links");
+    if (host) host.innerHTML = "";
+    var known = {};
+    PLATFORMS.forEach(function (p) { known[p.key] = true; });
+    (state.links || []).forEach(function (l) {
+      if (!l || !l.url) return;
+      var key = String(l.label || "").trim().toLowerCase();
+      if (known[key]) return;
+      addCustomLinkRow(String(l.label || ""), String(l.url || ""));
+    });
+    PLATFORMS.forEach(function (p) {
+      var input = document.querySelector('[data-pe-ed-soc="' + p.key + '"]');
+      if (input) input.value = currentLinks()[p.key] || "";
+    });
+  }
+
+  /* Turn the editor's link fields into the payload /api/account expects.
+     Anything half-filled is reported instead of silently dropped. */
+  function collectEditorLinks() {
+    var out = [];
+    var problem = "";
+    PLATFORMS.forEach(function (p) {
+      var input = document.querySelector('[data-pe-ed-soc="' + p.key + '"]');
+      var v = input ? String(input.value || "").trim().replace(/^@+/, "") : "";
+      if (!v) return;
+      if (/^https?:\/\//i.test(v)) { out.push({ label: p.key, url: v.slice(0, 500) }); return; }
+      if (!p.base) { if (!problem) problem = tt("peWebsiteNeedsLink", "Website needs a full link."); return; }
+      if (!/^[A-Za-z0-9._-]+$/.test(v)) { if (!problem) problem = p.label + ": " + tt("peBadHandle", "that handle does not look right"); return; }
+      out.push({ label: p.key, url: (p.base + v).slice(0, 500) });
+    });
+    var rows = document.querySelectorAll("#pe-ed-links .pe-linkrow");
+    for (var i = 0; i < rows.length; i++) {
+      var lab = rows[i].querySelector("[data-pe-link-label]");
+      var url = rows[i].querySelector("[data-pe-link-url]");
+      var label = lab ? String(lab.value || "").trim().slice(0, 40) : "";
+      var link = url ? String(url.value || "").trim().slice(0, 500) : "";
+      if (!label && !link) continue;                    /* empty row: ignore */
+      if (!label) { if (!problem) problem = tt("peLinkNeedsLabel", "A custom link needs a label."); continue; }
+      if (!/^https?:\/\//i.test(link)) { if (!problem) problem = label + ": " + tt("peLinkNeedsUrl", "needs a full https:// link"); continue; }
+      out.push({ label: label, url: link });
+    }
+    /* the server keeps the first 12 */
+    if (out.length > 12 && !problem) problem = tt("peTooManyLinks", "You can save up to 12 links.");
+    return { links: out.slice(0, 12), problem: problem };
   }
 
   function paintEditorAvatar() {
@@ -619,6 +830,7 @@
     if (status) status.value = STATUSES.indexOf(state.status) >= 0 ? state.status : "Online";
     if (bio) bio.value = state.bio || "";
     if (count) count.textContent = (state.bio || "").length + "/300";
+    fillEditorLinks();
     avatarDraft = state.avatar || "";
     paintEditorAvatar();
     setEditorMsg("", "");
@@ -667,6 +879,13 @@
        uses. banner is echoed back so saving never clears it. */
     var avatar = avatarDraft || state.avatar || "";
 
+    var linkData = collectEditorLinks();
+    if (linkData.problem) {
+      setEditorMsg(linkData.problem, "err");
+      if (btn) btn.disabled = false;
+      return;
+    }
+
     api("/api/account", { action: "updateProfile", name: name, status: status, bio: bio, avatar: avatar, banner: state.banner || "" })
       .then(function (r) {
         var d = r.data || {};
@@ -681,11 +900,16 @@
         state.avatar = avatar;
         applyProfileEverywhere();
         setEditorMsg(tt("peSaved", "Saved"), "ok");
-        setTimeout(function () {
-          closeEditor();
-          toast(tt("peProfileSaved", "Profile updated"), "success");
-          load();
-        }, 450);
+        /* Links are a second write so a link problem never costs you the bio. */
+        return api("/api/account", { action: "saveLinks", links: linkData.links }).then(function (lr) {
+          var ld = lr.data || {};
+          if (lr.status >= 200 && lr.status < 300 && ld.ok !== false) state.links = linkData.links;
+          setTimeout(function () {
+            closeEditor();
+            toast(tt("peProfileSaved", "Profile updated"), "success");
+            load();
+          }, 450);
+        });
       });
   }
 
