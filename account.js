@@ -2190,13 +2190,13 @@ window.profileSectionShown = function () {
 
   /* ---------- Navigation router: activeTab + URL routing ---------- */
   var _activeTab = "lobby";
-  var NAV_URL = { home: "/", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA" };
+  var NAV_URL = { home: "/", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA" };
   var NAV_URL_REV = {};
   Object.keys(NAV_URL).forEach(function (k) { NAV_URL_REV[NAV_URL[k]] = k; });
   function _navTabFor(page) {
     if (page === "player") return "player";
     if (page === "hub") return "vault";
-    if (page === "wanted" || page === "suggestions") return "community";
+    if (page === "wanted" || page === "suggestions") return "community"; if (page === "roadmap") return "roadmap";
     if (page === "account") return "settings";
     if (page === "profile") return "profile";
     if (page === "owner") return "owner";
