@@ -220,6 +220,12 @@
     html += '<div class="cmp-handle">@' + esc(String(uname).toLowerCase()) + '</div>';
     html += '<div class="cmp-meta">' + esc(stLabel(p.status || "Online")) + (p.joined ? ' &middot; ' + esc(_tt("joinedWord", "Joined")) + ' ' + esc(fmtDate(p.joined)) : '') + '<span class="cmp-site-presence" data-uid="' + esc(String(uid)) + '"></span></div></div></div>';
     html += '<div class="cmp-bio">' + esc(p.bio || _tt("cmpNoBio", "No bio yet - let the 999s know who you are.")) + '</div>';
+    /* the links belong to the header card, right under the bio - there is no
+       separate Links card anywhere on the page */
+    var links = (_data && _data.links) || [];
+    if (links.length) {
+      html += '<div class="cmp-links">' + links.map(function (l) { return l && l.url ? '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow"><i class="fas fa-link"></i>' + esc(l.label || l.url) + '<i class="fas fa-arrow-up-right-from-square" style="margin-left:auto"></i></a>' : ''; }).join("") + '</div>';
+    }
     html += '<div class="cmp-qstats">';
     html += qstat((Number(st.plays) || 0).toLocaleString(), _tt("qstatPlays", "Plays"));
     html += '<div class="cmp-qdiv"></div>';
@@ -232,11 +238,6 @@
     html += '<button type="button" class="cmp-btn gold" data-cmp-signout="1"><i class="fas fa-right-from-bracket"></i>' + esc(_tt("signOut", "Sign Out")) + '</button>';
     html += '</div>';
     html += '</div>';
-    var links = (_data && _data.links) || [];
-    if (links.length) {
-      html += '<div class="cmp-sec-card cmp-links-card" data-pnl="links"><div class="cmp-sec-title"><span><i class="fas fa-link"></i> ' + esc(_tt("cmpPanelLinks", "Links")) + '</span><span class="cmp-count">' + links.length + '</span></div>';
-      html += '<div class="cmp-links">' + links.map(function (l) { return l && l.url ? '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow"><i class="fas fa-link"></i>' + esc(l.label || l.url) + '<i class="fas fa-arrow-up-right-from-square" style="margin-left:auto"></i></a>' : ''; }).join("") + '</div></div>';
-    }
     if (includeSections) {
       var favs = (_data && _data.favorites) || [];
       var pls = (_data && _data.playlists) || [];

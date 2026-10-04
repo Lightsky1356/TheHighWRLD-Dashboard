@@ -115,11 +115,26 @@
     var st = document.createElement("style");
     st.id = "profile-enh-style";
     st.textContent =
-      /* ---- the board: every block is its own panel, two per row ---- */
-      /* #profilePageBody is already a 2 column grid; the hero header spans both
-         columns on a phone and takes a single cell on a desktop. */
+      /* ---- the board: header on top, then two columns beneath it ---- */
+      /* #profilePageBody is already a 2 column grid. The blocks are appended by
+         several files in whatever order they finish loading, so the reading
+         order is set here with `order` instead of by insertion order:
+
+           header            (full width)
+           Top Plays   |  Favorites
+           Listening…  |  My Playlists
+           Peak Hours  |  -
+      */
       "#profilePageBody{gap:14px}" +
-      "@media(min-width:901px){#profilePageBody .cmp-head{grid-column:auto}}" +
+      "#profilePageBody .cmp-head{grid-column:1/-1;order:1}" +
+      "#profilePageBody #ws-topplays{order:2}" +
+      "#profilePageBody [data-pnl=\"favorites\"]{order:3}" +
+      "#profilePageBody #ws-activity{order:4}" +
+      "#profilePageBody #ws-plmanager{order:5}" +
+      "#profilePageBody #ws-peak{order:6}" +
+      /* anything else that lands here (Recently played) waits its turn */
+      "#profilePageBody>.pv-block,#profilePageBody>.ws-block{order:8}" +
+      /* the header card itself */
       "#profilePageBody .cmp-head{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--ac-border,rgba(255,255,255,.08));background:linear-gradient(150deg,rgba(255,255,255,.05),rgba(255,255,255,.015));box-shadow:0 18px 44px rgba(0,0,0,.28);padding:14px 18px 16px;margin:0}" +
       "#profilePageBody .cmp-head .pe-cover{display:block;position:absolute;inset:0;z-index:0;opacity:.3;background-size:cover;background-position:center 30%;pointer-events:none}" +
       "#profilePageBody .cmp-head>*:not(.pe-cover){position:relative;z-index:1}" +
@@ -137,16 +152,23 @@
       /* folded panels keep only their header */
       ".pnl.collapsed>*:not(.pnl-h){display:none!important}" +
       /* the header row of each panel */
-      "#profilePageBody .cmp-head>.cmp-head-title,#profilePageBody .cmp-sec-card>.cmp-sec-title,#profilePageBody .pv-block>.pv-block-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 13px;padding:0 0 11px;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.16em;color:var(--ac-muted,rgba(255,255,255,.55))}" +
+      "#profilePageBody .cmp-head>.cmp-head-title,#profilePageBody .cmp-sec-card>.cmp-sec-title,#profilePageBody .pv-block>.pv-block-title,#profilePageBody .ws-block>.ws-an-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 13px;padding:0 0 11px;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.16em;color:var(--ac-muted,rgba(255,255,255,.55))}" +
       /* a half width panel on a phone must never push the chevron outside */
-      "#profilePageBody .cmp-sec-title>span:first-child,#profilePageBody .pv-block-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+      "#profilePageBody .cmp-sec-title>span:first-child,#profilePageBody .pv-block-title,#profilePageBody .ws-block>.ws-an-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
       "#profilePageBody .cmp-sec-actions{flex:0 0 auto;margin-left:auto}" +
       "#profilePageBody .pnl.collapsed>.pnl-h{margin:0;padding-bottom:0;border-bottom-color:transparent}" +
-      "#profilePageBody .cmp-sec-card,#profilePageBody .pv-block{border-radius:18px;padding:14px 16px 16px;background:rgba(255,255,255,.032);border:1px solid var(--ac-border,rgba(255,255,255,.07));box-shadow:0 14px 34px rgba(0,0,0,.2)}" +
+      /* .ws-block is only a wrapper - the chart keeps its own .ws-card2 box */
+      "#profilePageBody .ws-block{min-width:0}" +
+      "#profilePageBody .cmp-sec-card,#profilePageBody .pv-block{margin:0;border-radius:18px;padding:14px 16px 16px;background:rgba(255,255,255,.032);border:1px solid var(--ac-border,rgba(255,255,255,.07));box-shadow:0 14px 34px rgba(0,0,0,.2)}" +
       /* the shared favourite grid picks its columns from the window; inside a
          half width panel that leaves the covers too small to read */
       "#profilePageBody .cmp-fav-grid{grid-template-columns:repeat(2,minmax(0,1fr))}" +
-      "@media(max-width:700px){#profilePageBody .cmp-fav-grid{grid-template-columns:minmax(0,1fr)}#profilePageBody [data-pnl=\"favorites\"]{grid-column:1/-1}}" +
+      /* Phone: two columns of ~170px cannot hold a cover grid, a 30 day chart
+         or 24 hour bars, so the board stacks and everything gets full width. */
+      "@media(max-width:700px){" +
+      "#profilePageBody{grid-template-columns:minmax(0,1fr)}" +
+      "#profilePageBody .cmp-fav-grid{grid-template-columns:minmax(0,1fr)}" +
+      "}" +
       /* the header panel carries its own label above the avatar */
       "#profilePageBody .cmp-head-title{margin:0 0 12px!important}" +
       "#profilePageBody .cmp-head .cmp-top{margin-top:0}" +
@@ -346,10 +368,16 @@
   }
 
   /* ------------------------------------------------------------- panels */
-  /* Every block on the page (profile header, links, Favorites, My Playlists)
-     gets the panel + collapse treatment. The blocks belong to other files, so
-     this only marks them up - nothing is re-rendered or re-parented here. */
-  var PANEL_HEADS = [".cmp-head", ".cmp-sec-card", ".pv-block"];
+  /* Every block on the page is a panel that folds from its own header: the
+     profile header, Top Plays, Favorites, My Playlists, Listening Activity and
+     Peak Listening Hours. The blocks belong to other files, so this only marks
+     them up - nothing is re-rendered or re-parented here. */
+  var PANELS = [
+    { sel: ".cmp-head", head: ".cmp-sec-title" },
+    { sel: ".cmp-sec-card", head: ".cmp-sec-title" },
+    { sel: ".pv-block", head: ".pv-block-title" },
+    { sel: ".ws-block", head: ".ws-an-title" },
+  ];
   var FOLD_KEY = "pe_folded_panels";
 
   function folded() {
@@ -377,12 +405,12 @@
 
   function panelize(root) {
     var state_ = folded();
-    PANEL_HEADS.forEach(function (sel) {
-      var panels = root.querySelectorAll(sel);
+    PANELS.forEach(function (spec) {
+      var panels = root.querySelectorAll(spec.sel);
       for (var i = 0; i < panels.length; i++) {
         var panel = panels[i];
         if (!panel.offsetParent && panel.style.display === "none") continue;   /* the hidden native playlist card */
-        var head = panel.querySelector(":scope > .cmp-sec-title, :scope > .pv-block-title");
+        var head = panel.querySelector(":scope > " + spec.head);
         if (!head) continue;
         panel.classList.add("pnl");
         head.classList.add("pnl-h");
