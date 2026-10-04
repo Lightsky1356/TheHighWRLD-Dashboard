@@ -96,10 +96,9 @@
     {
       id: "discord-rich-presence",
       title: "Discord Rich Presence",
-      description: "The desktop bridge is built and working: a locked-down preload, the Discord IPC connection in the main process, and the player reporting the current track. The Discord client library is installed, presence retries when Discord is closed, and the app boots clean without it. All that is left is pasting a Discord application id into electron-app/main.js and confirming a presence really shows on a profile.",
-      status: "in-progress",
+      description: "The desktop app reports what you are listening to to your Discord profile: a locked-down preload, the Discord IPC connection in the main process, and the player pushing the current track. Presence keeps trying when Discord is closed, and the settings panel says whether it is really connected.",
+      status: "completed",
       category: ["desktop"],
-      progress: 85,
       lastUpdated: "2026-10-04"
     },
     {
