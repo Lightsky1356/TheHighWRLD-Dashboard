@@ -13,7 +13,7 @@ const path = require("path");
  * Leave clientId empty and everything still runs - the toggle in the player
  * settings just says presence isn't set up yet, instead of pretending. */
 const CONFIG = {
-  clientId: "",                 // <- paste your Discord Application ID here
+  clientId: "1533294159039827988",                 // <- paste your Discord Application ID here
   defaultCoverKey: "fenty",     // asset key used when a track has no cover
 };
 
