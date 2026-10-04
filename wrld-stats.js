@@ -108,12 +108,17 @@
     var top = (d.top || []).slice(0, 5);
     var oldTop = document.getElementById("ws-topplays");
     if (oldTop) oldTop.remove();
-    if (top.length) {
+    var rows = top.map(rowHTML).join("");
+    var tops = body.querySelector(".pv-tops");
+    if (tops) {
+      /* another member's profile already ships a Top plays card - fill it */
+      if (!tops.hasAttribute(MARK)) { tops.setAttribute(MARK, "1"); tops.innerHTML = rows; }
+    } else if (rows) {
       var block = document.createElement("div");
       block.className = "pv-block";
       block.id = "ws-topplays";
       block.setAttribute("data-pnl", "top-plays");
-      block.innerHTML = '<div class="pv-block-title">Top plays</div><div class="pv-tops" id="ws-tops" ' + MARK + '="1">' + top.map(rowHTML).join("") + "</div>";
+      block.innerHTML = '<div class="pv-block-title">Top plays</div><div class="pv-tops" id="ws-tops" ' + MARK + '="1">' + rows + "</div>";
       body.appendChild(block);
     }
     /* Listening Activity + Peak Hours as their own cards. Rebuilt fresh on

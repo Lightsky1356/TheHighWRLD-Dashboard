@@ -258,7 +258,7 @@
   function pvPill(ico, val, lbl) {
     return '<div class="pv-stat"><i class="fas ' + ico + '"></i><b>' + esc(String(val == null ? "0" : val)) + '</b><span>' + esc(lbl) + '</span></div>';
   }
-  function compactProfileViewHtml(d) {
+function compactProfileViewHtml(d) {
     var pr = d.profile || {}, st = d.stats || {}, dc = d.discord || {};
     var name = pr.name || "999";
     var uname = pr.username || d.handle || d.uid || name;
@@ -271,6 +271,7 @@
     else if (status === "Do Not Disturb") dotC = "#ef4444";
     var banner = pr.banner ? '<img src="' + esc(pr.banner) + '" alt="" onerror="this.style.display=\'none\'">' : '';
     var links = (d.links || []).filter(function (l) { return l && l.url; });
+    var mine = String(d.uid || "") === String(typeof uid !== "undefined" ? uid : "");
     var plays = (d.topPlays || []).slice(0, 5).map(function (t) {
       var pi = trackIndexByTitleFuzzy(t.track_id);
       var pname = (pi >= 0 && trackList[pi] && trackList[pi].title) ? trackList[pi].title : t.track_id;
@@ -280,18 +281,31 @@
       return '<div class="pv-pl" data-openpl="' + p.id + '" role="button" tabindex="0" title="' + esc(_tt("openTitle", "Open")) + '" style="background:linear-gradient(135deg,' + (p.color ? esc(p.color) : "#a855f7") + ',rgba(20,12,40,.9))"><i class="fas fa-play pv-pl-play" data-playpl="' + p.id + '"></i><div class="pv-pl-info"><b>' + esc(p.name) + '</b><span>' + (p.count || 0) + ' tracks</span></div></div>';
     }).join("") || '<p class="pv-none">No playlists</p>';
     var favs = (d.favorites || []);
-    var favBlock = favs.length
-      ? '<div class="cmp-sec-title" style="margin:18px 2px 10px"><span><i class="fas fa-heart"></i> ' + esc(_tt("t4", "Favorites")) + '</span><span class="cmp-count">' + favs.length + '</span></div><div class="cmp-fav-grid" id="pvFavGrid"></div>'
-      : '';
+    var acts = (d.activity || []).map(function (a) {
+      var aico = ACT_ICON[a.type] || "fa-bolt";
+      return '<div class="tl-item"><div class="tl-time">' + esc(relTime(a.ts)) + '</div><div class="tl-txt"><i class="fas ' + aico + ' tl-ico"></i>' + esc(a.label) + '</div></div>';
+    }).join("") || '<p class="pv-none">No recent activity</p>';
+
+    /* The same board as your own profile: one full width header card, then the
+       cards below it in two columns. Every block carries data-pnl so the CSS
+       can order it and fold it from its own header. */
     var html = '';
-    html += '<div class="pv-banner-wrap">' + banner + '</div>';
-    html += '<div class="pv-body">';
-    html += '<div class="pv-top-row"><div class="pv-avatar">' + avatar + '<span class="pv-dot" style="background:' + dotC + ';box-shadow:0 0 12px ' + dotC + '"></span></div>';
-    html += '<div class="pv-id"><div class="pv-name-row"><h3>' + esc(name) + '</h3>' + cmpVerifiedHtml(verified) + '</div>';
+    html += '<div class="cmp-page cmp-card-page">';
+    html += '<div class="cmp-head" data-pnl="profile">';
+    html += '<div class="cmp-sec-title cmp-head-title"><span><i class="fas fa-id-card"></i> ' + esc(_tt("cmpPanelProfile", "Profile")) + '</span></div>';
+    if (banner) html += '<div class="pv-banner-wrap">' + banner + '</div>';
+    html += '<div class="cmp-top"><span class="pv-avatar">' + avatar + '<span class="pv-dot" style="background:' + dotC + ';box-shadow:0 0 12px ' + dotC + '"></span></span>';
+    html += '<div class="cmp-id"><div class="cmp-name-row"><h3 class="cmp-name">' + esc(name) + '</h3>' + cmpVerifiedHtml(verified) + '</div>';
     html += '<p class="pv-handle">@' + esc(String(uname).toLowerCase()) + '</p>';
     html += '<span class="pv-status" style="color:' + dotC + '"><i class="fas fa-circle" style="font-size:6px"></i> ' + esc(status) + '</span><span class="cmp-site-presence" data-uid="' + esc(String(d.uid || "")) + '"></span><span class="um-profile-status" data-uid="' + esc(String(d.uid || "")) + '"></span></div></div>';
     html += (pr.joined ? '<p class="pv-joined"><i class="fas fa-calendar"></i> ' + esc(_tt("joinedWord", "Joined")) + ' ' + esc(String(pr.joined).slice(0, 10)) + '</p>' : '');
     html += (pr.bio ? '<div class="cmp-bio">' + esc(pr.bio) + '</div>' : '');
+    /* the links belong to the header card, right under the bio */
+    if (links.length) {
+      html += '<div class="cmp-links">' + links.map(function (l) {
+        return '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow"><i class="fas fa-link"></i>' + esc(l.label || l.url) + '<i class="fas fa-arrow-up-right-from-square" style="margin-left:auto"></i></a>';
+      }).join("") + '</div>';
+    }
     html += '<div class="cmp-qstats">';
     html += qstat((Number(st.plays) || 0).toLocaleString(), _tt("qstatPlays", "Plays"));
     html += '<div class="cmp-qdiv"></div>';
@@ -301,25 +315,25 @@
     html += '<div class="cmp-qdiv"></div>';
     html += qstat((Number(st.votes) || 0).toLocaleString(), _tt("votesWord", "Votes"));
     html += '</div>';
-    html += '<div class="cmp-actions" style="margin-top:12px"><a class="cmp-btn" href="#" onclick="event.preventDefault();if(window.closeWantedProfile)window.closeWantedProfile();if(window.switchAppPage)window.switchAppPage(\'player\')"><i class="fas fa-play"></i> ' + esc(_tt("cmpPlayer", "WRLD Player")) + '</a>';
-    if (d.uid && String(d.uid) !== String(typeof uid !== "undefined" ? uid : "") && _data && _data.discord && _data.discord.linked) {
-      html += '<button type="button" class="cmp-btn report-flag-btn" data-report="profile:u:' + esc(String(d.uid)) + '" data-report-title="' + esc(name) + '" title="Report this profile" style="margin-left:8px"><i class="fas fa-flag"></i> Report</button>';
-    }
-    if (d.uid && String(d.uid) !== String(typeof uid !== "undefined" ? uid : "")) {
+    if (!mine) {
+      html += '<div class="cmp-actions"><a class="cmp-btn" href="#" onclick="event.preventDefault();if(window.closeWantedProfile)window.closeWantedProfile();if(window.switchAppPage)window.switchAppPage(\'player\')"><i class="fas fa-play"></i> ' + esc(_tt("cmpPlayer", "WRLD Player")) + '</a>';
+      if (d.uid && _data && _data.discord && _data.discord.linked) {
+        html += '<button type="button" class="cmp-btn report-flag-btn" data-report="profile:u:' + esc(String(d.uid)) + '" data-report-title="' + esc(name) + '" title="Report this profile" style="margin-left:8px"><i class="fas fa-flag"></i> Report</button>';
+      }
       html += '<button type="button" class="cmp-btn user-menu-btn" data-user-menu data-uid="' + esc(String(d.uid)) + '" data-name="' + esc(name) + '" aria-label="More user actions" title="More user actions" style="margin-left:8px"><i class="fas fa-ellipsis"></i></button>';
+      html += '</div>';
     }
     html += '</div>';
-    html += '<div class="pv-block"><div class="pv-block-title">Links</div><div class="cmp-links">' + (links.map(function (l) { return '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow"><i class="fas fa-link"></i>' + esc(l.label || l.url) + '<i class="fas fa-arrow-up-right-from-square" style="margin-left:auto"></i></a>'; }).join("") || '<p class="pv-none">No links shared</p>') + '</div></div>';
-    html += '<div class="pv-block"><div class="pv-block-title">Top plays</div><div class="pv-tops">' + plays + '</div></div>';
-    html += '<div class="pv-block"><div class="pv-block-title">Playlists</div><div class="pv-pls">' + pls + '</div></div>';
+    html += '<div class="cmp-sections">';
+    html += '<div class="cmp-sec-card" data-pnl="top-plays"><div class="cmp-sec-title"><span><i class="fas fa-fire"></i> ' + esc(_tt("cmpPanelTopPlays", "Top plays")) + '</span></div><div class="pv-tops">' + plays + '</div></div>';
+    html += '<div class="cmp-sec-card" data-pnl="favorites"><div class="cmp-sec-title"><span><i class="fas fa-heart"></i> ' + esc(_tt("t4", "Favorites")) + '</span><span class="cmp-count">' + favs.length + '</span></div>';
+    html += (favs.length ? '<div class="cmp-fav-grid" id="pvFavGrid"></div>' : '<p class="pv-none">No favorites yet</p>');
+    html += '</div>';
+    html += '<div class="cmp-sec-card" data-pnl="playlists"><div class="cmp-sec-title"><span><i class="fas fa-list-music"></i> ' + esc(_tt("cmpPanelPlaylists", "Playlists")) + '</span><span class="cmp-count">' + (d.playlists || []).length + '</span></div><div class="pv-pls">' + pls + '</div></div>';
     if (!d.visibility || d.visibility.activity !== false) {
-      var acts = (d.activity || []).map(function (a) {
-        var aico = ACT_ICON[a.type] || "fa-bolt";
-        return '<div class="tl-item"><div class="tl-time">' + esc(relTime(a.ts)) + '</div><div class="tl-txt"><i class="fas ' + aico + ' tl-ico"></i>' + esc(a.label) + '</div></div>';
-      }).join("") || '<p class="pv-none">No recent activity</p>';
-      html += '<div class="pv-block"><div class="pv-block-title">Recent activity</div><div class="pv-act">' + acts + '</div></div>';
+      html += '<div class="cmp-sec-card" data-pnl="recent-activity"><div class="cmp-sec-title"><span><i class="fas fa-bolt"></i> ' + esc(_tt("cmpPanelActivity", "Recent activity")) + '</span></div><div class="pv-act">' + acts + '</div></div>';
     }
-    html += favBlock;
+    html += '</div>';
     html += '</div>';
     return html;
   }
@@ -1827,7 +1841,7 @@
     body.classList.add("cmp-profile-host");
     if (_profilePage.self) { _ppPlaylists = null; renderSelfProfilePage(); return; }
     if (_profilePage.data) {
-      body.innerHTML = '<div class="cmp-card cmp-card-page">' + compactProfileViewHtml(_profilePage.data) + '</div>';
+      body.innerHTML = compactProfileViewHtml(_profilePage.data);
       _ppPlaylists = _profilePage.data.playlists || [];
       var fg = document.getElementById("pvFavGrid");
       if (fg) renderFavRows(_profilePage.data.favorites || [], false, fg);
@@ -1844,7 +1858,7 @@
         if (!d || !d.ok) { body.innerHTML = profilePageError(d && d.error ? String(d.error) : ""); return; }
         if (String(d.uid) === String(uid)) { _profilePage.self = true; _profilePage.key = ""; _profilePage.byDiscord = false; renderSelfProfilePage(); return; }
         _profilePage.data = d;
-        body.innerHTML = '<div class="cmp-card cmp-card-page">' + compactProfileViewHtml(d) + '</div>';
+        body.innerHTML = compactProfileViewHtml(d);
         _ppPlaylists = d.playlists || [];
         var fg = document.getElementById("pvFavGrid");
         if (fg) renderFavRows(d.favorites || [], false, fg);

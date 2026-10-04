@@ -91,10 +91,14 @@
   }
 
   /* ---------------------------------------------------------------- guards */
+  function isProfilePage() {
+    try { return !!document.getElementById("profilePageBody"); } catch (e) { return false; }
+  }
+
   function isSelfProfile() {
     try {
       if (/^\/profile\/.+/.test(location.pathname || "")) return false;   /* someone else's */
-      return !!document.getElementById("profilePageBody");
+      return isProfilePage();
     } catch (e) { return false; }
   }
 
@@ -122,23 +126,37 @@
 
            header            (full width)
            Top Plays   |  Favorites
-           Listening…  |  My Playlists
+           Listening…  |  My/Their Playlists
            Peak Hours  |  -
-      */
+
+         The same keys are used for another member's profile, so their page
+         lands on the same board. */
       "#profilePageBody{gap:14px}" +
+      /* anything that lands here without an order of its own waits its turn -
+         this comes first so the specific orders below win the tie */
+      "#profilePageBody>.pv-block,#profilePageBody>.ws-block{order:9}" +
       "#profilePageBody .cmp-head{grid-column:1/-1;order:1}" +
-      "#profilePageBody #ws-topplays{order:2}" +
+      "#profilePageBody [data-pnl=\"top-plays\"]{order:2}" +
       "#profilePageBody [data-pnl=\"favorites\"]{order:3}" +
-      "#profilePageBody #ws-activity{order:4}" +
-      "#profilePageBody #ws-plmanager{order:5}" +
-      "#profilePageBody #ws-peak{order:6}" +
-      /* anything else that lands here (Recently played) waits its turn */
-      "#profilePageBody>.pv-block,#profilePageBody>.ws-block{order:8}" +
+      "#profilePageBody [data-pnl=\"activity\"]{order:4}" +
+      "#profilePageBody [data-pnl=\"playlists\"],#profilePageBody #ws-plmanager{order:5}" +
+      "#profilePageBody [data-pnl=\"peak\"]{order:6}" +
+      "#profilePageBody [data-pnl=\"recent-activity\"]{order:7}" +
+      /* Recently played trails the board so it never moves the cards above */
+      "#profilePageBody [data-pnl=\"recent\"]{order:8}" +
       /* the header card itself */
       "#profilePageBody .cmp-head{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--ac-border,rgba(255,255,255,.08));background:linear-gradient(150deg,rgba(255,255,255,.05),rgba(255,255,255,.015));box-shadow:0 18px 44px rgba(0,0,0,.28);padding:14px 18px 16px;margin:0}" +
+      /* another member's banner is an image rather than a background, so it
+         needs bleeding to the card edges by hand */
+      "#profilePageBody .cmp-head .pv-banner-wrap{height:120px;margin:-14px -18px 14px;overflow:hidden}" +
+      "#profilePageBody .cmp-head .pv-banner-wrap img{width:100%;height:100%;object-fit:cover;display:block}" +
+      "#profilePageBody .cmp-head .pv-joined{margin:10px 0 0}" +
       "#profilePageBody .cmp-head .pe-cover{display:block;position:absolute;inset:0;z-index:0;opacity:.3;background-size:cover;background-position:center 30%;pointer-events:none}" +
       "#profilePageBody .cmp-head>*:not(.pe-cover){position:relative;z-index:1}" +
-      "#profilePageBody .cmp-head .cmp-actions{display:none}" +
+      /* the button row is dropped from your own header; another member keeps
+         their Report / More buttons, so this is scoped to the page that has
+         the pencil and cog in it */
+      "#profilePageBody:has(.pe-headbtns) .cmp-head .cmp-actions{display:none}" +
       /* privacy.js mounts its own block on this page; the toggles live in the
          settings panel now, so its copy stays out of the way */
       "#profilePageBody #ws-privacy{display:none!important}" +
@@ -358,12 +376,14 @@
   }
 
   /* ---------------------------------------------------------------- mount */
+  /* Another member's profile gets the same board: their blocks are marked up
+     as collapsible panels too. Only the header buttons and the banner cover
+     are yours alone. */
   function mount() {
     var body = document.getElementById("profilePageBody");
-    if (!body || !isSelfProfile() || !state.uid) return;
+    if (!body || !isProfilePage()) return;
     css();
-
-    dressHeader(body);
+    if (isSelfProfile() && state.uid) dressHeader(body);
     panelize(body);
   }
 
@@ -378,11 +398,15 @@
     { sel: ".pv-block", head: ".pv-block-title" },
     { sel: ".ws-block", head: ".ws-an-title" },
   ];
-  var FOLD_KEY = "pe_folded_panels";
+  /* Folds are remembered per page, so folding Favorites on someone else's
+     profile does not fold yours. */
+  function foldKey() {
+    try { return "pe_folded_panels:" + (location.pathname || "/profile"); } catch (e) { return "pe_folded_panels"; }
+  }
 
   function folded() {
     try {
-      var raw = JSON.parse(localStorage.getItem(FOLD_KEY) || "{}");
+      var raw = JSON.parse(localStorage.getItem(foldKey()) || "{}");
       return raw && typeof raw === "object" ? raw : {};
     } catch (e) { return {}; }
   }
@@ -391,7 +415,7 @@
     try {
       var all = folded();
       all[id] = collapsed ? 1 : 0;
-      localStorage.setItem(FOLD_KEY, JSON.stringify(all));
+      localStorage.setItem(foldKey(), JSON.stringify(all));
     } catch (e) {}
   }
 
@@ -902,15 +926,16 @@
       var observer = new MutationObserver(function () {
         if (!section.classList.contains("active")) return;
         try { observer.disconnect(); } catch (e) {}
-        setTimeout(load, 300);
+        setTimeout(function () { load(); mount(); }, 300);
       });
       observer.observe(section, { attributes: true, attributeFilter: ["class"] });
     }
 
-    /* playlists-ui.js appends its My Playlists block after account.js has
-       rendered, so watch the body for new blocks and dress those too. Only
-       direct children matter here, which keeps this observer out of the way of
-       the header work this file does itself. */
+    /* playlists-ui.js and wrld-stats.js append their blocks after account.js
+       has rendered, and another member's profile arrives last of all, so watch
+       the body for new blocks and dress those too. Only direct children matter
+       here, which keeps this observer out of the way of the header work this
+       file does itself. */
     var bodyEl = document.getElementById("profilePageBody");
     if (bodyEl && window.MutationObserver) {
       var queue = null;
@@ -918,8 +943,8 @@
         if (queue) return;
         queue = setTimeout(function () {
           queue = null;
-          if (!isSelfProfile() || !state.uid) return;
-          dressHeader(bodyEl);
+          if (!isProfilePage()) return;
+          if (isSelfProfile() && state.uid) dressHeader(bodyEl);
           panelize(bodyEl);
         }, 120);
       }).observe(bodyEl, { childList: true });
