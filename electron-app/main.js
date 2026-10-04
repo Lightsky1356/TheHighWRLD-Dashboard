@@ -15,6 +15,11 @@ const path = require("path");
 const CONFIG = {
   clientId: "1533294159039827988",                 // <- paste your Discord Application ID here
   defaultCoverKey: "fenty",     // asset key used when a track has no cover
+  /* Shown next to the cover while playback is paused. Discord only draws a
+     small image when a KEY is sent, so the asset has to exist under this name:
+     upload any small "paused" image in Rich Presence > Artifacts and call it
+     exactly this. Rename it here if you upload it under a different name. */
+  pauseAssetKey: "pause",
 };
 
 const APP_URL = "https://thehighwrlddashboard.pages.dev";
@@ -46,6 +51,8 @@ const drp = {
   loggedIn: false,
   client: null,
   lastActivity: null,
+  lastSent: null,
+  retryActivity: null,
   current: null,
   retry: null,
 };
@@ -92,11 +99,21 @@ function buildActivity(a) {
     details,
     largeImageKey: a.cover || CONFIG.defaultCoverKey,
     largeImageText: a.title,
-    instance: !!a.paused,
+    /* marks the activity as a media session - it is not a paused flag */
+    instance: true,
   };
+
   if (a.startedAt) act.startTimestamp = a.startedAt;
-  if (!a.paused && a.duration) act.endTimestamp = a.startedAt ? a.startedAt + a.duration : undefined;
-  if (a.paused) act.smallImageText = "Paused";
+
+  if (a.paused) {
+    /* The KEY is what makes this visible. smallImageText on its own draws
+       nothing at all, which is why the paused state never appeared. */
+    act.smallImageKey = CONFIG.pauseAssetKey;
+    act.smallImageText = "Paused";
+    /* no end time while paused, otherwise the progress keeps running */
+  } else if (a.duration) {
+    act.endTimestamp = a.startedAt ? a.startedAt + a.duration : undefined;
+  }
   return act;
 }
 
@@ -104,10 +121,35 @@ function pushActivity() {
   if (!drp.enabled || !drp.client) return;
   const act = buildActivity(drp.current);
   if (!act) {
+    drp.lastSent = null;
     drp.client.clearActivity().catch(function () { /* nothing showing */ });
     return;
   }
-  drp.client.setActivity(act).catch(function (e) { toPage({ type: "error", message: String(e && e.message || e) }); });
+
+  /* Discord throttles activity updates. Sending something identical spends that
+     budget for nothing, and a switch already fires several events in a row, so
+     skip anything that would not change the presence. */
+  const key = JSON.stringify(act);
+  if (key === drp.lastSent) return;
+  drp.lastSent = key;
+
+  drp.client.setActivity(act).catch(function (e) {
+    const msg = String(e && e.message || e);
+    /* A throttled update is REJECTED, not queued, so the presence would sit on
+       the old track until something else happened to push again. Retry shortly
+       instead of dropping it - this is what made a track change look slow. */
+    if (/rate limit|rate-limited|too many/i.test(msg)) {
+      drp.lastSent = null;
+      if (!drp.retryActivity) {
+        drp.retryActivity = setTimeout(function () {
+          drp.retryActivity = null;
+          pushActivity();
+        }, 1500);
+      }
+      return;
+    }
+    toPage({ type: "error", message: msg });
+  });
 }
 
 function setState(patch) {
@@ -117,11 +159,13 @@ function setState(patch) {
 
 function teardown() {
   if (drp.retry) { clearTimeout(drp.retry); drp.retry = null; }
+  if (drp.retryActivity) { clearTimeout(drp.retryActivity); drp.retryActivity = null; }
   if (drp.client) {
     try { drp.client.clearActivity(); } catch (e) { /* already gone */ }
     try { drp.client.destroy(); } catch (e) { /* already gone */ }
   }
   drp.client = null;
+  drp.lastSent = null;
   setState({ connected: false, loggedIn: false });
 }
 

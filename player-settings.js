@@ -130,16 +130,31 @@
           if(t){ artist = t.artist || artist; if(t.album) title = t.title; }
         }
       }catch(e){}
+      /* duration is NaN until the new track's metadata arrives, and sending 0
+         puts a bogus "0 seconds" presence on screen for a moment. Only report a
+         time once it is real - the app adds the timestamps when it has them. */
+      var dur = (audio && isFinite(audio.duration) && audio.duration > 0) ? Math.round(audio.duration) : 0;
       window.highwrld.setActivity({
         title: title,
         artist: artist,
         /* Discord keys off the bare file name, not a path */
         cover: cover ? String(cover).split('/').pop().replace(/\.[a-z0-9]+$/i, '') : '',
-        duration: audio && audio.duration ? Math.round(audio.duration) : 0,
-        startedAt: audio && audio.duration ? Math.round(Date.now() / 1000 - (audio.currentTime || 0)) : 0,
+        duration: dur,
+        startedAt: dur ? Math.round(Date.now() / 1000 - (audio.currentTime || 0)) : 0,
         paused: !!(audio && audio.paused)
       }).catch(function(){});
     }catch(e){}
+  }
+
+  /* Switching track fires a burst of events - the title changes, playback starts,
+     metadata loads - and Discord only needs to be told once. Sending each one
+     spends its rate-limit budget, and the extras get rejected, which left the
+     old track sitting on the profile until something else pushed an update. */
+  var drpTimer = null;
+  function scheduleDrpReport(){
+    if(!isElectron || !window.highwrld) return;
+    if(drpTimer) clearTimeout(drpTimer);
+    drpTimer = setTimeout(function(){ drpTimer = null; drpReport(); }, 250);
   }
 
   function bindDrpReporting(){
@@ -148,12 +163,14 @@
        polling a second copy of the player state */
     var title = document.getElementById('mini-title');
     if(title && window.MutationObserver){
-      new MutationObserver(function(){ drpReport(); }).observe(title, { childList: true, characterData: true, subtree: true });
+      new MutationObserver(scheduleDrpReport).observe(title, { childList: true, characterData: true, subtree: true });
     }
     var audio = document.querySelector('audio');
     if(audio){
-      ['play','pause','ended','loadedmetadata','seeked'].forEach(function(ev){
-        audio.addEventListener(ev, drpReport);
+      /* loadstart and emptied catch a track change that never touches the title,
+         and durationchange fires when a real length finally arrives */
+      ['play','pause','ended','loadstart','emptied','loadedmetadata','durationchange'].forEach(function(ev){
+        audio.addEventListener(ev, scheduleDrpReport);
       });
     }
     if(typeof window.highwrld.onDrpEvent === 'function'){
