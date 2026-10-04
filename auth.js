@@ -237,6 +237,11 @@
       if (window._wantedUserId !== undefined) window._wantedUserId = anon;
       if (typeof window.__setAccountUid === "function") window.__setAccountUid(anon);
       applyLoggedOut();
+      /* the account's theme is gone with the session - drop the stale
+         account payload and put the device theme back, so the guest view is
+         not left wearing it */
+      if (typeof window.resetAccountAfterSignOut === "function") { try { window.resetAccountAfterSignOut(); } catch (e) {} }
+      else if (typeof window.applyDeviceTheme === "function") { try { window.applyDeviceTheme(); } catch (e) {} }
       toast("Signed out. 999 forever.", "success");
       if (typeof window.authRoute === "function") window.authRoute("account");
       else if (typeof window.switchAppPage === "function") window.switchAppPage("account-gate");

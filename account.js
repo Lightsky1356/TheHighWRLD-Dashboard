@@ -169,11 +169,6 @@
     if (!u) u = _profile.username || "";
     return u;
   }
-  function delMatch(val, uname) {
-    var v = String(val || "").trim().toLowerCase();
-    var u = String(uname || "").trim().toLowerCase();
-    return !!(v && (v === u || v === ("@" + u)));
-  }
   function vaultTracks() {
     if (typeof trackList !== "undefined" && trackList && trackList.length) return trackList.length;
     var n = 0;
@@ -963,15 +958,6 @@ function compactProfileViewHtml(d) {
       else if (acct) aiVerified.textContent = _tt("notVerified", "Not verified");
       else aiVerified.textContent = "—";
     }
-    var delU = document.getElementById("delUsername");
-    if (delU) delU.textContent = "@lightsky1356";
-    var delTyped = document.getElementById("delTyped");
-    var delBtn2 = document.getElementById("deleteAccountBtn2");
-    if (delTyped && delBtn2) {
-      delBtn2.disabled = !delMatch(delTyped.value, "lightsky1356");
-      var delErr = document.getElementById("delError");
-      if (delErr) delErr.style.display = (delTyped.value || "").trim() && delBtn2.disabled ? "" : "none";
-    }
     var g = (_data && _data.google) || null;
     var glStatus = document.getElementById("glStatus");
     if (glStatus) { glStatus.textContent = g && g.linked ? _tt("connectedWord", "Connected") : _tt("notConnected", "Not connected"); glStatus.className = g && g.linked ? "conn-val ok" : "conn-val"; }
@@ -1122,17 +1108,6 @@ function compactProfileViewHtml(d) {
       if (window.authSignOut) window.authSignOut();
       else window.location.href = "/api/auth/logout";
     });
-    var delTyped = document.getElementById("delTyped");
-    var delBtn2 = document.getElementById("deleteAccountBtn2");
-    if (delTyped) delTyped.addEventListener("input", function () {
-      var match = delMatch(delTyped.value, "lightsky1356");
-      if (delBtn2) delBtn2.disabled = !match;
-      var delErr = document.getElementById("delError");
-      if (delErr) delErr.style.display = (delTyped.value || "").trim() && !match ? "" : "none";
-    });
-    if (delBtn2) delBtn2.addEventListener("click", function () {
-      openModal("deleteModal");
-    });
   }
 
   /* ---------- Themes + languages ---------- */
@@ -1198,10 +1173,38 @@ function compactProfileViewHtml(d) {
     var flg = document.getElementById("ftLang");
     if (flg) flg.value = _lang;
     applyTheme(theme);
-    try { localStorage.setItem("wantedTheme", theme); } catch (e) {}
-    try { localStorage.setItem("wantedLang", _lang); } catch (e) {}
+    /* wantedTheme / wantedLang belong to this DEVICE and are what a guest
+       sees. The account's own theme must never be written over them, or
+       signing out leaves the next visitor wearing your theme. */
+    if (!isSignedInNow() && !_data) {
+      try { localStorage.setItem("wantedTheme", theme); } catch (e) {}
+      try { localStorage.setItem("wantedLang", _lang); } catch (e) {}
+    }
     applyI18n();
   }
+  /* Back to the device theme - called after signing out. */
+  function applyDeviceTheme() {
+    var theme = "default", lang = "en";
+    try { theme = localStorage.getItem("wantedTheme") || "default"; } catch (e) {}
+    try { lang = localStorage.getItem("wantedLang") || "en"; } catch (e) {}
+    _lang = lang;
+    applyTheme(theme);
+    try { document.documentElement.lang = lang; } catch (e) {}
+    var th = document.getElementById("setTheme");
+    if (th) th.value = theme;
+    var fth = document.getElementById("ftTheme");
+    if (fth) fth.value = theme;
+    var lg = document.getElementById("setLang");
+    if (lg) lg.value = lang;
+    applyI18n();
+  }
+  window.applyDeviceTheme = applyDeviceTheme;
+  /* Called after signing out: the account payload is stale, so drop it before
+     anything can re-apply the account's theme over the device one. */
+  window.resetAccountAfterSignOut = function () {
+    _data = null;
+    applyDeviceTheme();
+  };
   function applyTheme(theme) {
     theme = theme || "default";
     _themeTarget = document.documentElement;
@@ -1230,8 +1233,10 @@ function compactProfileViewHtml(d) {
         var v = sel.value;
         applyTheme(v);
         syncTheme(v);
-        try { localStorage.setItem("wantedTheme", v); } catch (e) {}
-        api({ action: "saveTheme", theme: v }).then(function () { loadAccount(); });
+        /* Signed in: this is your account's theme and it lives on the server.
+           Only a guest (no account) changes the device theme. */
+        if (isSignedInNow()) api({ action: "saveTheme", theme: v }).then(function () { loadAccount(); });
+        else try { localStorage.setItem("wantedTheme", v); } catch (e) {}
         var tt = null;
         if (window.SiteChromeI18N && window.SiteChromeI18N[_lang]) tt = window.SiteChromeI18N[_lang].toastThemeApplied;
         toast(tt || "Theme applied", "success");
@@ -1243,8 +1248,10 @@ function compactProfileViewHtml(d) {
         _lang = sel.value;
         syncLang(_lang);
         applyI18n();
-        try { localStorage.setItem("wantedLang", _lang); } catch (e) {}
-        api({ action: "saveLanguage", language: _lang }).then(function () { loadAccount(); });
+        /* same rule as the theme: signed in saves to the account, a guest
+           changes the device */
+        if (isSignedInNow()) api({ action: "saveLanguage", language: _lang }).then(function () { loadAccount(); });
+        else try { localStorage.setItem("wantedLang", _lang); } catch (e) {}
         var tt = null;
         if (window.SiteChromeI18N && window.SiteChromeI18N[_lang]) tt = window.SiteChromeI18N[_lang].toastLangSet;
         toast((tt || "Language set to") + " " + (sel.options[sel.selectedIndex].textContent), "success");
@@ -1953,7 +1960,16 @@ window.profileSectionShown = function () {
   })();
 
   /* ---------- Danger zone ---------- */
-  function bindDanger() {}
+  /* Deleting an account is irreversible and is never done by a click here. The
+     button sends people to the delete-request page, which walks them through
+     joining the server and putting in a request. */
+  function bindDanger() {
+    var btn = document.getElementById("deleteAccountBtn2");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      window.location.href = "/delete-request";
+    });
+  }
 
   /* ---------- Modals ---------- */
   function openModal(id) { var el = document.getElementById(id); if (el) el.classList.add("open"); }

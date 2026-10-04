@@ -245,8 +245,6 @@
 #account-page .modal .m-head h3{font-size:17px;font-weight:800;color:#F8FAFC;letter-spacing:-.01em}
 #account-page .m-close{width:34px;height:34px;border-radius:9px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.03);color:#A0AEC0;cursor:pointer;display:grid;place-items:center}
 #account-page .m-close:hover{color:#F8FAFC;background:rgba(255,255,255,.07)}
-#deleteModal .modal{border-color:rgba(239,68,68,.15)}
-#deleteModal .m-head h3{color:#F87171}
 #account-page .m-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
 #account-page .toggle-row{padding:12px 2px;border-bottom:none}
 #account-page .toggle-label{font-size:12.5px;font-weight:600;color:#E2E8F0}
@@ -589,13 +587,6 @@ body[data-accent="amber"] .hero-stat-value{background:linear-gradient(135deg,#f5
 .pv-pl:hover .pv-pl-play,.pv-pl:focus-visible .pv-pl-play{opacity:1;transform:translate(-50%,-50%) scale(1)}
 
 /* delete-request modal */
-.del-req-body{text-align:center}
-.del-req-ico{width:64px;height:64px;margin:4px auto 14px;border-radius:50%;background:linear-gradient(135deg,#5865f2,#7289da);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 10px 26px rgba(88,101,242,.35)}
-.del-req-text{font-size:13px;line-height:1.7;color:var(--ac-muted);margin-bottom:14px}
-.del-req-text b{color:#22d3ee}
-.del-req-steps{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--ac-muted);background:rgba(255,255,255,.04);border:1px solid var(--ac-border);border-radius:10px;padding:9px 10px}
-.del-req-steps span{display:inline-flex;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:11px;font-weight:700;align-items:center;justify-content:center}
-.del-req-steps i{font-size:9px;color:#475569}
 .pl-track-row .mini-btn{flex-shrink:0}
 .pl-track-row .mini-btn[data-pltrackfav]{color:#f472b6}
 .pl-track-row .mini-btn[data-pltrackfav]:hover{background:rgba(244,114,182,.15);color:#f9a8d4;border-color:rgba(244,114,182,.5)}
@@ -843,7 +834,6 @@ body[data-accent="amber"] .hero-stat-value{background:linear-gradient(135deg,#f5
 /* --- Modals (JuiceVault) — modals live inside the account section, not #account-page --- */
 #page-section-account .modal-overlay{background:rgba(0,0,0,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 #page-section-account .modal-overlay .modal{border-radius:22px;background:linear-gradient(180deg,rgba(20,20,24,.98),rgba(10,10,12,.98));border:1px solid rgba(255,255,255,.08);box-shadow:0 24px 80px rgba(0,0,0,.45);padding:24px}
-#deleteModal .modal{border-color:rgba(239,68,68,.15)}
 #page-section-account .m-head h3{font-size:1.05rem;font-weight:800;color:#fff;letter-spacing:-.02em}
 #page-section-account .m-close{width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.04);color:rgba(255,255,255,.45);display:grid;place-items:center;cursor:pointer}
 #page-section-account .m-close:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.8)}

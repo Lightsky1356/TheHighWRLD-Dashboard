@@ -202,14 +202,12 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
           <div><div class="sec-title" data-i18n="dangerTitle">Danger Zone</div><div class="sec-sub" data-i18n="dangerSub">Irreversible account actions</div></div>
         </div>
         <div class="card set-card ac-danger-card">
-          <p class="set-hint">Account deletion is handled manually for your safety. To delete your account, join the server and fill out the delete-request form - our team processes requests within 48 hours.</p>
-          <p class="set-hint danger-hint">Type <b id="delUsername" style="color:#22d3ee">@lightsky1356</b> to unlock deletion.</p>
+          <p class="set-hint">Deleting your account removes your profile, playlists, favourites, listening history and downloads for good, so it is never done by a single click here.</p>
+          <p class="set-hint danger-hint">Head to the delete-request page, join the server and fill out the form - a real person handles it, and requests are processed within 48 hours.</p>
           <div class="danger-unlock-row">
-            <input type="text" id="delTyped" placeholder="@lightsky1356" autocomplete="off" spellcheck="false" aria-label="Type your username to unlock deletion">
-            <button type="button" class="btn btn-danger" id="deleteAccountBtn2" disabled=""><i class="fas fa-trash"></i><span data-i18n="requestDelete">Request deletion</span></button>
+            <button type="button" class="btn btn-danger" id="deleteAccountBtn2"><i class="fas fa-trash"></i><span data-i18n="deleteMyAccount">Delete Account</span></button>
+            <span class="danger-note">Takes you to <b>/delete-request</b></span>
           </div>
-          <div class="danger-err" id="delError" style=""><i class="fas fa-circle-exclamation"></i><span data-i18n="errDeleteMismatch">Username does not match. Type @lightsky1356 exactly.</span></div>
-          <div class="set-result" id="deleteResult"></div>
         </div>
       </section>
           </div>
@@ -358,22 +356,6 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
   </div>
 </div>
 
-<!-- Delete account modal -->
-<div class="modal-overlay" id="deleteModal">
-  <div class="modal">
-    <div class="m-head"><h3 data-i18n="requestDeleteTitle">Request account deletion</h3><button class="m-close" data-close="deleteModal" aria-label="Close"><i class="fas fa-xmark"></i></button></div>
-    <div class="del-req-body">
-      <div class="del-req-ico"><i class="fab fa-discord"></i></div>
-      <p class="del-req-text" data-i18n="requestDeleteBody">To keep your data safe, deletions are handled manually. <b>Join the server</b> and fill out the <b>delete-request form</b> - our team processes requests within 48 hours.</p>
-      <div class="del-req-steps"><span>1</span> Join the server <i class="fas fa-arrow-right"></i> <span>2</span> Open #delete-requests <i class="fas fa-arrow-right"></i> <span>3</span> Post your @username</div>
-    </div>
-    <div class="m-actions">
-      <button class="btn btn-ghost" data-close="deleteModal" data-i18n="cancel">Cancel</button>
-      <a class="btn btn-ghost" id="deleteFormBtn" href="https://thehighwrlddashboard.pages.dev/delete-request" target="_blank" rel="noopener nofollow"><i class="fas fa-file-lines"></i><span data-i18n="fillOutForm">Fill out form</span></a>
-      <a class="btn btn-gold" id="deleteJoinBtn" href="https://discord.gg/thehighwrld" target="_blank" rel="noopener nofollow" data-close="deleteModal"><i class="fab fa-discord"></i><span data-i18n="joinServer">Join server</span></a>
-    </div>
-  </div>
-</div>
 </div>
 
 
