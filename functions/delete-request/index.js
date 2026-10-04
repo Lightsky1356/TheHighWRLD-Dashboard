@@ -79,10 +79,10 @@ const HTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Delete your account - TheHighWRLD</title>
-<meta name="description" content="Deleting your TheHighWRLD account is handled by a person. Join the server and fill out the delete-request form.">
+<meta name="description" content="Deleting your TheHighWRLD account is handled by a person. ${HAS_FORM ? "Join the server and fill out the delete-request form." : "Join the server and tell us in the channel."}">
 <meta name="theme-color" content="#020617">
 <meta property="og:title" content="Delete your account - TheHighWRLD">
-<meta property="og:description" content="Join the server and fill out the delete-request form. Requests are processed within ${CONFIG.eta}.">
+<meta property="og:description" content="${HAS_FORM ? "Join the server and fill out the delete-request form." : "Join the server and tell us in the channel."} Requests are processed within ${CONFIG.eta}.">
 <link rel="icon" href="/favicon.ico">
 <style>
   :root {
