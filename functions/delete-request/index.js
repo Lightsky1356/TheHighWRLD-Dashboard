@@ -6,7 +6,7 @@
  * block below - the invite, the form, the channel, and how long it takes. */
 
 const CONFIG = {
-  invite: "https://discord.gg/thehighwrld",
+  invite: "https://discord.gg/zQk6K6sqzh",
   /* Paste your delete-request form here. Until you do, the page does not pretend
      one exists: it hides the form button and tells people to ask in the channel
      instead, rather than sending them to a second copy of the same invite. */
