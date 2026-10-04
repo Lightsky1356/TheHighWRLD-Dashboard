@@ -958,6 +958,8 @@ function compactProfileViewHtml(d) {
       else if (acct) aiVerified.textContent = _tt("notVerified", "Not verified");
       else aiVerified.textContent = "—";
     }
+    /* the danger zone shows your own username - bindDanger() owns the wiring */
+    refreshDangerZone();
     var g = (_data && _data.google) || null;
     var glStatus = document.getElementById("glStatus");
     if (glStatus) { glStatus.textContent = g && g.linked ? _tt("connectedWord", "Connected") : _tt("notConnected", "Not connected"); glStatus.className = g && g.linked ? "conn-val ok" : "conn-val"; }
@@ -1960,14 +1962,63 @@ window.profileSectionShown = function () {
   })();
 
   /* ---------- Danger zone ---------- */
-  /* Deleting an account is irreversible and is never done by a click here. The
-     button sends people to the delete-request page, which walks them through
-     joining the server and putting in a request. */
-  function bindDanger() {
+  /* Deleting an account is irreversible, so the settings page never does it.
+     The person has to type their own username to unlock the button, and the
+     button opens a panel that hands them to the server and the form. */
+  function delMatch(val, uname) {
+    var v = String(val || "").trim().toLowerCase();
+    var u = String(uname || "").trim().toLowerCase();
+    return !!(v && (v === u || v === ("@" + u)));
+  }
+
+  /* The account arrives after the page binds, so the username is resolved on
+     demand rather than captured once at boot - that was why the old version
+     compared against one hard-coded name and never unlocked for anyone else. */
+  function myDeleteName() {
+    var u = profileUsername();
+    if (!u && _data) u = (_data.profile && _data.profile.name) || ((_data.account && _data.account.name) || "");
+    if (!u && _profile) u = _profile.username || _profile.name || "";
+    if (!u) { try { u = JSON.parse(localStorage.getItem("wantedAuthUser") || "{}").username || ""; } catch (e) {} }
+    return String(u || "").trim();
+  }
+
+  function refreshDangerZone() {
+    var input = document.getElementById("delTyped");
     var btn = document.getElementById("deleteAccountBtn2");
-    if (!btn) return;
+    var hint = document.getElementById("delUsername");
+    var err = document.getElementById("delError");
+    var who = document.querySelector("[data-del-who]");
+    if (!input || !btn) return;
+    var mine = myDeleteName();
+    var shown = mine ? "@" + mine : "@your-username";
+    if (hint) hint.textContent = shown;
+    if (who) who.textContent = mine ? "@" + mine : "your account";
+    input.placeholder = shown;
+    /* a name change must not leave a stale unlock behind */
+    if (!delMatch(input.value, mine)) { input.value = ""; btn.disabled = true; }
+    if (err) err.style.display = "none";
+  }
+
+  function bindDanger() {
+    var input = document.getElementById("delTyped");
+    var btn = document.getElementById("deleteAccountBtn2");
+    var err = document.getElementById("delError");
+    if (!input || !btn) return;
+    refreshDangerZone();
+
+    input.addEventListener("input", function () {
+      var match = delMatch(input.value, myDeleteName());
+      btn.disabled = !match;
+      if (err) err.style.display = (input.value || "").trim() && !match ? "" : "none";
+    });
+
+    /* Unlocked: open the panel. Nothing is sent anywhere from here. */
     btn.addEventListener("click", function () {
-      window.location.href = "/delete-request";
+      if (!delMatch(input.value, myDeleteName())) return;
+      refreshDangerZone();
+      input.value = "";
+      btn.disabled = true;
+      openModal("deleteModal");
     });
   }
 
