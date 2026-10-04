@@ -602,6 +602,12 @@ body[data-accent="amber"] .hero-stat-value{background:linear-gradient(135deg,#f5
 /* ===== Nav refactor: active pill, avatar ring, owner dropdown ===== */
 .page-tab-btn.active,.nav-home .page-tab-btn.active,.nav-player .page-tab-btn.active,.nav-hub .page-tab-btn.active,.nav-wanted .page-tab-btn.active,.nav-suggestions .page-tab-btn.active{background:linear-gradient(90deg,rgba(34,211,238,.2),rgba(59,130,246,.2));color:#22d3ee;border:1px solid rgba(34,211,238,.3);box-shadow:0 0 24px rgba(34,211,238,.14),inset 0 1px 0 rgba(255,255,255,.16)}
 .page-tab-btn{color:rgba(148,163,184,1)}
+/* Roadmap sits on its own between Community and the profile circle as an icon
+   only - the title/aria-label keep it labelled for hover and screen readers */
+.page-tab-btn.page-tab-ico{padding:10px 0;width:38px;display:inline-flex;align-items:center;justify-content:center}
+/* .fas sets line-height:1 on itself, so the 20px line box the text tabs get has
+   to be set here too or this button comes out shorter than its neighbours */
+.page-tab-btn.page-tab-ico>i{margin-right:0;font-size:.85rem;line-height:20px}
 .page-tab-btn:hover{color:#e2e8f0;background:rgba(30,41,59,.5)}
 #nav-account-btn.profile-active .nav-avatar-ring,
 #nav-account-btn.settings-active .nav-avatar-ring{box-shadow:0 0 0 2px rgba(34,211,238,.8),0 0 12px rgba(34,211,238,.35);border-color:rgba(34,211,238,.6)}
