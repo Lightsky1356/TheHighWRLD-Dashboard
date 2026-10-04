@@ -106,30 +106,28 @@
     {
       id: "roadmap-system",
       title: "Roadmap",
-      description: "This page: one central data file, status sections, status and category filters, client-side search and layouts for desktop, tablet and mobile.",
-      status: "in-progress",
+      description: "This page: one central data file, status sections, status and category filters, client-side search, per-item shareable links, a freshness stamp and layouts for desktop, tablet and mobile.",
+      status: "completed",
       category: ["other"],
-      progress: 90,
-      lastUpdated: "2026-10-03"
+      lastUpdated: "2026-10-04"
     },
 
     /* -------------------------------- PLANNED ------------------------------- */
     {
       id: "public-playlist-browsing",
       title: "Public playlist browsing",
-      description: "Share links for playlists already work. Browsing and featuring other people's public playlists is the missing half.",
-      status: "planned",
+      description: "A page under Community that lists every public playlist with search, sorting and paging, and opens any one of them with its track list.",
+      status: "completed",
       category: ["media", "community"],
-      progress: 50,
-      lastUpdated: "2026-10-03"
+      lastUpdated: "2026-10-04"
     },
     {
       id: "offline-pwa",
       title: "Offline caching and installable app",
-      description: "The service worker and its precache manifest are already in place. Registering it, plus the install prompt and the update flow, is what is left.",
+      description: "There is an old service worker file in the repository, but it is not registered and the site actively unregisters any worker it finds, so caching is genuinely off today. Deciding whether to bring it back - safely - is the first step, then the install prompt and update flow.",
       status: "planned",
       category: ["performance"],
-      progress: 40,
+      progress: 15,
       lastUpdated: "2026-10-03"
     },
     {
@@ -197,6 +195,30 @@
       description: "The site is dark-first across all 32 themes. A proper light palette is being considered.",
       status: "considering",
       category: ["other"]
+    },
+    {
+      id: "public-playlist-links",
+      title: "Links to single public playlists",
+      description: "Public playlists can be browsed but not linked to directly, so a specific playlist cannot be shared yet. Each one wants its own address that opens straight into it.",
+      status: "planned",
+      category: ["media", "community"],
+      lastUpdated: "2026-10-04"
+    },
+    {
+      id: "roadmap-feed",
+      title: "Follow the roadmap",
+      description: "A small JSON or RSS feed generated from the same data file this page reads, so people can watch for changes instead of remembering to check.",
+      status: "planned",
+      category: ["other"],
+      lastUpdated: "2026-10-04"
+    },
+    {
+      id: "self-serve-deletion",
+      title: "Self-serve account deletion",
+      description: "Deletions are handled by hand today through a request form. Automating it safely - typed confirmation, a short waiting period, a way out - is being weighed against just leaving it manual.",
+      status: "considering",
+      category: ["profiles", "authentication"],
+      lastUpdated: "2026-10-04"
     },
 
     /* ------------------------------- COMPLETED ------------------------------ */

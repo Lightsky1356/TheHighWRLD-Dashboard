@@ -103,6 +103,8 @@
 
   function buildCard(item) {
     var card = el("article", "rm-card");
+    /* The id is what makes /roadmap#rm-<item> a real deep link. */
+    card.id = "rm-" + item.id;
     card.setAttribute("data-rm-id", item.id);
     card.setAttribute("data-rm-status", item.status);
     card.setAttribute("data-rm-cats", (item.category || []).join(" "));
@@ -143,7 +145,100 @@
       meta.appendChild(u);
     }
     if (meta.childNodes.length) card.appendChild(meta);
+
+    /* A link to this one card, so an item can be shared on its own. */
+    var link = el("button", "rm-linkbtn");
+    link.type = "button";
+    link.setAttribute("data-rm-link", item.id);
+    link.title = "Copy a link to this item";
+    link.setAttribute("aria-label", "Copy a link to " + item.title);
+    var li = el("i", null, "");
+    li.className = "fas fa-link";
+    li.setAttribute("aria-hidden", "true");
+    link.appendChild(li);
+    link.appendChild(el("span", "rm-linktxt", "Link"));
+    card.appendChild(link);
     return card;
+  }
+
+  /* ------------------------------------------------------- deep links */
+  /* /roadmap#rm-<id> scrolls to that card and flashes it. Any filter or search
+     that would hide the target is cleared first, otherwise the link would land
+     on nothing. */
+  function revealFromHash(push) {
+    var root = $("#page-section-roadmap");
+    if (!root) return;
+    var id = "";
+    try { id = (location.hash || "").replace(/^#rm-/, ""); } catch (e) {}
+    var prev = document.querySelector(".rm-card.rm-flash");
+    if (prev) prev.classList.remove("rm-flash");
+    if (!id) return;
+    var card = document.getElementById("rm-" + id);
+    if (!card) return;
+    if (card.hidden) {
+      state.status = "all";
+      state.category = "all";
+      state.q = "";
+      var input = $("#roadmap-search");
+      if (input) input.value = "";
+      root.querySelectorAll("[data-rm-filter]").forEach(function (x) {
+        x.setAttribute("aria-pressed", x.getAttribute("data-rm-filter") === "all" ? "true" : "false");
+      });
+      root.querySelectorAll("[data-rm-cat]").forEach(function (x) {
+        x.setAttribute("aria-pressed", x.getAttribute("data-rm-cat") === "all" ? "true" : "false");
+      });
+      apply();
+    }
+    if (card.scrollIntoView) card.scrollIntoView({ block: "center", behavior: prefersMotion() ? "smooth" : "auto" });
+    card.classList.add("rm-flash");
+    if (push) {
+      try { history.replaceState(null, "", "#rm-" + id); } catch (e) {}
+    }
+  }
+
+  function linkFor(id) {
+    var base = "";
+    try {
+      base = location.origin + location.pathname;
+    } catch (e) {
+      base = "/roadmap";
+    }
+    return base + "#rm-" + id;
+  }
+
+  function copyLink(btn) {
+    var url = linkFor(btn.getAttribute("data-rm-link"));
+    var card = btn.closest ? btn.closest(".rm-card") : null;
+    function done() {
+      btn.classList.add("rm-link-done");
+      var txt = btn.querySelector(".rm-linktxt");
+      if (txt) txt.textContent = "Copied";
+      setTimeout(function () {
+        btn.classList.remove("rm-link-done");
+        if (txt) txt.textContent = "Link";
+      }, 1600);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, function () { fallbackCopy(url, done); });
+    } else {
+      fallbackCopy(url, done);
+    }
+    if (card && card.scrollIntoView) card.scrollIntoView({ block: "center", behavior: prefersMotion() ? "smooth" : "auto" });
+  }
+
+  function fallbackCopy(url, done) {
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = url;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      done();
+    } catch (e) { /* nothing else to try */ }
   }
 
   /* ---------------------------------------------------------------- counts */
@@ -321,9 +416,29 @@
 
     buildCategoryRow();
     buildFeatured();
+    buildFreshness();
     wire();
     built = true;
     apply();
+  }
+
+  /* One honest line about how current the page is, taken from the data rather
+     than typed in by hand. */
+  function buildFreshness() {
+    var slot = document.getElementById("rm-fresh");
+    if (!slot || !DATA) return;
+    var items = DATA.items || [];
+    var dates = [];
+    items.forEach(function (i) {
+      if (i.lastUpdated) dates.push(String(i.lastUpdated));
+    });
+    dates.sort();
+    var newest = dates.length ? dates[dates.length - 1] : "";
+    var open = items.filter(function (i) { return i.status !== "completed"; }).length;
+    var bits = [];
+    if (newest) bits.push("last updated " + (fmtDate(newest) || newest));
+    if (open) bits.push(open + " still open");
+    slot.textContent = bits.join(" · ");
   }
 
   /* ------------------------------------------------------------------ wire */
@@ -333,6 +448,8 @@
     root.dataset.rmWired = "1";
 
     root.addEventListener("click", function (e) {
+      var link = e.target.closest ? e.target.closest("[data-rm-link]") : null;
+      if (link) { copyLink(link); return; }
       var b = e.target.closest ? e.target.closest("button[data-rm-filter],button[data-rm-cat]") : null;
       if (!b) return;
       if (b.hasAttribute("data-rm-filter")) {
@@ -364,6 +481,13 @@
         }
       });
     }
+
+    /* Following a link while already on the page has to work too, otherwise a
+       pasted /roadmap#rm-... URL does nothing. */
+    window.addEventListener("hashchange", function () {
+      if (!root.classList.contains("active")) return;
+      revealFromHash(true);
+    });
   }
 
   /* ----------------------------------------------------------------- apply */
@@ -413,6 +537,7 @@
      Community, because the Roadmap lives inside the Community menu there. */
   function onShown() {
     build();
+    revealFromHash(false);
     try {
       if (typeof window._updateMBN === "function") window._updateMBN("community");
     } catch (e) {}
