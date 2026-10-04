@@ -74,6 +74,14 @@
   }
 
   function refreshDrpStatus(status){
+    /* Keep the checkbox honest. The app can turn presence off or lose Discord
+       on its own, and a toggle that still reads "on" is a lie. Done here so every
+       path that learns the status - the initial getStatus, the toggle handler and
+       a push from the app - lands in the same place. */
+    if(isElectron && status && typeof status.enabled === 'boolean'){
+      var tgl = document.getElementById('ps-drp-toggle');
+      if(tgl && tgl.checked !== status.enabled) tgl.checked = status.enabled;
+    }
     var el = document.getElementById('ps-nav-drp');
     if(!el) return;
     var txtEl = el.querySelector('.drp-txt');
@@ -98,6 +106,77 @@
     }
     el.className = 'drp-wait';
     if(txtEl) txtEl.textContent = 'Connecting\u2026';
+  }
+
+  /* ---------------------------------------------- Discord Rich Presence
+   * The desktop app hands the page window.highwrld (see electron-app/preload.js).
+   * Nothing here runs in a browser: without that object there is no bridge, and
+   * the toggle says so rather than pretending. The reporting loop watches the
+   * mini player, which is the one piece of DOM that already knows what is playing. */
+  function drpReport(){
+    if(!isElectron || !window.highwrld || typeof window.highwrld.setActivity !== 'function') return;
+    try{
+      var title = (document.getElementById('mini-title') || {}).textContent || '';
+      var cover = (document.getElementById('mini-cover') || {}).getAttribute && document.getElementById('mini-cover').getAttribute('src') || '';
+      var audio = document.querySelector('audio');
+      if(!title || /nothing playing/i.test(title)){
+        window.highwrld.clearActivity();
+        return;
+      }
+      var artist = 'Juice WRLD';
+      try{
+        if(typeof trackList !== 'undefined' && trackList && typeof currentTrackIndex === 'number'){
+          var t = trackList[currentTrackIndex];
+          if(t){ artist = t.artist || artist; if(t.album) title = t.title; }
+        }
+      }catch(e){}
+      window.highwrld.setActivity({
+        title: title,
+        artist: artist,
+        /* Discord keys off the bare file name, not a path */
+        cover: cover ? String(cover).split('/').pop().replace(/\.[a-z0-9]+$/i, '') : '',
+        duration: audio && audio.duration ? Math.round(audio.duration) : 0,
+        startedAt: audio && audio.duration ? Math.round(Date.now() / 1000 - (audio.currentTime || 0)) : 0,
+        paused: !!(audio && audio.paused)
+      }).catch(function(){});
+    }catch(e){}
+  }
+
+  function bindDrpReporting(){
+    if(!isElectron || !window.highwrld) return;
+    /* the mini player text changes on every track change, so watch it rather than
+       polling a second copy of the player state */
+    var title = document.getElementById('mini-title');
+    if(title && window.MutationObserver){
+      new MutationObserver(function(){ drpReport(); }).observe(title, { childList: true, characterData: true, subtree: true });
+    }
+    var audio = document.querySelector('audio');
+    if(audio){
+      ['play','pause','ended','loadedmetadata','seeked'].forEach(function(ev){
+        audio.addEventListener(ev, drpReport);
+      });
+    }
+    if(typeof window.highwrld.onDrpEvent === 'function'){
+      var drpUnavailable = 'Discord Rich Presence needs the Discord desktop app running, and this build has no Discord client id yet.';
+      /* remembered so the normal wording comes back when Discord does show up */
+      var drpDefaultDesc = null;
+      window.highwrld.onDrpEvent(function(payload){
+        if(payload && payload.type === 'status'){
+          var st = payload.status || {};
+          /* looked up here on purpose: these live inside init() and applyDrpGate(),
+             so referencing them from this scope would throw under Electron */
+          var tgl = document.getElementById('ps-drp-toggle');
+          if(tgl){ tgl.checked = !!st.enabled; }
+          refreshDrpStatus(st);
+          var desc = document.getElementById('ps-drp-desc');
+          if(desc){
+            if(drpDefaultDesc === null) drpDefaultDesc = desc.textContent;
+            desc.textContent = (st.available === false) ? drpUnavailable : drpDefaultDesc;
+          }
+        }
+      });
+    }
+    drpReport();
   }
 
   function togglePlayerSettings(){
@@ -186,6 +265,7 @@
       if(window.highwrld.getStatus){
         window.highwrld.getStatus().then(function(s){ refreshDrpStatus(s); }).catch(function(){});
       }
+      bindDrpReporting();
     } else {
       refreshDrpStatus();
     }

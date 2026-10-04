@@ -78,30 +78,29 @@
     {
       id: "mobile-wrld-player",
       title: "Mobile WRLD Player",
-      description: "A dedicated full-screen player for phones with touch-first controls, a mobile-optimised track list and a simplified control row. Remaining work is final spacing and gesture polish.",
-      status: "in-progress",
+      description: "A dedicated full-screen player for phones: touch-first controls, a draggable seek bar you can also nudge with the keyboard, swipe down to dismiss, and hit targets sized for a thumb.",
+      status: "completed",
       category: ["mobile"],
-      featured: true,
-      progress: 85,
-      lastUpdated: "2026-10-03"
+      lastUpdated: "2026-10-04"
     },
     {
       id: "player-performance",
       title: "WRLD Player performance",
-      description: "Virtualised track list, on-demand CAPTCHA loading, decorative motion paused while scrolling and asynchronous cover decoding. Next: profile the slowest devices and clear the remaining main-thread work.",
+      description: "Virtualised track list (18 rows in the DOM out of 281 tracks), on-demand CAPTCHA loading, decorative motion paused while scrolling and asynchronous cover decoding. A re-render costs 2-9ms. What is left is profiling on real low-end hardware - browser paint cannot be measured without a GPU.",
       status: "in-progress",
       category: ["performance"],
-      progress: 70,
-      lastUpdated: "2026-10-03"
+      featured: true,
+      progress: 85,
+      lastUpdated: "2026-10-04"
     },
     {
       id: "discord-rich-presence",
       title: "Discord Rich Presence",
-      description: "The presence controls already ship inside the player settings panel. The desktop bridge that actually reports the current track to Discord is the next piece to wire up.",
+      description: "The desktop bridge is built: a locked-down preload, the Discord IPC connection in the main process, and the player reporting the current track. Smoke-tested in the app end to end. Still to do: install the Discord client library, add a Discord application id, and confirm a presence really shows on a profile.",
       status: "in-progress",
       category: ["desktop"],
-      progress: 35,
-      lastUpdated: "2026-10-03"
+      progress: 75,
+      lastUpdated: "2026-10-04"
     },
     {
       id: "roadmap-system",
@@ -423,7 +422,7 @@
   ];
 
   global.THW_ROADMAP = {
-    updated: "2026-10-03",
+    updated: "2026-10-04",
     statuses: STATUSES,
     statusOrder: STATUS_ORDER,
     categories: CATEGORIES,
