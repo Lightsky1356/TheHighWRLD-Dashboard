@@ -210,7 +210,11 @@
     else if (p.status === "Do Not Disturb") dotC = "#ef4444";
     var html = '';
     html += '<div class="cmp-page">';
-    html += '<div class="cmp-head">';
+    /* Every block below is its own panel and collapses on its own header, so
+       the page reads as a two column grid on desktop instead of one big box
+       with the sections buried inside it. */
+    html += '<div class="cmp-head" data-pnl="profile">';
+    html += '<div class="cmp-sec-title cmp-head-title"><span><i class="fas fa-id-card"></i> ' + esc(_tt("cmpPanelProfile", "Profile")) + '</span></div>';
     html += '<div class="cmp-top"><span class="cmp-avatar-wrap"><span class="cmp-avatar-ring"><span class="cmp-avatar">' + cmpAvatarHtml(p.avatar, p.name) + '</span></span><span class="cmp-online" style="background:' + dotC + ';box-shadow:0 0 10px ' + dotC + '"></span></span>';
     html += '<div class="cmp-id"><div class="cmp-name-row"><h2 class="cmp-name">' + esc(p.name || "999_" + uidSuffix) + '</h2>' + cmpVerifiedHtml(!!d.linked) + '</div>';
     html += '<div class="cmp-handle">@' + esc(String(uname).toLowerCase()) + '</div>';
@@ -227,21 +231,22 @@
     html += '<button type="button" class="cmp-btn" onclick="if(window.openEditProfile)window.openEditProfile()"><i class="fas fa-pen"></i>' + esc(_tt("editProfile", "Edit Profile")) + '</button>';
     html += '<button type="button" class="cmp-btn gold" data-cmp-signout="1"><i class="fas fa-right-from-bracket"></i>' + esc(_tt("signOut", "Sign Out")) + '</button>';
     html += '</div>';
+    html += '</div>';
     var links = (_data && _data.links) || [];
     if (links.length) {
-      html += '<div class="cmp-links">' + links.map(function (l) { return l && l.url ? '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow"><i class="fas fa-link"></i>' + esc(l.label || l.url) + '<i class="fas fa-arrow-up-right-from-square" style="margin-left:auto"></i></a>' : ''; }).join("") + '</div>';
+      html += '<div class="cmp-sec-card cmp-links-card" data-pnl="links"><div class="cmp-sec-title"><span><i class="fas fa-link"></i> ' + esc(_tt("cmpPanelLinks", "Links")) + '</span><span class="cmp-count">' + links.length + '</span></div>';
+      html += '<div class="cmp-links">' + links.map(function (l) { return l && l.url ? '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow"><i class="fas fa-link"></i>' + esc(l.label || l.url) + '<i class="fas fa-arrow-up-right-from-square" style="margin-left:auto"></i></a>' : ''; }).join("") + '</div></div>';
     }
     if (includeSections) {
       var favs = (_data && _data.favorites) || [];
       var pls = (_data && _data.playlists) || [];
       html += '<div class="cmp-sections">';
-      html += '<div class="cmp-sec-card"><div class="cmp-sec-title"><span><i class="fas fa-heart"></i> ' + esc(_tt("t4", "Favorites")) + '</span><span class="cmp-sec-actions"><button type="button" class="cmp-toggle" data-fav-toggle="1" title="' + esc(_tt("cmpToggleView", "Toggle view")) + '"><i class="fas fa-table-cells-large"></i></button><span class="cmp-count">' + favs.length + '</span></span></div>';
+      html += '<div class="cmp-sec-card" data-pnl="favorites"><div class="cmp-sec-title"><span><i class="fas fa-heart"></i> ' + esc(_tt("t4", "Favorites")) + '</span><span class="cmp-sec-actions"><button type="button" class="cmp-toggle" data-fav-toggle="1" title="' + esc(_tt("cmpToggleView", "Toggle view")) + '"><i class="fas fa-table-cells-large"></i></button><span class="cmp-count">' + favs.length + '</span></span></div>';
       html += '<div class="cmp-fav-grid"></div></div>';
-      html += '<div class="cmp-sec-card"><div class="cmp-sec-title"><span><i class="fas fa-list-music"></i> ' + esc(_tt("t11", "My Playlists")) + '</span><span class="cmp-count">' + pls.length + '</span></div>';
+      html += '<div class="cmp-sec-card" data-pnl="playlists"><div class="cmp-sec-title"><span><i class="fas fa-list-music"></i> ' + esc(_tt("t11", "My Playlists")) + '</span><span class="cmp-count">' + pls.length + '</span></div>';
       html += '<div class="cmp-pl-grid grid-2"></div></div>';
       html += '</div>';
     }
-    html += '</div>';
     html += '</div>';
     return html;
   }
@@ -2098,26 +2103,58 @@ window.profileSectionShown = function () {
   function bindSectionCollapse() {
     var root = document.getElementById("page-section-account");
     if (!root) return;
-    function makeToggle(el, getter) {
+    /* Which panels are folded is remembered, so the page comes back the way it
+       was left. Stored as {sectionId: 0|1}; a panel only takes the stored
+       answer when it has one, so a section that ships folded stays folded. */
+    var KEY = "ac_collapsed_panels";
+    var saved = {};
+    try {
+      var raw = JSON.parse(localStorage.getItem(KEY) || "{}");
+      if (raw && typeof raw === "object") saved = raw;
+    } catch (e) {}
+    var remember = function (id, collapsed) {
+      saved[id] = collapsed ? 1 : 0;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+    };
+    function makeToggle(el, owner) {
       if (el.dataset.collapseBound) return;
       el.dataset.collapseBound = "1";
       el.classList.add("ac-head-toggle");
+      el.setAttribute("role", "button");
+      el.setAttribute("tabindex", "0");
       var chev = document.createElement("i");
       chev.className = "fas fa-chevron-up ac-coll-chev";
       el.appendChild(chev);
+      var id = owner.id || "";
+      if (id && Object.prototype.hasOwnProperty.call(saved, id)) owner.classList.toggle("collapsed", !!saved[id]);
+      function paint() {
+        var collapsed = owner.classList.contains("collapsed");
+        el.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        chev.className = "fas fa-chevron-" + (collapsed ? "down" : "up") + " ac-coll-chev";
+      }
+      paint();
+      function toggle() {
+        owner.classList.toggle("collapsed");
+        paint();
+        if (id) remember(id, owner.classList.contains("collapsed"));
+      }
       el.addEventListener("click", function (e) {
         if (e.target.closest("button,a,input,select,textarea")) return;
-        var collapsed = getter().classList.toggle("collapsed");
-        chev.className = "fas fa-chevron-" + (collapsed ? "down" : "up");
+        toggle();
+      });
+      el.addEventListener("keydown", function (e) {
+        if ((e.key !== "Enter" && e.key !== " ") || e.target !== el) return;
+        e.preventDefault();
+        toggle();
       });
     }
     root.querySelectorAll(".ac-collapsible").forEach(function (sec) {
       var head = sec.querySelector(".sec-head");
-      if (head) makeToggle(head, function () { return sec; });
+      if (head) makeToggle(head, sec);
     });
     root.querySelectorAll(".ac-set-collapsible").forEach(function (card) {
       var title = card.querySelector(".set-title");
-      if (title) makeToggle(title, function () { return card; });
+      if (title) makeToggle(title, card);
     });
   }
 

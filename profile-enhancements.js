@@ -1,18 +1,16 @@
 /* ============================================================================
    Profile Enhancements - your profile, tidied up.
 
-   Your profile page shows three things:
+   Your profile page is a two column board of panels. Every block on it -
+   the profile header, your links, Favorites, My Playlists - carries its own
+   panel and its own collapse handle, so you can fold away whatever you are
+   not looking at. The blocks are rendered by account.js and playlists-ui.js;
+   this file only dresses them and wires the collapse.
 
-     1. Recent activity - your own activity feed (plays, favorites, playlists,
-        votes, downloads, profile + security changes), read from the real
-        activity table.
-     2. A settings cog in the header that opens one panel holding everything
-        you can change about yourself: picture, name, status, bio, social and
-        custom links, and profile visibility.
-     3. Nothing else. The picture / links / visibility blocks that used to be
-        scattered down the page now live behind that cog.
-
-   The pencil beside your name opens the same panel - it is the quick way in.
+   It also owns the settings cog in the header, which opens one panel holding
+   everything you can change about yourself: picture, name, status, bio,
+   social and custom links, and profile visibility. The pencil beside your
+   name opens the same panel - it is the quick way in.
 
    Self profiles only: on anyone else's profile this file does nothing.
 
@@ -23,7 +21,6 @@
   if (window.__profileEnhancementsMounted) return;
   window.__profileEnhancementsMounted = true;
 
-  var WID = "profile-enhancements";
   var PANEL_ID = "pe-settings";
   var STATUSES = ["Online", "Idle", "Do Not Disturb", "Invisible"];
   var PRIVACY_ITEMS = [
@@ -48,16 +45,8 @@
   var PLATFORM_BY_KEY = {};
   PLATFORMS.forEach(function (p) { PLATFORM_BY_KEY[p.key] = p; });
 
-  /* Matches the icons the account page uses for the activity table. */
-  var ACT_ICON = {
-    vote: "fa-vote-yea", reply: "fa-comment", favorite: "fa-heart",
-    download: "fa-download", profile: "fa-user-pen", security: "fa-shield-halved",
-    listen: "fa-headphones", playlist: "fa-list-music", bookmark: "fa-bookmark",
-    community: "fa-users", link: "fa-link",
-  };
-
   /* Latest known profile state, so the panel can pre-fill and save safely. */
-  var state = { uid: "", name: "", bio: "", status: "Online", avatar: "", banner: "", links: [], activity: [], privacy: null };
+  var state = { uid: "", name: "", bio: "", status: "Online", avatar: "", banner: "", links: [], privacy: null };
   var avatarDraft = "";
 
   function esc(s) {
@@ -126,15 +115,41 @@
     var st = document.createElement("style");
     st.id = "profile-enh-style";
     st.textContent =
-      /* ---- header panel + the two header buttons ---- */
-      /* The card renders no panel of its own, so the header gets one here. */
-      "#profilePageBody .cmp-head{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--ac-border,rgba(255,255,255,.08));background:linear-gradient(150deg,rgba(255,255,255,.05),rgba(255,255,255,.015));box-shadow:0 18px 44px rgba(0,0,0,.28);padding:16px 18px 14px;margin-bottom:14px}" +
+      /* ---- the board: every block is its own panel, two per row ---- */
+      /* #profilePageBody is already a 2 column grid; the hero header spans both
+         columns on a phone and takes a single cell on a desktop. */
+      "#profilePageBody{gap:14px}" +
+      "@media(min-width:901px){#profilePageBody .cmp-head{grid-column:auto}}" +
+      "#profilePageBody .cmp-head{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--ac-border,rgba(255,255,255,.08));background:linear-gradient(150deg,rgba(255,255,255,.05),rgba(255,255,255,.015));box-shadow:0 18px 44px rgba(0,0,0,.28);padding:14px 18px 16px;margin:0}" +
       "#profilePageBody .cmp-head .pe-cover{display:block;position:absolute;inset:0;z-index:0;opacity:.3;background-size:cover;background-position:center 30%;pointer-events:none}" +
       "#profilePageBody .cmp-head>*:not(.pe-cover){position:relative;z-index:1}" +
       "#profilePageBody .cmp-head .cmp-actions{display:none}" +
       /* privacy.js mounts its own block on this page; the toggles live in the
          settings panel now, so its copy stays out of the way */
       "#profilePageBody #ws-privacy{display:none!important}" +
+      /* ---- collapse handles ---- */
+      ".pnl-h{cursor:pointer;user-select:none;border-radius:10px}" +
+      ".pnl-h:hover{color:#fff}" +
+      ".pnl-h:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}" +
+      ".pnl-h::after{content:'';flex:0 0 auto;margin-left:auto;width:11px;height:11px;background:currentColor;transform:rotate(180deg);-webkit-mask:url(\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M201.4 342.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 274.7 86.6 137.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z'/%3E%3C/svg%3E\") center/contain no-repeat;mask:url(\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath d='M201.4 342.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 274.7 86.6 137.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z'/%3E%3C/svg%3E\") center/contain no-repeat;opacity:.5;transition:transform .22s ease}" +
+      /* same way round as the settings page: up while open, down while folded */
+      ".pnl.collapsed .pnl-h::after{transform:none}" +
+      /* folded panels keep only their header */
+      ".pnl.collapsed>*:not(.pnl-h){display:none!important}" +
+      /* the header row of each panel */
+      "#profilePageBody .cmp-head>.cmp-head-title,#profilePageBody .cmp-sec-card>.cmp-sec-title,#profilePageBody .pv-block>.pv-block-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 13px;padding:0 0 11px;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.16em;color:var(--ac-muted,rgba(255,255,255,.55))}" +
+      /* a half width panel on a phone must never push the chevron outside */
+      "#profilePageBody .cmp-sec-title>span:first-child,#profilePageBody .pv-block-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+      "#profilePageBody .cmp-sec-actions{flex:0 0 auto;margin-left:auto}" +
+      "#profilePageBody .pnl.collapsed>.pnl-h{margin:0;padding-bottom:0;border-bottom-color:transparent}" +
+      "#profilePageBody .cmp-sec-card,#profilePageBody .pv-block{border-radius:18px;padding:14px 16px 16px;background:rgba(255,255,255,.032);border:1px solid var(--ac-border,rgba(255,255,255,.07));box-shadow:0 14px 34px rgba(0,0,0,.2)}" +
+      /* the shared favourite grid picks its columns from the window; inside a
+         half width panel that leaves the covers too small to read */
+      "#profilePageBody .cmp-fav-grid{grid-template-columns:repeat(2,minmax(0,1fr))}" +
+      "@media(max-width:700px){#profilePageBody .cmp-fav-grid{grid-template-columns:minmax(0,1fr)}#profilePageBody [data-pnl=\"favorites\"]{grid-column:1/-1}}" +
+      /* the header panel carries its own label above the avatar */
+      "#profilePageBody .cmp-head-title{margin:0 0 12px!important}" +
+      "#profilePageBody .cmp-head .cmp-top{margin-top:0}" +
       "#profilePageBody .pe-headbtns{display:inline-flex;gap:6px;margin-left:8px}" +
       /* on a narrow card the name row wraps, so the buttons move to the free
          top-right corner instead of sitting between the name and the handle */
@@ -142,14 +157,6 @@
       "#profilePageBody .pe-iconbtn{width:30px;height:30px;flex:0 0 30px;border-radius:9px;border:1px solid var(--ac-border,rgba(255,255,255,.12));background:rgba(255,255,255,.06);color:rgba(255,255,255,.65);cursor:pointer;font-size:11px;display:inline-flex;align-items:center;justify-content:center;transition:background .15s,color .15s,border-color .15s}" +
       "#profilePageBody .pe-iconbtn:hover{background:rgba(212,165,116,.16);border-color:rgba(212,165,116,.4);color:#e8c89a}" +
       "#profilePageBody .pe-iconbtn:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}" +
-      /* ---- activity feed ---- */
-      ".pe-act-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05)}" +
-      ".pe-act-item:last-child{border-bottom:none}" +
-      ".pe-act-ico{width:28px;height:28px;border-radius:9px;flex:0 0 28px;display:flex;align-items:center;justify-content:center;font-size:11px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);color:var(--ac-gold,rgba(212,165,116,.9))}" +
-      /* the text and the timestamp stack, they must not share a line */
-      ".pe-act-body{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}" +
-      ".pe-act-txt{display:block;font-size:12.5px;line-height:1.45;color:var(--ac-text,rgba(255,255,255,.9));overflow-wrap:anywhere}" +
-      ".pe-act-time{display:block;font-size:10px;color:var(--ac-dim,rgba(255,255,255,.45));font-variant-numeric:tabular-nums}" +
       /* ---- settings panel (lives on <body>, so no page section can hide it) ---- */
       "#pe-settings{position:fixed;inset:0;z-index:420;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(5,2,12,.78);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}" +
       "#pe-settings.open{display:flex}" +
@@ -218,22 +225,6 @@
   }
 
   /* --------------------------------------------------------------- helpers */
-  function relTime(ts) {
-    if (!ts) return "";
-    var d = Date.now() - Date.parse(ts);
-    if (isNaN(d) || d < 0) return "";
-    var s = Math.floor(d / 1000);
-    if (s < 60) return tt("justNow", "just now");
-    if (s < 3600) return Math.floor(s / 60) + tt("minAgo", "m ago");
-    if (s < 86400) return Math.floor(s / 3600) + tt("hourAgo", "h ago");
-    if (s < 604800) return Math.floor(s / 86400) + tt("dayAgo", "d ago");
-    return new Date(ts).toLocaleDateString();
-  }
-
-  function block(title, inner, id) {
-    return '<div class="pv-block"' + (id ? ' id="' + id + '"' : "") + '><div class="pv-block-title">' + esc(title) + "</div>" + inner + "</div>";
-  }
-
   /* Existing links reduced to a handle per platform, so the form is friendly. */
   function currentLinks() {
     var out = {};
@@ -262,21 +253,6 @@
   }
 
   /* --------------------------------------------------------------- markup */
-  function activityHtml(rows) {
-    if (!rows || !rows.length) {
-      return '<p class="pv-none">' + esc(tt("peNoActivity", "No activity yet - play some tracks, vote or reply in the Wanted Vault.")) + "</p>";
-    }
-    return rows.map(function (a) {
-      var ico = ACT_ICON[a.type] || "fa-bolt";
-      return '<div class="pe-act-item">'
-        + '<span class="pe-act-ico"><i class="fas ' + ico + '" aria-hidden="true"></i></span>'
-        + '<span class="pe-act-body">'
-        + '<span class="pe-act-txt">' + esc(a.label || a.text || "Activity") + "</span>"
-        + '<span class="pe-act-time">' + esc(a.time || relTime(a.ts)) + "</span>"
-        + "</span></div>";
-    }).join("");
-  }
-
   function socialsHtml() {
     var have = currentLinks();
     return '<div class="pe-socialgrid">' + PLATFORMS.map(function (p) {
@@ -365,17 +341,86 @@
     if (!body || !isSelfProfile() || !state.uid) return;
     css();
 
-    var old = document.getElementById(WID);
-    if (old) old.remove();
-
     dressHeader(body);
+    panelize(body);
+  }
 
-    /* The page keeps one block: your activity. Everything else you can change
-       lives behind the settings cog. */
-    var wrap = document.createElement("div");
-    wrap.id = WID;
-    wrap.innerHTML = block(tt("peActivity", "Recent activity"), '<div class="pv-act">' + activityHtml(state.activity) + "</div>", "pe-activity");
-    body.appendChild(wrap);
+  /* ------------------------------------------------------------- panels */
+  /* Every block on the page (profile header, links, Favorites, My Playlists)
+     gets the panel + collapse treatment. The blocks belong to other files, so
+     this only marks them up - nothing is re-rendered or re-parented here. */
+  var PANEL_HEADS = [".cmp-head", ".cmp-sec-card", ".pv-block"];
+  var FOLD_KEY = "pe_folded_panels";
+
+  function folded() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(FOLD_KEY) || "{}");
+      return raw && typeof raw === "object" ? raw : {};
+    } catch (e) { return {}; }
+  }
+
+  function rememberFold(id, collapsed) {
+    try {
+      var all = folded();
+      all[id] = collapsed ? 1 : 0;
+      localStorage.setItem(FOLD_KEY, JSON.stringify(all));
+    } catch (e) {}
+  }
+
+  function panelKey(panel, i) {
+    var given = panel.getAttribute("data-pnl");
+    if (given) return given;
+    var head = panel.querySelector(".cmp-sec-title, .pv-block-title");
+    var text = head ? String(head.textContent || "").trim().toLowerCase() : "";
+    return (text.replace(new RegExp("[^a-z0-9]+", "g"), "-").replace(new RegExp("(^-+|-+$)", "g"), "") || "panel-" + i);
+  }
+
+  function panelize(root) {
+    var state_ = folded();
+    PANEL_HEADS.forEach(function (sel) {
+      var panels = root.querySelectorAll(sel);
+      for (var i = 0; i < panels.length; i++) {
+        var panel = panels[i];
+        if (!panel.offsetParent && panel.style.display === "none") continue;   /* the hidden native playlist card */
+        var head = panel.querySelector(":scope > .cmp-sec-title, :scope > .pv-block-title");
+        if (!head) continue;
+        panel.classList.add("pnl");
+        head.classList.add("pnl-h");
+        head.setAttribute("role", "button");
+        head.setAttribute("tabindex", "0");
+        var key = panelKey(panel, i);
+        panel.setAttribute("data-pnl-key", key);
+        if (Object.prototype.hasOwnProperty.call(state_, key)) panel.classList.toggle("collapsed", !!state_[key]);
+        head.setAttribute("aria-expanded", panel.classList.contains("collapsed") ? "false" : "true");
+      }
+    });
+
+    if (root.dataset.pePanelsBound) return;
+    root.dataset.pePanelsBound = "1";
+
+    root.addEventListener("click", function (e) {
+      var head = e.target.closest ? e.target.closest(".pnl-h") : null;
+      if (!head || !root.contains(head)) return;
+      /* the panel's own buttons (favorites view switch, links) still work */
+      if (e.target.closest("button,a,input,select,textarea")) return;
+      fold(head.parentNode);
+    });
+    root.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      var head = e.target.closest ? e.target.closest(".pnl-h") : null;
+      if (!head || head !== e.target || !root.contains(head)) return;
+      e.preventDefault();
+      fold(head.parentNode);
+    });
+  }
+
+  function fold(panel) {
+    if (!panel) return;
+    var collapsed = panel.classList.toggle("collapsed");
+    var head = panel.querySelector(".pnl-h");
+    if (head) head.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    var key = panel.getAttribute("data-pnl-key");
+    if (key) rememberFold(key, collapsed);
   }
 
   /* The card used to ship a row of buttons (WRLD Player, The Vault, Edit
@@ -793,7 +838,6 @@
           avatar: prof.avatar || ((d.discord && d.discord.avatar) || ""),
           banner: prof.banner || "",
           links: d.links || [],
-          activity: d.activity || [],
           privacy: d.privacy || null,
         };
         mount();
@@ -833,6 +877,24 @@
         setTimeout(load, 300);
       });
       observer.observe(section, { attributes: true, attributeFilter: ["class"] });
+    }
+
+    /* playlists-ui.js appends its My Playlists block after account.js has
+       rendered, so watch the body for new blocks and dress those too. Only
+       direct children matter here, which keeps this observer out of the way of
+       the header work this file does itself. */
+    var bodyEl = document.getElementById("profilePageBody");
+    if (bodyEl && window.MutationObserver) {
+      var queue = null;
+      new MutationObserver(function () {
+        if (queue) return;
+        queue = setTimeout(function () {
+          queue = null;
+          if (!isSelfProfile() || !state.uid) return;
+          dressHeader(bodyEl);
+          panelize(bodyEl);
+        }, 120);
+      }).observe(bodyEl, { childList: true });
     }
 
     window.refreshProfileEnhancements = load;

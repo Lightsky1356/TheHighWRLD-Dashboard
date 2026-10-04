@@ -126,13 +126,12 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
       <main class="ac-main">
         <div class="ac-settings-grid">
           <div class="ac-col ac-col-stack">
-<section class="section" id="profile">
+<section class="section ac-collapsible" id="profile">
         <div class="sec-head">
           <div class="sec-ico" style="background:linear-gradient(135deg,#60a5fa,#2563eb)"><i class="fas fa-pen"></i></div>
           <div><div class="sec-title">Profile Information</div><div class="sec-sub">Your display name, bio &amp; handle</div></div>
         </div>
         <div class="card set-card">
-          <div class="set-title"><i class="fas fa-user-pen"></i> <span>Profile Information</span></div>
           <form class="acv-prof-form" onsubmit="return false;">
             <div class="field"><label for="profName">Display Name</label><input type="text" id="profName" maxlength="24" placeholder="Your display name"></div>
             <div class="field"><label for="profBio">Bio</label><textarea id="profBio" rows="4" maxlength="300" placeholder="Tell us about yourself..."></textarea></div>
@@ -140,13 +139,12 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
           </form>
         </div>
       </section>
-<section class="section" id="appearance">
+<section class="section ac-collapsible" id="appearance">
         <div class="sec-head">
           <div class="sec-ico" style="background:linear-gradient(135deg,#f59e0b,#a855f7)"><i class="fas fa-palette"></i></div>
           <div><div class="sec-title" data-i18n="appearance">Appearance</div><div class="sec-sub">Theme, language &amp; personal flair</div></div>
         </div>
-        <div class="card set-card ac-set-collapsible">
-          <div class="set-title ac-head-toggle" data-collapse-bound="1"><i class="fas fa-palette"></i> <span data-i18n="appearance">Appearance</span><i class="fas fa-chevron-up ac-coll-chev"></i></div>
+        <div class="card set-card">
           <div class="settings-grid-simple">
             <div class="field"><label data-i18n="theme">Theme</label><select id="setTheme" data-filled="1"><option value="default">Cyan</option><option value="violet">Deep Violet</option><option value="embers">Ember Nights</option><option value="obsidian">Dark Obsidian</option><option value="aurora">Aurora</option><option value="sakura">Sakura Dream</option><option value="ocean">Ocean Deep</option><option value="royal">Royal Gold</option><option value="neon">Neon Nights</option><option value="blood">Blood Moon</option><option value="storm">Midnight Storm</option><option value="forest">Emerald Forest</option><option value="sunset">Sunset Drive</option><option value="ice">Arctic Ice</option><option value="candy">Candy Pop</option><option value="matrix">Digital Matrix</option><option value="cyber">Cyberpunk</option><option value="gold">Gold</option><option value="galaxy">Deep Galaxy</option><option value="lava">Lava Flow</option><option value="toxic">Toxic Slime</option><option value="rose">Rose Gold</option><option value="oled">Pure OLED</option><option value="ultraviolet">Ultraviolet</option><option value="pharaoh">Pharaoh Sands</option><option value="dragon">Dragon Fire</option><option value="mint">Mint Fresh</option><option value="tangerine">Tangerine Sky</option><option value="grape">Grape Soda</option><option value="pumpkin">Pumpkin Spice</option><option value="silver">Silver Lining</option><option value="midnight">Midnight Blue</option></select></div>
             <div class="field"><label data-i18n="language">Language</label><select id="setLang" data-filled="1"><option value="en">English</option><option value="es">Spanish</option><option value="fr">French</option><option value="de">German</option><option value="pt">Portuguese</option><option value="it">Italian</option><option value="nl">Dutch</option><option value="pl">Polish</option><option value="ru">Russian</option><option value="uk">Ukrainian</option><option value="sv">Swedish</option><option value="no">Norwegian</option><option value="da">Danish</option><option value="fi">Finnish</option><option value="cs">Czech</option><option value="el">Greek</option><option value="hu">Hungarian</option><option value="ro">Romanian</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="hi">Hindi</option><option value="th">Thai</option><option value="vi">Vietnamese</option><option value="id">Indonesian</option><option value="ja">Japanese</option><option value="ko">Korean</option><option value="zh">Chinese</option></select></div>
@@ -157,7 +155,7 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
           </label>
         </div>
       </section>
-<section class="section" id="connected">
+<section class="section ac-collapsible" id="connected">
         <div class="sec-head">
           <div class="sec-ico" style="background:linear-gradient(135deg,#5865f2,#0ea5e9)"><i class="fas fa-link"></i></div>
           <div><div class="sec-title" data-i18n="connectedTitle">Connected Accounts</div><div class="sec-sub">Link or unlink Discord and Google</div></div>
@@ -198,7 +196,7 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
           
         </div>
       </section>
-<section class="section" id="danger">
+<section class="section ac-collapsible" id="danger">
         <div class="sec-head">
           <div class="sec-ico" style="background:linear-gradient(135deg,#ef4444,#f97316)"><i class="fas fa-triangle-exclamation"></i></div>
           <div><div class="sec-title" data-i18n="dangerTitle">Danger Zone</div><div class="sec-sub" data-i18n="dangerSub">Irreversible account actions</div></div>
@@ -216,7 +214,7 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
       </section>
           </div>
           <div class="ac-col ac-col-stack">
-<section class="section" id="email">
+<section class="section ac-collapsible" id="email">
         <div class="sec-head">
           <div class="sec-ico" style="background:linear-gradient(135deg,#0ea5e9,#22d3ee)"><i class="fas fa-envelope-circle-check"></i></div>
           <div><div class="sec-title" data-i18n="changeEmail">Change Email</div><div class="sec-sub">Update the email used to sign in</div></div>
@@ -238,7 +236,7 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
           <div class="set-result" id="changeEmailResult"></div>
         </div>
       </section>
-<section class="section" id="password">
+<section class="section ac-collapsible" id="password">
         <div class="sec-head">
           <div class="sec-ico" style="background:linear-gradient(135deg,#a855f7,#ec4899)"><i class="fas fa-key"></i></div>
           <div><div class="sec-title" id="pwCardTitle" data-i18n="changePassword">Change Password</div><div class="sec-sub" id="pwCardHint">Keep your account locked in - update your password anytime.</div></div>
@@ -271,7 +269,7 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
           <div class="set-result" id="changePassResult"></div>
         </div>
       </section>
-<section class="section" id="security">
+<section class="section ac-collapsible" id="security">
         <div class="sec-head">
           <div class="sec-ico" style="background:linear-gradient(135deg,#22c55e,#0ea5e9)"><i class="fas fa-shield-halved"></i></div>
           <div><div class="sec-title" data-i18n="t9">Security</div><div class="sec-sub">Sessions across your devices</div></div>
@@ -284,20 +282,20 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
           </div>
         </div>
       </section>
-<section class="section ac-collapsible" id="myReports">
-        <div class="sec-head ac-head-toggle" data-collapse-bound="1">
+<section class="section ac-collapsible collapsed" id="myReports">
+        <div class="sec-head">
           <div class="sec-ico"><i class="fas fa-flag"></i></div>
           <div><div class="sec-title">My Reports</div><div class="sec-sub">Status of everything you have reported</div></div>
-        <i class="fas fa-chevron-up ac-coll-chev"></i></div>
+        </div>
         <div class="card set-card">
           <div id="myReportsBody"><div class="ac-loading"><i class="fas fa-circle-notch fa-spin"></i> Loading reports&hellip;</div></div>
         </div>
       </section>
 <section class="section ac-collapsible" id="downloads">
-        <div class="sec-head ac-head-toggle" data-collapse-bound="1">
+        <div class="sec-head">
           <div class="sec-ico"><i class="fas fa-download"></i></div>
           <div><div class="sec-title" data-i18n="t7">Download History</div><div class="sec-sub" data-i18n="dlSub">Everything you've pulled from the vault - live</div></div>
-        <i class="fas fa-chevron-up ac-coll-chev"></i></div>
+        </div>
         <div class="card set-card">
           <div class="table-wrap">
             <table>
@@ -527,4 +525,4 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
 <script src="./security.js" defer></script>
 <script src="./presence.js" defer></script>
 <script src="./player-performance.js" defer></script>
-<script src="./vault-discography.js" defer></script><script src="./global-search.js" defer></script><script src="./trending.js" defer></script><script src="./owner-search.js" defer></script><script src="./owner-announce.js" defer></script><script src="./bans.js" defer></script><script src="./automod-ui.js" defer></script><script src="./report-status.js" defer></script><script src="./ban-screen.js" defer></script><script src="./wrld-stats.js?v=3" defer></script><script src="./recent.js" defer></script><script src="./trackinfo.js" defer></script><script src="./profile-enhancements.js?v=thw-v25" defer></script><script src="./roadmap-data.js?v=thw-v24" defer></script><script src="./roadmap.js?v=thw-v24" defer></script><script src="./timeline.js" defer></script><script src="./gallery.js" defer></script><script src="./submission-rules-ui.js" defer></script><script src="./presets.js" defer></script><script src="./mobile-player.js" defer></script><script src="./follows.js" defer></script><script src="./privacy.js" defer></script><script src="./playlists-ui.js" defer></script><script src="./drops.js" defer></script>
+<script src="./vault-discography.js" defer></script><script src="./global-search.js" defer></script><script src="./trending.js" defer></script><script src="./owner-search.js" defer></script><script src="./owner-announce.js" defer></script><script src="./bans.js" defer></script><script src="./automod-ui.js" defer></script><script src="./report-status.js" defer></script><script src="./ban-screen.js" defer></script><script src="./wrld-stats.js?v=3" defer></script><script src="./recent.js" defer></script><script src="./trackinfo.js" defer></script><script src="./profile-enhancements.js?v=thw-v26" defer></script><script src="./roadmap-data.js?v=thw-v24" defer></script><script src="./roadmap.js?v=thw-v24" defer></script><script src="./timeline.js" defer></script><script src="./gallery.js" defer></script><script src="./submission-rules-ui.js" defer></script><script src="./presets.js" defer></script><script src="./mobile-player.js" defer></script><script src="./follows.js" defer></script><script src="./privacy.js" defer></script><script src="./playlists-ui.js" defer></script><script src="./drops.js" defer></script>

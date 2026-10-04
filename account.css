@@ -1030,3 +1030,32 @@ body:has(#owner-backdrop.show)>*:not(#mini-player):not(#mini-shortcuts):not(#own
 @media (max-width:768px){.playlist-item .track-duration{display:inline-block !important;width:30px !important;font-size:8px !important;text-align:right;flex-shrink:0}}
 #page-section-profile .pl-empty-card .btn-gold,#account-page .pl-empty-card .btn-gold{background:var(--ac-grad-gold,linear-gradient(135deg,#f5c97b,#d4a574));color:#201000;border-color:rgba(245,158,11,.45);box-shadow:0 8px 22px rgba(245,158,11,.3)}
 #page-section-profile .pl-empty-card .btn-gold:hover,#account-page .pl-empty-card .btn-gold:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(245,158,11,.45)}
+
+/* ===== Settings: every section is its own collapsible panel, side by side =====
+   The two .ac-col wrappers only existed to split the sections into two tall
+   stacks. display:contents drops them, so the sections flow through the single
+   .ac-settings-grid and sit next to each other in rows of two on desktop. */
+#account-page .ac-col.ac-col-stack{display:contents}
+#account-page .ac-settings-grid{gap:16px}
+#account-page .section{padding:16px 18px;margin:0;border:1px solid rgba(255,255,255,.06);border-radius:18px;background:rgba(8,20,33,.62);box-shadow:0 12px 34px rgba(0,0,0,.16);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+#account-page .section:hover{border-color:rgba(124,92,255,.12)}
+/* the section head is the panel header and the collapse handle */
+#account-page .section>.sec-head{margin:0 0 14px;padding:0 0 13px;border-bottom:1px solid rgba(255,255,255,.06)}
+#account-page .section>.sec-head .sec-title{font-size:13px;font-weight:800;letter-spacing:.02em;color:#dbe4f0}
+#account-page .section>.sec-head .sec-sub{font-size:11px}
+#account-page .section.ac-collapsible>.sec-head{cursor:pointer;user-select:none;border-radius:10px}
+#account-page .section.ac-collapsible>.sec-head:hover .sec-title{color:#fff}
+#account-page .section>.sec-head .ac-coll-chev{flex:0 0 auto;margin-left:auto;font-size:11px;color:var(--ac-muted);transition:transform .22s ease}
+#account-page .section.collapsed>.sec-head{margin-bottom:0;padding-bottom:0;border-bottom-color:transparent}
+#account-page .section.collapsed>.sec-head .ac-coll-chev{transform:rotate(180deg)}
+/* the panel already draws the box, so its own card goes flat */
+#account-page .section>.card.set-card{background:none;border:0;border-radius:0;padding:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+#account-page .section>.card.set-card:hover{border-color:transparent}
+/* sub-cards (Discord / Google / Active Devices) keep their own lighter box */
+#account-page .section .ac-conn-stack>.card.set-card,
+#account-page .section .ac-settings-cols>.card.set-card{background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.055);border-radius:14px;padding:16px;box-shadow:none}
+#account-page .section>.card.set-card.ac-danger-card{background:rgba(20,8,12,.42);border-color:rgba(239,68,68,.10);padding:16px;border-radius:14px}
+@media (max-width:900px){#account-page .section{padding:14px 15px}#account-page .section>.sec-head{margin-bottom:12px;padding-bottom:11px}}
+#account-page .toggle-label,#account-page .toggle-sub{display:block}
+/* two sub-cards side by side inside a panel wrapped their text mid-word */
+#account-page .section .ac-conn-stack{grid-template-columns:minmax(0,1fr)}
