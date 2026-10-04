@@ -388,16 +388,21 @@
   }
 
   /* ------------------------------------------------------------- panels */
-  /* Every block on the page is a panel that folds from its own header: the
-     profile header, Top Plays, Favorites, My Playlists, Listening Activity and
-     Peak Listening Hours. The blocks belong to other files, so this only marks
-     them up - nothing is re-rendered or re-parented here. */
+  /* Every block below the header is a panel that folds from its own header: Top
+     Plays, Favorites, My Playlists, Listening Activity and Peak Listening
+     Hours. The blocks belong to other files, so this only marks them up -
+     nothing is re-rendered or re-parented here.
+
+     The profile header is deliberately NOT in this list. It is the one card that
+     has to stay open: it carries your name, handle, avatar, bio, links and play
+     counts, so folding it hides the identity of the page. */
   var PANELS = [
-    { sel: ".cmp-head", head: ".cmp-sec-title" },
     { sel: ".cmp-sec-card", head: ".cmp-sec-title" },
     { sel: ".pv-block", head: ".pv-block-title" },
     { sel: ".ws-block", head: ".ws-an-title" },
   ];
+  /* Belt and braces: whatever else is listed here, the header never folds. */
+  var NEVER_FOLDS = ".cmp-head";
   /* Folds are remembered per page, so folding Favorites on someone else's
      profile does not fold yours. */
   function foldKey() {
@@ -429,11 +434,25 @@
 
   function panelize(root) {
     var state_ = folded();
+    /* If anything ever marked the header as a foldable panel, take it back off -
+       this is what actually guarantees it stays open. */
+    Array.prototype.forEach.call(root.querySelectorAll(NEVER_FOLDS), function (h) {
+      h.classList.remove("pnl", "collapsed");
+      h.removeAttribute("data-pnl-key");
+      var hh = h.querySelector(".pnl-h");
+      if (hh) {
+        hh.classList.remove("pnl-h");
+        hh.removeAttribute("role");
+        hh.removeAttribute("tabindex");
+        hh.removeAttribute("aria-expanded");
+      }
+    });
     PANELS.forEach(function (spec) {
       var panels = root.querySelectorAll(spec.sel);
       for (var i = 0; i < panels.length; i++) {
         var panel = panels[i];
         if (!panel.offsetParent && panel.style.display === "none") continue;   /* the hidden native playlist card */
+        if (panel.matches(NEVER_FOLDS)) continue;
         var head = panel.querySelector(":scope > " + spec.head);
         if (!head) continue;
         panel.classList.add("pnl");
@@ -468,6 +487,7 @@
 
   function fold(panel) {
     if (!panel) return;
+    if (panel.matches && panel.matches(NEVER_FOLDS)) return;   /* the header never folds */
     var collapsed = panel.classList.toggle("collapsed");
     var head = panel.querySelector(".pnl-h");
     if (head) head.setAttribute("aria-expanded", collapsed ? "false" : "true");
