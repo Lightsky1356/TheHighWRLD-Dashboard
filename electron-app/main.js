@@ -1,8 +1,27 @@
 const { app, BrowserWindow, Menu, shell, ipcMain } = require("electron");
 const path = require("path");
 
+/* ------------------------------------------------------------------ CONFIG
+ * The only thing Discord needs from us is an application id.
+ *
+ *   1. Open https://discord.com/developers/applications
+ *   2. "New Application" -> name it anything, say "TheHighWRLD Dashboard"
+ *   3. Copy the APPLICATION ID (a long number) into clientId below
+ *   4. Optional: under Rich Presence > Artifacts, upload a cover image, then
+ *      set its asset key as the fallback cover below (default "fenty")
+ *
+ * Leave clientId empty and everything still runs - the toggle in the player
+ * settings just says presence isn't set up yet, instead of pretending. */
+const CONFIG = {
+  clientId: "",                 // <- paste your Discord Application ID here
+  defaultCoverKey: "fenty",     // asset key used when a track has no cover
+};
+
 const APP_URL = "https://thehighwrlddashboard.pages.dev";
 const APP_ORIGIN = new URL(APP_URL).origin;
+
+/* an env var wins, so a packaged build can be pointed elsewhere without editing */
+const CLIENT_ID = String(process.env.THWRD_DRP_CLIENT_ID || CONFIG.clientId || "").trim();
 
 let mainWindow = null;
 
@@ -21,8 +40,6 @@ try {
   rpcError = "discord-rpc is not installed";
 }
 
-const CLIENT_ID = process.env.THWRD_DRP_CLIENT_ID || "0";
-
 const drp = {
   enabled: false,
   connected: false,
@@ -35,12 +52,18 @@ const drp = {
 
 /* Where the presence stands right now, for the page to render. */
 function status() {
+  /* say which of the three things is actually missing, so the settings panel can
+     explain itself instead of showing a dead toggle */
+  let problem = rpcError || null;
+  if (!problem && !rpc) problem = "the Discord client library is not installed";
+  if (!problem && !CLIENT_ID) problem = "no Discord application id is set in electron-app/main.js";
+
   return {
     enabled: drp.enabled,
     connected: drp.connected,
     loggedIn: drp.loggedIn,
     available: !!rpc && !!CLIENT_ID,
-    error: rpcError || null,
+    error: problem,
     clientId: CLIENT_ID || null,
   };
 }
@@ -67,7 +90,7 @@ function buildActivity(a) {
 
   const act = {
     details,
-    largeImageKey: a.cover || "fenty",
+    largeImageKey: a.cover || CONFIG.defaultCoverKey,
     largeImageText: a.title,
     instance: !!a.paused,
   };
@@ -120,22 +143,29 @@ function connect() {
   });
   client.on("disconnected", function () {
     setState({ connected: false, loggedIn: false });
-    /* Discord restarts often enough that a retry beats a dead toggle */
-    if (drp.enabled && !drp.retry) {
-      drp.retry = setTimeout(function () {
-        drp.retry = null;
-        if (drp.enabled) { teardown(); connect(); }
-      }, 5000);
-    }
+    scheduleRetry();
   });
   client.on("error", function (e) {
     setState({ connected: false, loggedIn: false, error: String(e && e.message || e) });
   });
 
   client.login({ clientId: CLIENT_ID }).catch(function (e) {
-    setState({ error: String(e && e.message || e), connected: false, loggedIn: false });
-    /* no Discord desktop app running is the common case, not a fault */
+    /* Not having Discord open yet is the common case, not a fault - the library
+       rejects with "connection closed" rather than emitting "disconnected", so
+       without this retry the toggle would stay dead until it was clicked again. */
+    setState({ error: "waiting for the Discord desktop app", connected: false, loggedIn: false });
+    scheduleRetry();
   });
+}
+
+/* One pending retry at a time. Discord being closed or restarted is normal, so
+   keep knocking rather than leaving presence silently dead. */
+function scheduleRetry() {
+  if (!drp.enabled || drp.retry) return;
+  drp.retry = setTimeout(function () {
+    drp.retry = null;
+    if (drp.enabled) { teardown(); connect(); }
+  }, 5000);
 }
 
 /* ------------------------------------------------------------- ipc surface */

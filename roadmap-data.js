@@ -96,10 +96,10 @@
     {
       id: "discord-rich-presence",
       title: "Discord Rich Presence",
-      description: "The desktop bridge is built: a locked-down preload, the Discord IPC connection in the main process, and the player reporting the current track. Smoke-tested in the app end to end. Still to do: install the Discord client library, add a Discord application id, and confirm a presence really shows on a profile.",
+      description: "The desktop bridge is built and working: a locked-down preload, the Discord IPC connection in the main process, and the player reporting the current track. The Discord client library is installed, presence retries when Discord is closed, and the app boots clean without it. All that is left is pasting a Discord application id into electron-app/main.js and confirming a presence really shows on a profile.",
       status: "in-progress",
       category: ["desktop"],
-      progress: 75,
+      progress: 85,
       lastUpdated: "2026-10-04"
     },
     {
@@ -198,7 +198,7 @@
     {
       id: "public-playlist-links",
       title: "Links to single public playlists",
-      description: "Public playlists can be browsed but not linked to directly, so a specific playlist cannot be shared yet. Each one wants its own address that opens straight into it.",
+      description: "Every public playlist gets its own address, so a link drops someone straight into that playlist's track list instead of the browse page. Needs a route plus a lookup by id.",
       status: "planned",
       category: ["media", "community"],
       lastUpdated: "2026-10-04"
@@ -206,20 +206,11 @@
     {
       id: "roadmap-feed",
       title: "Follow the roadmap",
-      description: "A small JSON or RSS feed generated from the same data file this page reads, so people can watch for changes instead of remembering to check.",
+      description: "A JSON and RSS feed generated from roadmap-data.js, so the roadmap can be followed without opening the site. Same file, no second place to update.",
       status: "planned",
       category: ["other"],
       lastUpdated: "2026-10-04"
     },
-    {
-      id: "self-serve-deletion",
-      title: "Self-serve account deletion",
-      description: "Deletions are handled by hand today through a request form. Automating it safely - typed confirmation, a short waiting period, a way out - is being weighed against just leaving it manual.",
-      status: "considering",
-      category: ["profiles", "authentication"],
-      lastUpdated: "2026-10-04"
-    },
-
     /* ------------------------------- COMPLETED ------------------------------ */
     {
       id: "wrld-player",

@@ -7,13 +7,16 @@
 
 const CONFIG = {
   invite: "https://discord.gg/thehighwrld",
-  /* Paste your delete-request form here. Until you do, this button quietly falls
-     back to the invite so nobody lands on a dead link. */
+  /* Paste your delete-request form here. Until you do, the page does not pretend
+     one exists: it hides the form button and tells people to ask in the channel
+     instead, rather than sending them to a second copy of the same invite. */
   form: "",
   channel: "#delete-requests",
   eta: "48 hours",
   site: "/",
 };
+
+const HAS_FORM = !!CONFIG.form;
 
 /* One accent pair per theme so the page matches whatever the visitor picked in
    Appearance. Anything unmapped falls back to the site's cyan. */
@@ -205,23 +208,23 @@ const HTML = `<!DOCTYPE html>
     <div class="ico">${ICON_TRASH}</div>
     <p class="eyebrow">Account deletion</p>
     <h1>Delete your account</h1>
-    <p class="lead">We remove accounts by hand, not by button. That way nothing of yours gets wiped by a misclick, and there is always someone who can answer for it. <b>Join the server</b>, open <span class="mono">${esc(CONFIG.channel)}</span> and fill out the delete-request form - a real person handles it from there.</p>
+    <p class="lead">We remove accounts by hand, not by button. That way nothing of yours gets wiped by a misclick, and there is always someone who can answer for it. <b>Join the server</b>, open <span class="mono">${esc(CONFIG.channel)}</span>${HAS_FORM ? " and fill out the delete-request form" : " and tell us what you want removed"} - a real person handles it from there.</p>
 
     <div class="ctas">
       <a class="btn btn-blurple" href="${esc(CONFIG.invite)}" target="_blank" rel="noopener nofollow">${ICON_DISCORD}Join the Server</a>
-      <a class="btn btn-ghost" href="${esc(CONFIG.form || CONFIG.invite)}"${CONFIG.form ? ' target="_blank" rel="noopener nofollow"' : ""} id="formBtn">Fill out the delete-request form${ICON_ARROW}</a>
+      ${HAS_FORM ? `<a class="btn btn-ghost" href="${esc(CONFIG.form)}" target="_blank" rel="noopener nofollow" id="formBtn">Fill out the delete-request form${ICON_ARROW}</a>` : ""}
     </div>
 
     <div class="handle" id="handle" hidden>
-      <span>Use this handle in the form:</span>
+      <span>Use this handle ${HAS_FORM ? "in the form" : "in your message"}:</span>
       <span class="who" id="who"></span>
       <button class="copy" type="button" id="copyBtn">${ICON_COPY}Copy</button>
     </div>
 
     <ol class="steps">
       <li><span class="n">1</span><span><b>Join the server</b> with the button above - it takes about twenty seconds.</span></li>
-      <li><span class="n">2</span><span>Open <span class="mono">${esc(CONFIG.channel)}</span> and fill out the delete-request form.</span></li>
-      <li><span class="n">3</span><span><b>Put your handle in it</b> so we know which account to remove, then wait for the confirmation.</span></li>
+      <li><span class="n">2</span><span>Open <span class="mono">${esc(CONFIG.channel)}</span>${HAS_FORM ? " and fill out the delete-request form." : " and tell us you want your account removed."}</span></li>
+      <li><span class="n">3</span><span><b>Put your handle in it</b>${HAS_FORM ? "" : " as a message"} so we know which account to remove, then wait for the confirmation.</span></li>
     </ol>
 
     <p class="eta">Requests are processed within <b>${esc(CONFIG.eta)}</b>. You will get a confirmation in the server once it is done.</p>
