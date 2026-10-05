@@ -3,7 +3,9 @@
 # JS/CSS stay fresh only 5 minutes (multiple deploys per day) with a 60s stale
 # window - repeat loads stay instant, but updates can never get stuck for days.
 # Fonts keep a long cache (hashed names). Images last a day so refreshed art
-# (covers, logos) actually reaches everyone.
+# (covers, logos) actually reaches everyone. Audio caches for a week: tracks
+# run up to 24 MB, and without this Pages sent no cache-control at all, so
+# every repeat play re-downloaded the whole file.
 /*.js
   Cache-Control: public, max-age=300, stale-while-revalidate=60
 /*.css
@@ -12,3 +14,5 @@
   Cache-Control: public, max-age=31536000, immutable
 /*.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=300
+/*.mp3
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
