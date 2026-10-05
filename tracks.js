@@ -6,7 +6,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/All In (Sun) (WOD).mp3",
     duration: 203,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/All In.png",
+    cover: "Covers/All In.png",
     producer: "BasedKash",
     year: "2018"
   },
@@ -17,7 +17,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/All On My Own (Sessions).mp3",
     duration: 350,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/All On My Own.png",
+    cover: "Covers/All On My Own.png",
     producer: "Aido & Plu2o Nash",
     year: "2018"
   },
@@ -28,7 +28,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/All Talk (Ring Pop) (Sessions) (GB&GR).mp3",
     duration: 1151,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/All Talk.png",
+    cover: "Covers/All Talk.png",
     producer: "G. Ry & Hit-Boy",
     year: "2018"
   },
@@ -39,7 +39,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/All The Same (Sessions) (GB&GR).mp3",
     duration: 605,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/All The Same.png",
+    cover: "Covers/All The Same.png",
     producer: "Chopsquad DJ & CuBeatz",
     year: "2017"
   },
@@ -50,7 +50,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Amazing (Wake Up).mp3",
     duration: 125,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Amazing.png",
+    cover: "Covers/Amazing.png",
     producer: "Josh Darwish & T-Minus",
     year: "2018"
   },
@@ -61,7 +61,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Animal.mp3",
     duration: 245,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Animal.png",
+    cover: "Covers/Animal.png",
     producer: "Diego Ave, E1, Earl & E, JRHITMAKER & Mally Mall",
     year: "2018"
   },
@@ -72,7 +72,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Another Way (Sessions) (WOD).mp3",
     duration: 879,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Another Way.png",
+    cover: "Covers/Another Way.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -83,7 +83,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Any Other Way (Sessions).mp3",
     duration: 460,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Any Other Way.png",
+    cover: "Covers/Any Other Way.png",
     producer: "Cardo Got Wings & RicandThadeus",
     year: "2018"
   },
@@ -94,7 +94,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Astray (DRFL).mp3",
     duration: 242,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Astray.png",
+    cover: "Covers/Astray.png",
     producer: "Jambo",
     year: "2019"
   },
@@ -105,7 +105,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Back In Chicago (Sessions) (GB&GR).mp3",
     duration: 772,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Back In Chicago.png",
+    cover: "Covers/Back In Chicago.png",
     producer: "LEALE & TreeHouzSounds",
     year: "2017"
   },
@@ -116,7 +116,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Back On It (Sessions).mp3",
     duration: 374,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Back On It.png",
+    cover: "Covers/Back On It.png",
     producer: "Nofuk, Oz On The Track & Trapo",
     year: "2018"
   },
@@ -127,7 +127,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Be Here (Sessions).mp3",
     duration: 300,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Be Here.png",
+    cover: "Covers/Be Here.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -138,7 +138,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Benjamin (Friends With Benefits) (Rick Ross) (Tesla) (Sessions).mp3",
     duration: 339,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Benjamin.png",
+    cover: "Covers/Benjamin.png",
     producer: "Purps On The Beat",
     year: "2018"
   },
@@ -149,7 +149,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Beretta (Run It Up) (WOD).mp3",
     duration: 241,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Beretta.png",
+    cover: "Covers/Beretta.png",
     producer: "Andrew Watt & Louis Bell",
     year: "2018"
   },
@@ -160,7 +160,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Better Off Alone (v3).mp3",
     duration: 228,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Better Off Alone.png",
+    cover: "Covers/Better Off Alone.png",
     producer: "Max Lord & Unknown",
     year: "2018"
   },
@@ -171,7 +171,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Big Swag (On That Bitch) (Sessions) (WOD).mp3",
     duration: 632,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Big Swag.png",
+    cover: "Covers/Big Swag.png",
     producer: "Chris Neal & Nick Mira",
     year: "2018"
   },
@@ -182,7 +182,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Bigger (Biscotti In The Air) (JW3).mp3",
     duration: 226,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Bigger.png",
+    cover: "Covers/Bigger.png",
     producer: "ENDZ & Max Lord",
     year: "2019"
   },
@@ -193,7 +193,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Billy Idol (Mary Jane) (Sessions) (GB&GR).mp3",
     duration: 626,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Billy Idol.png",
+    cover: "Covers/Billy Idol.png",
     producer: "Murda Beatz",
     year: "2018"
   },
@@ -204,7 +204,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Blind Fold (So Low) (Sessions) (GB&GR).mp3",
     duration: 960,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Blind Fold.png",
+    cover: "Covers/Blind Fold.png",
     producer: "Oz On The Track",
     year: "2018"
   },
@@ -215,7 +215,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Blood, Sweat, Tears (v1).mp3",
     duration: 149,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Blood. Sweat, Tears.png",
+    cover: "Covers/Blood. Sweat, Tears.png",
     producer: "Rex Kudo",
     year: "2019"
   },
@@ -226,7 +226,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Bloody Blade.mp3",
     duration: 163,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Bloody Blade.png",
+    cover: "Covers/Bloody Blade.png",
     producer: "Nick Mira & Ray Russell",
     year: "2019"
   },
@@ -237,7 +237,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Blow Ya Brains (v1).mp3",
     duration: 162,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Blow Ya' Brains.png",
+    cover: "Covers/Blow Ya' Brains.png",
     producer: "Dre Moon",
     year: "2018"
   },
@@ -248,7 +248,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Body Bag (Sessions) (WOD).mp3",
     duration: 357,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Body Bag.png",
+    cover: "Covers/Body Bag.png",
     producer: "CVRE, Ging & Wheezy",
     year: "2018"
   },
@@ -259,7 +259,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Boondocks (Oh Yeah I Did) (v2) (Post).mp3",
     duration: 104,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Boondocks.png",
+    cover: "Covers/Boondocks.png",
     producer: "DT & Nick Mira",
     year: "2018"
   },
@@ -270,7 +270,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Bottle (Sessions) (GB&GR).mp3",
     duration: 745,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Bottle.png",
+    cover: "Covers/Bottle.png",
     producer: "Nick Mira & Pharaoh Vice",
     year: "2018"
   },
@@ -281,7 +281,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Break (Sessions) (ND).mp3",
     duration: 384,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Break.png",
+    cover: "Covers/Break.png",
     producer: "DT",
     year: "2017"
   },
@@ -292,7 +292,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Bullet For My Valentine (Scott And Ramona) (Sessions) (GB&GR).mp3",
     duration: 1428,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Bullet For My Valentine.png",
+    cover: "Covers/Bullet For My Valentine.png",
     producer: "Colin Richardson & Mitch Mula",
     year: "2018"
   },
@@ -303,7 +303,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Busch (In My Pocket) (Sessions) (WOD).mp3",
     duration: 307,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Busch.png",
+    cover: "Covers/Busch.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -314,7 +314,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Cake.mp3",
     duration: 235,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Cake.png",
+    cover: "Covers/Cake.png",
     producer: "DT",
     year: "2018"
   },
@@ -325,7 +325,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Chimp (Sessions) (GB&GR).mp3",
     duration: 1082,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Chimp.png",
+    cover: "Covers/Chimp.png",
     producer: "Pi'erre Bourne",
     year: "2018"
   },
@@ -336,7 +336,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Choppa (Hell Girl) (Sessions) (WOD).mp3",
     duration: 327,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Choppa.png",
+    cover: "Covers/Choppa.png",
     producer: "Kid Wond3r",
     year: "2018"
   },
@@ -347,7 +347,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Christian (Nothing Good) (Sessions) (ND).mp3",
     duration: 243,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Christian.png",
+    cover: "Covers/Christian.png",
     producer: "DT & Nick Mira",
     year: "2017"
   },
@@ -358,7 +358,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Chrome (JW3).mp3",
     duration: 255,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Chrome.png",
+    cover: "Covers/Chrome.png",
     producer: "MjNichols & Nick Mira",
     year: "2019"
   },
@@ -369,7 +369,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Codeine Cowboys (Sessions).mp3",
     duration: 351,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Codeine Cowboys.png",
+    cover: "Covers/Codeine Cowboys.png",
     producer: "Hit-Boy",
     year: "2019"
   },
@@ -380,7 +380,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Cold Summer (No Breaks) (JW3).mp3",
     duration: 145,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Cold Summer.png",
+    cover: "Covers/Cold Summer.png",
     producer: "ATL Jacob, Rex Kudo & Southside",
     year: "2019"
   },
@@ -391,7 +391,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Cookie Crisp.mp3",
     duration: 185,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Cookie Crisp.png",
+    cover: "Covers/Cookie Crisp.png",
     producer: "Danny Wolf & DILIP",
     year: "2019"
   },
@@ -402,7 +402,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Coraline (v2).mp3",
     duration: 159,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Coraline.png",
+    cover: "Covers/Coraline.png",
     producer: "DJ Scheme & Nuri",
     year: "2019"
   },
@@ -413,7 +413,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Cosby (Not Sorry) (Sessions) (GB&GR).mp3",
     duration: 540,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Cosby.png",
+    cover: "Covers/Cosby.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -424,7 +424,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Cursed.mp3",
     duration: 244,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Cursed.png",
+    cover: "Covers/Cursed.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -435,7 +435,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Dark Place (Sessions).mp3",
     duration: 305,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Dark Place.png",
+    cover: "Covers/Dark Place.png",
     producer: "Daniel Cripps & ManuelG",
     year: "2017"
   },
@@ -446,7 +446,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Dark Side (Red Moonlight) (JW3).mp3",
     duration: 277,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DarkSide.png",
+    cover: "Covers/DarkSide.png",
     producer: "Nick Mira & Pearl Lion",
     year: "2019"
   },
@@ -457,7 +457,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Demo Wreck.mp3",
     duration: 192,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Demk Wreck.png",
+    cover: "Covers/Demk Wreck.png",
     producer: "DT & Taz Taylor",
     year: "2016"
   },
@@ -468,7 +468,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Deprived (Sessions) (GB&GR).mp3",
     duration: 380,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Deprived.png",
+    cover: "Covers/Deprived.png",
     producer: "SadBoyShawn",
     year: "2018"
   },
@@ -479,7 +479,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Diors (Sessions) (WOD).mp3",
     duration: 581,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Diors.png",
+    cover: "Covers/Diors.png",
     producer: "Richie Souf",
     year: "2018"
   },
@@ -490,7 +490,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Do The Most.mp3",
     duration: 486,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Do The Most.png",
+    cover: "Covers/Do The Most.png",
     producer: "DT & Nick Mira",
     year: "2020"
   },
@@ -501,7 +501,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Dolce (What To Think) (All Of Me) (Sessions) (WOD).mp3",
     duration: 944,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DoIce.png",
+    cover: "Covers/DoIce.png",
     producer: "Ging",
     year: "2018"
   },
@@ -512,7 +512,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Don't Care (Junkie) (Sessions) (GB&GR).mp3",
     duration: 781,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Don't Care.png",
+    cover: "Covers/Don't Care.png",
     producer: "Kirk Knight",
     year: "2018"
   },
@@ -523,7 +523,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Don't Play (Pressure Me) (Sessions) (GB&GR).mp3",
     duration: 448,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Don't Play.png",
+    cover: "Covers/Don't Play.png",
     producer: "Mega Beats",
     year: "2018"
   },
@@ -534,7 +534,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Dover (Crystal) (Take A Pic) (GB&GR).mp3",
     duration: 115,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Dover.png",
+    cover: "Covers/Dover.png",
     producer: "JRHITMAKER & Nick Mira",
     year: "2017"
   },
@@ -545,7 +545,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Dream (Maybe) (Sessions) (WOD).mp3",
     duration: 338,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Dream.png",
+    cover: "Covers/Dream.png",
     producer: "Goose",
     year: "2018"
   },
@@ -556,7 +556,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Drown (Pool Of My Sins) (Train Wreck) (Sessions).mp3",
     duration: 423,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Drown.png",
+    cover: "Covers/Drown.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -567,7 +567,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Dukes (Lost Cause) (Sessions) (WOD).mp3",
     duration: 1060,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Dukes.png",
+    cover: "Covers/Dukes.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -578,7 +578,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Extra (v1).mp3",
     duration: 181,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Extra.png",
+    cover: "Covers/Extra.png",
     producer: "CBMIX",
     year: "2019"
   },
@@ -589,7 +589,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Eyes Closed (v1).mp3",
     duration: 187,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Eyes Closed.png",
+    cover: "Covers/Eye's Closed.png",
     producer: "CBMIX",
     year: "2018"
   },
@@ -600,7 +600,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Feel Like A God.mp3",
     duration: 165,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Feel Like A God.png",
+    cover: "Covers/Feel Like A God.png",
     producer: "CuBeatz & Wheezy",
     year: "2018"
   },
@@ -611,7 +611,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Fenty (Let It Go) (Sessions) (GB&GR).mp3",
     duration: 901,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Fenty.png",
+    cover: "Covers/Fenty.png",
     producer: "Nick Mira & ShortBusMusic",
     year: "2017"
   },
@@ -622,7 +622,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Finessin' (Don't Touch My Raf) (Sessions) (WOD).mp3",
     duration: 640,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Finessin'.png",
+    cover: "Covers/Finessin'.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -633,7 +633,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Flavor (Pour Up A Four) (Sessions) (GB&GR).mp3",
     duration: 304,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Flavor.png",
+    cover: "Covers/Flavor.png",
     producer: "CashMoneyAp",
     year: "2017"
   },
@@ -644,7 +644,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/For A Tee.mp3",
     duration: 224,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/For A Tee.png",
+    cover: "Covers/For A Tee.png",
     producer: "Danny Wolf & DILIP",
     year: "2019"
   },
@@ -655,7 +655,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Four Words (4 Words) (Fuck You, Pay Me) (Sessions) (GB&GR).mp3",
     duration: 384,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Four Words.png",
+    cover: "Covers/Four Words.png",
     producer: "Gezin & TrePounds",
     year: "2017"
   },
@@ -666,7 +666,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Friends Die (Fuck About Your Feelings) (Get High To Get By) (WOD).mp3",
     duration: 263,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Friends Die.png",
+    cover: "Covers/Friends Die.png",
     producer: "CBMIX",
     year: "2018"
   },
@@ -677,7 +677,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Game (Sessions) (GB&GR).mp3",
     duration: 857,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Game.png",
+    cover: "Covers/Game.png",
     producer: "Nick Mira",
     year: "2017"
   },
@@ -688,7 +688,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Get Over It (v4).mp3",
     duration: 181,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Get Over It.png",
+    cover: "Covers/Get Over It.png",
     producer: "Gezin",
     year: "2018"
   },
@@ -699,7 +699,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Go (Sick Of You) (Sessions).mp3",
     duration: 389,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Go.png",
+    cover: "Covers/Go.png",
     producer: "Cam Beats",
     year: "2017"
   },
@@ -710,7 +710,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Golden (Lean In The Soda) (Stuck Through) (Sessions).mp3",
     duration: 621,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Golden.png",
+    cover: "Covers/Golden.png",
     producer: "DT & Nick Mira",
     year: "2018"
   },
@@ -721,7 +721,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Golden X Get Away.mp3",
     duration: 288,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Golden X Get Away.png",
+    cover: "Covers/Golden X Get Away.png",
     producer: "DT & Nick Mira",
     year: "2017"
   },
@@ -732,7 +732,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/GoPro (Go Ghost) (V2) (POST).mp3",
     duration: 213,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Go Pro.png",
+    cover: "Covers/Go Pro.png",
     producer: "Rex Kudo & T-Minus",
     year: "2022"
   },
@@ -743,7 +743,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Gucci Purse (Sessions) (GB&GR).mp3",
     duration: 684,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Gucci Purse.png",
+    cover: "Covers/Gucci Purse.png",
     producer: "DT & Nick Mira",
     year: "2018"
   },
@@ -754,7 +754,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Haze (Sessions).mp3",
     duration: 1150,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Haze.png",
+    cover: "Covers/Haze.png",
     producer: "DT & Nick Mira",
     year: ""
   },
@@ -765,7 +765,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Heavy (Sessions) (GB&GR).mp3",
     duration: 954,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Heavy.png",
+    cover: "Covers/Heavy.png",
     producer: "DT & Nick Mira",
     year: "2017"
   },
@@ -776,7 +776,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Here I Go Again (Mansion) (DRFL).mp3",
     duration: 282,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Here I Go Again.png",
+    cover: "Covers/Here I Go Again.png",
     producer: "Cy Fyre, Purps On The Beat & Rex Kudo",
     year: "2018"
   },
@@ -787,7 +787,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/His To Keep (V2) (DRFL).mp3",
     duration: 192,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/His To Keep.png",
+    cover: "Covers/His To Keep.png",
     producer: "Rvssian",
     year: "2019"
   },
@@ -798,7 +798,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Hold My Hand (Sessions) (GB&GR).mp3",
     duration: 846,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Hold My Hand.png",
+    cover: "Covers/Hold My Hand.png",
     producer: "LEALE",
     year: "2018"
   },
@@ -809,7 +809,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Honest (Dropout) (Process) (Sessions) (GB&GR).mp3",
     duration: 2107,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Honest.png",
+    cover: "Covers/Honest.png",
     producer: "DJ Victoriouz & Oz On The Track",
     year: "2017"
   },
@@ -820,7 +820,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Hook (Honest) (Sessions) (GB&GR).mp3",
     duration: 706,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Hook.png",
+    cover: "Covers/Hook.png",
     producer: "J.Views & LEALE",
     year: "2017"
   },
@@ -831,7 +831,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Hope U Understand (Lil Bitch) (Nothing To Lose) (Sessions) (GB&GR).mp3",
     duration: 371,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Hope U Understand.png",
+    cover: "Covers/Hope U Understand.png",
     producer: "DT & Nick Mira",
     year: "2017"
   },
@@ -842,7 +842,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Hourglass.mp3",
     duration: 204,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Hourglass.png",
+    cover: "Covers/Hourglass.png",
     producer: "Charlie Handsome & Rex Kudo",
     year: "2019"
   },
@@ -853,7 +853,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/I Hate Her Friends (Sessions) (GB&GR).mp3",
     duration: 302,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/I Hater Her Friends.png",
+    cover: "Covers/I Hater Her Friends.png",
     producer: "Edsclusive & Elevate Today",
     year: "2018"
   },
@@ -864,7 +864,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/I See Everything (Wedding Ring) (Sessions) (GB&GR).mp3",
     duration: 415,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/I See Everything.png",
+    cover: "Covers/I See Everything.png",
     producer: "JCraig, KSHMR & PD Beats",
     year: "2017"
   },
@@ -875,7 +875,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/I%20Wanna%20%28Sessions%29%20%28AF%29.mp3",
     duration: 1052,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/I Wanna.png",
+    cover: "Covers/I Wanna.png",
     producer: "Nick Mira",
     year: "2017"
   },
@@ -886,7 +886,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/I Wonder What's Wrong.mp3",
     duration: 184,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/I Wonder What's Wrong.png",
+    cover: "Covers/I Wonder What's Wrong.png",
     producer: "Andrew Watt, Diablo, Diplo & Unknown",
     year: "2018"
   },
@@ -897,7 +897,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/In A Mix (Sessions) (GB&GR).mp3",
     duration: 401,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/In A Mix.png",
+    cover: "Covers/In A Mix.png",
     producer: "COSMIC & Danny Wolf",
     year: "2018"
   },
@@ -908,7 +908,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/In My Bag (Sessions) (GB&GR).mp3",
     duration: 570,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/In My Bag.png",
+    cover: "Covers/In My Bag.png",
     producer: "DT",
     year: "2018"
   },
@@ -919,7 +919,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/In This Bitch (Sessions) (GB&GR).mp3",
     duration: 1222,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/In This Bitch.png",
+    cover: "Covers/In This Bitch.png",
     producer: "Mega Beats",
     year: "2018"
   },
@@ -930,7 +930,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Insanity (Like This) (No Vanity) (Sessions).mp3",
     duration: 766,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Insanity.png",
+    cover: "Covers/Insanity.png",
     producer: "JRHITMAKER & Nick Mira",
     year: "2017"
   },
@@ -941,7 +941,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Juck (Dome) (DRFL).mp3",
     duration: 187,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Juck.png",
+    cover: "Covers/Juck.png",
     producer: "CuBeatz & Nick Mira",
     year: "2018"
   },
@@ -952,7 +952,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Juicy (Sessions) (GB&GR).mp3",
     duration: 1115,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Juicy.png",
+    cover: "Covers/Juicy.png",
     producer: "Murda Beatz",
     year: "2017"
   },
@@ -963,7 +963,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Karma (Designer) (Rolling Loud) (Can't Take The Pain) (Numb My Shit) (DRFL).mp3",
     duration: 215,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Karma.png",
+    cover: "Covers/Karma.png",
     producer: "Donn Robb & TyMadeIt",
     year: "2019"
   },
@@ -974,7 +974,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Keep Your Eyes Up (Sessions) (GB&GR).mp3",
     duration: 344,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Keep Your Eyes Up.png",
+    cover: "Covers/Keep Your Eyes Up.png",
     producer: "Nick Mira & HBSamples",
     year: "2018"
   },
@@ -985,7 +985,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Kicks (Rugrats) (Sessions) (GB&GR).mp3",
     duration: 391,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Kicks.png",
+    cover: "Covers/Kicks.png",
     producer: "Cardo Got Wings",
     year: "2017"
   },
@@ -996,7 +996,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Larry Bird (Ball) (GB&GR).mp3",
     duration: 208,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Larry Bird.png",
+    cover: "Covers/Larry Bird.png",
     producer: "Cardo Got Wings & Yung Exclusive",
     year: "2017"
   },
@@ -1007,7 +1007,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Late Night (Amazing) (Sessions) (DRFL).mp3",
     duration: 212,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Late Night.png",
+    cover: "Covers/Late Night.png",
     producer: "T-Minus",
     year: "2018"
   },
@@ -1018,7 +1018,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Late Night Thoughts (Boys In The Foreign) (DRFL).mp3",
     duration: 217,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Late Night Thoughts.png",
+    cover: "Covers/Late Night Thoughts.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -1029,7 +1029,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Lead (Overseas) (WOD).mp3",
     duration: 129,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Lead.png",
+    cover: "Covers/Lead.png",
     producer: "CuBeatz & TM88",
     year: "2018"
   },
@@ -1040,7 +1040,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Let Her Leave (Sessions) (GB&GR).mp3",
     duration: 346,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Let Her Leave.png",
+    cover: "Covers/Let Her Leave.png",
     producer: "Murda Beatz",
     year: "2018"
   },
@@ -1051,7 +1051,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Let It Buss (Everlasting) (Sessions) (GB&GR).mp3",
     duration: 384,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Let It Buss.png",
+    cover: "Covers/Let It Buss.png",
     producer: "Nick Mira & Noax",
     year: "2017"
   },
@@ -1062,7 +1062,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Life's A Book (Fast Forward) (Sessions) (GB&GR).mp3",
     duration: 782,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Lifes A Book.png",
+    cover: "Covers/Lifes A Book.png",
     producer: "Murda Beatz",
     year: "2017"
   },
@@ -1073,7 +1073,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Like A Riff (Turned To A Boss) (Sessions) (WOD).mp3",
     duration: 372,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Like A Riff.png",
+    cover: "Covers/Like A Riff.png",
     producer: "CBMIX",
     year: "2018"
   },
@@ -1084,7 +1084,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Lit (Sticks) (Ya Dig) (WOD).mp3",
     duration: 183,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Lit.png",
+    cover: "Covers/Lit.png",
     producer: "DT & Nick Mira",
     year: "2018"
   },
@@ -1095,7 +1095,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Live Or Die (Won't Hurt 2) (Revive) (Sessions) (DRFL).mp3",
     duration: 380,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Live Or Die.png",
+    cover: "Covers/Live Or Die.png",
     producer: "ATL Jacob & Bobby Raps",
     year: "2018"
   },
@@ -1106,7 +1106,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Lock Box (DRFL).mp3",
     duration: 141,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Lock Box.png",
+    cover: "Covers/Lock Box.png",
     producer: "G. Ry & Hit-Boy",
     year: "2019"
   },
@@ -1117,7 +1117,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/London Tipton (Sessions) (GB&GR).mp3",
     duration: 314,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Lodon Tipton.png",
+    cover: "Covers/Lodon Tipton.png",
     producer: "Joey88",
     year: "2018"
   },
@@ -1128,7 +1128,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Lonely Road (Tripplet) (Survive) (Sessions) (GB&GR).mp3",
     duration: 313,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Lonely Road.png",
+    cover: "Covers/Lonely Road.png",
     producer: "Dylan, JCraig & PD Beats",
     year: "2017"
   },
@@ -1139,7 +1139,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Lose A Dream (Sessions) (GB&GR).mp3",
     duration: 709,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Lose A Dream.png",
+    cover: "Covers/Lose A Dream.png",
     producer: "Southside",
     year: "2017"
   },
@@ -1150,7 +1150,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Lost In My Head.mp3",
     duration: 168,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Lost In My Head.png",
+    cover: "Covers/Lost In My Head.png",
     producer: "Max Martin",
     year: "2018"
   },
@@ -1161,7 +1161,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Love Ain't Meant For Demons (Demon Love) (Sessions) (GB&GR).mp3",
     duration: 338,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Love Ain't Meant For Demons.png",
+    cover: "Covers/Love Ain't Meant For Demons.png",
     producer: "Danny Wolf, DILIP & Instupendo",
     year: "2017"
   },
@@ -1172,7 +1172,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Love Over There (Sessions) (GB&GR).mp3",
     duration: 662,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Love Over There.png",
+    cover: "Covers/Love Over There.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -1183,7 +1183,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Made It Work.mp3",
     duration: 216,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Made It Work.png",
+    cover: "Covers/Made It Work.png",
     producer: "KBeaZy",
     year: "2019"
   },
@@ -1194,7 +1194,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Make It Sell (ND).mp3",
     duration: 189,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Make It Sell.png",
+    cover: "Covers/Make It Sell.png",
     producer: "Nick Mira",
     year: "2017"
   },
@@ -1205,7 +1205,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/McLaren Drive (Tic-Tac-Toe) (Stop And Stare) (DRFL).mp3",
     duration: 198,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/McLaren Drive.png",
+    cover: "Covers/McLaren Drive.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -1216,7 +1216,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Me (Never Lied) (Sessions) (GB&GR).mp3",
     duration: 392,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Me.png",
+    cover: "Covers/Me.png",
     producer: "Joey88",
     year: "2017"
   },
@@ -1227,7 +1227,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Migraine (Tusk) (Sessions) (GB&GR).mp3",
     duration: 761,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Migraine.png",
+    cover: "Covers/Migraine.png",
     producer: "Nick Mira",
     year: "2017"
   },
@@ -1238,7 +1238,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Militia (One).mp3",
     duration: 166,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Militia.png",
+    cover: "Covers/Militia.png",
     producer: "Pi'erre Bourne",
     year: "2018"
   },
@@ -1249,7 +1249,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Misery Avenue (Back To Me) (This Is Me) (Sessions) (GB&GR).mp3",
     duration: 620,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Misery Avenue.png",
+    cover: "Covers/Misery Avenue.png",
     producer: "DJ L Beats",
     year: "2017"
   },
@@ -1260,7 +1260,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Moncler Year (Cold Outside) (DRFL).mp3",
     duration: 167,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Moncler Year.png",
+    cover: "Covers/Moncler Year.png",
     producer: "Gezin",
     year: "2018"
   },
@@ -1271,7 +1271,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Money Hunt (Double Dutch) (Sessions) (JW3).mp3",
     duration: 720,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Money Hunt.png",
+    cover: "Covers/Money Hunt.png",
     producer: "Joey88",
     year: "2017"
   },
@@ -1282,7 +1282,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Monster.mp3",
     duration: 192,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Monster.png",
+    cover: "Covers/Monster.png",
     producer: "Carlton McDowell, Juice WRLD & Max Lord",
     year: "2017"
   },
@@ -1293,7 +1293,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Motor Boat.mp3",
     duration: 195,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Road Runner.png",
+    cover: "Covers/Road Runner.png",
     producer: "DY Krazy",
     year: "2019"
   },
@@ -1304,7 +1304,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Murda Gang (Chasin' The Check) (Sessions) (WOD).mp3",
     duration: 556,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Murda Gang.png",
+    cover: "Covers/Murda Gang.png",
     producer: "Brackz & Murda Beatz",
     year: "2018"
   },
@@ -1315,7 +1315,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/My Bad (My Fault) (WOD).mp3",
     duration: 227,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/My Bad.png",
+    cover: "Covers/My Bad.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -1326,7 +1326,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/My Phone (Sessions) (GB&GR).mp3",
     duration: 443,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/My Phone.png",
+    cover: "Covers/My Phone.png",
     producer: "DJ L Beats",
     year: "2018"
   },
@@ -1337,7 +1337,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/New Girl (Latex) (Sessions) (GB&GR).mp3",
     duration: 622,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/New Girl.png",
+    cover: "Covers/New Girl.png",
     producer: "Joey88 & Leaf",
     year: "2017"
   },
@@ -1348,7 +1348,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/New Man.mp3",
     duration: 135,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/New Man.png",
+    cover: "Covers/New Man.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -1359,7 +1359,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Nightmare.mp3",
     duration: 370,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Nightmare.png",
+    cover: "Covers/Nightmare.png",
     producer: "Max Lord & Unknown",
     year: "2018"
   },
@@ -1370,7 +1370,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Nintendo (No Such Thing) (Sessions) (GB&GR).mp3",
     duration: 602,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Nintendo.png",
+    cover: "Covers/Nintendo.png",
     producer: "Cardo Got Wings",
     year: "2017"
   },
@@ -1381,7 +1381,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/No Smoke (Get Smoked) (Sessions) (ND).mp3",
     duration: 1365,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/No Smoke.png",
+    cover: "Covers/No Smoke.png",
     producer: "DT",
     year: "2017"
   },
@@ -1392,7 +1392,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/No Time (Tick-Tock) (Sessions) (GB&GR).mp3",
     duration: 1090,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/No Time.png",
+    cover: "Covers/No Time.png",
     producer: "Murda Beatz & Toro Y Moi",
     year: "2017"
   },
@@ -1403,7 +1403,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/No Trespassing.mp3",
     duration: 179,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/No Trespassing.png",
+    cover: "Covers/No Trespassing.png",
     producer: "Nick Mira",
     year: "2019"
   },
@@ -1414,7 +1414,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Not An Option (Stargazing) (DRFL).mp3",
     duration: 229,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Not An Option.png",
+    cover: "Covers/Not An Option.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -1425,7 +1425,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Numb The Pain (Sessions) (GB&GR).mp3",
     duration: 463,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Numb The Pain.png",
+    cover: "Covers/Numb The Pain.png",
     producer: "Chopsquad DJ & James Kang",
     year: "2018"
   },
@@ -1436,7 +1436,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Obsessed (Cerebral) (Sessions) (GB&GR).mp3",
     duration: 1013,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Obsessed.png",
+    cover: "Covers/Obsessed.png",
     producer: "Dylan Jake & Nick Mira",
     year: "2017"
   },
@@ -1447,7 +1447,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/On & On (Sessions).mp3",
     duration: 1830,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/On On.png",
+    cover: "Covers/On On.png",
     producer: "DT & Nick Mira",
     year: "2017"
   },
@@ -1458,7 +1458,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/On My Ex (Don't Know How To Act).mp3",
     duration: 219,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/On My Ex Dont Know How To Act.png",
+    cover: "Covers/On My Ex Dont Know How To Act.png",
     producer: "CashMoneyAp",
     year: "2017"
   },
@@ -1469,7 +1469,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/On Tour (You Don't Know Me) (V1) (WOD).mp3",
     duration: 213,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/On Tour.png",
+    cover: "Covers/On Tour.png",
     producer: "Andrew Watt & Happy Perez",
     year: "2018"
   },
@@ -1480,7 +1480,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/On Your Mind.mp3",
     duration: 275,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/On Your Mind.png",
+    cover: "Covers/On Your Mind.png",
     producer: "Nick Mira",
     year: "2019"
   },
@@ -1491,7 +1491,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Open Up (Four Main Hoes) (Make The News) (Sessions) (GB&GR).mp3",
     duration: 440,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Open Up.png",
+    cover: "Covers/Open Up.png",
     producer: "Nick Mira",
     year: "2017"
   },
@@ -1502,7 +1502,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Out My Face (Going MIA) (M.I.A) (Sessions) (ND).mp3",
     duration: 813,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Out My Face.png",
+    cover: "Covers/Out My Face.png",
     producer: "Nick Mira",
     year: "2017"
   },
@@ -1513,7 +1513,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Outta Pocket (Sessions) (GB&GR).mp3",
     duration: 1050,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Outta Pocket.png",
+    cover: "Covers/Outta Pocket.png",
     producer: "Nick Mira",
     year: "2017"
   },
@@ -1524,7 +1524,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Overdose (Overdose For Clout) (911) (Sessions) (GB&GR).mp3",
     duration: 467,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Overdose.png",
+    cover: "Covers/Overdose.png",
     producer: "Chopsquad DJ & Dr. Luke",
     year: "2017"
   },
@@ -1535,7 +1535,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Oxy In The Dark.mp3",
     duration: 248,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Oxy In The Dark.png",
+    cover: "Covers/Oxy In The Dark.png",
     producer: "The Chainsmokers",
     year: "2019"
   },
@@ -1546,7 +1546,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Pause (Sessions) (WOD).mp3",
     duration: 628,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Pause.png",
+    cover: "Covers/Pause.png",
     producer: "12Hunna, Guttaceo, Kacey Khaliel & Naee",
     year: "2018"
   },
@@ -1557,7 +1557,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Percaholic (Boss Of Me) (Sessions).mp3",
     duration: 948,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Percaholic.png",
+    cover: "Covers/Percaholic.png",
     producer: "K. Swisha",
     year: "2017"
   },
@@ -1568,7 +1568,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Piguet Drip (Never Sleep) (Sessions).mp3",
     duration: 607,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Piguet Drip.png",
+    cover: "Covers/Piguet Drip.png",
     producer: "Richie Souf & Yung Exclusive",
     year: "2018"
   },
@@ -1579,7 +1579,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Plight (Late Nights) (Chi-Town) (Sessions) (WOD).mp3",
     duration: 1238,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Plight.png",
+    cover: "Covers/Plight.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -1590,7 +1590,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Plug (Sessions) (GB&GR).mp3",
     duration: 563,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Plug.png",
+    cover: "Covers/Plug.png",
     producer: "Danny Wolf, DILIP & Otxhello",
     year: "2018"
   },
@@ -1601,7 +1601,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Porridge (Sessions) (GB&GR).mp3",
     duration: 333,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Porridge.png",
+    cover: "Covers/Porridge.png",
     producer: "Chopsquad DJ",
     year: "2018"
   },
@@ -1612,7 +1612,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Possessed (Revive You) (Pain).mp3",
     duration: 150,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Possessed.png",
+    cover: "Covers/Possessed.png",
     producer: "Bobby Raps & Wheezy",
     year: "2019"
   },
@@ -1623,7 +1623,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Pour Up A 6 (Call The Feds) (Sessions) (WOD).mp3",
     duration: 526,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Pour Up A 6.png",
+    cover: "Covers/Pour Up A 6.png",
     producer: "Bobby Raps, DY Krazy & TrePounds",
     year: "2018"
   },
@@ -1634,7 +1634,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Prada (Cosby Molly) (Sessions) (GB&GR).mp3",
     duration: 550,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Prada.png",
+    cover: "Covers/Prada.png",
     producer: "Nick Mira",
     year: "2017"
   },
@@ -1645,7 +1645,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Problem.mp3",
     duration: 275,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Problem.png",
+    cover: "Covers/Problem.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -1656,7 +1656,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Purple Devil.mp3",
     duration: 157,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Purple Devil.png",
+    cover: "Covers/Purple Devil.png",
     producer: "Wonda",
     year: "2018"
   },
@@ -1667,7 +1667,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Purple Moncler (DRFL).mp3",
     duration: 212,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Purple Moncler.png",
+    cover: "Covers/Purple Moncler.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -1678,7 +1678,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Pursuit (Sessions) (GB&GR).mp3",
     duration: 1110,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Pursuit.png",
+    cover: "Covers/Pursuit.png",
     producer: "Unknown",
     year: "2018"
   },
@@ -1689,7 +1689,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Python (Venom) (GB&GR).mp3",
     duration: 192,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Python.png",
+    cover: "Covers/Python.png",
     producer: "LEALE & Unknown",
     year: "2017"
   },
@@ -1700,7 +1700,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Race Beginning (Sessions) (GB&GR).mp3",
     duration: 1023,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Race Beginning.png",
+    cover: "Covers/Race Beginning.png",
     producer: "CashMoneyAp",
     year: "2017"
   },
@@ -1711,7 +1711,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Racks In (Racks Off) (Sessions) (WOD).mp3",
     duration: 271,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Racks In.png",
+    cover: "Covers/Racks In.png",
     producer: "TyMadeIt",
     year: "2018"
   },
@@ -1722,7 +1722,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Racks Out (Best Around) (Sessions) (DRFL).mp3",
     duration: 247,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Racks Out.png",
+    cover: "Covers/Racks Out.png",
     producer: "DY Krazy & Morgan O’Connor",
     year: "2019"
   },
@@ -1733,7 +1733,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Ratio (Futurama) (Obama) (Sessions) (WOD).mp3",
     duration: 704,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Ratio.png",
+    cover: "Covers/Ratio.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -1744,7 +1744,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Reach (Point Guard) (Sessions) (GB&GR).mp3",
     duration: 864,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Reach.png",
+    cover: "Covers/Reach.png",
     producer: "DT",
     year: "2017"
   },
@@ -1755,7 +1755,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Red Dead Redemption (Sessions) (DRFL).mp3",
     duration: 350,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Red Dead Redemption.png",
+    cover: "Covers/Red Dead Redemption.png",
     producer: "CuBeatz, Danny Wolf & Slight",
     year: "2018"
   },
@@ -1766,7 +1766,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Right, Left (On My Right) (Right Back) (Sessions) (AF).mp3",
     duration: 1134,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Right, Left.png",
+    cover: "Covers/Right, Left.png",
     producer: "DT & The Martianz",
     year: "2017"
   },
@@ -1777,7 +1777,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Rob A Bank (One Call Away) (Sideshow) (Sessions).mp3",
     duration: 465,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Rob A Bank.png",
+    cover: "Covers/Rob A Bank.png",
     producer: "DT & Nick Mira",
     year: "2018"
   },
@@ -1788,7 +1788,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Rockets (Ms. Jackson) (Sessions) (GB&GR).mp3",
     duration: 454,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Rockets.png",
+    cover: "Covers/Rockets.png",
     producer: "Mega Beats",
     year: "2017"
   },
@@ -1799,7 +1799,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Rockstar Status (Sessions) (GB&GR).mp3",
     duration: 960,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Rockstar Status.png",
+    cover: "Covers/Rockstar Status.png",
     producer: "CuBeatz & Dre Moon",
     year: "2018"
   },
@@ -1810,7 +1810,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Rose Petals (Meadows) (Sessions) (GB&GR).mp3",
     duration: 594,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Rose Petals.png",
+    cover: "Covers/Rose Petals.png",
     producer: "Unknown",
     year: "2018"
   },
@@ -1821,7 +1821,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Rotate (Drag Race) (Sessions) (GB&GR).mp3",
     duration: 306,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Rotate.png",
+    cover: "Covers/Rotate.png",
     producer: "Chase Davis",
     year: "2018"
   },
@@ -1832,7 +1832,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/See The Difference (Southside) (Sessions).mp3",
     duration: 927,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/See The Difference.png",
+    cover: "Covers/See The Difference.png",
     producer: "Southside & Unknown",
     year: "2018"
   },
@@ -1843,7 +1843,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Semi Addict (Static Shock) (Sessions) (WOD).mp3",
     duration: 406,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Semi Addict.png",
+    cover: "Covers/Semi Addict.png",
     producer: "DY Krazy & Supah Mario",
     year: "2018"
   },
@@ -1854,7 +1854,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Set Me Free (Where I Need To Be) (v3).mp3",
     duration: 288,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Set Me Free.png",
+    cover: "Covers/Set Me Free.png",
     producer: "Oz On The Track",
     year: "2019"
   },
@@ -1865,7 +1865,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Shoot For Love (Shoot For You) (GB&GR).mp3",
     duration: 1301,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Shoot For Love.png",
+    cover: "Covers/Shoot For Love.png",
     producer: "DT & Klimax Productions",
     year: "2017"
   },
@@ -1876,7 +1876,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Shot 'Em Down (JW3).mp3",
     duration: 176,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Shot Em Down.png",
+    cover: "Covers/Shot Em Down.png",
     producer: "DY Krazy & Rex Kudo",
     year: "2019"
   },
@@ -1887,7 +1887,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Slasher (Mayday) (V2) (GB&GR).mp3",
     duration: 209,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Slasher.png",
+    cover: "Covers/Slasher.png",
     producer: "CuBeatz & Southside",
     year: "2018"
   },
@@ -1898,7 +1898,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Sleep Paralysis (Sessions).mp3",
     duration: 285,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Sleep Paralysis.png",
+    cover: "Covers/Sleep Paralysis.png",
     producer: "The Chainsmokers & Tony Ann",
     year: "2017"
   },
@@ -1909,7 +1909,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Slenderman (Never Ever Land) (Sessions) (GB&GR).mp3",
     duration: 748,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Slenderman.png",
+    cover: "Covers/Slenderman.png",
     producer: "DT",
     year: "2017"
   },
@@ -1920,7 +1920,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Smoke (Sessions) (GB&GR).mp3",
     duration: 650,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Smoke.png",
+    cover: "Covers/Smoke.png",
     producer: "CHASETHEMONEY, DJ Victoriouz, RioMac & Unknown",
     year: "2017"
   },
@@ -1931,7 +1931,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Soda Pop (Apparent) (DRFL).mp3",
     duration: 187,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Soda Pop.png",
+    cover: "Covers/Soda Pop.png",
     producer: "Marshmello",
     year: "2018"
   },
@@ -1942,7 +1942,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Some More (Sessions) (GB&GR).mp3",
     duration: 368,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Some More.png",
+    cover: "Covers/Some More.png",
     producer: "Chopsquad DJ & Southside",
     year: "2018"
   },
@@ -1953,7 +1953,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Spanglish (v3).mp3",
     duration: 223,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Spanglish.png",
+    cover: "Covers/Spanglish.png",
     producer: "Take A Daytrip",
     year: "2018"
   },
@@ -1964,7 +1964,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Starstruck (V2) (WOD).mp3",
     duration: 239,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Starstruck.png",
+    cover: "Covers/Starstruck.png",
     producer: "Andrew Watt & Louis Bell",
     year: "2018"
   },
@@ -1975,7 +1975,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Start It Up (Sessions) (GB&GR).mp3",
     duration: 2081,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Start It Up.png",
+    cover: "Covers/Start It Up.png",
     producer: "Nick Mira",
     year: "2017"
   },
@@ -1986,7 +1986,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Stick Talk (Lava Girl) (DRFL).mp3",
     duration: 228,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Stick Talk.png",
+    cover: "Covers/Stick Talk.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -1997,7 +1997,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Swerve (Live And Learn) (JW3).mp3",
     duration: 146,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Swerve.png",
+    cover: "Covers/Swerve.png",
     producer: "Carlton McDowell & SoundsBy8",
     year: "2019"
   },
@@ -2008,7 +2008,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Take No Chance (Awful Times) (GB&GR).mp3",
     duration: 266,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Take No Chance.png",
+    cover: "Covers/Take No Chance.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2019,7 +2019,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Talking To Voices (Sessions) (WOD).mp3",
     duration: 423,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Talking To Voices.png",
+    cover: "Covers/Talking To Voices.png",
     producer: "CuBeatz & Wheezy",
     year: "2018"
   },
@@ -2030,7 +2030,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Tempted.mp3",
     duration: 87,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Tempted.png",
+    cover: "Covers/Tempted.png",
     producer: "Gezin & Max Lord",
     year: "2019"
   },
@@ -2041,7 +2041,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/That Sad Shit (Devil In Prada) (GB&GR).mp3",
     duration: 621,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/That Sad Shit.png",
+    cover: "Covers/That Sad Shit.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2052,7 +2052,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/The Race (Sessions) (GB&GR).mp3",
     duration: 1159,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/The Race.png",
+    cover: "Covers/The Race.png",
     producer: "Murda Beatz",
     year: "2017"
   },
@@ -2063,7 +2063,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Tick-Tock (In The Air) (WOD).mp3",
     duration: 247,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Tick Tock.png",
+    cover: "Covers/Tick Tock.png",
     producer: "Dre Moon",
     year: "2018"
   },
@@ -2074,7 +2074,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/To The Face (Up In London) (V1) (Sessions) (WOD).mp3",
     duration: 420,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/To The Face.png",
+    cover: "Covers/To The Face.png",
     producer: "Asurms",
     year: "2018"
   },
@@ -2085,7 +2085,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Tonight (Sessions) (GB&GR).mp3",
     duration: 1880,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Tonight.png",
+    cover: "Covers/Tonight.png",
     producer: "Murda Beatz & Smokescreen",
     year: "2018"
   },
@@ -2096,7 +2096,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Too Many (v1).mp3",
     duration: 334,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Way Too Many.png",
+    cover: "Covers/Way Too Many.png",
     producer: "DJ Scheme & Nuri",
     year: "2019"
   },
@@ -2107,7 +2107,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Toxic Humans (LISTEN TO THIS IF YOU'RE LOST) (Contemplating) (Say You Love Me) (Sessions) (GB&GR).mp3",
     duration: 796,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Toxic Humans.png",
+    cover: "Covers/Toxic Humans.png",
     producer: "DT & Nick Mira",
     year: "2017"
   },
@@ -2118,7 +2118,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Track Race (Scarface) (Sessions) (GB&GR).mp3",
     duration: 295,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Track Race.png",
+    cover: "Covers/Track Race.png",
     producer: "Nick Mira",
     year: "2017"
   },
@@ -2129,7 +2129,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Traveling The World (Mind Twirling) (Dior In London) (Sessions) (WOD).mp3",
     duration: 594,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Traveling The World.png",
+    cover: "Covers/Traveling The World.png",
     producer: "CashMoneyAp & Dez",
     year: "2018"
   },
@@ -2140,7 +2140,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Trick Or Treat (Halloween) (Sessions) (GB&GR).mp3",
     duration: 331,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Trick Or Treat.png",
+    cover: "Covers/Trick Or Treat.png",
     producer: "LEALE & Sullivan King",
     year: "2018"
   },
@@ -2151,7 +2151,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Tsunami Soul 2 (We Outta Here) (Sessions) (DRFL).mp3",
     duration: 967,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Tsunami Soul 2.png",
+    cover: "Covers/Tsunami Soul 2.png",
     producer: "Arctic, Sidepce & Danny Wolf",
     year: "2019"
   },
@@ -2162,7 +2162,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Twins (Luigi) (WOD).mp3",
     duration: 196,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Twins.png",
+    cover: "Covers/Twins.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2173,7 +2173,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Under Her Skin (v6).mp3",
     duration: 239,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Under Her Skin.png",
+    cover: "Covers/Under Her Skin.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2184,7 +2184,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Underwrld (Underworld) (Demon Girl) (Sessions) (GB&GR).mp3",
     duration: 469,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Underwrld.png",
+    cover: "Covers/Underwrld.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2195,7 +2195,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Unload (Sessions) (GB&GR).mp3",
     duration: 299,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Unload.png",
+    cover: "Covers/Unload.png",
     producer: "Danny Wolf & Otxhello",
     year: "2018"
   },
@@ -2206,7 +2206,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Ur Not The Boss (You're Not The Boss) (Boss Of Me) (DRFL).mp3",
     duration: 214,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Ur Not The Boss.png",
+    cover: "Covers/Ur Not The Boss.png",
     producer: "Nick Mira",
     year: "2019"
   },
@@ -2217,7 +2217,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Wait 4 Me (v1).mp3",
     duration: 192,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Wait 4 Me.png",
+    cover: "Covers/Wait 4 Me.png",
     producer: "Rex Kudo & Southside",
     year: "2019"
   },
@@ -2228,7 +2228,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Wake Up (Ride 'Round Dirty) (WOD).mp3",
     duration: 274,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Wake Up.png",
+    cover: "Covers/Wake Up.png",
     producer: "CakeBoy Bally",
     year: "2018"
   },
@@ -2239,7 +2239,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/What Else (WOD).mp3",
     duration: 177,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/What Else.png",
+    cover: "Covers/What Else.png",
     producer: "YK808Mafia",
     year: "2018"
   },
@@ -2250,7 +2250,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Whip (Alaska) (WOD).mp3",
     duration: 156,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Whip.png",
+    cover: "Covers/Whip.png",
     producer: "Donn Robb, Nick Mira & Oz On The Track",
     year: "2018"
   },
@@ -2261,7 +2261,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Wrong Lyrics, Right Songs.mp3",
     duration: 152,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Wrong Lyrics, Right Songs.png",
+    cover: "Covers/Wrong Lyrics, Right Songs.png",
     producer: "Mitch Mula",
     year: "2018"
   },
@@ -2272,7 +2272,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Wrong Side Of The Bed (Through My Head) (WOD).mp3",
     duration: 196,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Wrong Side Of The Bed.png",
+    cover: "Covers/Wrong Side Of The Bed.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2283,7 +2283,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Xmas List (Christmas List) (JW3).mp3",
     duration: 205,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/X-Mas List.png",
+    cover: "Covers/X-Mas List.png",
     producer: "DY Krazy & Rex Kudo",
     year: "2019"
   },
@@ -2294,7 +2294,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/You Ain't Safe (Get Away) (V1) (GB&GR).mp3",
     duration: 149,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/You Ain't Safe.png",
+    cover: "Covers/You Ain't Safe.png",
     producer: "Cardo Got Wings & Yung Exclusive",
     year: "2018"
   },
@@ -2305,7 +2305,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Young Nigga Rich (Money Over Hoes) (YNR) (Sessions) (WOD).mp3",
     duration: 263,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Young Nigga Rich.png",
+    cover: "Covers/Young Nigga Rich.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2316,7 +2316,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Your Loss (Girlfriend) (Sessions) (GB&GR).mp3",
     duration: 410,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Your Loss.png",
+    cover: "Covers/Your Loss.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2327,7 +2327,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Z Nation.mp3",
     duration: 223,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Z Nation.png",
+    cover: "Covers/Z Nation.png",
     producer: "Metro Boomin' & Southside",
     year: "2018"
   },
@@ -2338,7 +2338,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Zaxbys (Walking In The Sand) (Sessions) (GB&GR).mp3",
     duration: 391,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Zaxbys.png",
+    cover: "Covers/Zaxbys.png",
     producer: "Asurms",
     year: "2018"
   },
@@ -2349,7 +2349,7 @@
     category: "halloween",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Zombie.mp3",
     duration: 215,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Zombie.png",
+    cover: "Covers/Zombie.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2360,7 +2360,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Alkaline (999) (GB&GR).mp3",
     duration: 192,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Alkaline.png",
+    cover: "Covers/Alkaline.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2371,7 +2371,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Hate me later.mp3",
     duration: 525,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Hate Me Later.png",
+    cover: "Covers/Hate Me Later.png",
     producer: "DT & Nick Mira",
     year: "2017"
   },
@@ -2382,7 +2382,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Motorbike (Sessions).mp3",
     duration: 1480,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Sidekick.png",
+    cover: "Covers/Sidekick.png",
     producer: "Nick Mira & Robin Guthrie",
     year: "2017"
   },
@@ -2393,7 +2393,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Never Switch.mp3",
     duration: 401,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Never Switch.png",
+    cover: "Covers/Never Switch.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2404,7 +2404,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Hairline Trigger (Sessions) (WOD).mp3",
     duration: 108,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Hairline Trigger.png",
+    cover: "Covers/Hairline Trigger.png",
     producer: "Unknown",
     year: "2018"
   },
@@ -2415,7 +2415,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Task Force (Sessions) (GB&GR).mp3",
     duration: 194,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Task Force.png",
+    cover: "Covers/Task Force.png",
     producer: "Danny Wolf & Otxhello",
     year: "2018"
   },
@@ -2426,7 +2426,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/To The Grave (Feelings) (Sessions) (GB&GR).mp3",
     duration: 141,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/To The Grave.png",
+    cover: "Covers/To The Grave.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2437,7 +2437,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/A-Ok (A-Okay) (On Tour) (Bonjour) (DRFL).mp3",
     duration: 180,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/A-Ok.png",
+    cover: "Covers/A-Ok.png",
     producer: "Richie Souf",
     year: "2019"
   },
@@ -2448,7 +2448,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Got Nothing On Me (Your Boyfriend) (Sessions) (WOD).mp3",
     duration: 456,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Got Nothing On Me.png",
+    cover: "Covers/Got Nothing On Me.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2459,7 +2459,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Devil Horns (Angel With Devil Horns) (Sessions) (GB&GR).mp3",
     duration: 971,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Devil Horns.png",
+    cover: "Covers/Devil Horns.png",
     producer: "Fincw & Nick Mira",
     year: "2018"
   },
@@ -2470,7 +2470,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Emotional Overdose (Can't Help It) (Sessions) (GB&GR).mp3",
     duration: 734,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Emotional Overdose.png",
+    cover: "Covers/Emotional Overdose.png",
     producer: "Chopsquad DJ & Dr. Luke",
     year: "2018"
   },
@@ -2481,7 +2481,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/No Love, No Trust (No Love) (No Trust) (Sessions) (ND).mp3",
     duration: 1050,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/No Love, No Trust.png",
+    cover: "Covers/No Love, No Trust.png",
     producer: "Unknown",
     year: "2019"
   },
@@ -2492,7 +2492,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Don't Go (Sessions) (WOD).mp3",
     duration: 583,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Don't Go.png",
+    cover: "Covers/Don't Go.png",
     producer: "Nick Mira",
     year: "2019"
   },
@@ -2503,7 +2503,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Don't Know What I'm On (Don't Know What I Know) (Feelin') (They Don't Know) (Sessions) (ND).mp3",
     duration: 463,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Don't Know What I'm On.png",
+    cover: "Covers/Don't Know What I'm On.png",
     producer: "Dez Wright & Nick Mira",
     year: "2017"
   },
@@ -2514,7 +2514,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Lost Myself (Kiss And Tell) (Sessions) (ND).mp3",
     duration: 344,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Lost Myself.png",
+    cover: "Covers/Lost Myself.png",
     producer: "Unknown",
     year: "2019"
   },
@@ -2525,7 +2525,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Mr. Heartbreak (Sessions) (GB&GR).mp3",
     duration: 332,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Mr Heartbreak.png",
+    cover: "Covers/Mr Heartbreak.png",
     producer: "Nick Mira & Taz Taylor",
     year: "2019"
   },
@@ -2536,7 +2536,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Rush (Sessions) (GB&GR).mp3",
     duration: 617,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Rush.png",
+    cover: "Covers/Rush.png",
     producer: "Nick Mira & DT",
     year: "2018"
   },
@@ -2547,7 +2547,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Wavy (Sessions) (GB&GR).mp3",
     duration: 371,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Wavy.png",
+    cover: "Covers/Wavy.png",
     producer: "Unknown",
     year: "2018"
   },
@@ -2558,7 +2558,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Will (Come Up) (My Love Life) (Sessions) (GB&GR).mp3",
     duration: 558,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Will.png",
+    cover: "Covers/Will.png",
     producer: "Unknown",
     year: "2018"
   },
@@ -2569,7 +2569,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Codeine Casket (GB&GR).mp3",
     duration: 156,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Codeine Casket.png",
+    cover: "Covers/Codeine Casket.png",
     producer: "Murda Beatz",
     year: "2018"
   },
@@ -2580,7 +2580,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Codeine Cobain (DRFL).mp3",
     duration: 263,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Codeine Cobain.png",
+    cover: "Covers/Codeine Cobain.png",
     producer: "Purps On The Beat",
     year: "2018"
   },
@@ -2591,7 +2591,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Codeine Guzzler (DRFL).mp3",
     duration: 174,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Codeine Guzzler.png",
+    cover: "Covers/Codeine Guzzler.png",
     producer: "Bobby Raps & DY Krazy",
     year: "2018"
   },
@@ -2602,7 +2602,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Codeine Music (Lair) (GB&GR).mp3",
     duration: 196,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Codeine Music.png",
+    cover: "Covers/Codeine Music.png",
     producer: "DT & Lz",
     year: "2018"
   },
@@ -2613,7 +2613,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/AP TikTok (DRFL) (Sessions).mp3",
     duration: 1109,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/AP TikTok.png",
+    cover: "Covers/AP TikTok.png",
     producer: "Ilya Salmanzadeh & Max Martin",
     year: "2019"
   },
@@ -2624,7 +2624,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Carry It (v3).mp3",
     duration: 193,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Carry It.png",
+    cover: "Covers/Carry It.png",
     producer: "Gezin & Prevade",
     year: "2019"
   },
@@ -2635,7 +2635,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/K Like A Russian.mp3",
     duration: 253,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/K Like A Russian.png",
+    cover: "Covers/K Like A Russian.png",
     producer: "Michelangelo Pulvirenti, Max Lord, PVLACE & Smash David",
     year: "2019"
   },
@@ -2646,7 +2646,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Remind Me Of The Summer (Sessions).mp3",
     duration: 690,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Remind Me Of Summer.png",
+    cover: "Covers/Remind Me Of Summer.png",
     producer: "JCraig & Sample Magic",
     year: "2018"
   },
@@ -2657,7 +2657,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Tales Of The Toxic (Sessions).mp3",
     duration: 332,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Tales Of The Toxic.png",
+    cover: "Covers/Tales Of The Toxic.png",
     producer: "LEALE & Unknown",
     year: "2018"
   },
@@ -2668,7 +2668,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Talk Too Much (Sessions) (WOD).mp3",
     duration: 448,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Talk Too Much.png",
+    cover: "Covers/Talk Too Much.png",
     producer: "Nick Mira & Unknown",
     year: "2018"
   },
@@ -2679,7 +2679,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Rental.mp3",
     duration: 253,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Rental.png",
+    cover: "Covers/Rental.png",
     producer: "Seezyn",
     year: "2018"
   },
@@ -2690,7 +2690,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Autograph (On My Line).mp3",
     duration: 227,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Autograph.png",
+    cover: "Covers/Autograph.png",
     producer: "Klimax Productions & Nick Mira",
     year: "2017"
   },
@@ -2701,7 +2701,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/All Burnt Up (Sessions) (ND).mp3",
     duration: 510,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/All Burnt Up.png",
+    cover: "Covers/All Burnt Up.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2712,7 +2712,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Okay (Tears) (Sessions) (WOD).mp3",
     duration: 900,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Okay.png",
+    cover: "Covers/Okay.png",
     producer: "WOD",
     year: "2018"
   },
@@ -2723,7 +2723,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Red Bull (Terrified) (Sessions) (WOD).mp3",
     duration: 828,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Red Bull.png",
+    cover: "Covers/Red Bull.png",
     producer: "WOD",
     year: "2018"
   },
@@ -2734,7 +2734,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Sexual Healing (Sessions) (DRFL).mp3",
     duration: 386,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Sexual Healing.png",
+    cover: "Covers/Sexual Healing.png",
     producer: "Danny Wolf",
     year: "2019"
   },
@@ -2745,7 +2745,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Minus (Sessions) (WOD).mp3",
     duration: 546,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Minus.png",
+    cover: "Covers/Minus.png",
     producer: "WOD",
     year: "2018"
   },
@@ -2756,7 +2756,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Analog.mp3",
     duration: 208,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Analog.png",
+    cover: "Covers/Analog.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2767,7 +2767,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/By%20Myself%20(Sessions).mp3",
     duration: 184,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/By%20Myself.png",
+    cover: "Covers/By%20Myself.png",
     producer: "Rex Kudo & Charlie Handsome",
     year: "2018"
   },
@@ -2778,7 +2778,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Flinstones.mp3",
     duration: 195,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Flintstones.png",
+    cover: "Covers/Flintstones.png",
     producer: "Ineza Beats & Nick Mira",
     year: "2018"
   },
@@ -2789,7 +2789,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Circles%20(Sessions).mp3",
     duration: 216,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Circles.png",
+    cover: "Covers/Circles.png",
     producer: "Dilip & Danny Wolf",
     year: "2018"
   },
@@ -2800,7 +2800,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Dark%20Queen.mp3",
     duration: 144,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Dark%20Queen.png",
+    cover: "Covers/Dark%20Queen.png",
     producer: "Mega Beats",
     year: "2018"
   },
@@ -2811,7 +2811,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Dummy.mp3",
     duration: 134,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Dummy.png",
+    cover: "Covers/Dummy.png",
     producer: "Nick Mira & Taz Taylor",
     year: "2018"
   },
@@ -2822,7 +2822,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Flaws%20And%20Sins%20(Sessions).mp3",
     duration: 218,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Flaws%20%26%20Sins.png",
+    cover: "Covers/Flaws%20%26%20Sins.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2833,7 +2833,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Already%20Dead%20(Sessions).mp3",
     duration: 231,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Already%20Dead.png",
+    cover: "Covers/Already%20Dead.png",
     producer: "Nick Mira & DT",
     year: "2018"
   },
@@ -2844,7 +2844,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/In%20Zone.mp3",
     duration: 170,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/In%20Zone.png",
+    cover: "Covers/In%20Zone.png",
     producer: "SS.Kev",
     year: "2018"
   },
@@ -2855,7 +2855,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Submission.mp3",
     duration: 195,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Submission.png",
+    cover: "Covers/Submission.png",
     producer: "Rio Mac",
     year: "2018"
   },
@@ -2866,7 +2866,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Wishing%20Well%20(Sessions).mp3",
     duration: 340,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Wishing%20Well.png",
+    cover: "Covers/Wishing%20Well.png",
     producer: "Chopsquad DJ & Dr. Luke",
     year: "2018"
   },
@@ -2877,7 +2877,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Smile%20(Sessions).mp3",
     duration: 682,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/WOD.png",
+    cover: "Covers/WOD.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2888,7 +2888,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Jeffrey%20(Sessions).mp3",
     duration: 1073,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/GB&GR.png",
+    cover: "Covers/GB&GR.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2899,7 +2899,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Cigarettes%20(Sessions).mp3",
     duration: 982,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Cigarettes.png",
+    cover: "Covers/Cigarettes.png",
     producer: "BradoSanz & Nick Mira",
     year: "2018"
   },
@@ -2910,7 +2910,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/734%20(Sessions).mp3",
     duration: 1235,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/734.png",
+    cover: "Covers/734.png",
     producer: "InpyJK & Nick Mira",
     year: "2018"
   },
@@ -2921,7 +2921,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Won't%20Let%20Go%20(Sessions).mp3",
     duration: 205,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DRFL.png",
+    cover: "Covers/DRFL.png",
     producer: "Morgoth Beatz & Purps On The Beat",
     year: "2019"
   },
@@ -2932,7 +2932,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Hear%20Me%20Calling%20(Sessions).mp3",
     duration: 195,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DRFL.png",
+    cover: "Covers/DRFL.png",
     producer: "J.Views & Purps On The Beat",
     year: "2019"
   },
@@ -2943,7 +2943,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Feeling%20(Sessions).mp3",
     duration: 252,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Feeling.png",
+    cover: "Covers/Feeling.png",
     producer: "Nick Mira",
     year: "2019"
   },
@@ -2954,7 +2954,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Empty%20(Sessions).mp3",
     duration: 248,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DRFL.png",
+    cover: "Covers/DRFL.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -2966,7 +2966,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Legends%20(Sessions).mp3",
     duration: 536,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Legends.png",
+    cover: "Covers/Legends.png",
     producer: "Russell Chell & Take A Daytrip",
     year: "2018"
   },
@@ -2977,7 +2977,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Sometimes%20(Sessions).mp3",
     duration: 504,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Sometimes.png",
+    cover: "Covers/Sometimes.png",
     producer: "Danny Wolf & Otxhello",
     year: "2018"
   },
@@ -2988,7 +2988,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Rockstar%20In%20His%20Prime%20(Sessions).mp3",
     duration: 355,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DRFL.png",
+    cover: "Covers/DRFL.png",
     producer: "Dee Jae & T-Minus",
     year: "2018"
   },
@@ -2999,7 +2999,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/My%20Life%20In%20A%20Nutshell%20(Sessions).mp3",
     duration: 284,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/My%20Life%20In%20A%20Nutshell.png",
+    cover: "Covers/My%20Life%20In%20A%20Nutshell.png",
     producer: "Nick Mira & Novo Amor",
     year: "2018"
   },
@@ -3010,7 +3010,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Maze%20(Sessions).mp3",
     duration: 211,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DRFL.png",
+    cover: "Covers/DRFL.png",
     producer: "Boi-1da, Don Mills & Jahaan Sweet",
     year: "2019"
   },
@@ -3021,7 +3021,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Candles%20(Sessions).mp3",
     duration: 307,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Candles.png",
+    cover: "Covers/Candles.png",
     producer: "Jo L'Z, Nick Mira & Taz Taylor",
     year: "2018"
   },
@@ -3032,7 +3032,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Quitter%20(Sessions).mp3",
     duration: 1111,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Quitter.png",
+    cover: "Covers/Quitter.png",
     producer: "Josh Petruccio & Nick Mira",
     year: "2018"
   },
@@ -3043,7 +3043,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Not%20Enough%20(Sessions).mp3",
     duration: 355,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/GB&GR.png",
+    cover: "Covers/GB&GR.png",
     producer: "JCraig & PD Beats",
     year: "2018"
   },
@@ -3054,7 +3054,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Wasted%20(Sessions).mp3",
     duration: 788,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/GB&GR.png",
+    cover: "Covers/GB&GR.png",
     producer: "CBMIX",
     year: "2018"
   },
@@ -3065,7 +3065,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/I%20Want%20It%20(Sessions).mp3",
     duration: 388,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/WOD.png",
+    cover: "Covers/WOD.png",
     producer: "1Mind, Dre Moon & Tyler Turner",
     year: "2018"
   },
@@ -3076,7 +3076,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Move%20The%20Bale%20(Sessions).mp3",
     duration: 374,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Move The Bale.png",
+    cover: "Covers/Move The Bale.png",
     producer: "Joey88",
     year: "2017"
   },
@@ -3087,7 +3087,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Lean%20Wit%27%20Me%20(Sessions).mp3",
     duration: 445,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/GB&GR.png",
+    cover: "Covers/GB&GR.png",
     producer: "Nick Mira",
     year: "2018"
   },
@@ -3102,7 +3102,7 @@
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Percs.mp3",
     duration: 177,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Percs.png",
+    cover: "Covers/Percs.png",
     year: "2018"
   },
   {
@@ -3112,7 +3112,7 @@
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Play Fair (Play) (Fair) (Sessions) (WOD).mp3",
     duration: 328,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Play Fair.png",
+    cover: "Covers/Play Fair.png",
     year: "2018"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});
