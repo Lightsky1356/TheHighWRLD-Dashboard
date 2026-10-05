@@ -3090,5 +3090,29 @@
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/GB&GR.png",
     producer: "Nick Mira",
     year: "2018"
+  },
+  /* Percs and Play Fair arrived after the rest. Neither has a producer recorded
+     anywhere we can read, so the field is left off rather than guessed - the
+     player and search both treat a missing producer as "unknown". Durations were
+     measured from the audio, and Percs' category and year come from the wrld log. */
+  {
+    title: "Percs",
+    tag: "Percs",
+    artist: "Juice WRLD",
+    category: "leaks",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Percs.mp3",
+    duration: 177,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Percs.png",
+    year: "2018"
+  },
+  {
+    title: "Play Fair (Sessions)",
+    tag: "Play Fair (Play) (Fair) (Sessions) (WOD)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Play Fair (Play) (Fair) (Sessions) (WOD).mp3",
+    duration: 328,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Play Fair.png",
+    year: "2018"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});
