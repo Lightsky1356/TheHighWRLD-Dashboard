@@ -100,18 +100,39 @@ async function handle(context) {
   if (!asset) return notFound();
 
   const type = asset.headers.get("Content-Type");
-  const declared = Number(asset.headers.get("Content-Length"));
   const rangeHeader = context.request.headers.get("Range");
-  const range = Number.isFinite(declared) && declared > 0 ? parseRange(rangeHeader, declared) : null;
+  const declared = Number(asset.headers.get("Content-Length"));
+  const knownSize = Number.isFinite(declared) && declared > 0 ? declared : 0;
+
+  // Ordinary playback: stream the file straight through. The ASSETS binding does
+  // not reliably send Content-Length, so nothing here may depend on it.
+  if (!rangeHeader) {
+    const headers = new Headers({
+      "Content-Type": type,
+      "Accept-Ranges": "bytes",
+      "Cache-Control": CACHE,
+      "Access-Control-Allow-Origin": "*",
+    });
+    if (knownSize) headers.set("Content-Length", String(knownSize));
+    return new Response(isHead ? null : asset.body, { status: 200, headers });
+  }
+
+  // A Range request has to buffer, because slicing needs the real size. Take it
+  // from the bytes themselves rather than trusting a header that may be absent -
+  // depending on Content-Length here is what made the first deployed version
+  // answer 200 to every Range request.
+  const body = await asset.arrayBuffer();
+  const size = knownSize || body.byteLength;
+  const range = parseRange(rangeHeader, size);
 
   if (range === "unsatisfiable") {
     return new Response(null, {
       status: 416,
-      headers: { "Content-Range": `bytes */${declared}`, "Accept-Ranges": "bytes", "Cache-Control": "no-store" },
+      headers: { "Content-Range": `bytes */${size}`, "Accept-Ranges": "bytes", "Cache-Control": "no-store" },
     });
   }
 
-  // No range, or a range we decline to serve: stream the whole file through.
+  // Multi-range or malformed: answering the whole file is legal.
   if (!range || range === "ignore") {
     const headers = new Headers({
       "Content-Type": type,
@@ -119,12 +140,11 @@ async function handle(context) {
       "Cache-Control": CACHE,
       "Access-Control-Allow-Origin": "*",
     });
-    if (Number.isFinite(declared) && declared > 0) headers.set("Content-Length", String(declared));
-    return new Response(isHead ? null : asset.body, { status: 200, headers });
+    headers.set("Content-Length", String(body.byteLength));
+    return new Response(isHead ? null : body, { status: 200, headers });
   }
 
   const { start, end } = range;
-  const body = await asset.arrayBuffer();
   const slice = body.slice(start, end + 1);
 
   return new Response(isHead ? null : slice, {
