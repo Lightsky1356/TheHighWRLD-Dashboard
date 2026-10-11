@@ -47,6 +47,30 @@ function parseJson(raw) {
 const PRESENCE_TTL_MS = 45000;      // mark offline if no heartbeat within this window
 const PRESENCE_ALARM_MS = 20000;    // how often we sweep for stale presence
 
+function sessionToken(request) {
+  const cookies = String(request.headers.get("Cookie") || "").split(";");
+  for (const item of cookies) {
+    const [name, ...value] = item.trim().split("=");
+    if (name !== "thw_session") continue;
+    try {
+      return decodeURIComponent(value.join("="));
+    } catch {
+      return "";
+    }
+  }
+  return "";
+}
+
+async function sessionUidForRequest(request, env) {
+  const token = sessionToken(request);
+  if (!token || !env.wanted_vault) return "";
+  const row = await env.wanted_vault.prepare(
+    "SELECT s.uid FROM sessions s JOIN users u ON u.uid = s.uid " +
+    "WHERE s.token = ? AND s.expires_at > strftime('%Y-%m-%dT%H:%M:%fZ','now')"
+  ).bind(token).first();
+  return row && row.uid ? String(row.uid).slice(0, 64) : "";
+}
+
 export class CommunityHub extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -83,11 +107,18 @@ export class CommunityHub extends DurableObject {
       return json({ ok: true, sockets: this.ctx.getWebSockets().length, typing: this.typing.size });
     }
     if (request.method === "GET" && (path === "/presence" || path.endsWith("/presence"))) {
+      const requested = String(url.searchParams.get("users") || "")
+        .split(",")
+        .filter((uid) => /^[A-Za-z0-9_-]{4,64}$/.test(uid))
+        .slice(0, 100);
+      if (requested.length) {
+        return this.presenceForRequest(request, requested);
+      }
       const checkUid = String(url.searchParams.get("user") || "").slice(0, 64);
       if (checkUid) {
-        return json({ ok: true, uid: checkUid, online: this.presence.has("u:" + checkUid) });
+        return this.presenceForRequest(request, [checkUid]);
       }
-      return json({ ok: true, online: this.presenceOnlineCount(), users: this.presenceSnapshot() });
+      return json({ ok: true, online: this.presenceOnlineCount(), counts: this.presenceCounts() });
     }
     if (request.method === "POST" && (path === "/presence" || path.endsWith("/presence"))) {
       // Internal: invoked on auth presence transitions to persist durable state.
@@ -99,17 +130,24 @@ export class CommunityHub extends DurableObject {
     return json({ error: "not found" }, 404);
   }
 
-  acceptClient(request) {
+  async acceptClient(request) {
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     const url = new URL(request.url);
-    const uid = String(url.searchParams.get("uid") || "").slice(0, 64);
-    const auth = url.searchParams.get("auth") === "1";
+    let sessionUid = "";
+    try {
+      sessionUid = await sessionUidForRequest(request, this.env);
+    } catch (err) {
+      console.log(JSON.stringify({ level: "warn", msg: "websocket session lookup failed", error: String(err) }));
+    }
+    const uid = sessionUid;
+    const auth = !!sessionUid;
     const pkey = String(url.searchParams.get("pkey") || "").slice(0, 96);
     const conversationId = String(url.searchParams.get("conversationId") || "community").slice(0, 200);
     this.ctx.acceptWebSocket(server, [uid || "anon"]);
     server.serializeAttachment({
       uid: uid || "",
+      sessionUid,
       auth: auth ? 1 : 0,
       pkey: pkey || "",
       name: "",
@@ -122,7 +160,7 @@ export class CommunityHub extends DurableObject {
       type: "connected",
       ts: Date.now(),
       typing: this.typingSnapshot(conversationId),
-      presence: { online: this.presenceOnlineCount(), users: this.presenceSnapshot(), counts: this.presenceCounts() },
+      presence: { online: this.presenceOnlineCount(), counts: this.presenceCounts() },
     });
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -139,14 +177,16 @@ export class CommunityHub extends DurableObject {
     const conversationId = String(msg.conversationId || att.conversationId || "community").slice(0, 200);
 
     if (msg.type === "hello") {
-      const uid = String(msg.uid || att.uid || "").slice(0, 64);
-      const auth = att.auth === 1 || msg.auth === true || msg.auth === 1;
-      const pkey = String(msg.pkey || att.pkey || "").slice(0, 96) || uid;
+      const uid = att.sessionUid || "";
+      const auth = !!uid;
+      const pkey = String(att.pkey || "").slice(0, 96) || uid;
       let name = "";
       if (uid && this.env.wanted_vault && auth) {
         try {
           const link = await this.env.wanted_vault
-            .prepare("SELECT display_name, avatar FROM discord_links WHERE site_uid = ?")
+            .prepare("SELECT COALESCE(NULLIF(p.name,''), NULLIF(d.display_name,''), u.name, '') AS display_name " +
+              "FROM users u LEFT JOIN user_profiles p ON p.site_uid = u.uid " +
+              "LEFT JOIN discord_links d ON d.site_uid = u.uid WHERE u.uid = ?")
             .bind(uid)
             .first();
           name = (link && link.display_name) || "";
@@ -154,7 +194,7 @@ export class CommunityHub extends DurableObject {
           console.log(JSON.stringify({ level: "warn", msg: "hello lookup failed", error: String(err) }));
         }
       }
-      ws.serializeAttachment({ uid, auth: auth ? 1 : 0, pkey, name, conversationId, connectedAt: att.connectedAt || Date.now() });
+      ws.serializeAttachment({ uid, sessionUid: uid, auth: auth ? 1 : 0, pkey, name, conversationId, connectedAt: att.connectedAt || Date.now() });
       safeSend(ws, { type: "hello:ok", uid, name, typing: this.typingSnapshot(conversationId) });
       if (this.registerPresence({ uid, auth, pkey, name }, ws)) this.syncDurablePresence();
       return;
@@ -353,8 +393,52 @@ export class CommunityHub extends DurableObject {
     return out;
   }
 
+  async socialPresence(viewerUid, targetUids) {
+    const viewer = String(viewerUid || "").slice(0, 64);
+    const targets = Array.from(new Set((Array.isArray(targetUids) ? targetUids : [])
+      .map((uid) => String(uid || ""))
+      .filter((uid) => /^[A-Za-z0-9_-]{4,64}$/.test(uid))))
+      .slice(0, 100);
+    if (!viewer || !targets.length || !this.env.wanted_vault) return { online: [] };
+    const placeholders = targets.map(() => "?").join(",");
+    const rows = await this.env.wanted_vault.prepare(
+      "SELECT u.uid, COALESCE(s.online_status, 'friends') AS visibility, " +
+      "EXISTS(SELECT 1 FROM social_friends f WHERE " +
+      "(f.uid_a = ? AND f.uid_b = u.uid) OR (f.uid_a = u.uid AND f.uid_b = ?)) AS is_friend, " +
+      "EXISTS(SELECT 1 FROM user_blocks b WHERE " +
+      "(b.blocker_user_id = ? AND b.blocked_user_id = u.uid) OR " +
+      "(b.blocker_user_id = u.uid AND b.blocked_user_id = ?)) AS is_blocked " +
+      "FROM users u LEFT JOIN user_social_settings s ON s.uid = u.uid " +
+      "WHERE u.uid IN (" + placeholders + ")"
+    ).bind(viewer, viewer, viewer, viewer, ...targets).all();
+    const visible = new Set((rows.results || []).filter((row) =>
+      row.uid === viewer ||
+      (row.visibility === "everyone" && !row.is_blocked) ||
+      (row.visibility === "friends" && row.is_friend && !row.is_blocked)
+    ).map((row) => row.uid));
+    return { online: targets.filter((uid) => visible.has(uid) && this.presence.has("u:" + uid)) };
+  }
+
+  async presenceForRequest(request, targetUids) {
+    let viewerUid = "";
+    try {
+      viewerUid = await sessionUidForRequest(request, this.env);
+    } catch (err) {
+      console.log(JSON.stringify({ level: "warn", msg: "presence session lookup failed", error: String(err) }));
+      return json({ error: "presence_unavailable" }, 503);
+    }
+    if (!viewerUid) return json({ error: "sign_in_required" }, 401);
+    try {
+      const result = await this.socialPresence(viewerUid, targetUids);
+      return json({ ok: true, online: result.online });
+    } catch (err) {
+      console.log(JSON.stringify({ level: "warn", msg: "presence privacy lookup failed", error: String(err) }));
+      return json({ error: "presence_unavailable" }, 503);
+    }
+  }
+
   onPresenceChanged() {
-    this.fanout({ type: "presence:update", presence: { online: this.presenceOnlineCount(), users: this.presenceSnapshot(), counts: this.presenceCounts() } });
+    this.fanout({ type: "presence:update", presence: { online: this.presenceOnlineCount(), counts: this.presenceCounts() } });
     this.ensureAlarm();
   }
 
@@ -400,8 +484,11 @@ export class CommunityHub extends DurableObject {
       const att = ws.deserializeAttachment() || {};
       // Never echo a user's own typing back to them.
       if (exceptUid && att.uid === exceptUid && String(event.type || "").startsWith("typing:")) continue;
+      if (event.private === true) {
+        if (!event.recipientUid || att.sessionUid !== event.recipientUid) continue;
+      }
       // Notifications are recipient-scoped.
-      if (event.type === "notification:created" && event.recipientUid && att.uid !== event.recipientUid) continue;
+      if (event.private !== true && event.type === "notification:created" && event.recipientUid && att.sessionUid !== event.recipientUid) continue;
       safeSend(ws, payload);
     }
   }

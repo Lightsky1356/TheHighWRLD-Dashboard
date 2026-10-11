@@ -6,7 +6,8 @@
   var API = '/api/reports';
   var REASONS = ['Spam', 'Duplicate', 'Incorrect Information', 'Harassment', 'Impersonation', 'Inappropriate Behavior', 'Inappropriate Content', 'Scamming', 'Malicious Activity', 'Scam / Malicious Content', 'Copyright Concern', 'Other'];
   var USER_REASONS = ['Spam', 'Harassment', 'Impersonation', 'Inappropriate Behavior', 'Scamming', 'Malicious Activity', 'Other'];
-  var REASON_SETS = { USER: USER_REASONS };
+  var MESSAGE_REASONS = ['Spam', 'Harassment', 'Impersonation', 'Inappropriate Behavior', 'Scam / Malicious Content', 'Other'];
+  var REASON_SETS = { USER: USER_REASONS, MESSAGE: MESSAGE_REASONS };
   var NEEDS_DETAILS = { 'Other': true, 'Copyright Concern': true };
   var MAX_DETAILS = 1000;
 
@@ -137,6 +138,7 @@
     if (ty === 'TRACK') return 'Track: ';
     if (ty === 'PROFILE') return 'Profile: ';
     if (ty === 'USER') return 'User: ';
+    if (ty === 'MESSAGE') return 'Direct message: ';
     return 'Suggestion: ';
   }
 
@@ -234,7 +236,7 @@
       e.preventDefault();
       var parts = (b.getAttribute('data-report') || '').split(':');
       var raw = (parts[0] || '').toUpperCase();
-      var type = raw === 'WANTED' ? 'WANTED' : raw === 'REPLY' ? 'REPLY' : raw === 'NOM' ? 'NOM' : raw === 'PROFILE' ? 'PROFILE' : raw === 'TRACK' ? 'TRACK' : raw === 'USER' ? 'USER' : 'SUGGESTION';
+      var type = raw === 'WANTED' ? 'WANTED' : raw === 'REPLY' ? 'REPLY' : raw === 'NOM' ? 'NOM' : raw === 'PROFILE' ? 'PROFILE' : raw === 'TRACK' ? 'TRACK' : raw === 'USER' ? 'USER' : raw === 'MESSAGE' ? 'MESSAGE' : 'SUGGESTION';
       var id = parts.slice(1).join(':');
       if (!id) return;
       var title = b.getAttribute('data-report-title') || '';
@@ -265,7 +267,7 @@
   }
 
   function typeBadge(ty) {
-    var label = ty === 'WANTED' ? 'Wanted' : ty === 'REPLY' ? 'Reply' : ty === 'NOM' ? 'Nom' : ty === 'TRACK' ? 'Track' : ty === 'PROFILE' ? 'Profile' : ty === 'USER' ? 'User' : 'Suggestion';
+    var label = ty === 'WANTED' ? 'Wanted' : ty === 'REPLY' ? 'Reply' : ty === 'NOM' ? 'Nom' : ty === 'TRACK' ? 'Track' : ty === 'PROFILE' ? 'Profile' : ty === 'USER' ? 'User' : ty === 'MESSAGE' ? 'Direct message' : 'Suggestion';
     return '<span class="report-type-badge ' + (ty === 'WANTED' ? 'rep-t-wanted' : ty === 'USER' || ty === 'PROFILE' ? 'rep-t-user' : 'rep-t-sugg') + '">' + esc(label) + '</span>';
   }
 
@@ -302,6 +304,7 @@
           '<option value="TRACK"' + (staff.type === 'TRACK' ? ' selected' : '') + '>Tracks</option>' +
           '<option value="PROFILE"' + (staff.type === 'PROFILE' ? ' selected' : '') + '>Profiles</option>' +
           '<option value="USER"' + (staff.type === 'USER' ? ' selected' : '') + '>Users</option>' +
+          '<option value="MESSAGE"' + (staff.type === 'MESSAGE' ? ' selected' : '') + '>Direct messages</option>' +
         '</select>' +
         '<span class="report-count"></span>' +
       '</div>' +

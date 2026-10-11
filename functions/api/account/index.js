@@ -1,4 +1,5 @@
-import { getSessionUser, verifyPassword, hashPassword, emailOk } from "../../_lib/auth.js";
+import { getSessionUser, verifyPassword, hashPassword, emailOk, randomHex } from "../../_lib/auth.js";
+import { banRejection } from "../../_lib/bans.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -68,7 +69,7 @@ async function loadAccountState(env, db, uid, req) {
   };
 
   const [listens, favorites, bookmarks, downloads, votes, replies] = await Promise.all([
-    db.prepare("SELECT COUNT(*) as n, COALESCE(SUM(seconds),0) as s FROM listens WHERE uid = ?").bind(uid).first(),
+    db.prepare("SELECT COUNT(*) as n, COUNT(DISTINCT track_id) as u, COALESCE(SUM(seconds),0) as s FROM listens WHERE uid = ?").bind(uid).first(),
     db.prepare("SELECT COUNT(*) as n FROM favorites WHERE uid = ?").bind(uid).first(),
     db.prepare("SELECT COUNT(*) as n FROM bookmarks WHERE uid = ?").bind(uid).first(),
     db.prepare("SELECT COUNT(*) as n FROM downloads WHERE uid = ?").bind(uid).first(),
@@ -78,7 +79,7 @@ async function loadAccountState(env, db, uid, req) {
 
   const [act, notifs, favs, bms, dls, logins, topPlays] = await Promise.all([
     db.prepare("SELECT type, label, detail, track_id, reply_id, ts FROM activity WHERE uid = ? ORDER BY id DESC LIMIT 15").bind(uid).all(),
-    db.prepare("SELECT id, type, message, track_id, reply_id, actor, read, ts FROM notifications WHERE uid = ? ORDER BY id DESC LIMIT 25").bind(uid).all(),
+    db.prepare("SELECT id, type, message, track_id, reply_id, actor, read, href, post_id, data, ts FROM notifications WHERE uid = ? ORDER BY id DESC LIMIT 25").bind(uid).all(),
     db.prepare("SELECT title, created_at FROM favorites WHERE uid = ? ORDER BY created_at DESC").bind(uid).all(),
     db.prepare("SELECT id, kind, label, sub, created_at FROM bookmarks WHERE uid = ? ORDER BY id DESC LIMIT 40").bind(uid).all(),
     db.prepare("SELECT id, title, size, ts FROM downloads WHERE uid = ? ORDER BY id DESC LIMIT 15").bind(uid).all(),
@@ -89,14 +90,14 @@ async function loadAccountState(env, db, uid, req) {
   const unread = notifs.results.reduce((a, x) => a + (x.read ? 0 : 1), 0);
 
   const [plRows, links, suggRows] = await Promise.all([
-    db.prepare("SELECT id, name, desc, color, created_at, updated_at FROM playlists WHERE uid = ? ORDER BY id DESC").bind(uid).all(),
+    db.prepare("SELECT id, name, desc, color, created_at, updated_at, visibility, share_key FROM playlists WHERE uid = ? ORDER BY id DESC").bind(uid).all(),
     db.prepare("SELECT id, label, url FROM profile_links WHERE uid = ? ORDER BY sort ASC, id ASC").bind(uid).all(),
     db.prepare("SELECT id, text, status, created_at FROM suggestions WHERE uid = ? ORDER BY id DESC LIMIT 100").bind(uid).all(),
   ]);
   const playlists = [];
   for (const p of plRows.results) {
     const tr = await db.prepare("SELECT id, title FROM playlist_tracks WHERE playlist_id = ? ORDER BY id ASC").bind(p.id).all();
-    playlists.push({ id: p.id, name: p.name, desc: p.desc, color: p.color, created_at: p.created_at, count: tr.results.length, tracks: tr.results });
+    playlists.push({ id: p.id, name: p.name, desc: p.desc, color: p.color, created_at: p.created_at, count: tr.results.length, tracks: tr.results, visibility: p.visibility || "private", share_key: p.share_key || "" });
   }
 
   // weekly + monthly listening analytics
@@ -109,6 +110,10 @@ async function loadAccountState(env, db, uid, req) {
   const monthly = await db.prepare(
     "SELECT substr(ts,1,10) as day, COUNT(*) as n, COALESCE(SUM(seconds),0) as s FROM listens WHERE uid = ? AND substr(ts,1,10) >= ? GROUP BY day"
   ).bind(uid, monthFrom).all();
+
+  const [priv] = await Promise.all([
+    db.prepare("SELECT show_playlists, show_stats, show_activity, show_favorites, activity_enabled, notifications_enabled FROM user_privacy WHERE uid = ?").bind(uid).first().catch(() => null),
+  ]);
 
   return {
     ok: true,
@@ -141,8 +146,17 @@ async function loadAccountState(env, db, uid, req) {
       downloads: downloads.n || 0,
       votes: votes.n || 0,
       replies: replies.n || 0,
+      unique: listens.u || 0,
     },
     unread,
+    privacy: priv || {
+      show_playlists: 0,
+      show_stats: 0,
+      show_activity: 0,
+      show_favorites: 0,
+      activity_enabled: 1,
+      notifications_enabled: 1,
+    },
     activity: act.results,
     notifications: notifs.results,
     favorites: favs.results,
@@ -167,6 +181,30 @@ async function recordActivity(db, uid, type, label, detail, track_id, reply_id) 
   await db.prepare("DELETE FROM activity WHERE uid = ? AND id NOT IN (SELECT id FROM activity WHERE uid = ? ORDER BY id DESC LIMIT 80)").bind(uid, uid).run();
 }
 
+async function loadPrivacy(db, uid) {
+  const p = await db.prepare("SELECT * FROM user_privacy WHERE uid = ?").bind(uid).first().catch(() => null);
+  return p || { show_playlists: 0, show_stats: 0, show_activity: 0, show_favorites: 0, activity_enabled: 1, notifications_enabled: 1 };
+}
+
+// Write-only privacy toggle: only the fields present in `patch` are changed.
+async function applyPrivacy(db, uid, patch) {
+  const cur = await loadPrivacy(db, uid);
+  const next = {};
+  for (const key of ["show_playlists", "show_stats", "show_activity", "show_favorites", "activity_enabled", "notifications_enabled"]) {
+    const v = key in patch ? (patch[key] ? 1 : 0) : cur[key];
+    next[key] = v;
+  }
+  await db.prepare(
+    `INSERT INTO user_privacy (uid, show_playlists, show_stats, show_activity, show_favorites, activity_enabled, notifications_enabled, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(uid) DO UPDATE SET show_playlists = excluded.show_playlists, show_stats = excluded.show_stats,
+       show_activity = excluded.show_activity, show_favorites = excluded.show_favorites,
+       activity_enabled = excluded.activity_enabled, notifications_enabled = excluded.notifications_enabled,
+       updated_at = excluded.updated_at`
+  ).bind(uid, next.show_playlists, next.show_stats, next.show_activity, next.show_favorites, next.activity_enabled, next.notifications_enabled, nowIso()).run();
+  return next;
+}
+
 export async function onRequestGet(context) {
   try {
     const url = new URL(context.request.url);
@@ -182,7 +220,13 @@ export async function onRequestPost(context) {
   const body = await context.request.json().catch(() => null);
   if (!body || !body.action) return json({ error: "missing action" }, 400);
   const db = context.env.wanted_vault;
-  const uid = String(body.user || "").slice(0, 40);
+  let uid = String(body.user || "").slice(0, 40);
+  // IDOR hardening: a valid session always pins identity to itself; the
+  // browser-supplied uid is only honored for signed-out linked devices.
+  try {
+    const session = await getSessionUser(db, context.request);
+    if (session && session.uid) uid = session.uid;
+  } catch (_) {}
   if (!uid) return json({ error: "missing user" }, 400);
   const authed = await (async () => {
     try {
@@ -196,6 +240,19 @@ export async function onRequestPost(context) {
     return false;
   })();
   if (!authed) return json({ error: "sign in required" }, 401);
+  // Ban enforcement on content/social mutations only. Telemetry (listens,
+  // downloads, logins, history), reads, and account-security actions stay
+  // available so bans can't lock users out of their own accounts.
+  const BAN_GATED = new Set(["updateProfile", "toggleFavorite", "addBookmark",
+    "removeBookmark", "createPlaylist", "deletePlaylist", "renamePlaylist",
+    "addPlaylistTrack", "removePlaylistTrack", "saveLinks", "addSuggestion",
+    "deleteSuggestion", "setVisibility"]);
+  if (BAN_GATED.has(body.action)) {
+    try {
+      const rej = await banRejection(db, uid);
+      if (rej) return rej.response;
+    } catch (_) {}
+  }
   try {
     switch (body.action) {
       case "updateProfile": {
@@ -259,7 +316,9 @@ export async function onRequestPost(context) {
         const name = String(body.name || "").slice(0, 60) || "New Playlist";
         const desc = String(body.desc || "").slice(0, 160);
         const color = String(body.color || "").slice(0, 12);
-        const ins = await db.prepare("INSERT INTO playlists (uid, name, desc, color) VALUES (?, ?, ?, ?)").bind(uid, name, desc, color).run();
+        const visibility = String(body.visibility || "private").slice(0, 10);
+        const share_key = visibility === "unlisted" ? randomHex(6) : "";
+        const ins = await db.prepare("INSERT INTO playlists (uid, name, desc, color, visibility, share_key) VALUES (?, ?, ?, ?, ?, ?)").bind(uid, name, desc, color, visibility, share_key).run();
         const pid = ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : null;
         if (pid) {
           const tracks = Array.isArray(body.tracks) ? body.tracks.slice(0, 300) : [];
@@ -325,7 +384,20 @@ export async function onRequestPost(context) {
       case "listen": {
         const title = String(body.title || "").slice(0, 160);
         const seconds = Math.max(1, Math.min(86400, Number(body.seconds) || 0));
-        await db.prepare("INSERT INTO listens (uid, track_id, seconds) VALUES (?, ?, ?)").bind(uid, title, seconds).run();
+        const recent = await db.prepare(
+          "SELECT ts FROM listens WHERE uid = ? AND track_id = ? ORDER BY id DESC LIMIT 1"
+        ).bind(uid, title).first();
+        if (!recent || !recent.ts || recent.ts < new Date(Date.now() - 90000).toISOString()) {
+          await db.prepare("INSERT INTO listens (uid, track_id, seconds) VALUES (?, ?, ?)").bind(uid, title, seconds).run();
+          try {
+            const lastPlay = await db.prepare(
+              "SELECT ts FROM activity WHERE uid = ? AND type = 'listen' ORDER BY id DESC LIMIT 1"
+            ).bind(uid).first();
+            if (!lastPlay || !lastPlay.ts || lastPlay.ts < new Date(Date.now() - 1800000).toISOString()) {
+              await recordActivity(db, uid, "listen", "You played " + title, title, title);
+            }
+          } catch (_) {}
+        }
         break;
       }
       case "logLogin": {
@@ -426,7 +498,40 @@ export async function onRequestPost(context) {
         break;
       }
       case "deleteAccount": {
-        return json({ error: "Account deletion is handled manually. Join the server and fill out the delete-request form: /delete-request" }, 403);
+        /* Destructive and irreversible, so it is never done from a click on the
+           site. The settings page sends people to /delete-request, which walks
+           them through joining the server and putting in a request instead. */
+        return json({ error: "Account deletion is handled manually. Open /delete-request to join the server and fill out the delete-request form." }, 403);
+      }
+      case "setVisibility": {
+        const pid = Number(body.id);
+        const visibility = String(body.visibility || "private").slice(0, 10);
+        if (!pid) return json({ error: "missing id" }, 400);
+        if (!["public", "unlisted", "private"].includes(visibility)) return json({ error: "invalid visibility" }, 400);
+        const target = await db.prepare("SELECT name, share_key FROM playlists WHERE id = ? AND uid = ?").bind(pid, uid).first();
+        if (!target) return json({ error: "playlist not found" }, 404);
+        const share_key = visibility === "unlisted" ? randomHex(6) : (target.share_key || "");
+        await db.prepare("UPDATE playlists SET visibility = ?, share_key = ?, updated_at = ? WHERE id = ? AND uid = ?")
+          .bind(visibility, share_key, nowIso(), pid, uid).run();
+        await recordActivity(db, uid, "playlist", "You set playlist " + String(target.name || "").slice(0, 80) + " to " + visibility, String(target.name || "").slice(0, 300), pid);
+        break;
+      }
+      case "setPrivacy": {
+        const fields = ["show_playlists", "show_stats", "show_activity", "show_favorites", "activity_enabled", "notifications_enabled"];
+        const patch = {};
+        for (const f of fields) if (f in body) patch[f] = body[f] ? 1 : 0;
+        await applyPrivacy(db, uid, patch);
+        break;
+      }
+      case "history": {
+        const rows = await db.prepare(
+          "SELECT id, track_id, seconds, ts FROM listens WHERE uid = ? ORDER BY id DESC LIMIT 200"
+        ).bind(uid).all();
+        return json({ ok: true, history: rows.results });
+      }
+      case "clearHistory": {
+        await db.prepare("DELETE FROM listens WHERE uid = ?").bind(uid).run();
+        break;
       }
       default:
         return json({ error: "unknown action: " + body.action }, 400);

@@ -320,12 +320,12 @@
   window.closeMobilePlayer = close;
 
   function boot() {
-    document.addEventListener("click", function (e) {
-      var mp = e.target.closest ? e.target.closest("#mini-player") : null;
-      if (!mp) return;
-      if (e.target.closest && e.target.closest("button")) return;
-      open();
-    });
+    /* The mini player used to open this full-screen sheet on any click of its
+       own body. It already navigates to the WRLD Player itself (script.js binds
+       that handler), so the click was doing two things at once: moving you to
+       the player and dropping a modal over it. Escape and the close button
+       still work, and openMobilePlayer() is still exported, so anything that
+       wants the sheet deliberately can still ask for it. */
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && document.getElementById(OV)) close();
     });

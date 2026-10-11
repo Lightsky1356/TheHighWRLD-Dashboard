@@ -1,4 +1,5 @@
 import { json, CORS, getActor, resolveTarget, rateLimit } from "../../../_lib/relationships.js";
+import { hubBroadcast } from "../../../_lib/realtime.js";
 
 // POST /api/users/:id/block  — create a personal block (viewer blocks :id).
 // DELETE /api/users/:id/block — remove that block relationship only.
@@ -36,6 +37,18 @@ export async function onRequest(context) {
         }
         throw e;
       }
+      const pairA = actorUid < target.uid ? actorUid : target.uid;
+      const pairB = actorUid < target.uid ? target.uid : actorUid;
+      await db.prepare("DELETE FROM social_friends WHERE uid_a = ? AND uid_b = ?").bind(pairA, pairB).run();
+      await db.prepare(
+        "UPDATE friend_requests SET status = 'cancelled', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') " +
+        "WHERE status = 'pending' AND ((requester_uid = ? AND recipient_uid = ?) OR (requester_uid = ? AND recipient_uid = ?))"
+      ).bind(actorUid, target.uid, target.uid, actorUid).run();
+      await Promise.all([actorUid, target.uid].map((recipientUid) => hubBroadcast(context.env, {
+        type: "social:refresh",
+        private: true,
+        recipientUid,
+      })));
       return json({ ok: true, blocked: true, uid: target.uid });
     }
 

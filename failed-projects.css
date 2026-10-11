@@ -1,0 +1,736 @@
+/* ============================================================================
+   THEHIGHWRLD - FAILED PROJECTS
+   Deliberately mirrors the Roadmap page (rm-*) so the two read as siblings:
+   same tokens, same card / panel / chip language, same mobile kill-switch
+   behaviour via player-settings.css at <=767px.
+
+   Unlike the Roadmap this page is a post-mortem, not a plan. Every card answers
+   "what was it" and "why did it not survive", so the namespaced fp- prefix is
+   kept separate from rm- to avoid coupling the two modules' markup.
+   ========================================================================== */
+
+#page-section-failed {
+  --fp-red: #f87171;
+  --fp-red-soft: #fca5a5;
+  --fp-amber: #fbbf24;
+  --fp-amber-soft: #fcd34d;
+  --fp-slate: #94a3b8;
+  --fp-cyan: #22d3ee;
+  --fp-cyan-soft: #67e8f9;
+  --fp-violet-soft: #a78bfa;
+  --fp-line: rgba(255, 255, 255, 0.1);
+  --fp-card: linear-gradient(135deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.018));
+  --fp-muted: rgba(156, 163, 175, 0.85);
+}
+
+/* --------------------------------------------------------------- page frame */
+/* Same top padding as the Roadmap: clears the fixed nav (56px phones, 84px
+   from 1024, 123px in the tablet wrap range). */
+.fp-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 96px 16px 40px;
+}
+
+@media (min-width: 768px) {
+  .fp-page {
+    padding: 140px 28px 60px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .fp-page {
+    padding: 104px 36px 72px;
+  }
+}
+
+/* Clear the fixed mobile bottom bar so the last card stays reachable. */
+@media (max-width: 767px) {
+  #page-section-failed .fp-page {
+    padding-top: 88px;
+    padding-bottom: calc(var(--mbn-h, 55px) + 26px);
+  }
+}
+
+/* ------------------------------------------------------------------ header */
+.fp-eyebrow {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--fp-red-soft);
+}
+
+.fp-header {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.fp-title {
+  margin: 10px auto 0;
+  font-size: clamp(1.5rem, 5vw, 2.35rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.96);
+  max-width: 22ch;
+}
+
+.fp-sub {
+  margin: 12px auto 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--fp-muted);
+  max-width: 62ch;
+}
+
+/* ----------------------------------------------------------------- summary */
+.fp-summary {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.fp-sum {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--fp-line);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.72);
+  white-space: nowrap;
+}
+
+.fp-sum i {
+  font-size: 10px;
+}
+
+.fp-sum b {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: #fff;
+}
+
+.fp-sum[data-fp-reason="removed"] i { color: var(--fp-red); }
+.fp-sum[data-fp-reason="replaced"] i { color: var(--fp-amber); }
+.fp-sum[data-fp-reason="abandoned"] i { color: var(--fp-slate); }
+.fp-sum[data-fp-reason="broken"] i { color: var(--fp-violet-soft); }
+
+/* ---------------------------------------------------------------- controls */
+.fp-controls {
+  position: relative;
+  margin-bottom: 26px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+}
+
+.fp-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.fp-controls-row + .fp-controls-row {
+  margin-top: 10px;
+}
+
+.fp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--fp-line);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.66);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.fp-chip i {
+  font-size: 10px;
+}
+
+.fp-chip .fp-chip-n {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 800;
+}
+
+.fp-chip:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.fp-chip[aria-pressed="true"] {
+  background: linear-gradient(90deg, rgba(248, 113, 113, 0.2), rgba(168, 85, 247, 0.16));
+  border-color: rgba(248, 113, 113, 0.32);
+  color: var(--fp-red-soft);
+}
+
+.fp-chip[aria-pressed="true"] .fp-chip-n {
+  color: rgba(254, 226, 226, 0.8);
+}
+
+.fp-chip:focus-visible,
+.fp-search input:focus-visible {
+  outline: 2px solid var(--fp-cyan);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ search */
+.fp-search {
+  position: relative;
+  flex: 1 1 240px;
+  display: flex;
+  align-items: center;
+}
+
+.fp-search i {
+  position: absolute;
+  left: 13px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.fp-search input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 14px 8px 34px;
+  border-radius: 999px;
+  border: 1px solid var(--fp-line);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.92);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.fp-search input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.fp-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.fp-search input:focus {
+  border-color: rgba(34, 211, 238, 0.36);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* -------------------------------------------------------------------- grid */
+.fp-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .fp-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .fp-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+/* -------------------------------------------------------------------- card */
+.fp-card[hidden] {
+  display: none !important;
+}
+
+.fp-card {
+  position: relative;
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 15px;
+  border-radius: 14px;
+  border: 1px solid var(--fp-line);
+  background: var(--fp-card);
+  overflow: hidden;
+  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+/* Faint red seam along the top, reading as a "struck through" marker. */
+.fp-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(248, 113, 113, 0.22), transparent);
+  opacity: 0.55;
+}
+
+/* Hover is decoration only - never required to read a card. */
+@media (hover: hover) {
+  .fp-card:hover {
+    border-color: rgba(248, 113, 113, 0.28);
+    background: rgba(255, 255, 255, 0.075);
+    transform: translateY(-2px);
+  }
+}
+
+.fp-card-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.94);
+  overflow-wrap: anywhere;
+}
+
+/* Struck-through title so "this is gone" reads before the paragraph does. */
+.fp-card[data-fp-reason="removed"] .fp-card-title,
+.fp-card[data-fp-reason="abandoned"] .fp-card-title {
+  text-decoration: line-through;
+  text-decoration-color: rgba(248, 113, 113, 0.55);
+  text-decoration-thickness: 1.5px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.fp-card-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--fp-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Why it died - the whole point of the page, so it gets its own block. */
+.fp-card-why {
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.16);
+  background: rgba(248, 113, 113, 0.06);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: rgba(254, 226, 226, 0.9);
+  overflow-wrap: anywhere;
+}
+
+.fp-card-why b {
+  display: block;
+  margin-bottom: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fp-red-soft);
+  opacity: 0.9;
+}
+
+/* reason badge - icon + text, so the reason never depends on colour alone */
+.fp-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.fp-badge i {
+  font-size: 8px;
+}
+
+.fp-badge[data-fp-reason="removed"] {
+  color: var(--fp-red);
+  border-color: rgba(248, 113, 113, 0.3);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.fp-badge[data-fp-reason="replaced"] {
+  color: var(--fp-amber);
+  border-color: rgba(251, 191, 36, 0.28);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.fp-badge[data-fp-reason="abandoned"] {
+  color: var(--fp-slate);
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.fp-badge[data-fp-reason="broken"] {
+  color: var(--fp-violet-soft);
+  border-color: rgba(167, 139, 250, 0.3);
+  background: rgba(167, 139, 250, 0.12);
+}
+
+/* category chips */
+.fp-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.fp-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--fp-line);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ states */
+.fp-empty {
+  padding: 44px 18px;
+  text-align: center;
+  border-radius: 14px;
+  border: 1px dashed var(--fp-line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.fp-empty[hidden] {
+  display: none !important;
+}
+
+.fp-empty i {
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.22);
+  margin-bottom: 12px;
+}
+
+.fp-empty p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--fp-muted);
+}
+
+.fp-empty .fp-empty-sub {
+  margin-top: 6px;
+  font-size: 11px;
+  color: rgba(156, 163, 175, 0.6);
+}
+
+/* Section heading above the grid. */
+.fp-sec-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.fp-sec-head .fp-bar {
+  width: 3px;
+  height: 15px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--fp-red), rgba(248, 113, 113, 0.15));
+  flex: none;
+}
+
+.fp-sec-head h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* Live "showing N of M" count, driven by the filter. */
+.fp-shown {
+  margin-left: auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--fp-line);
+  background: rgba(255, 255, 255, 0.04);
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* --------------------------------------------------------------- spotlight */
+/* The featured failure gets a full-width panel above the controls. Same role as
+   the Roadmap's .rm-next ("What's Next?") panel - the one thing worth reading
+   before the list - so it borrows that panel's radial wash and card language,
+   tinted red here to match the page. */
+.fp-spot-sec {
+  margin-bottom: 24px;
+}
+
+.fp-spot-sec[hidden] {
+  display: none !important;
+}
+
+.fp-spot {
+  position: relative;
+  padding: 22px 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(248, 113, 113, 0.22);
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.09), rgba(255, 255, 255, 0.02));
+  overflow: hidden;
+}
+
+.fp-spot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(120% 140% at 0% 0%, rgba(248, 113, 113, 0.16), transparent 55%),
+    radial-gradient(120% 140% at 100% 100%, rgba(168, 85, 247, 0.12), transparent 55%);
+  pointer-events: none;
+}
+
+/* Keeps every child above the ::before wash. */
+.fp-spot > * {
+  position: relative;
+}
+
+.fp-spot-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.fp-spot-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fp-red-soft);
+}
+
+.fp-spot h3 {
+  margin: 0 0 8px;
+  font-size: clamp(1.35rem, 5vw, 2rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: rgba(255, 255, 255, 0.97);
+  overflow-wrap: anywhere;
+  text-decoration: line-through;
+  text-decoration-color: rgba(248, 113, 113, 0.6);
+  text-decoration-thickness: 2px;
+}
+
+.fp-spot-desc {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--fp-muted);
+  max-width: 70ch;
+}
+
+/* The spotlight's why-block is the centrepiece, so it reads larger than the
+   one inside a grid card. */
+.fp-spot-why {
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  background: rgba(248, 113, 113, 0.08);
+  font-size: 13px;
+  line-height: 1.65;
+  color: rgba(254, 226, 226, 0.94);
+  max-width: 74ch;
+  overflow-wrap: anywhere;
+}
+
+.fp-spot-why b {
+  display: block;
+  margin-bottom: 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fp-red-soft);
+  opacity: 0.95;
+}
+
+.fp-spot-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* category row - the wrapper around the area filter chips */
+.fp-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* --------------------------------------------------------------- tags + dl */
+/* Tags are the project's own vocabulary (stack, shape), so they sit apart from
+   the icon'd category chips: monospace, no icon, quieter. */
+.fp-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.03);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.58);
+  white-space: nowrap;
+}
+
+/* Download button - a real <a download>, so it works without JS and saves the
+   file instead of navigating away from the page. */
+.fp-dl {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 10px;
+  padding: 10px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.26);
+  background: rgba(34, 211, 238, 0.07);
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: none;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.fp-dl:hover {
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.12);
+  transform: translateY(-1px);
+}
+
+.fp-dl:focus-visible {
+  outline: 2px solid var(--fp-cyan);
+  outline-offset: 2px;
+}
+
+.fp-dl > i {
+  font-size: 15px;
+  color: var(--fp-cyan-soft);
+  flex: none;
+}
+
+.fp-dl-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fp-dl-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.fp-dl-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.fp-dl-file {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: rgba(207, 250, 254, 0.75);
+  overflow-wrap: anywhere;
+}
+
+.fp-dl-size {
+  font-variant-numeric: tabular-nums;
+}
+
+.fp-dl-size::before,
+.fp-dl-note::before {
+  content: "·";
+  margin-right: 7px;
+  opacity: 0.5;
+}
+
+/* The "no trackers, no secrets" claim sits in green so it reads as a
+   reassurance rather than more file metadata. */
+.fp-dl-note {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.fp-dl-note::before {
+  content: "";
+  margin: 0;
+}
+
+/* ------------------------------------------------------- reduced motion / flash */
+@media (prefers-reduced-motion: no-preference) {
+  .fp-card.fp-flash {
+    animation: fpFlash 1.6s ease;
+  }
+}
+
+@keyframes fpFlash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
+  35% { box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.45); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fp-card.fp-flash {
+    animation: none;
+    outline: 2px solid rgba(248, 113, 113, 0.75);
+    outline-offset: 2px;
+  }
+}

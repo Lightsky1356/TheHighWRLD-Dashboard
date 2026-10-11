@@ -20,7 +20,7 @@ function esc(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-const VALID_TYPES = ["WANTED", "SUGGESTION", "REPLY", "NOM", "PROFILE", "TRACK", "USER"];
+const VALID_TYPES = ["WANTED", "SUGGESTION", "REPLY", "NOM", "PROFILE", "TRACK", "USER", "MESSAGE"];
 const VALID_STATUSES = ["OPEN", "REVIEWING", "RESOLVED", "DISMISSED"];
 const VALID_REASONS = [
   "Spam",
@@ -189,6 +189,23 @@ export async function onRequestPost(context) {
       if (!rep) return json({ error: "reported content not found" }, 404);
       snapTitle = "Reply on " + (rep.track_id || "");
       snapBody = ((rep.user_name || "Someone") + ": " + (rep.body || "")).slice(0, MAX_DETAILS);
+    } else if (targetType === "MESSAGE") {
+      const message = await db.prepare(
+        "SELECT m.sender_uid, m.body, m.deleted_at FROM dm_messages m " +
+        "JOIN dm_conversation_members cm ON cm.conversation_id = m.conversation_id AND cm.uid = ? " +
+        "WHERE m.id = ?"
+      ).bind(reporter.uid, Number(targetId) || 0).first();
+      if (!message || message.deleted_at) return json({ error: "reported content not found" }, 404);
+      if (message.sender_uid === reporter.uid) {
+        return json({ error: "cannot_perform_on_self", message: "You cannot report your own message." }, 400);
+      }
+      const sender = await db.prepare(
+        "SELECT COALESCE(NULLIF(p.name,''), NULLIF(d.display_name,''), u.name, 'Member') AS name " +
+        "FROM users u LEFT JOIN user_profiles p ON p.site_uid = u.uid " +
+        "LEFT JOIN discord_links d ON d.site_uid = u.uid WHERE u.uid = ?"
+      ).bind(message.sender_uid).first();
+      snapTitle = "Direct message from " + ((sender && sender.name) || "Member");
+      snapBody = String(message.body || "").slice(0, MAX_DETAILS);
     } else if (targetType === "PROFILE" || targetType === "USER") {
       // targetId is "d:<discordId>" or "u:<siteUid>" (unprefixed falls back to either).
       let discordId = targetId;

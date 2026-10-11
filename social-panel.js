@@ -1,0 +1,1421 @@
+(function () {
+  "use strict";
+
+  if (window.__thwSocialMounted) return;
+  window.__thwSocialMounted = true;
+
+  var API = "/api/social";
+  var state = {
+    open: false,
+    tab: "friends",
+    boot: null,
+    searchTimer: null,
+    searchText: "",
+    conversation: null,
+    messages: [],
+    olderCursor: 0,
+    hasOlder: false,
+    blocked: false,
+    typingStarted: false,
+    replyTo: null,
+    typingTimer: null,
+    refreshTimer: null,
+    focusBeforeOpen: null,
+    rulesOpen: false,
+    /* Whether the panel is currently holding the page scroll lock. Tracked
+       separately from the lock count so a resize can re-evaluate it without
+       guessing how many holds are outstanding. */
+    panelScrollLocked: false,
+    /* Retry state. The "Reconnecting…" notice made a promise the panel did not
+       keep: refresh() was only ever triggered by realtime events, so a failure
+       during a quiet websocket left the notice up indefinitely with nothing
+       behind it. These drive a bounded backoff so the notice is true. */
+    retryTimer: null,
+    retryDelay: 1000,
+    lastSyncAt: 0,
+    searching: false,
+    recentSearches: []
+  };
+
+  /* One empty state for the whole panel. These three places used to be bare
+     lines of grey text floating in a large void, which read as "broken" rather
+     than "nothing here yet". An icon, a heading and a line of guidance gives
+     each tab a reason to exist even when it has nothing in it. */
+  function emptyState(icon, title, text) {
+    var wrap = el("div", "thw-social-empty");
+    var glyph = el("span", "thw-social-empty-icon");
+    glyph.innerHTML = '<i class="fas ' + icon + '" aria-hidden="true"></i>';
+    wrap.appendChild(glyph);
+    if (title) wrap.appendChild(el("strong", "thw-social-empty-title", title));
+    if (text) wrap.appendChild(el("span", "thw-social-empty-text", text));
+    return wrap;
+  }
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function api(path, options) {
+    options = options || {};
+    var headers = options.body ? { "Content-Type": "application/json" } : {};
+    return fetch(API + path, {
+      method: options.method || "GET",
+      headers: headers,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+      credentials: "same-origin",
+      cache: "no-store"
+    }).then(function (response) {
+      return response.json().catch(function () { return {}; }).then(function (data) {
+        if (!response.ok) {
+          var error = new Error(data.message || data.error || "Social request failed");
+          error.status = response.status;
+          error.code = data.error || "";
+          throw error;
+        }
+        return data;
+      });
+    });
+  }
+
+  /* A failure used to surface its raw message, so the panel showed strings like
+     "Social request failed" or "Failed to fetch" - technical noise that says
+     nothing about whether to retry, to sign in, or to wait. Map it onto
+     something a person can act on, and never fall back to the original text. */
+  function describeError(error) {
+    var status = error && error.status;
+    if (status === 401) return "Sign in to use Friends & Messages.";
+    if (status === 403) return "You do not have permission to do that.";
+    if (status === 404) return "That is no longer available.";
+    if (status === 409) return "That no longer matches what is saved. Try again.";
+    if (status === 429) return "Too many requests. Wait a moment and try again.";
+    if (status >= 500) return "The server had a problem. Try again shortly.";
+    /* fetch() rejects with a TypeError when the request never reached the server
+       at all - dropped connection, offline, DNS failure. There is no status to
+       read here, and this is the case that used to print "Failed to fetch". */
+    if (error instanceof TypeError) return "No connection. Check your network and try again.";
+    return "Something went wrong. Try again.";
+  }
+
+  /* kind is "error" when something failed, "warn" for a soft notice such as
+     reconnecting, and empty for a neutral confirmation. */
+  function showStatus(message, kind) {
+    var status = document.getElementById("thw-social-status");
+    if (!status) return;
+    status.textContent = message || "";
+    status.classList.toggle("is-error", kind === "error" || kind === true);
+    status.classList.toggle("is-warn", kind === "warn");
+  }
+
+  function initials(name) {
+    return String(name || "?").trim().split(/\s+/).slice(0, 2).map(function (s) {
+      return s.charAt(0);
+    }).join("").toUpperCase() || "?";
+  }
+
+  function avatarNode(user, size) {
+    var box = el("span", "thw-social-avatar");
+    if (size) box.style.width = size + "px", box.style.height = size + "px";
+    var src = String((user && user.avatar) || "");
+    if (src && (/^https?:\/\//i.test(src) || src.charAt(0) === "/")) {
+      var image = document.createElement("img");
+      image.alt = "";
+      image.loading = "lazy";
+      image.src = src;
+      image.className = "thw-social-avatar";
+      image.onerror = function () {
+        var fallback = el("span", "thw-social-avatar", initials(user && user.name));
+        image.replaceWith(fallback);
+      };
+      return image;
+    }
+    box.textContent = initials(user && user.name);
+    return box;
+  }
+
+  function button(label, action, className, data) {
+    var node = el("button", "thw-social-action" + (className ? " " + className : ""), label);
+    node.type = "button";
+    node.dataset.action = action;
+    Object.keys(data || {}).forEach(function (key) { node.dataset[key] = String(data[key]); });
+    return node;
+  }
+
+  function mount() {
+    if (!document.body || document.getElementById("thw-social-root")) return;
+    var css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "/social.css?v=thw-v21";
+    document.head.appendChild(css);
+
+    var root = el("div");
+    root.id = "thw-social-root";
+    root.innerHTML =
+      '<button id="thw-social-fab" type="button" aria-label="Open Friends and Messages" aria-haspopup="dialog" aria-expanded="false" title="Friends & Messages">' +
+        '<i class="fas fa-comments" aria-hidden="true"></i><span id="thw-social-badge" hidden></span>' +
+      '</button>' +
+      '<div id="thw-social-overlay" hidden>' +
+        '<div id="thw-social-wash" aria-hidden="true"></div>' +
+        '<section id="thw-social-panel" role="dialog" aria-modal="false" aria-labelledby="thw-social-title">' +
+          '<header class="thw-social-head"><div><h2 class="thw-social-title" id="thw-social-title">Friends &amp; Messages</h2><p class="thw-social-subtitle">Your community, wherever you are</p></div>' +
+            '<span class="thw-social-head-actions">' +
+            '<button class="thw-social-rules-link" id="thw-social-rules-link" type="button" aria-haspopup="dialog" title="House rules"><i class="fas fa-shield-halved" aria-hidden="true"></i><span>Rules</span></button>' +
+            '<button class="thw-social-close" id="thw-social-close" type="button" aria-label="Close Friends and Messages"><i class="fas fa-xmark" aria-hidden="true"></i></button></span></header>' +
+          '<nav class="thw-social-tabs" role="tablist" aria-label="Social sections">' +
+            '<button class="thw-social-tab" type="button" role="tab" data-tab="friends" aria-selected="true">Friends</button>' +
+            '<button class="thw-social-tab" type="button" role="tab" data-tab="messages" aria-selected="false">Messages <span class="thw-social-tab-count" id="thw-social-message-count"></span></button>' +
+            '<button class="thw-social-tab" type="button" role="tab" data-tab="requests" aria-selected="false">Requests <span class="thw-social-tab-count" id="thw-social-request-count"></span></button>' +
+          '</nav>' +
+          '<div class="thw-social-status" id="thw-social-status" role="status" aria-live="polite"></div>' +
+          '<div class="thw-social-freshness" id="thw-social-freshness" aria-live="off"></div>' +
+          '<section class="thw-social-view active" data-view="friends" role="tabpanel">' +
+            '<div class="thw-social-search"><label class="sr-only" for="thw-social-search">Search members</label><input id="thw-social-search" type="search" autocomplete="off" placeholder="Find people by name">' +
+              '<button class="thw-social-search-clear" data-action="clear-search" type="button" aria-label="Clear search" hidden><i class="fas fa-xmark" aria-hidden="true"></i></button></div>' +
+            '<div class="thw-social-search-meta" id="thw-social-search-meta" aria-live="polite"></div>' +
+            '<div class="thw-social-list" id="thw-social-search-results" aria-live="polite"></div>' +
+            '<div class="thw-social-section-label">Your friends</div><div class="thw-social-list" id="thw-social-friends"></div>' +
+          '</section>' +
+          '<section class="thw-social-view" data-view="messages" role="tabpanel">' +
+            '<div class="thw-social-messages"><div class="thw-social-convos" id="thw-social-conversations" aria-label="Conversations"></div>' +
+              '<div class="thw-social-thread"><header class="thw-social-thread-head" id="thw-social-thread-head"></header>' +
+                '<div class="thw-social-thread-body" id="thw-social-thread-body"><div class="thw-social-thread-placeholder"><span class="thw-social-empty-icon"><i class="fas fa-comment-dots" aria-hidden="true"></i></span><strong class="thw-social-empty-title">No conversation open</strong><span class="thw-social-empty-text">Pick someone from your friends to start messaging.</span></div></div>' +
+                '<div class="thw-social-typing" id="thw-social-typing" aria-live="polite"></div>' +
+                '<div class="thw-social-replying" id="thw-social-replying"><span id="thw-social-reply-label"></span><button id="thw-social-reply-cancel" type="button" aria-label="Cancel reply">Cancel</button></div>' +
+                '<form class="thw-social-composer" id="thw-social-composer"><label class="sr-only" for="thw-social-input">Write a message</label><textarea id="thw-social-input" maxlength="2000" rows="1" placeholder="Write a message" disabled></textarea><span class="thw-social-counter" id="thw-social-counter" aria-live="off"></span><button class="thw-social-send" id="thw-social-send" type="submit" disabled>Send</button></form>' +
+              '</div></div>' +
+          '</section>' +
+          '<section class="thw-social-view" data-view="requests" role="tabpanel"><div class="thw-social-list" id="thw-social-requests"></div></section>' +
+        '</section>' +
+      '</div>' +
+      '<div class="thw-social-rules" id="thw-social-rules" role="dialog" aria-modal="true" aria-labelledby="thw-social-rules-title" hidden>' +
+        '<div class="thw-social-rules-card">' +
+          '<header class="thw-social-rules-head"><h3 class="thw-social-rules-title" id="thw-social-rules-title">Friends &amp; Messages rules</h3>' +
+            '<button class="thw-social-rules-close" type="button" aria-label="Close rules"><i class="fas fa-xmark" aria-hidden="true"></i></button></header>' +
+          '<div class="thw-social-rules-body"></div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(root);
+
+    document.getElementById("thw-social-fab").addEventListener("click", function () { setOpen(!state.open); });
+    document.getElementById("thw-social-close").addEventListener("click", function () { setOpen(false); });
+    root.addEventListener("click", onClick);
+    root.addEventListener("input", onInput);
+    document.getElementById("thw-social-composer").addEventListener("submit", sendMessage);
+    document.getElementById("thw-social-reply-cancel").addEventListener("click", clearReply);
+    document.getElementById("thw-social-rules-link").addEventListener("click", openRules);
+    document.getElementById("thw-social-rules").addEventListener("click", function (event) {
+      /* Backdrop click closes; clicks inside the card must not. */
+      if (event.target === event.currentTarget) closeRules();
+    });
+    document.querySelector(".thw-social-rules-close").addEventListener("click", closeRules);
+    /* The Community menu is suppressed while this panel is open, so a click on
+       its trigger would otherwise do nothing at all - the menu would just fail
+       to appear with no explanation. Intercept it and say why instead.
+
+       Capture phase, because the trigger carries an inline onclick that would
+       otherwise run first and re-open the menu behind the suppression. */
+    document.addEventListener("click", function (event) {
+      if (!state.open) return;
+      var trigger = event.target && event.target.closest && event.target.closest("#page-nav-wanted");
+      if (!trigger) return;
+      event.preventDefault();
+      event.stopPropagation();
+      notifyCommunityMenuBlocked();
+    }, true);
+    document.addEventListener("keydown", function (event) {
+      if (!state.open) return;
+      /* The rules dialog sits above the panel, so Escape unwinds one level at a
+         time rather than closing both at once. */
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (state.rulesOpen) closeRules();
+        else setOpen(false);
+        return;
+      }
+      /* Keep Tab inside the dialog while it is open. The panel was marked
+         aria-modal="false", so nothing stopped focus walking out into the page
+         behind it and leaving keyboard users stranded. Focus still returns to
+         the trigger on close, and Escape always works, so this is a loop and not
+         a cage. */
+      if (event.key !== "Tab") return;
+      var panel = document.getElementById("thw-social-panel");
+      if (!panel) return;
+      var focusable = panel.querySelectorAll('a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])');
+      var visible = Array.prototype.filter.call(focusable, function (node) {
+        return node.offsetParent !== null || node === document.activeElement;
+      });
+      if (!visible.length) return;
+      var first = visible[0];
+      var last = visible[visible.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      else if (!panel.contains(document.activeElement)) { event.preventDefault(); first.focus(); }
+    });
+    window.addEventListener("thw:social", onRealtime);
+    window.addEventListener("thw:notification", scheduleRefresh);
+    window.addEventListener("thw:presence", function () { if (state.open) scheduleRefresh(); });
+    /* The backoff alone can leave a gap of up to 30s at the end of a long
+       outage, so a reconnecting browser retries immediately instead. */
+    window.addEventListener("online", function () {
+      if (!state.open) return;
+      clearRetry();
+      refresh();
+    });
+    window.addEventListener("offline", function () {
+      if (state.open) showRetryStatus("You are offline.");
+    });
+    /* Leaving and returning to the tab is a common moment for a stale panel to
+       be caught, so re-sync on the way back rather than trusting old data. */
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden && state.open) { clearRetry(); refresh(); }
+    });
+    mountPrivacySettings();
+    loadRecentSearches();
+    if (document.getElementById("page-section-account")?.classList.contains("active")) loadPrivacySettings();
+  }
+
+  /* ---------------------------------------------------------- scroll lock */
+  /* Two things can want the page frozen at once: the House Rules dialog (on
+     every screen) and the panel itself on a phone, where it covers the whole
+     viewport. The count means closing one does not unlock the page out from
+     under the other - opening Rules from inside a panel-open phone holds two,
+     and closing Rules leaves the panel's own hold intact.
+
+     This deliberately does NOT reuse the site-wide "scroll-locked" class.
+     reports.js, suggestions.js, account.js and user-menu.js all add and remove
+     that one directly, so any of them running while this lock is held would
+     silently drop it and let the page scroll again. */
+  var scrollLocks = 0;
+
+  function lockScroll() {
+    scrollLocks++;
+    if (scrollLocks === 1) {
+      document.documentElement.classList.add("thw-social-scrolllock");
+    }
+  }
+
+  function unlockScroll() {
+    if (scrollLocks <= 0) return;
+    scrollLocks--;
+    if (scrollLocks === 0) {
+      document.documentElement.classList.remove("thw-social-scrolllock");
+    }
+  }
+
+  /* The panel only freezes the page on a phone. On desktop it is a side sheet
+     sitting beside the content, so locking there would take away the very page
+     the user opened it from. 680px is the width social.css uses to switch the
+     panel to full-screen. */
+  function panelLocksScroll() {
+    return window.matchMedia("(max-width: 680px)").matches;
+  }
+
+  /* Keeps the panel's hold in step with the panel across a resize or rotation,
+     so crossing the breakpoint neither strands a lock nor misses one. */
+  function syncPanelScrollLock() {
+    var want = !!state.open && panelLocksScroll();
+    if (want === state.panelScrollLocked) return;
+    state.panelScrollLocked = want;
+    if (want) lockScroll();
+    else unlockScroll();
+  }
+
+  /* Rotating a phone or dragging a window across 680px changes whether the panel
+     should be holding the page still. Re-check rather than locking on open and
+     leaving a stranded hold behind. */
+  window.addEventListener("resize", function () {
+    syncPanelScrollLock();
+  });
+
+  function setOpen(open) {
+    var overlay = document.getElementById("thw-social-overlay");
+    var fab = document.getElementById("thw-social-fab");
+    if (!overlay || !fab) return;
+    if (open && !state.open) state.focusBeforeOpen = document.activeElement;
+    state.open = !!open;
+    overlay.hidden = !state.open;
+    fab.setAttribute("aria-expanded", state.open ? "true" : "false");
+    /* Rules lives inside this panel, so closing the panel closes Rules with it.
+       closeRules() drops its own lock hold; without this the count would be left
+       one too high and the page would stay frozen after the panel is gone. */
+    if (!state.open && state.rulesOpen) closeRules();
+    if (state.open) {
+      /* The Community menu is suppressed while this panel is open (see
+         social.css), so closing it here too keeps the click path and the hover
+         path consistent - otherwise the menu would vanish on one and survive on
+         the other. Attempting to use it raises a toast instead. */
+      if (typeof closeCommMenu === "function") { try { closeCommMenu(); } catch (e) {} }
+      refresh();
+      document.getElementById("thw-social-close").focus();
+      /* On a phone the on-screen keyboard shrinks the viewport, which used to
+         cover the composer and leave no way to type. The viewport inset is the
+         height actually left over, so the panel is pinned to that instead. */
+      document.documentElement.classList.add("thw-social-open");
+    } else {
+      document.documentElement.classList.remove("thw-social-open");
+      if (state.focusBeforeOpen && state.focusBeforeOpen.focus) {
+        state.focusBeforeOpen.focus();
+      }
+    }
+    /* Applied last: it reads the settled state.open and the current width, so
+       opening and closing both stay correct in one place. */
+    syncPanelScrollLock();
+  }
+
+  function setTab(tab) {
+    state.tab = tab;
+    document.querySelectorAll("#thw-social-root [data-tab]").forEach(function (node) {
+      node.setAttribute("aria-selected", node.dataset.tab === tab ? "true" : "false");
+    });
+    document.querySelectorAll("#thw-social-root [data-view]").forEach(function (node) {
+      node.classList.toggle("active", node.dataset.view === tab);
+    });
+  }
+
+  function onClick(event) {
+    var tab = event.target.closest("[data-tab]");
+    if (tab) {
+      setTab(tab.dataset.tab);
+      return;
+    }
+    var convo = event.target.closest("[data-conversation-id]");
+    if (convo) {
+      var item = (state.boot && state.boot.conversations || []).find(function (c) { return c.id === convo.dataset.conversationId; });
+      if (item) openConversation(item);
+      return;
+    }
+    var action = event.target.closest("[data-action]");
+    if (!action || action.disabled) return;
+    event.preventDefault();
+    runAction(action);
+  }
+
+  function onInput(event) {
+    if (event.target.id === "thw-social-search") {
+      state.searchText = event.target.value.trim();
+      clearTimeout(state.searchTimer);
+      if (state.searchText.length < 2) {
+        renderSearchResults([]);
+        updateSearchMeta();
+        return;
+      }
+      var query = state.searchText;
+      state.searchTimer = setTimeout(function () { search(query); }, 280);
+      updateSearchMeta();
+      var clearBtn = document.querySelector("#thw-social-root [data-action='clear-search']");
+      if (clearBtn) clearBtn.hidden = event.target.value.length === 0;
+    } else if (event.target.id === "thw-social-input") {
+      scheduleTyping();
+      /* Only warn as the hard 2000 limit approaches, so the counter is
+         informative rather than permanently in the way. */
+      var counter = document.getElementById("thw-social-counter");
+      if (counter) {
+        var left = 2000 - event.target.value.length;
+        counter.textContent = left <= 200 ? String(left) : "";
+        counter.classList.toggle("warn", left <= 200);
+      }
+    }
+  }
+
+  function scheduleRefresh() {
+    clearTimeout(state.refreshTimer);
+    state.refreshTimer = setTimeout(refresh, 300);
+  }
+
+  function onRealtime(event) {
+    var msg = event.detail || {};
+    if (msg.type === "social:typing") {
+      if (state.conversation && state.conversation.id === msg.conversationId && msg.user?.uid !== (state.boot?.me?.uid || "")) {
+        var typing = document.getElementById("thw-social-typing");
+        typing.textContent = msg.typing ? ((msg.user && msg.user.name || "Someone") + " is typing…") : "";
+        clearTimeout(state.typingTimer);
+        if (msg.typing) state.typingTimer = setTimeout(function () { typing.textContent = ""; }, 3200);
+      }
+      return;
+    }
+    if (msg.type === "social:message") {
+      if (state.open && state.conversation && state.conversation.id === msg.conversationId) {
+        loadMessages(false, true);
+      } else {
+        scheduleRefresh();
+      }
+      return;
+    }
+    scheduleRefresh();
+  }
+
+  /* Bounded exponential backoff. Doubles from 1s and stops at 30s so a long
+     outage does not turn into a request every few hundred milliseconds, and the
+     notice is cleared the moment a refresh succeeds. */
+  function scheduleRetry() {
+    clearTimeout(state.retryTimer);
+    if (!state.open) return;
+    var wait = state.retryDelay;
+    state.retryDelay = Math.min(state.retryDelay * 2, 30000);
+    state.retryTimer = setTimeout(function () { refresh(); }, wait);
+  }
+
+  function clearRetry() {
+    clearTimeout(state.retryTimer);
+    state.retryTimer = null;
+    state.retryDelay = 1000;
+  }
+
+  /* The notice carries its own Retry so nobody has to wait out the backoff. */
+  function showRetryStatus(message) {
+    var status = document.getElementById("thw-social-status");
+    if (!status) return;
+    status.replaceChildren();
+    status.classList.remove("is-error");
+    status.classList.add("is-warn");
+    status.appendChild(el("span", "", message + " "));
+    var retry = el("button", "thw-social-retry", "Retry");
+    retry.type = "button";
+    retry.dataset.action = "retry";
+    status.appendChild(retry);
+  }
+
+  function refresh() {
+    return api("/bootstrap").then(function (data) {
+      state.boot = data;
+      state.lastSyncAt = Date.now();
+      clearRetry();
+      showStatus(data.presenceAvailable === false ? "Live status is temporarily unavailable." : "", "warn");
+      renderFriends(data.friends || []);
+      renderRequests(data.requests || []);
+      renderConversations(data.conversations || []);
+      updateBadge(data.counts || {});
+      updateFreshness();
+    }).catch(function (error) {
+      /* Deliberately leave the lists alone. They used to be reset to empty,
+         which made one dropped connection look exactly like having no friends
+         at all - the panel would confidently say "No friends yet" while the
+         data was merely unfetched, and the user could not tell the difference
+         between a fact and a failure. Keep the last good render and say we are
+         reconnecting; the next successful refresh puts everything back. */
+      if (error && error.status === 401) { state.boot = null; showStatus(""); renderSignedOut(); return; }
+      if (state.boot) { showRetryStatus("Reconnecting…"); scheduleRetry(); }
+      else showStatus(describeError(error), "error");
+    });
+  }
+
+  /* "Updated 2m ago" so stale data never quietly passes for current. */
+  function updateFreshness() {
+    var node = document.getElementById("thw-social-freshness");
+    if (!node) return;
+    if (!state.lastSyncAt) { node.textContent = ""; return; }
+    node.textContent = "Updated " + relativeTime(new Date(state.lastSyncAt).toISOString());
+  }
+
+  function updateBadge(counts) {
+    var count = (Number(counts.messages) || 0) + (Number(counts.requests) || 0);
+    var badge = document.getElementById("thw-social-badge");
+    if (!badge) return;
+    badge.textContent = count > 99 ? "99+" : String(count);
+    badge.hidden = count === 0;
+    badge.setAttribute("aria-label", count + " unread messages or requests");
+    var messageCount = document.getElementById("thw-social-message-count");
+    var requestCount = document.getElementById("thw-social-request-count");
+    if (messageCount) messageCount.textContent = counts.messages ? "(" + counts.messages + ")" : "";
+    if (requestCount) requestCount.textContent = counts.requests ? "(" + counts.requests + ")" : "";
+  }
+
+  /* A guest is the most common state this panel is in, so it gets a designed
+     state rather than an error string over empty lists. Replaces every list in
+     the panel and clears the freshness stamp, so nothing reads as stale data. */
+  function renderSignedOut() {
+    var friends = document.getElementById("thw-social-friends");
+    var requests = document.getElementById("thw-social-requests");
+    var convos = document.getElementById("thw-social-conversations");
+    [friends, requests, convos].forEach(function (node) {
+      if (node) node.replaceChildren();
+    });
+    var freshness = document.getElementById("thw-social-freshness");
+    if (freshness) freshness.textContent = "";
+    var badge = document.getElementById("thw-social-badge");
+    if (badge) badge.hidden = true;
+    if (!friends) return;
+
+    var hero = el("div", "thw-social-gate");
+    var icon = el("span", "thw-social-gate-icon");
+    icon.innerHTML = '<i class="fas fa-user-friends" aria-hidden="true"></i>';
+    hero.appendChild(icon);
+    hero.appendChild(el("h3", "thw-social-gate-title", "Sign in to connect"));
+    hero.appendChild(el("p", "thw-social-gate-text",
+      "Link your account to add friends, send messages, and see who is around."));
+    var cta = el("button", "thw-social-gate-btn", "Sign in");
+    cta.type = "button";
+    cta.addEventListener("click", function () {
+      /* showAuthPage is the site's real sign-in entry point; the others are
+         fallbacks for older builds where it may not be loaded yet. */
+      if (typeof showAuthPage === "function") { try { showAuthPage("login"); return; } catch (e) {} }
+      if (typeof authGateSignIn === "function") { try { authGateSignIn(); } catch (e) {} }
+    });
+    hero.appendChild(cta);
+    friends.appendChild(hero);
+
+    /* Requests and Messages get a compact note rather than the full hero. The
+       full gate would be repeated three times over, and "No pending requests"
+       would be a lie - it implies you have none, rather than that you cannot
+       see them until you sign in. */
+    if (requests) {
+      var req = el("div", "thw-social-gate thw-social-gate--compact");
+      req.appendChild(el("p", "thw-social-gate-text", "Sign in to see friend requests."));
+      requests.appendChild(req);
+    }
+    if (convos) {
+      var convo = el("div", "thw-social-gate thw-social-gate--compact");
+      convo.appendChild(el("p", "thw-social-gate-text", "Sign in to see your conversations."));
+      convos.appendChild(convo);
+    }
+  }
+
+  function renderFriends(friends) {
+    var list = document.getElementById("thw-social-friends");
+    list.replaceChildren();
+    if (!friends.length) {
+      list.appendChild(emptyState("fa-user-plus", "No friends yet", "Search for someone by name above to send a friend request."));
+      return;
+    }
+    friends.forEach(function (friend) {
+      var row = el("div", "thw-social-row");
+      row.appendChild(avatarNode(friend));
+      var person = el("span", "thw-social-person");
+      person.appendChild(el("span", "thw-social-name", friend.name));
+      var label = friend.online ? "Online" : (friend.activity || (friend.lastActive ? "Last active " + relativeTime(friend.lastActive) : "Offline"));
+      var meta = el("span", "thw-social-meta" + (friend.online ? " thw-social-online" : ""), label);
+      person.appendChild(meta);
+      row.appendChild(person);
+      var actions = el("span", "thw-social-actions");
+      actions.appendChild(button("Message", "message-user", "primary", { uid: friend.uid }));
+      actions.appendChild(button("Remove", "remove-friend", "danger", { uid: friend.uid }));
+      actions.appendChild(button("Block", "block-user", "danger", { uid: friend.uid }));
+      row.appendChild(actions);
+      list.appendChild(row);
+    });
+  }
+
+  function renderSearchResults(users) {
+    var list = document.getElementById("thw-social-search-results");
+    list.replaceChildren();
+    if (!users.length) {
+      /* This used to return early, which left a blank gap under the search box
+         that read as a broken control rather than as "nobody matched". Say what
+         happened and echo the term, so it is obvious the search ran. Only once a
+         search is actually long enough to have run, though - the same function
+         is called to clear the box, and "No people found" under an empty field
+         is just noise. */
+      var term = (state.searchText || "").trim();
+      if (term.length >= 2) {
+        var empty = el("div", "thw-social-empty", "No people found for “" + term + "”.");
+        /* Recent searches only help someone who has searched before, and are
+           noise on a first visit. */
+        if (state.recentSearches.length > 1) {
+          var recentWrap = el("div", "thw-social-recent");
+          recentWrap.appendChild(el("div", "thw-social-section-label", "Recent searches"));
+          state.recentSearches.forEach(function (item) {
+            var chip = el("button", "thw-social-chip", item);
+            chip.type = "button";
+            chip.dataset.action = "recent-search";
+            chip.dataset.term = item;
+            recentWrap.appendChild(chip);
+          });
+          empty.appendChild(recentWrap);
+        }
+        list.appendChild(empty);
+      }
+      return;
+    }
+    list.appendChild(el("div", "thw-social-section-label", "People"));
+    users.forEach(function (user) {
+      var row = el("div", "thw-social-row");
+      row.appendChild(avatarNode(user));
+      var person = el("span", "thw-social-person");
+      person.appendChild(el("span", "thw-social-name", user.name));
+      person.appendChild(el("span", "thw-social-meta", user.relationship === "friends" ? "Friend" : "TheHighWRLD member"));
+      row.appendChild(person);
+      var actions = el("span", "thw-social-actions");
+      if (user.relationship === "friends") {
+        actions.appendChild(button("Message", "message-user", "primary", { uid: user.uid }));
+      } else if (user.relationship === "incoming") {
+        actions.appendChild(button("Accept", "accept-search-request", "primary", { uid: user.uid }));
+      } else if (user.relationship === "outgoing") {
+        /* This was a noop button: it looked like an action, took the click, and
+           did nothing, so it read as broken. Say what is actually true and offer
+           the one thing that can be done about it. */
+        var pending = el("span", "thw-social-pending", "Request sent");
+        actions.appendChild(pending);
+        actions.appendChild(button("Cancel", "cancel-outgoing", "", { uid: user.uid }));
+      } else {
+        actions.appendChild(button("Add friend", "send-request", "primary", { uid: user.uid }));
+      }
+      row.appendChild(actions);
+      list.appendChild(row);
+    });
+  }
+
+  function renderRequests(requests) {
+    var list = document.getElementById("thw-social-requests");
+    list.replaceChildren();
+    if (!requests.length) {
+      /* Used to say only "No pending friend requests.", which reads as a dead
+         end. Say how one gets here, so an empty tab explains itself. */
+      list.appendChild(emptyState("fa-user-clock", "No pending requests", "When someone adds you, their request shows up here."));
+      return;
+    }
+    requests.forEach(function (request) {
+      var card = el("div", "thw-social-request");
+      var row = el("div", "thw-social-row");
+      row.appendChild(avatarNode(request));
+      var person = el("span", "thw-social-person");
+      person.appendChild(el("span", "thw-social-name", request.name));
+      person.appendChild(el("span", "thw-social-meta", request.direction === "incoming" ? "Wants to be your friend" : "Request sent"));
+      row.appendChild(person);
+      var actions = el("span", "thw-social-actions");
+      if (request.direction === "incoming") {
+        actions.appendChild(button("Accept", "accept-request", "primary", { requestId: request.id }));
+        actions.appendChild(button("Decline", "decline-request", "danger", { requestId: request.id }));
+      } else {
+        actions.appendChild(button("Cancel", "cancel-request", "", { requestId: request.id }));
+      }
+      row.appendChild(actions);
+      card.appendChild(row);
+      list.appendChild(card);
+    });
+  }
+
+  /* House rules for this panel. Written against what the code actually enforces
+   rather than what would be nice to claim: blocking is real, bidirectional and
+   immediate; reporting is real but needs a connected account; and nothing here
+   scans message content automatically - so the copy says so instead of implying
+   a moderation safety net that does not exist. The reason lists mirror
+   reports.js (USER_REASONS / MESSAGE_REASONS) so people can only be pointed at
+   options that genuinely exist. */
+  /* Explains why the Community menu will not open.
+
+     This is informational, not a failure - the click did exactly what it was
+     supposed to, the menu is simply unavailable while this panel is up. So it
+     uses the toast's neutral (blue) frame rather than the red error one, which
+     would have read as "something broke".
+
+     showToastSimple is preferred when simple-toast.js has loaded; the older
+     showToast is kept as a fallback because both are guarded - this file also
+     loads on pages where neither may have run yet. */
+  var menuToastTimer = null;
+  function notifyCommunityMenuBlocked() {
+    var message = "Close Friends & Messages to use the Community menu";
+    /* Throttle: holding the trigger down would otherwise stack a toast per
+       click and bury the screen in duplicates. */
+    if (menuToastTimer) return;
+    menuToastTimer = setTimeout(function () { menuToastTimer = null; }, 1200);
+
+    if (typeof window.showToastSimple === "function") {
+      window.showToastSimple(message, { type: "info", duration: 2600 });
+      return;
+    }
+    if (typeof window.showToast === "function") {
+      /* No "error" type here on purpose - see the note above. */
+      window.showToast(message);
+      return;
+    }
+    /* Last resort so the user is never left with a dead click. */
+    var node = document.createElement("div");
+    node.className = "player-toast toast-default";
+    node.textContent = message;
+    document.body.appendChild(node);
+    requestAnimationFrame(function () { node.style.opacity = "1"; });
+    setTimeout(function () {
+      node.style.opacity = "0";
+      setTimeout(function () { node.remove(); }, 400);
+    }, 2600);
+  }
+
+  var RULES = [
+    ["Be decent", "No harassment, bullying, threats or targeted abuse. You would rather not receive what you would not send."],
+    ["No spam or scams", "No unsolicited links, fake giveaways, or requests for money, codes or gift cards."],
+    ["Do not impersonate", "Do not pose as another member, or as the site or its staff."],
+    ["Keep it clean", "No sexual, graphic or NSFW content. The same standard that applies to artwork here applies to messages."],
+    ["Respect privacy", "Do not share another person's personal details, contact information or screenshots without their permission."],
+    ["Keep it legal", "Nothing that breaks the law, and nothing that helps someone else break it."]
+  ];
+
+  function openRules() {
+    var overlay = document.getElementById("thw-social-rules");
+    if (!overlay) return;
+    var body = overlay.querySelector(".thw-social-rules-body");
+    body.replaceChildren();
+    RULES.forEach(function (rule) {
+      var row = el("div", "thw-social-rule");
+      row.appendChild(el("h3", "", rule[0]));
+      row.appendChild(el("p", "", rule[1]));
+      body.appendChild(row);
+    });
+    var help = el("div", "thw-social-rules-help");
+    help.appendChild(el("h3", "", "If something goes wrong"));
+    help.appendChild(el("p", "", "Block stops it immediately: it removes the friendship and neither of you can send new messages. Report sends it to the moderators to review, and needs a connected account."));
+    help.appendChild(el("p", "thw-social-rules-note", "Messages here are private to you and the person you are talking to, and their content is not scanned automatically. That is why reporting matters."));
+    body.appendChild(help);
+    overlay.hidden = false;
+    state.rulesOpen = true;
+    lockScroll();
+    overlay.querySelector(".thw-social-rules-close").focus();
+  }
+
+  function closeRules() {
+    var overlay = document.getElementById("thw-social-rules");
+    if (!overlay || overlay.hidden) return;
+    overlay.hidden = true;
+    state.rulesOpen = false;
+    unlockScroll();
+    var link = document.getElementById("thw-social-rules-link");
+    if (link) link.focus();
+  }
+
+  function renderConversations(conversations) {
+    var list = document.getElementById("thw-social-conversations");
+    list.replaceChildren();
+    var unreadTotal = conversations.reduce(function (sum, c) { return sum + (Number(c.unread) || 0); }, 0);
+    if (!conversations.length) {
+      /* Point at the route that actually leads somewhere, instead of just
+         reporting emptiness. */
+      list.appendChild(el("div", "thw-social-empty", "No messages yet. Pick a friend and choose Message to start a conversation."));
+      return;
+    }
+    /* Sort by most recent activity rather than whatever order the server
+       returned, so an active conversation is never buried under a stale one.
+       Falls back to name when there is no timestamp to compare. */
+    var sorted = conversations.slice().sort(function (a, b) {
+      var at = Date.parse(String(a.lastMessageAt || a.updatedAt || "").replace(" ", "T"));
+      var bt = Date.parse(String(b.lastMessageAt || b.updatedAt || "").replace(" ", "T"));
+      if (Number.isFinite(at) && Number.isFinite(bt) && at !== bt) return bt - at;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
+    var markAll = el("button", "thw-social-mark-all", unreadTotal ? "Mark all read (" + unreadTotal + ")" : "");
+    markAll.type = "button";
+    if (!unreadTotal) markAll.hidden = true;
+    markAll.dataset.action = "mark-all-read";
+    list.appendChild(markAll);
+    sorted.forEach(function (conversation) {
+      var row = el("button", "thw-social-convo" + (state.conversation && state.conversation.id === conversation.id ? " active" : ""));
+      row.type = "button";
+      row.dataset.conversationId = conversation.id;
+      row.appendChild(avatarNode(conversation, 29));
+      var copy = el("span", "thw-social-convo-copy");
+      copy.appendChild(el("span", "thw-social-name", conversation.name));
+      copy.appendChild(el("span", "thw-social-preview", conversation.lastMessage || "Start a conversation"));
+      /* When did they last talk? Useful on its own, and it is the timestamp the
+         sort above is ordering by, so the two cannot disagree. */
+      var stamp = relativeTime(conversation.lastMessageAt || conversation.updatedAt);
+      if (stamp) copy.appendChild(el("span", "thw-social-convo-time", stamp));
+      row.appendChild(copy);
+      if (conversation.unread > 0) row.appendChild(el("span", "thw-social-unread", conversation.unread > 99 ? "99+" : String(conversation.unread)));
+      list.appendChild(row);
+    });
+  }
+
+  function relativeTime(value) {
+    var time = Date.parse(String(value || "").replace(" ", "T"));
+    if (!Number.isFinite(time)) return "";
+    var seconds = Math.max(0, Math.floor((Date.now() - time) / 1000));
+    if (seconds < 60) return "just now";
+    if (seconds < 3600) return Math.floor(seconds / 60) + "m ago";
+    if (seconds < 86400) return Math.floor(seconds / 3600) + "h ago";
+    return Math.floor(seconds / 86400) + "d ago";
+  }
+
+  function search(query) {
+    state.searching = true;
+    updateSearchMeta();
+    api("/search?q=" + encodeURIComponent(query)).then(function (data) {
+      if (query === state.searchText) {
+        state.lastSearchUsers = data.users || [];
+        rememberSearch(query);
+        renderSearchResults(state.lastSearchUsers);
+      }
+    }).catch(function (error) {
+      showStatus(describeError(error), "error");
+    }).finally(function () {
+      if (query === state.searchText) { state.searching = false; updateSearchMeta(); }
+    });
+  }
+
+  var RECENT_KEY = "thwSocialRecentSearches";
+  function rememberSearch(term) {
+    var value = String(term || "").trim();
+    if (value.length < 2) return;
+    state.recentSearches = [value].concat(state.recentSearches.filter(function (item) {
+      return item.toLowerCase() !== value.toLowerCase();
+    })).slice(0, 5);
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(state.recentSearches)); } catch (e) {}
+  }
+  function loadRecentSearches() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+      if (Object.prototype.toString.call(raw) === "[object Array]") state.recentSearches = raw.slice(0, 5);
+    } catch (e) { state.recentSearches = []; }
+  }
+
+  /* The count and the searching state used to be invisible, so the 280ms
+     debounce just looked like the panel had frozen. */
+  function updateSearchMeta() {
+    var meta = document.getElementById("thw-social-search-meta");
+    if (!meta) return;
+    if (state.searching) { meta.textContent = "Searching…"; return; }
+    var term = (state.searchText || "").trim();
+    if (term.length < 2) { meta.textContent = ""; return; }
+    var total = state.lastSearchUsers ? state.lastSearchUsers.length : 0;
+    if (!total) { meta.textContent = ""; return; }
+    meta.textContent = total === 1 ? "1 person" : total + " people";
+  }
+
+  function openConversation(conversation) {
+    if (state.typingStarted && state.conversation) {
+      api("/conversations/" + encodeURIComponent(state.conversation.id) + "/typing", {
+        method: "POST", body: { typing: false }
+      }).catch(function () {});
+    }
+    clearTimeout(state.typingTimer);
+    state.typingStarted = false;
+    state.blocked = false;
+    state.conversation = conversation;
+    state.messages = [];
+    state.olderCursor = 0;
+    state.hasOlder = false;
+    state.replyTo = null;
+    setTab("messages");
+    renderConversations(state.boot && state.boot.conversations || []);
+    renderThreadHeader(conversation);
+    loadMessages(false);
+  }
+
+  function renderThreadHeader(conversation) {
+    var head = document.getElementById("thw-social-thread-head");
+    head.replaceChildren();
+    if (!conversation) {
+      head.appendChild(el("span", "thw-social-thread-placeholder", "Select a conversation"));
+      return;
+    }
+    head.appendChild(avatarNode(conversation, 30));
+    var person = el("span", "thw-social-thread-person");
+    person.appendChild(el("span", "thw-social-name", conversation.name));
+    /* "Private direct message" was static on every conversation. Presence and
+       last-seen already come down with the conversation payload for friends, so
+       use them when present rather than showing nothing at all. */
+    var presence = conversation.online
+      ? "Online"
+      : (conversation.lastActive ? "Last active " + relativeTime(conversation.lastActive) : "Offline");
+    person.appendChild(el("span", "thw-social-meta" + (conversation.online ? " thw-social-online" : ""), presence));
+    head.appendChild(person);
+    head.appendChild(button("Block", "block-user", "danger", { uid: conversation.uid }));
+    head.appendChild(button("Report", "report-user", "", { uid: conversation.uid }));
+  }
+
+  function loadMessages(older, preserveScroll) {
+    if (!state.conversation) return Promise.resolve();
+    var conversationId = state.conversation.id;
+    var body = document.getElementById("thw-social-thread-body");
+    var oldHeight = body.scrollHeight;
+    var oldTop = body.scrollTop;
+    var wasNearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 80;
+    var path = "/conversations/" + encodeURIComponent(conversationId) + "/messages";
+    if (older && state.olderCursor) path += "?before=" + encodeURIComponent(state.olderCursor);
+    return api(path).then(function (data) {
+      if (!state.conversation || state.conversation.id !== conversationId || data.messages == null) return;
+      if (older) state.messages = (data.messages || []).concat(state.messages);
+      else {
+        /* Keep any message that failed to send. A reload replaces the whole
+           list from the server, and the server has never heard of an unsent
+           message - so without this, a realtime event or a tab switch silently
+           deleted a failed send the user was about to retry. */
+        var pending = state.messages.filter(function (m) { return m.pending; });
+        state.messages = (data.messages || []).concat(pending);
+      }
+      state.hasOlder = (data.messages || []).length === 50;
+      state.olderCursor = state.messages.length ? state.messages[0].id : 0;
+      var input = document.getElementById("thw-social-input");
+      var send = document.getElementById("thw-social-send");
+      state.blocked = data.canSend === false;
+      input.disabled = state.blocked;
+      send.disabled = state.blocked;
+      input.placeholder = state.blocked ? "Messaging is unavailable due to privacy settings or a block" : "Write a message";
+      renderMessages();
+      if (older) body.scrollTop = body.scrollHeight - oldHeight + oldTop;
+      else if (!preserveScroll || wasNearBottom) body.scrollTop = body.scrollHeight;
+      api("/conversations/" + encodeURIComponent(conversationId) + "/read", { method: "POST", body: {} })
+        .then(function () { scheduleRefresh(); })
+        .catch(function (error) { showStatus(describeError(error), "error"); });
+    }).catch(function (error) { showStatus(describeError(error), "error"); });
+  }
+
+  function renderMessages() {
+    var body = document.getElementById("thw-social-thread-body");
+    body.replaceChildren();
+    if (!state.conversation) {
+      body.appendChild(el("div", "thw-social-thread-placeholder", "Choose a conversation or start a message from your friends list."));
+      return;
+    }
+    if (state.hasOlder) {
+      var older = el("button", "thw-social-load-older", "Load older messages");
+      older.type = "button";
+      older.dataset.action = "load-older";
+      body.appendChild(older);
+    }
+    if (!state.messages.length) {
+      body.appendChild(el("div", "thw-social-thread-placeholder", "Start the conversation."));
+      return;
+    }
+    /* Jump-to-latest only appears once there is enough history for being
+       scrolled up to be a real problem, and it hides itself again when the user
+       is already at the bottom. */
+    if (state.messages.length > 12) {
+      var jump = el("button", "thw-social-jump", "Jump to latest");
+      jump.type = "button";
+      jump.dataset.action = "jump-latest";
+      jump.hidden = body.scrollHeight - body.scrollTop - body.clientHeight < 60;
+      body.appendChild(jump);
+      body.addEventListener("scroll", function () {
+        jump.hidden = body.scrollHeight - body.scrollTop - body.clientHeight < 60;
+      }, { passive: true });
+    }
+    state.messages.forEach(function (message) {
+      var mine = message.senderUid === (state.boot && state.boot.me && state.boot.me.uid);
+      var bubble = el("article", "thw-social-message" + (mine ? " mine" : "") + (message.deleted ? " deleted" : "") + (message.failed ? " failed" : ""));
+      bubble.dataset.messageId = message.id;
+      var meta = el("div", "thw-social-message-meta");
+      meta.appendChild(el("span", "", mine ? "You" : state.conversation.name));
+      meta.appendChild(el("time", "", relativeTime(message.createdAt)));
+      if (message.editedAt) meta.appendChild(el("span", "", "edited"));
+      if (message.failed) meta.appendChild(el("span", "thw-social-msg-state", "Not sent"));
+      bubble.appendChild(meta);
+      if (message.replyBody && !message.deleted) {
+        bubble.appendChild(el("div", "thw-social-reply-quote", message.replyBody));
+      }
+      bubble.appendChild(el("p", "thw-social-message-text", message.deleted ? "Message deleted" : message.body));
+      var tools = el("div", "thw-social-message-tools");
+      if (message.failed) {
+        /* The failed message offers exactly the two things you can do with it,
+           rather than the reply/react/delete set that does not apply. */
+        var again = el("button", "primary", "Retry");
+        again.type = "button";
+        again.dataset.action = "retry-message";
+        again.dataset.messageId = message.id;
+        tools.appendChild(again);
+        var discard = el("button", "danger", "Discard");
+        discard.type = "button";
+        discard.dataset.action = "discard-message";
+        discard.dataset.messageId = message.id;
+        tools.appendChild(discard);
+      } else if (!message.deleted) {
+        var reply = el("button", "", "Reply");
+        reply.type = "button";
+        reply.dataset.action = "reply";
+        reply.dataset.messageId = message.id;
+        tools.appendChild(reply);
+        var copy = el("button", "", "Copy");
+        copy.type = "button";
+        copy.dataset.action = "copy-message";
+        copy.dataset.messageId = message.id;
+        tools.appendChild(copy);
+        (message.reactions || []).forEach(function (reaction) {
+          var reactionButton = el("button", reaction.mine ? "mine" : "", reaction.emoji + " " + reaction.count);
+          reactionButton.type = "button";
+          reactionButton.dataset.action = "react";
+          reactionButton.dataset.messageId = message.id;
+          reactionButton.dataset.emoji = reaction.emoji;
+          tools.appendChild(reactionButton);
+        });
+        ["❤️", "🔥", "😂"].forEach(function (emoji) {
+          if ((message.reactions || []).some(function (reaction) { return reaction.emoji === emoji; })) return;
+          var reactionButton = el("button", "", emoji);
+          reactionButton.type = "button";
+          reactionButton.dataset.action = "react";
+          reactionButton.dataset.messageId = message.id;
+          reactionButton.dataset.emoji = emoji;
+          tools.appendChild(reactionButton);
+        });
+        if (mine) {
+          var edit = el("button", "", "Edit");
+          edit.type = "button";
+          edit.dataset.action = "edit-message";
+          edit.dataset.messageId = message.id;
+          tools.appendChild(edit);
+          var remove = el("button", "", "Delete");
+          remove.type = "button";
+          remove.dataset.action = "delete-message";
+          remove.dataset.messageId = message.id;
+          tools.appendChild(remove);
+        } else {
+          var report = el("button", "", "Report");
+          report.type = "button";
+          report.dataset.action = "report-message";
+          report.dataset.messageId = message.id;
+          tools.appendChild(report);
+        }
+      }
+      bubble.appendChild(tools);
+      body.appendChild(bubble);
+    });
+  }
+
+  function clearReply() {
+    state.replyTo = null;
+    document.getElementById("thw-social-replying").classList.remove("active");
+  }
+
+  function setReply(message) {
+    state.replyTo = message;
+    var label = document.getElementById("thw-social-reply-label");
+    label.textContent = "Replying to " + (message.senderUid === state.boot.me.uid ? "your message" : state.conversation.name) + ": " + String(message.body || "").slice(0, 80);
+    document.getElementById("thw-social-replying").classList.add("active");
+    document.getElementById("thw-social-input").focus();
+  }
+
+  function scheduleTyping() {
+    if (!state.conversation || state.blocked) return;
+    clearTimeout(state.typingTimer);
+    if (!state.typingStarted) {
+      state.typingStarted = true;
+      api("/conversations/" + encodeURIComponent(state.conversation.id) + "/typing", {
+        method: "POST", body: { typing: true }
+      }).catch(function () {});
+    }
+    state.typingTimer = setTimeout(function () {
+      state.typingStarted = false;
+      if (!state.conversation) return;
+      api("/conversations/" + encodeURIComponent(state.conversation.id) + "/typing", {
+        method: "POST", body: { typing: false }
+      }).catch(function () {});
+    }, 1800);
+  }
+
+  function sendMessage(event) {
+    event.preventDefault();
+    var input = document.getElementById("thw-social-input");
+    var text = input.value.trim();
+    if (!state.conversation || !text) return;
+    var send = document.getElementById("thw-social-send");
+    send.disabled = true;
+    api("/conversations/" + encodeURIComponent(state.conversation.id) + "/messages", {
+      method: "POST",
+      body: { body: text, replyToId: state.replyTo ? state.replyTo.id : null }
+    }).then(function (data) {
+      state.messages.push(data.message);
+      input.value = "";
+      clearReply();
+      var counterNode = document.getElementById("thw-social-counter");
+      if (counterNode) { counterNode.textContent = ""; counterNode.classList.remove("warn"); }
+      renderMessages();
+      document.getElementById("thw-social-thread-body").scrollTop = document.getElementById("thw-social-thread-body").scrollHeight;
+      scheduleRefresh();
+    }).catch(function (error) {
+      /* A failed send used to vanish into a status line while the text stayed
+         in the box, so the message looked unsent and there was nothing to retry
+         from - the user had to notice and resend it themselves. Keep it visible
+         in the thread as an explicit failed row. */
+      state.messages.push({
+        id: "pending-" + Date.now(),
+        pending: true,
+        failed: true,
+        body: text,
+        senderUid: state.boot && state.boot.me && state.boot.me.uid,
+        createdAt: new Date().toISOString()
+      });
+      showStatus(describeError(error), "error");
+      renderMessages();
+      document.getElementById("thw-social-thread-body").scrollTop = document.getElementById("thw-social-thread-body").scrollHeight;
+    }).finally(function () {
+      send.disabled = state.blocked;
+      input.focus();
+    });
+  }
+
+  /* Retry a failed send, or discard it. */
+  function retryMessage(node) {
+    var id = node.dataset.messageId;
+    var index = state.messages.findIndex(function (m) { return m.id === id; });
+    if (index === -1) return;
+    var message = state.messages[index];
+    state.messages.splice(index, 1);
+    renderMessages();
+    api("/conversations/" + encodeURIComponent(state.conversation.id) + "/messages", {
+      method: "POST",
+      body: { body: message.body, replyToId: null }
+    }).then(function (data) {
+      state.messages.push(data.message);
+      renderMessages();
+      document.getElementById("thw-social-thread-body").scrollTop = document.getElementById("thw-social-thread-body").scrollHeight;
+      scheduleRefresh();
+    }).catch(function (error) {
+      message.failed = true;
+      state.messages.push(message);
+      showStatus(describeError(error), "error");
+      renderMessages();
+    });
+    return input;
+  }
+
+  function runAction(node) {
+    var action = node.dataset.action;
+    var uid = node.dataset.uid;
+    var requestId = node.dataset.requestId;
+    var messageId = node.dataset.messageId;
+    if (action === "noop") return;
+    if (action === "mark-all-read") {
+      /* Each conversation has its own read endpoint, so this walks them rather
+         than inventing a bulk one that does not exist. Sequential so a failure
+         part-way leaves a truthful count instead of a half-applied lie. */
+      var unreadOnes = (state.boot && state.boot.conversations || []).filter(function (c) { return Number(c.unread) > 0; });
+      var chain = unreadOnes.reduce(function (p, c) {
+        return p.then(function () {
+          return api("/conversations/" + encodeURIComponent(c.id) + "/read", { method: "POST", body: {} }).catch(function () {});
+        });
+      }, Promise.resolve());
+      chain.then(function () {
+        /* Confirm only after the refresh lands. Showing it first meant refresh
+           cleared the status strip a moment later and the confirmation was gone
+           before it could be read. */
+        return refresh().then(function () { showStatus("Marked all as read."); });
+      });
+      return;
+    }
+    if (action === "jump-latest") {
+      var thread = document.getElementById("thw-social-thread-body");
+      thread.scrollTop = thread.scrollHeight;
+      return;
+    }
+    if (action === "copy-message") {
+      var target = state.messages.find(function (m) { return m.id === messageId; });
+      if (!target) return;
+      var done = function () { showStatus("Message copied."); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(String(target.body || "")).then(done, function () { showStatus("Could not copy that message.", "error"); });
+      } else done();
+      return;
+    }
+    if (action === "retry") {
+      clearRetry();
+      refresh();
+      return;
+    }
+    if (action === "load-older") {
+      loadMessages(true, true);
+      return;
+    }
+    if (action === "retry-message") { retryMessage(node); return; }
+    if (action === "discard-message") {
+      var deadId = node.dataset.messageId;
+      state.messages = state.messages.filter(function (m) { return m.id !== deadId; });
+      renderMessages();
+      return;
+    }
+    if (action === "message-user") {
+      api("/conversations", { method: "POST", body: { uid: uid } }).then(function (data) {
+        var friend = (state.boot && state.boot.friends || []).find(function (person) { return person.uid === uid; });
+        var result = (state.lastSearchUsers || []).find(function (person) { return person.uid === uid; });
+        openConversation({
+          id: data.conversationId,
+          uid: uid,
+          name: (friend && friend.name) || (result && result.name) || "Member",
+          avatar: (friend && friend.avatar) || (result && result.avatar) || ""
+        });
+        refresh();
+      }).catch(function (error) { showStatus(describeError(error), "error"); });
+      return;
+    }
+    if (action === "send-request") {
+      api("/requests", { method: "POST", body: { uid: uid } }).then(function () {
+        showStatus("Friend request sent.");
+        scheduleRefresh();
+        search(state.searchText);
+      }).catch(function (error) {
+        if (error.code === "incoming_request" && error.message) {
+          showStatus("This person has already requested you. Open Requests to respond.", true);
+        } else showStatus(describeError(error), "error");
+      });
+      return;
+    }
+    if (action === "accept-search-request") {
+      var incoming = (state.boot && state.boot.requests || []).find(function (r) { return r.uid === uid && r.direction === "incoming"; });
+      if (incoming) requestAction(incoming.id, "accept");
+      else scheduleRefresh();
+      return;
+    }
+    if (action === "accept-request" || action === "decline-request" || action === "cancel-request") {
+      requestAction(requestId, action === "accept-request" ? "accept" : action === "decline-request" ? "decline" : "cancel");
+      return;
+    }
+    if (action === "cancel-outgoing") {
+      /* Search results carry no request id, so resolve it from the pending list
+         we already hold rather than guessing at an endpoint. */
+      var outgoing = (state.boot && state.boot.requests || []).find(function (r) { return r.uid === uid && r.direction === "outgoing"; });
+      if (outgoing) requestAction(outgoing.id, "cancel");
+      else { showStatus("That request is no longer pending.", "warn"); scheduleRefresh(); }
+      return;
+    }
+    if (action === "recent-search") {
+      var field = document.getElementById("thw-social-search");
+      field.value = node.dataset.term || "";
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+      return;
+    }
+    if (action === "clear-search") {
+      var box = document.getElementById("thw-social-search");
+      box.value = "";
+      state.searchText = "";
+      state.lastSearchUsers = null;
+      renderSearchResults([]);
+      updateSearchMeta();
+      /* The button hides itself in the input handler, which clearing the field
+         programmatically never runs - so hide it here too, or it stays on
+         screen with nothing to clear. */
+      var clearButton = document.querySelector("#thw-social-root [data-action='clear-search']");
+      if (clearButton) clearButton.hidden = true;
+      box.focus();
+      return;
+    }
+    if (action === "remove-friend") {
+      if (!window.confirm("Remove this friend? Your message history will remain.")) return;
+      api("/friends/" + encodeURIComponent(uid), { method: "DELETE" }).then(refresh).catch(function (error) { showStatus(describeError(error), "error"); });
+      return;
+    }
+    if (action === "block-user") {
+      if (!window.confirm("Block this user? This removes the friendship and prevents new messages.")) return;
+      fetch("/api/users/" + encodeURIComponent(uid) + "/block", { method: "POST", credentials: "same-origin" })
+        .then(function (response) { return response.json().then(function (data) { if (!response.ok) { var err = new Error(data.message || data.error || "Unable to block user"); err.status = response.status; throw err; } return data; }); })
+        .then(function () {
+          /* Blocking used to complete with no confirmation at all, so a success
+             and a silent failure looked identical. Say it worked. */
+          showStatus("Blocked. They can no longer message you.");
+          if (state.conversation && state.conversation.uid === uid) {
+            state.conversation = null;
+            state.messages = [];
+            renderThreadHeader(null);
+            renderMessages();
+          }
+          return refresh();
+        }).catch(function (error) { showStatus(describeError(error), "error"); });
+      return;
+    }
+    if (action === "report-user") {
+      var person = (state.conversation && state.conversation.uid === uid) ? state.conversation :
+        (state.boot && state.boot.friends || []).find(function (friend) { return friend.uid === uid; });
+      if (window.openReportModal) window.openReportModal("USER", "u:" + uid, person ? person.name : "Member");
+      else showStatus("Reporting is unavailable right now.", true);
+      return;
+    }
+    if (action === "reply") {
+      var parent = state.messages.find(function (message) { return String(message.id) === String(messageId); });
+      if (parent) setReply(parent);
+      return;
+    }
+    if (action === "edit-message") {
+      var original = state.messages.find(function (message) { return String(message.id) === String(messageId); });
+      if (!original) return;
+      var updated = window.prompt("Edit your message", original.body);
+      if (updated == null || !updated.trim() || updated.trim() === original.body) return;
+      api("/messages/" + encodeURIComponent(messageId), { method: "PATCH", body: { body: updated } })
+        .then(function () { loadMessages(false, true); }).catch(function (error) { showStatus(describeError(error), "error"); });
+      return;
+    }
+    if (action === "delete-message") {
+      if (!window.confirm("Delete this message for everyone in the conversation?")) return;
+      api("/messages/" + encodeURIComponent(messageId), { method: "DELETE", body: {} })
+        .then(function () { loadMessages(false, true); }).catch(function (error) { showStatus(describeError(error), "error"); });
+      return;
+    }
+    if (action === "react") {
+      api("/messages/" + encodeURIComponent(messageId) + "/reactions", {
+        method: "POST", body: { emoji: node.dataset.emoji }
+      }).then(function (data) {
+        var message = state.messages.find(function (item) { return String(item.id) === String(messageId); });
+        if (message) message.reactions = data.reactions || [];
+        renderMessages();
+      }).catch(function (error) { showStatus(describeError(error), "error"); });
+      return;
+    }
+    if (action === "report-message") {
+      if (window.openReportModal) window.openReportModal("MESSAGE", String(messageId), "Direct message from " + state.conversation.name);
+      else showStatus("Reporting is unavailable right now.", true);
+    }
+  }
+
+  function requestAction(id, action) {
+    api("/requests/" + encodeURIComponent(id), { method: "PATCH", body: { action: action } })
+      .then(function () { showStatus(action === "accept" ? "Friend request accepted." : "Request updated."); return refresh(); })
+      .catch(function (error) { showStatus(describeError(error), "error"); });
+  }
+
+  function mountPrivacySettings() {
+    if (document.getElementById("thw-social-settings")) return;
+    var anchor = document.getElementById("appearance");
+    var account = document.getElementById("account-page");
+    if (!anchor && !account) return;
+    var card = el("section", "thw-social-settings-card");
+    card.id = "thw-social-settings";
+    card.innerHTML =
+      '<h3>Friends &amp; Messaging privacy</h3>' +
+      '<p>Choose who can send you friend requests and direct messages, and who can see your online and activity status. Following remains separate.</p>' +
+      '<div class="thw-social-settings-grid">' +
+        '<label>Friend requests<select name="friend_requests"><option value="everyone">Everyone</option><option value="followers">People I follow</option><option value="nobody">No one</option></select></label>' +
+        '<label>Direct messages<select name="direct_messages"><option value="everyone">Everyone</option><option value="friends">Friends only</option><option value="nobody">No one</option></select></label>' +
+        '<label>Online status<select name="online_status"><option value="everyone">Everyone</option><option value="friends">Friends only</option><option value="nobody">No one</option></select></label>' +
+        '<label>Activity status<select name="activity_status"><option value="everyone">Everyone</option><option value="friends">Friends only</option><option value="nobody">No one</option></select></label>' +
+      '</div><button class="thw-social-settings-save" type="button">Save social privacy</button><span class="thw-social-settings-message" role="status"></span>';
+    if (anchor) anchor.insertAdjacentElement("afterend", card);
+    else account.appendChild(card);
+    card.querySelector(".thw-social-settings-save").addEventListener("click", savePrivacySettings);
+  }
+
+  function loadPrivacySettings() {
+    mountPrivacySettings();
+    var card = document.getElementById("thw-social-settings");
+    if (!card) return;
+    api("/settings").then(function (data) {
+      Object.keys(data.settings || {}).forEach(function (key) {
+        var select = card.querySelector('select[name="' + key + '"]');
+        if (select) select.value = data.settings[key];
+      });
+      card.querySelector(".thw-social-settings-message").textContent = "";
+    }).catch(function (error) {
+      card.querySelector(".thw-social-settings-message").textContent =
+        error.status === 401 ? "Sign in to change these settings." : describeError(error);
+    });
+  }
+
+  function savePrivacySettings() {
+    var card = document.getElementById("thw-social-settings");
+    var save = card.querySelector(".thw-social-settings-save");
+    var message = card.querySelector(".thw-social-settings-message");
+    var settings = {};
+    card.querySelectorAll("select").forEach(function (select) { settings[select.name] = select.value; });
+    save.disabled = true;
+    message.textContent = "Saving…";
+    api("/settings", { method: "POST", body: settings }).then(function () {
+      message.textContent = "Privacy settings saved.";
+    }).catch(function (error) {
+      message.textContent = error.status === 401 ? "Sign in to change these settings." : describeError(error);
+    }).finally(function () { save.disabled = false; });
+  }
+
+  function wrapAccountSection() {
+    var previous = window.accountSectionShown;
+    if (typeof previous === "function" && !previous.__socialWrapped) {
+      var wrapped = function () {
+        previous.apply(this, arguments);
+        mountPrivacySettings();
+        loadPrivacySettings();
+      };
+      wrapped.__socialWrapped = true;
+      window.accountSectionShown = wrapped;
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { mount(); wrapAccountSection(); });
+  } else {
+    mount();
+    wrapAccountSection();
+  }
+})();

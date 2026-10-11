@@ -1,8 +1,9 @@
 /**
- * TheHighWRLD — Online presence client (HTTP polling).
+ * TheHighWRLD — Online presence client (WebSocket with HTTP fallback).
  *
- * Sends a heartbeat POST every 15 s and fetches the live counts via GET every 4 s.
- * No WebSocket / Durable Object required — works purely with D1.
+ * Uses live WebSocket counts when connected and falls back to HTTP polling while
+ * the socket is unavailable. Authenticated visitors also send periodic HTTP
+ * heartbeats to keep the existing D1 presence record current.
  * Bot deterrence removed — all visitors counted regardless of suspected bot status.
  */
 
@@ -82,8 +83,8 @@
     } catch (_) { inFlight = false; }
   }
 
-  async function poll() {
-    if (document.hidden || inFlight) return;
+  async function poll(force) {
+    if (document.hidden || inFlight || (!force && ws && ws.readyState === WebSocket.OPEN)) return;
     inFlight = true;
     try {
       const res = await fetch('/api/online');
@@ -96,6 +97,19 @@
 
   function wsSend(obj) {
     if (ws && ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify(obj)); } catch (_) {} }
+  }
+
+  function startPolling() {
+    if (!pollTimer && !document.hidden && !(ws && ws.readyState === WebSocket.OPEN)) {
+      pollTimer = setInterval(poll, 4000);
+    }
+  }
+
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
   }
 
   function wsScheduleReconnect() {
@@ -117,6 +131,7 @@
     } catch (_) { wsScheduleReconnect(); return; }
     ws.onopen = function () {
       wsAttempts = 0;
+      stopPolling();
       if (wsHbTimer) clearInterval(wsHbTimer);
       wsHbTimer = setInterval(function () { wsSend({ type: 'heartbeat' }); }, 25000);
     };
@@ -125,7 +140,10 @@
       try { msg = JSON.parse(ev.data); } catch (_) { return; }
       if (!msg || typeof msg.type !== 'string') return;
       if (msg.type === 'report:created' || msg.type === 'report:updated' || msg.type === 'report:deleted') { try { window.dispatchEvent(new CustomEvent('thw:report', { detail: msg })); } catch (_) {} return; }
+      if (msg.type.indexOf('social:') === 0) { try { window.dispatchEvent(new CustomEvent('thw:social', { detail: msg })); } catch (_) {} return; }
+      if (msg.type === 'notification:created') { try { window.dispatchEvent(new CustomEvent('thw:notification', { detail: msg })); } catch (_) {} return; }
       if (msg.type !== 'connected' && msg.type !== 'presence:update') return;
+      try { window.dispatchEvent(new CustomEvent('thw:presence')); } catch (_) {}
       const counts = msg.presence && msg.presence.counts;
       if (!counts) return;
       if (typeof counts.online === 'number') state.online = counts.online;
@@ -134,6 +152,7 @@
     };
     ws.onclose = function () {
       if (wsHbTimer) { clearInterval(wsHbTimer); wsHbTimer = null; }
+      startPolling();
       wsScheduleReconnect();
     };
     ws.onerror = function () { try { ws.close(); } catch (_) {} };
@@ -156,13 +175,14 @@
     poll();
     wsConnect();
     heartbeatTimer = setInterval(heartbeat, 30000);
-    pollTimer = setInterval(poll, 4000);
+    startPolling();
 
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible') {
         wsConnect();
         heartbeat(); poll();
-      }
+        startPolling();
+      } else stopPolling();
     });
     const unload = function () {
       wsLeave();
@@ -176,7 +196,7 @@
 
   window.Presence = {
     init: start,
-    refresh() { poll(); },
+    refresh() { poll(true); },
     isUserOnline() { return false; },
     getOnline() { return state.online; },
     getGuests() { return state.guests; },

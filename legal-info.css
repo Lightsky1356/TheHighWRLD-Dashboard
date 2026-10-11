@@ -1,0 +1,237 @@
+/* Legal & Info — one footer entry point instead of a row of legal links.
+   Kept in its own file so it stays isolated from the 200KB+ player-settings.css.
+
+   Desktop: centred modal.
+   Mobile:  bottom sheet that sits above the mobile bottom nav (z-index 100) and
+            clears env(safe-area-inset-bottom) for the home indicator.
+
+   The dimmed + blurred backdrop is a real overlay element, NOT filter:blur() on a
+   parent. A filter on an ancestor creates a containing block, which would
+   re-anchor the position:fixed overlay to the wrong box *and* blur the panel
+   itself - the exact failure this avoids. The panel stays sharp because it is a
+   sibling of the blurred background, not a child of it. */
+
+.legal-info-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 620;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(5, 2, 12, .7);
+  backdrop-filter: blur(8px) saturate(1.15);
+  -webkit-backdrop-filter: blur(8px) saturate(1.15);
+}
+.legal-info-overlay.open { display: flex; }
+
+.legal-info-panel {
+  width: min(560px, 100%);
+  max-height: min(82vh, 720px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(165deg, rgba(30, 22, 52, .97), rgba(11, 7, 22, .98));
+  border: 1px solid rgba(167, 139, 250, .22);
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .6);
+  overflow: hidden;
+  animation: liIn .18s ease-out;
+}
+@keyframes liIn {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+.legal-info-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
+  flex-shrink: 0;
+}
+.legal-info-head h2 {
+  margin: 0;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .86);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.legal-info-head h2 i { color: #a78bfa; font-size: 11px; }
+
+.legal-info-close {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .05);
+  color: rgba(255, 255, 255, .7);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.legal-info-close:hover,
+.legal-info-close:focus-visible {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  outline: none;
+  border-color: rgba(167, 139, 250, .5);
+}
+
+.legal-info-body {
+  padding: 6px 16px 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.legal-info-sec { padding-top: 14px; }
+.legal-info-sec + .legal-info-sec {
+  border-top: 1px solid rgba(255, 255, 255, .05);
+  margin-top: 12px;
+}
+.legal-info-sec h3 {
+  margin: 0 0 7px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: rgba(196, 181, 253, .7);
+}
+
+.legal-info-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  margin-bottom: 2px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  color: rgba(255, 255, 255, .74);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.legal-info-link:hover,
+.legal-info-link:focus-visible {
+  background: rgba(167, 139, 250, .1);
+  border-color: rgba(167, 139, 250, .26);
+  color: #fff;
+  outline: none;
+}
+.legal-info-link > i {
+  width: 16px;
+  text-align: center;
+  font-size: 10px;
+  color: rgba(167, 139, 250, .72);
+  flex-shrink: 0;
+}
+.legal-info-link .li-go { margin-left: auto; font-size: 8px; opacity: .4; flex-shrink: 0; }
+
+.legal-info-foot {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, .06);
+  font-size: 10px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, .3);
+  flex-shrink: 0;
+}
+
+/* Footer trigger */
+.legal-info-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(167, 139, 250, .24);
+  background: rgba(167, 139, 250, .08);
+  color: rgba(221, 214, 254, .9);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.legal-info-trigger:hover,
+.legal-info-trigger:focus-visible {
+  background: rgba(167, 139, 250, .18);
+  border-color: rgba(167, 139, 250, .45);
+  color: #fff;
+  outline: none;
+}
+
+/* Variant for the 999 Forever footer, where the surrounding links are plain
+   small grey text. Kept as a pill with a hover so it still reads as the single
+   entry point without fighting that quieter visual weight. */
+.legal-info-trigger--footer{padding:4px 12px;font-size:11px;font-weight:500;letter-spacing:normal;border-color:transparent;background:transparent;color:rgba(255,255,255,.42);border-radius:8px}
+.legal-info-trigger--footer:hover,.legal-info-trigger--footer:focus-visible{background:rgba(167,139,250,.1);border-color:transparent;color:#fff}
+
+/* Footer brand block */
+.legal-brand { text-align: center; }
+.legal-brand-name {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .82);
+}
+.legal-brand-motto {
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: rgba(167, 139, 250, .62);
+}
+
+/* Mobile: bottom sheet */
+@media (max-width: 768px) {
+  .legal-info-overlay { padding: 0; align-items: flex-end; }
+  .legal-info-panel {
+    width: 100%;
+    max-width: 100%;
+    max-height: 76vh;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    margin-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+    animation: liSheet .2s ease-out;
+    box-shadow: 0 -18px 50px rgba(0, 0, 0, .55);
+  }
+  @keyframes liSheet {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .legal-info-head { padding: 12px 14px; }
+  .legal-info-body { padding: 4px 12px 14px; }
+}
+
+/* player-settings.css has a deliberate mobile kill-switch:
+     @media (max-width:767px){ *,::after,::before{ backdrop-filter:none!important; ... } }
+   That is a real mobile performance optimisation and stays intact - undoing it
+   site-wide would undo the scroll work. This sheet is opened deliberately by the
+   user rather than scrolled past, and a dim-only backdrop reads as a flat grey
+   wash, so this one element opts back in. Specificity wins because the
+   !important weights match and a class outranks the universal selector. */
+@media (max-width:767px){
+  .legal-info-overlay{
+    backdrop-filter:blur(8px) saturate(1.15) !important;
+    -webkit-backdrop-filter:blur(8px) saturate(1.15) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legal-info-panel { animation: none; }
+  @media (max-width: 768px) { .legal-info-panel { animation: none; } }
+}

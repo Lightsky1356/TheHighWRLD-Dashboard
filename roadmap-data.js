@@ -110,14 +110,6 @@
 
     /* -------------------------------- PLANNED ------------------------------- */
     {
-      id: "public-playlist-browsing",
-      title: "Public playlist browsing",
-      description: "A page under Community that lists every public playlist with search, sorting and paging, and opens any one of them with its track list.",
-      status: "completed",
-      category: ["media", "community"],
-      lastUpdated: "2026-10-04"
-    },
-    {
       id: "offline-pwa",
       title: "Offline caching and installable app",
       description: "There is an old service worker file in the repository, but it is not registered and the site actively unregisters any worker it finds, so caching is genuinely off today. Deciding whether to bring it back - safely - is the first step, then the install prompt and update flow.",
@@ -191,14 +183,6 @@
       description: "The site is dark-first across all 32 themes. A proper light palette is being considered.",
       status: "considering",
       category: ["other"]
-    },
-    {
-      id: "public-playlist-links",
-      title: "Links to single public playlists",
-      description: "Every public playlist gets its own address, so a link drops someone straight into that playlist's track list instead of the browse page. Needs a route plus a lookup by id.",
-      status: "planned",
-      category: ["media", "community"],
-      lastUpdated: "2026-10-04"
     },
     {
       id: "roadmap-feed",

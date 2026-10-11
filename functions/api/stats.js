@@ -64,6 +64,25 @@ export async function onRequestGet(context) {
       "SELECT (SELECT COUNT(*) FROM tracks) as tracks, (SELECT COUNT(*) FROM votes) as votes, (SELECT COUNT(*) FROM replies) as replies"
     ).first();
 
+    // Search analytics (last 30 days): top queries + queries with zero hits.
+    let searchStats = { total: 0, top: [], noHits: [] };
+    try {
+      const total = await db.prepare(
+        "SELECT COUNT(*) as c FROM search_logs WHERE ts >= datetime('now', '-30 days')"
+      ).first();
+      const top = await db.prepare(
+        "SELECT q, COUNT(*) as n, AVG(results) as avg_hits FROM search_logs WHERE ts >= datetime('now', '-30 days') GROUP BY q ORDER BY n DESC LIMIT 15"
+      ).all();
+      const noHits = await db.prepare(
+        "SELECT q, COUNT(*) as n, MAX(ts) as last_ts FROM search_logs WHERE ts >= datetime('now', '-30 days') AND results = 0 GROUP BY q ORDER BY n DESC LIMIT 15"
+      ).all();
+      searchStats = {
+        total: total ? total.c : 0,
+        top: top.results || [],
+        noHits: noHits.results || [],
+      };
+    } catch (_) {}
+
     return json({
       totals: totals,
       perDay: perDay.results,
@@ -73,6 +92,7 @@ export async function onRequestGet(context) {
       recentReplies: recentReplies.results,
       discordLinks: linked.results,
       wanted: wantedCounts,
+      search: searchStats,
     });
   } catch (err) {
     return json({ error: String(err && err.message || err) }, 500);

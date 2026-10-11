@@ -1,0 +1,143 @@
+/* ============================================================================
+   SIMPLE TOAST
+   A plain notification card: dark background, hairline border, a short accent
+   stripe on the left whose colour carries the type (info / success / error),
+   and a close button.
+
+   Every toast fades itself out after a fixed dwell time. The close button is
+   there for people who want it gone sooner, or who want to read it properly
+   rather than race a timer.
+
+   Lives beside .player-toast / .mini-toast in player-settings.css rather than
+   replacing them, so the existing call sites keep their current look.
+   ========================================================================== */
+
+.gtoast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 8px);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 11px 11px 11px 16px;
+  background: #12141a;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-left: 3px solid #64748b;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .55);
+  color: #e2e8f0;
+  font-family: "Sora", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  /* The card itself must not swallow clicks meant for the page beneath it -
+     a toast that blocks the UI while it sits there is worse than no toast.
+     The close button opts back in below. */
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.gtoast.is-in {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.gtoast-text {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  color: inherit;
+  word-break: break-word;
+}
+
+/* --- close button --------------------------------------------------------
+   A real <button> so it is reachable by keyboard and announced properly,
+   rather than a styled <span> that only responds to a mouse. */
+
+.gtoast-close {
+  flex: 0 0 auto;
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+
+.gtoast-close:hover {
+  background: rgba(148, 163, 184, .16);
+  color: #f1f5f9;
+}
+
+.gtoast-close:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+}
+
+/* --- dwell indicator -----------------------------------------------------
+   A hairline along the bottom that drains over the toast's lifetime, so the
+   time remaining is visible rather than a surprise. --gtoast-dwell is set to
+   the duration in seconds by simple-toast.js. */
+
+.gtoast-timer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  border-radius: 0 0 9px 9px;
+  background: currentColor;
+  opacity: .35;
+  transform-origin: left center;
+  animation: gtoastDrain var(--gtoast-dwell, 3.2s) linear forwards;
+}
+
+@keyframes gtoastDrain {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* Sticky toasts have no timer to drain; hide the line entirely. */
+.gtoast.is-sticky .gtoast-timer { display: none; }
+
+/* --- types ---------------------------------------------------------------
+   Only the stripe and border tint change; the message text stays the same
+   lightness so it remains readable in every state. */
+
+.gtoast--info    { border-left-color: #38bdf8; }
+.gtoast--success { border-left-color: #22c55e; }
+.gtoast--error   { border-left-color: #ef4444; }
+
+/* --- reduced motion ------------------------------------------------------
+   No slide or drain; the toast still appears, sits, and disappears. */
+
+@media (prefers-reduced-motion: reduce) {
+  .gtoast { transition: opacity .01s linear; transform: translate(-50%, 0); }
+  .gtoast-timer { animation: none; opacity: .2; }
+}
+
+/* --- small screens ------------------------------------------------------- */
+
+@media (max-width: 560px) {
+  .gtoast {
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
+    max-width: none;
+    transform: translate(0, 8px);
+  }
+  .gtoast.is-in { transform: translate(0, 0); }
+}

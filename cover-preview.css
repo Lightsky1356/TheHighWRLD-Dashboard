@@ -1,0 +1,34 @@
+/* ============================================================================
+   COVER PREVIEW
+   Styles for the "View cover" button under the big artwork in the WRLD Player.
+   The preview itself reuses the site's existing #cover-lightbox, so none of its
+   styling is duplicated here.
+   ========================================================================== */
+
+.cp-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px auto 0;
+  padding: 7px 13px;
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .05);
+  color: #cbd5e1;
+  font-family: "Sora", system-ui, sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.cp-open:hover {
+  background: rgba(56, 189, 248, .14);
+  border-color: rgba(56, 189, 248, .38);
+  color: #e0f2fe;
+}
+
+.cp-open:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+.cp-open i { font-size: .95em; }

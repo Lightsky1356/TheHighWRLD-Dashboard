@@ -188,6 +188,13 @@
   }
   function cmpVerifiedHtml(linked) {
     return linked ? '<span class="cmp-verified"><i class="fab fa-discord"></i> ' + esc(_tt("verifiedBadge", "Verified")) + '</span>' : '';  }
+
+  /* Owner badge. Reads the same _data.isOwner that the owner dashboard and
+     nav already use, so there is one answer to "is this the owner" rather than
+     a second flag that could disagree with it. */
+  function cmpOwnerHtml(isOwner) {
+    return isOwner ? '<span class="cmp-owner"><i class="fas fa-crown"></i> ' + esc(_tt("ownerBadge", "Owner")) + '</span>' : '';
+  }
   function compactProfileHtml(includeSections) {
     if (!uid) {
       return '<div class="cmp-page"><div class="cmp-signin"><i class="fas fa-user-circle" style="font-size:26px;color:#22d3ee"></i><div>' + esc(_tt("cmpSignIn", "Sign in to show your profile here.")) + ' <a href="#" onclick="event.preventDefault();if(window.switchAppPage)window.switchAppPage(\'account\')">' + esc(_tt("signIn", "Sign In")) + '</a></div></div></div>';
@@ -211,7 +218,7 @@
     html += '<div class="cmp-head" data-pnl="profile">';
     html += '<div class="cmp-sec-title cmp-head-title"><span><i class="fas fa-id-card"></i> ' + esc(_tt("cmpPanelProfile", "Profile")) + '</span></div>';
     html += '<div class="cmp-top"><span class="cmp-avatar-wrap"><span class="cmp-avatar-ring"><span class="cmp-avatar">' + cmpAvatarHtml(p.avatar, p.name) + '</span></span><span class="cmp-online" style="background:' + dotC + ';box-shadow:0 0 10px ' + dotC + '"></span></span>';
-    html += '<div class="cmp-id"><div class="cmp-name-row"><h2 class="cmp-name">' + esc(p.name || "999_" + uidSuffix) + '</h2>' + cmpVerifiedHtml(!!d.linked) + '</div>';
+    html += '<div class="cmp-id"><div class="cmp-name-row"><h2 class="cmp-name">' + esc(p.name || "999_" + uidSuffix) + '</h2>' + cmpOwnerHtml(!!(_data && _data.isOwner)) + cmpVerifiedHtml(!!d.linked) + '</div>';
     html += '<div class="cmp-handle">@' + esc(String(uname).toLowerCase()) + '</div>';
     html += '<div class="cmp-meta">' + esc(stLabel(p.status || "Online")) + (p.joined ? ' &middot; ' + esc(_tt("joinedWord", "Joined")) + ' ' + esc(fmtDate(p.joined)) : '') + '<span class="cmp-site-presence" data-uid="' + esc(String(uid)) + '"></span></div></div></div>';
     html += '<div class="cmp-bio">' + esc(p.bio || _tt("cmpNoBio", "No bio yet - let the 999s know who you are.")) + '</div>';
@@ -558,6 +565,10 @@ function compactProfileViewHtml(d) {
           });
       });
   }
+  window.addEventListener("thw:notification", function () {
+    window.__commNotifsTs = 0;
+    refreshCommNotifs();
+  });
   function commNotifRead(nid) {
     var id = Number(String(nid || "").replace(/^c/, "")) || 0;
     if (!id) return;
@@ -2436,10 +2447,11 @@ window.profileSectionShown = function () {
     function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(spy); } }
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
-    setInterval(function () {
-      var acc = document.getElementById("page-section-account");
-      if (acc && acc.classList.contains("active")) spy();
-    }, 400);
+    var acc = document.getElementById("page-section-account");
+    if (acc && window.MutationObserver) {
+      new MutationObserver(function () {
+        if (acc.classList.contains("active")) onScroll();
+      }).observe(acc, { attributes: true, attributeFilter: ["class"] });
+    }
   });
 })();
-

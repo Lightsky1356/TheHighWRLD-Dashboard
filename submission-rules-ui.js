@@ -176,23 +176,50 @@
     for (var k in MOUNTS) {
       if (Object.prototype.hasOwnProperty.call(MOUNTS, k)) mount(k);
     }
+    stopObserverIfDone();
+  }
+
+  function allMounted() {
+    for (var k in MOUNTS) {
+      if (!Object.prototype.hasOwnProperty.call(MOUNTS, k)) continue;
+      if (!document.getElementById("srules-body-" + k)) return false;
+    }
+    return true;
+  }
+
+  /* Once every panel exists the observer has nothing left to do. It only watches
+   * the gallery section, because that upload form is created at runtime; a
+   * document.body subtree observer would run on unrelated player mutations too. */
+  function stopObserverIfDone() {
+    if (!allMounted()) return;
+    try {
+      if (window.__subRulesObserver) {
+        window.__subRulesObserver.disconnect();
+        window.__subRulesObserver = null;
+      }
+    } catch (e) {}
   }
 
   function start() {
     css();
-    load().then(mountAll);
-    // Catch anchors created later (gallery) and re-mount if a tab is re-rendered.
     var tries = 0;
-    var iv = setInterval(function () {
+    var iv = 0;
+    load().then(function () {
       mountAll();
-      if (++tries > 40 || Object.keys(MOUNTS).every(function (k) {
-        return document.getElementById("srules-body-" + k);
-      })) clearInterval(iv);
+      if (allMounted()) clearInterval(iv);
+    });
+    // Catch anchors created later (gallery) and re-mount if a tab is re-rendered.
+    iv = setInterval(function () {
+      mountAll();
+      if (++tries > 40 || allMounted()) clearInterval(iv);
     }, 500);
     try {
+      var gallerySection = document.getElementById("page-section-gallery");
       var mo = new MutationObserver(function () { mountAll(); });
-      mo.observe(document.body, { childList: true, subtree: true });
-      window.__subRulesObserver = mo;
+      if (gallerySection) {
+        mo.observe(gallerySection, { childList: true, subtree: true });
+        window.__subRulesObserver = mo;
+      }
     } catch (e) {}
   }
 
