@@ -87,21 +87,15 @@ export async function onRequestGet(context) {
         const rsvps = await db.prepare(
           "SELECT uid FROM event_rsvps WHERE drop_id = ? LIMIT 500"
         ).bind(d.id).all().catch(() => ({ results: [] }));
-        const { hubBroadcast } = await import("../_lib/realtime.js");
+        const { createNotification } = await import("../_lib/notifications.js");
         for (const r of (rsvps.results || [])) {
           if (!r.uid) continue;
           try {
             const msg = '"' + String(d.title || "A drop").slice(0, 60) + '" is live now';
-            const n = await db.prepare(
-              "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'drop', '', 'Staff', ?, NULL, NULL)"
-            ).bind(r.uid, msg).run();
-            await hubBroadcast(context.env, {
-              type: "notification:created",
-              recipientUid: r.uid,
-              notification: {
-                id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
-                type: "drop", message: msg, post_id: null, reply_id: null, actor: "Staff",
-              },
+            await createNotification(db, context.env, r.uid, {
+              type: "drop",
+              actorName: "Staff",
+              message: msg,
             });
           } catch (_) {}
         }

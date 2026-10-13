@@ -4,6 +4,7 @@
 
 import { getSessionUser } from "../_lib/auth.js";
 import { hubBroadcast } from "../_lib/realtime.js";
+import { createNotification } from "../_lib/notifications.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -45,19 +46,7 @@ async function audit(db, actorUid, text) {
 }
 
 async function notifyUser(db, env, uid, type, message) {
-  try {
-    const n = await db.prepare(
-      "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, ?, '', 'Staff', ?, NULL, NULL)"
-    ).bind(uid, type, message).run();
-    await hubBroadcast(env, {
-      type: "notification:created",
-      recipientUid: uid,
-      notification: {
-        id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
-        type, message, post_id: null, reply_id: null, actor: "Staff",
-      },
-    });
-  } catch (_) {}
+  await createNotification(db, env, uid, { type, actorName: "Staff", message });
 }
 
 // Content is loaded live so the reviewer sees what exists now, not a stale copy.

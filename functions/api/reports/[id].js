@@ -1,4 +1,5 @@
 import { hubBroadcast, resolveSiteUid } from "../../_lib/realtime.js";
+import { createNotification } from "../../_lib/notifications.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -114,16 +115,10 @@ export async function onRequestPatch(context) {
               const msg = st === "RESOLVED"
                 ? "Your report was reviewed — thanks for keeping the WRLD clean."
                 : "Your report was reviewed with no action taken.";
-              const n = await db.prepare(
-                "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'moderation', '', 'Staff', ?, NULL, NULL)"
-              ).bind(who.site_uid, msg).run();
-              await hubBroadcast(context.env, {
-                type: "notification:created",
-                recipientUid: who.site_uid,
-                notification: {
-                  id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
-                  type: "moderation", message: msg, post_id: null, reply_id: null, actor: "Staff",
-                },
+              await createNotification(db, context.env, who.site_uid, {
+                type: "moderation",
+                actorName: "Staff",
+                message: msg,
               });
             }
           }
@@ -143,16 +138,10 @@ export async function onRequestPatch(context) {
           if (who && who.site_uid) {
             const st = String(body.status || "").toUpperCase();
             const msg = "Your report on " + String(rep.snapshot_title || rep.target_type || "content").slice(0, 60) + " was reviewed (" + st + ")";
-            const n = await db.prepare(
-              "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'moderation', '', 'Staff', ?, NULL, NULL)"
-            ).bind(who.site_uid, msg).run();
-            await hubBroadcast(context.env, {
-              type: "notification:created",
-              recipientUid: who.site_uid,
-              notification: {
-                id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
-                type: "moderation", message: msg, post_id: null, reply_id: null, actor: "Staff",
-              },
+            await createNotification(db, context.env, who.site_uid, {
+              type: "moderation",
+              actorName: "Staff",
+              message: msg,
             });
           }
         }

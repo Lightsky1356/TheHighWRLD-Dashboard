@@ -1,6 +1,8 @@
 import { getSessionUser } from "../../_lib/auth.js";
 import { hubBroadcast, hubStub } from "../../_lib/realtime.js";
 import { banRejection } from "../../_lib/bans.js";
+import { sendPushToUser } from "../../_lib/webpush.js";
+import { createNotification } from "../../_lib/notifications.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -71,22 +73,58 @@ async function privacy(db, uid) {
   };
 }
 
+/* Where a notification click should land. Only internal app routes are ever
+   produced, and the client validates them again before navigating, so a push
+   payload can never become an open redirect. */
+const PUSH_URL_BY_TYPE = {
+  dm_message: "social:conversation",
+  friend_request: "social:requests",
+  friend_accepted: "social:friends",
+};
+
 async function notify(db, env, recipientUid, actor, type, message) {
-  const pref = await db.prepare(
-    "SELECT notifications_enabled FROM user_privacy WHERE uid = ?"
-  ).bind(recipientUid).first();
-  if (pref && Number(pref.notifications_enabled) === 0) return;
-  const inserted = await db.prepare(
-    "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message) " +
-    "VALUES (?, ?, ?, ?, ?)"
-  ).bind(recipientUid, type, actor.uid, actor.name || "Member", message).run();
-  const id = inserted.meta && inserted.meta.last_row_id ? Number(inserted.meta.last_row_id) : 0;
-  await hubBroadcast(env, {
-    type: "notification:created",
+  /* The preference check and the INSERT both live in _lib/notifications.js now,
+     so the social API and the other twelve writers cannot drift apart. This
+     function only adds what is social-specific: the push dispatch.
+
+     createNotification returns null when the recipient opted out (or the write
+     failed), and in that case no push must go out either - the opt-out has to
+     mean "no notification of any kind", not just "no row in the bell feed". */
+  const created = await createNotification(db, env, recipientUid, {
+    type,
+    actorUid: actor.uid,
+    actorName: actor.name || "Member",
+    message,
     private: true,
-    recipientUid,
-    notification: { id, type, actor_uid: actor.uid, actor: actor.name || "Member", message },
   });
+  if (!created) return;
+  const id = created.id;
+
+  /* Background delivery for clients that are not currently looking at the
+     panel. Runs after the shared helper has enforced the user's notification
+     preference, and after every block check that ran before this point.
+
+     `message` is the same generic summary the in-app notification uses - it
+     never contains message body text. Notification failures must never fail the
+     originating action (a DM is already stored and delivered by then), so this
+     is wrapped so a push outage cannot break messaging. */
+  const target = PUSH_URL_BY_TYPE[type];
+  if (target && recipientUid !== actor.uid) {
+    try {
+      await sendPushToUser(env, db, recipientUid, {
+        title: "TheHighWRLD",
+        body: message,
+        tag: "thw-" + type + "-" + id,
+        // Identifies the record so a repeat delivery collapses instead of
+        // stacking duplicate notifications on the lock screen.
+        renotify: false,
+        url: target,
+        data: { type, notificationId: id, actorUid: actor.uid },
+      });
+    } catch (err) {
+      console.error("Push dispatch failed:", err && err.message);
+    }
+  }
 }
 
 async function notifyBestEffort(db, env, recipientUid, actor, type, message) {

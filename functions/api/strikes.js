@@ -10,6 +10,7 @@
 // POST /api/strikes { action:"rule", id?, threshold, rule_action, duration, enabled, user } (staff)
 
 import { getSessionUser } from "../_lib/auth.js";
+import { createNotification } from "../_lib/notifications.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -74,20 +75,7 @@ async function activeStrikeCount(db, uid) {
 }
 
 async function notifyUser(db, env, uid, type, message) {
-  try {
-    const n = await db.prepare(
-      "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, ?, '', 'Staff', ?, NULL, NULL)"
-    ).bind(uid, type, message).run();
-    const { hubBroadcast } = await import("../_lib/realtime.js");
-    await hubBroadcast(env, {
-      type: "notification:created",
-      recipientUid: uid,
-      notification: {
-        id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
-        type, message, post_id: null, reply_id: null, actor: "Staff",
-      },
-    });
-  } catch (_) {}
+  await createNotification(db, env, uid, { type, actorName: "Staff", message });
 }
 
 async function audit(db, actorUid, text) {

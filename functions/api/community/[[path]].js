@@ -12,6 +12,7 @@ import { getSessionUser } from "../../_lib/auth.js";
 import { hubBroadcast } from "../../_lib/realtime.js";
 import { banRejection } from "../../_lib/bans.js";
 import { moderateContent } from "../../_lib/automod.js";
+import { createNotification } from "../../_lib/notifications.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -318,20 +319,13 @@ async function createReply(request, env, db, postIdRaw) {
   if (parentAuthorUid && parentAuthorUid !== auth.uid) notifyTargets.add(parentAuthorUid);
   for (const targetUid of notifyTargets) {
     const msg = auth.name + " replied" + (replyTo ? " to " + parentAuthorName : "") + " on \"" + String(post.title).slice(0, 60) + "\"";
-    const n = await db.prepare(
-      "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'reply', ?, ?, ?, ?, ?)"
-    ).bind(targetUid, auth.uid, auth.name, msg, pid, rid).run();
-    await hubBroadcast(env, {
-      type: "notification:created",
-      recipientUid: targetUid,
-      notification: {
-        id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
-        type: "reply",
-        message: msg,
-        post_id: pid,
-        reply_id: rid,
-        actor: auth.name,
-      },
+    await createNotification(db, env, targetUid, {
+      type: "reply",
+      actorUid: auth.uid,
+      actorName: auth.name,
+      message: msg,
+      postId: pid,
+      replyId: rid,
     });
   }
 
@@ -366,16 +360,13 @@ async function createReply(request, env, db, postIdRaw) {
       if (!tuid || tuid === auth.uid || notifyTargets.has(tuid)) continue;
       count++;
       const msg = auth.name + " mentioned you in \"" + String(post.title).slice(0, 60) + "\"";
-      const n = await db.prepare(
-        "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'mention', ?, ?, ?, ?, ?)"
-      ).bind(tuid, auth.uid, auth.name, msg, pid, rid).run();
-      await hubBroadcast(env, {
-        type: "notification:created",
-        recipientUid: tuid,
-        notification: {
-          id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
-          type: "mention", message: msg, post_id: pid, reply_id: rid, actor: auth.name,
-        },
+      await createNotification(db, env, tuid, {
+        type: "mention",
+        actorUid: auth.uid,
+        actorName: auth.name,
+        message: msg,
+        postId: pid,
+        replyId: rid,
       });
     }
   } catch (_) {}

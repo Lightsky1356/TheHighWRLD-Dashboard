@@ -3,6 +3,7 @@
 
 import { getSessionUser } from "../_lib/auth.js";
 import { banRejection } from "../_lib/bans.js";
+import { createNotification } from "../_lib/notifications.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -73,17 +74,11 @@ export async function onRequestPost(context) {
       ).bind(me.uid, target).run();
       try {
         const msg = (me.name || "Someone") + " started following you";
-        const n = await db.prepare(
-          "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'follow', ?, ?, ?, NULL, NULL)"
-        ).bind(target, me.uid, me.name || "", msg).run();
-        const { hubBroadcast } = await import("../_lib/realtime.js");
-        await hubBroadcast(context.env, {
-          type: "notification:created",
-          recipientUid: target,
-          notification: {
-            id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
-            type: "follow", message: msg, post_id: null, reply_id: null, actor: me.name || "",
-          },
+        await createNotification(db, context.env, target, {
+          type: "follow",
+          actorUid: me.uid,
+          actorName: me.name || "",
+          message: msg,
         });
       } catch (_) {}
       // Include actor uid for deep-linking (reuse post_id slot is wrong here;

@@ -1,8 +1,8 @@
 import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
-import { getSessionUser } from "../_lib/auth.js";
 import { banRejection } from "../_lib/bans.js";
 import { moderateContent } from "../_lib/automod.js";
 import { evaluateSurfaceRules, recordRuleFlags } from "../_lib/submissionRules.js";
+import { createNotification } from "../_lib/notifications.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -262,16 +262,11 @@ export async function onRequestPost(context) {
           const tgt = await db.prepare("SELECT author_uid, title FROM suggestions_v2 WHERE id = ?").bind(sugId).first();
           if (tgt && tgt.author_uid && tgt.author_uid !== uid) {
             const msg = 'Your suggestion "' + String(tgt.title || "").slice(0, 60) + '" is now ' + newStatus;
-            const n = await db.prepare(
-              "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'suggestion', ?, ?, ?, NULL, NULL)"
-            ).bind(tgt.author_uid, uid, "Staff", msg).run();
-            await hubBroadcast(env, {
-              type: "notification:created",
-              recipientUid: tgt.author_uid,
-              notification: {
-                id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
-                type: "suggestion", message: msg, post_id: null, reply_id: null, actor: "Staff",
-              },
+            await createNotification(db, env, tgt.author_uid, {
+              type: "suggestion",
+              actorUid: uid,
+              actorName: "Staff",
+              message: msg,
             });
           }
         } catch (_) {}

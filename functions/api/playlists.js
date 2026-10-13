@@ -10,6 +10,7 @@
 
 import { getSessionUser } from "../_lib/auth.js";
 import { banRejection } from "../_lib/bans.js";
+import { createNotification } from "../_lib/notifications.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -200,17 +201,12 @@ export async function onRequestPost(context) {
         try {
           if (String(pl.uid || "") !== String(user.uid)) {
             const msg = (user.name || "Someone") + ' saved your playlist "' + String(pl.name || "").slice(0, 60) + '"';
-            const n = await db.prepare(
-              "INSERT INTO community_notifications (recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) VALUES (?, 'playlist', ?, ?, ?, ?, NULL)"
-            ).bind(pl.uid, user.uid, user.name || "", msg, id).run();
-            const { hubBroadcast } = await import("../_lib/realtime.js");
-            await hubBroadcast(context.env, {
-              type: "notification:created",
-              recipientUid: pl.uid,
-              notification: {
-                id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
-                type: "playlist", message: msg, post_id: id, reply_id: null, actor: user.name || "",
-              },
+            await createNotification(db, context.env, pl.uid, {
+              type: "playlist",
+              actorUid: user.uid,
+              actorName: user.name || "",
+              message: msg,
+              postId: id,
             });
           }
         } catch (_) {}
