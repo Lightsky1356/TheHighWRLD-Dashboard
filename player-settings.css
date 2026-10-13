@@ -1333,3 +1333,14 @@ html.is-scrolling #player-sun{
   #info-title.info-value-title{font-size:19px!important}
   .info-sec{margin-top:15px}
 }
+/* WRLD LOG scroll lock.
+   showWrldLog() used to lock with inline overflow:hidden on body and
+   documentElement. On a phone that was a no-op: the max-width:767px block
+   above sets overflow-y:auto!important on html/body, and an !important
+   author declaration outranks a normal inline style. A class selector plus
+   !important wins instead - the class is specificity 0,1,1 against the
+   0,0,1 of a bare selector inside a media query, which adds none.
+   Own class rather than the site-wide scroll-locked, because reports.js,
+   suggestions.js, account.js and user-menu.js toggle that one directly and
+   would drop this lock if it were shared. */
+html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}

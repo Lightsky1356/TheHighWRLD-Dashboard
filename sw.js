@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v25';
+const VERSION = 'thw-v26';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -32,7 +32,7 @@ const PRECACHE = [
   './browser-id3-writer.js?v=thw-v1',
   './account.js?v=thw-v1',
   './i18n.js?v=2',
-  './script.js?v=thw-v21',
+  './script.js?v=thw-v24',
   './suggestions.js?v=thw-v1',
   './submission-rules-ui.js?v=thw-v1',
   './auth.js?v=thw-v1',
@@ -43,10 +43,8 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v1',
   './all.min.css?v=thw-v1',
   './account.css?v=thw-v1',
-  './player-settings.css?v=thw-v30',
+  './player-settings.css?v=thw-v31',
   './style.css?v=thw-v26',
-  './player-settings.css?v=thw-v22',
-  './style.css?v=thw-v22',
   './tailwind.css?v=thw-v1',
   './themes.css?v=thw-v1',
   './css2.css?v=thw-v1',
