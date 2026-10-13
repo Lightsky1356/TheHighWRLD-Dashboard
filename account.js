@@ -1186,11 +1186,15 @@ function compactProfileViewHtml(d) {
     var flg = document.getElementById("ftLang");
     if (flg) flg.value = _lang;
     applyTheme(theme);
+    var mode = _data && _data.site_mode ? _data.site_mode : (_cachedMode || "dark");
+    syncMode(mode);
+    applyMode(mode);
     /* wantedTheme / wantedLang belong to this DEVICE and are what a guest
        sees. The account's own theme must never be written over them, or
        signing out leaves the next visitor wearing your theme. */
     if (!isSignedInNow() && !_data) {
       try { localStorage.setItem("wantedTheme", theme); } catch (e) {}
+      if (!isSignedInNow() && !_data) { try { localStorage.setItem("wantedMode", mode); } catch (e) {} }
       try { localStorage.setItem("wantedLang", _lang); } catch (e) {}
     }
     applyI18n();
@@ -1200,8 +1204,12 @@ function compactProfileViewHtml(d) {
     var theme = "default", lang = "en";
     try { theme = localStorage.getItem("wantedTheme") || "default"; } catch (e) {}
     try { lang = localStorage.getItem("wantedLang") || "en"; } catch (e) {}
+    var mode = "dark";
+    try { mode = localStorage.getItem("wantedMode") || "dark"; } catch (e) {}
     _lang = lang;
     applyTheme(theme);
+    applyMode(mode);
+    syncMode(mode);
     try { document.documentElement.lang = lang; } catch (e) {}
     var th = document.getElementById("setTheme");
     if (th) th.value = theme;
@@ -1225,6 +1233,45 @@ function compactProfileViewHtml(d) {
     var ap = document.getElementById("account-page");
     if (ap) ap.setAttribute("data-theme", theme);
     document.body.setAttribute("data-theme", theme);
+  }
+  /* Site mode is layered on top of the theme: the document carries BOTH
+     data-theme and data-mode, and site-mode.css overrides only what the mode
+     needs to change. Dark is deliberately not defined in CSS - it is the
+     absence of an override - so switching back to dark reverts exactly to the
+     theme's own colours with no reset block that can drift out of date. */
+  var SITE_MODES = ["light", "dark", "glass"];
+  function applyMode(mode) {
+    if (SITE_MODES.indexOf(mode) === -1) mode = "dark";
+    document.documentElement.setAttribute("data-mode", mode);
+    document.body.setAttribute("data-mode", mode);
+    var ap = document.getElementById("account-page");
+    if (ap) ap.setAttribute("data-mode", mode);
+  }
+  function syncMode(v) {
+    var sm = document.getElementById("setMode");
+    if (sm) sm.value = v;
+    var fm = document.getElementById("ftMode");
+    if (fm) fm.value = v;
+  }
+  function bindModeSel(sel) {
+    console.log("DIAG bindModeSel called sel=" + (sel ? sel.id : "NULL"));
+    if (!sel) return;
+    console.log("DIAG attaching to " + sel.id);
+    sel.addEventListener("change", function () {
+      var v = sel.value;
+      console.log("DIAG handler fired v=" + v);
+      applyMode(v);
+      syncMode(v);
+      console.log("DIAG data-mode=" + document.documentElement.getAttribute("data-mode"));
+      /* Signed in: this is your account mode and it lives on the server. Only a
+         guest (no account) changes the device mode - the same split the theme
+         uses, so signing out returns to the mode this device last chose. */
+      if (isSignedInNow()) {
+        api({ action: "saveMode", mode: v }).then(function () { loadAccount(); });
+      } else {
+        try { localStorage.setItem("wantedMode", v); } catch (e) {}
+      }
+    });
   }
   function bindThemeLang() {
     function fillSelect(sel, list) {
@@ -1271,6 +1318,8 @@ function compactProfileViewHtml(d) {
       });
     }
     bindThemeSel(th); bindThemeSel(fth);
+    console.log("DIAG init reached bind call");
+    bindModeSel(document.getElementById("setMode")); bindModeSel(document.getElementById("ftMode"));
     bindLangSel(lg); bindLangSel(flg);
     syncTheme(_data && _data.theme ? _data.theme : (_cachedTheme || "default"));
     syncLang(_lang);

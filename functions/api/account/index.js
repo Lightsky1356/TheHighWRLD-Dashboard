@@ -137,6 +137,7 @@ async function loadAccountState(env, db, uid, req) {
       },
     } : {}),
     theme: (prof && prof.theme) || "default",
+    site_mode: (prof && prof.site_mode) || "dark",
     language: (prof && prof.language) || "en",
     stats: {
       plays: listens.n || 0,
@@ -267,6 +268,19 @@ export async function onRequestPost(context) {
            ON CONFLICT(site_uid) DO UPDATE SET name = excluded.name, bio = excluded.bio, status = excluded.status, avatar = excluded.avatar, banner = excluded.banner, updated_at = excluded.updated_at`
         ).bind(uid, name, bio, status, avatar, banner, nowIso()).run();
         await recordActivity(db, uid, "profile", "You updated your profile", name || "profile");
+        break;
+      }
+      case "saveMode": {
+        // Only the three known modes are accepted. An unknown value falls back
+        // to dark rather than being stored, so a bad value can never leave the
+        // site with data-mode set to something no stylesheet matches.
+        const mode = ["light", "dark", "glass"].includes(String(body.mode))
+          ? String(body.mode)
+          : "dark";
+        await db.prepare(
+          `INSERT INTO user_profiles (site_uid, site_mode, updated_at) VALUES (?, ?, ?)
+           ON CONFLICT(site_uid) DO UPDATE SET site_mode = excluded.site_mode, updated_at = excluded.updated_at`
+        ).bind(uid, mode, nowIso()).run();
         break;
       }
       case "saveTheme": {

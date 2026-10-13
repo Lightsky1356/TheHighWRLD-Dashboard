@@ -1,0 +1,168 @@
+/* ============================================================================
+   THEHIGHWRLD - SITE MODE (Light / Dark / Glass)
+   A mode layered on top of whichever of the 32 themes is active.
+
+   The UI is not token-driven: index.html bakes Tailwind utilities into the
+   markup and the stylesheets hardcode translucent panel colours, so a mode has
+   to override the utilities and the surfaces as well as the tokens.
+
+   Dark is deliberately NOT defined. It is the absence of an override, so
+   switching back to dark reverts exactly to the theme's own colours with no
+   reset block that can drift out of date.
+
+   The token blocks use html[data-theme][data-mode=...] rather than a bare
+   [data-mode=...]. themes.css writes its themes as html[data-theme=x], which is
+   specificity 0,1,1 - a bare [data-mode=x] at 0,1,0 loses to it and light mode
+   silently does nothing. Including [data-theme] makes the mode 0,2,1, so it wins
+   on specificity rather than on stylesheet order.
+
+   The light background is deliberately neutral rather than tinted per theme
+   with color-mix: an @supports wrapper around it stopped this token block
+   parsing at all. Themes still differ in light mode through --th-accent,
+   --th-glow and the --ac-* accent and gradient tokens, which light mode leaves
+   untouched.
+   ========================================================================= */
+
+/* -------- LIGHT -------- */
+html[data-theme][data-mode=light]{
+  --ac-bg0:#eef0fa;
+  --ac-bg1:#fbfbff;
+  --ac-text:#16112b;
+  --ac-muted:#514a6b;
+  --ac-dim:#7b7494;
+  --ac-glass:rgba(255,255,255,.72);
+  --ac-glass2:rgba(255,255,255,.88);
+  --ac-border:rgba(22,17,43,.10);
+  --ac-border2:rgba(22,17,43,.18);
+  --ac-shadow:0 24px 60px rgba(30,22,64,.13);
+  --th-glass:rgba(255,255,255,.66);
+  --th-glass2:rgba(255,255,255,.84);
+  --th-border:rgba(22,17,43,.10);
+  --th-border2:rgba(22,17,43,.18);
+  --th-bg:linear-gradient(180deg,#fafbff,#eef0fa 100%);
+}
+
+html[data-theme][data-mode=light]{background-color:#f2f3fb}
+[data-mode=light] body{background-color:#f2f3fb}
+[data-mode=light] .player-lightning{opacity:.25}
+
+/* text utilities: Tailwind's gray ramp runs light to dark, so in light mode
+   the end the site actually uses inverts */
+[data-mode=light] .text-white{color:#14102a}
+[data-mode=light] .text-white\/90{color:#1d1738}
+[data-mode=light] .text-white\/80{color:#2a2450}
+[data-mode=light] .text-white\/70{color:#3c3563}
+[data-mode=light] .text-white\/60{color:#4f4877}
+[data-mode=light] .text-white\/40{color:#6b6489}
+[data-mode=light] .text-white\/30{color:#867fa3}
+[data-mode=light] .text-gray-300{color:#2c2650}
+[data-mode=light] .text-gray-300\/90{color:#342d5c}
+[data-mode=light] .text-gray-300\/60{color:#4d4675}
+[data-mode=light] .text-gray-400{color:#514a6b}
+[data-mode=light] .text-gray-500{color:#6b6489}
+[data-mode=light] .text-gray-600{color:#867fa3}
+[data-mode=light] .placeholder-gray-500::placeholder{color:#8b84a6}
+[data-mode=light] .placeholder-gray-600::placeholder{color:#a29cba}
+
+/* borders and fills: white on white is invisible */
+[data-mode=light] .border-white{border-color:rgba(22,17,43,.18)}
+[data-mode=light] .border-white\/10{border-color:rgba(22,17,43,.12)}
+[data-mode=light] .border-white\/5{border-color:rgba(22,17,43,.08)}
+[data-mode=light] .border-gray-300\/30{border-color:rgba(22,17,43,.14)}
+[data-mode=light] .border-gray-500\/30{border-color:rgba(22,17,43,.16)}
+[data-mode=light] .bg-white\/5{background-color:rgba(22,17,43,.045)}
+[data-mode=light] .bg-white{background-color:#ffffff}
+[data-mode=light] .bg-gray-500{background-color:#6b6489}
+[data-mode=light] .bg-gray-500\/10{background-color:rgba(107,100,137,.12)}
+[data-mode=light] .bg-gray-300\/10{background-color:rgba(44,38,80,.08)}
+
+/* -------- GLASS -------- */
+/* Frosted over whatever is behind: theme gradient, #bg-motion orbs, lobby art.
+   Text stays light because the backdrop varies. */
+html[data-theme][data-mode=glass]{
+  --ac-glass:rgba(255,255,255,.10);
+  --ac-glass2:rgba(255,255,255,.18);
+  --th-glass:rgba(255,255,255,.08);
+  --th-glass2:rgba(255,255,255,.14);
+  --ac-border:rgba(255,255,255,.14);
+  --ac-border2:rgba(255,255,255,.26);
+  --th-border:rgba(255,255,255,.12);
+  --th-border2:rgba(255,255,255,.22);
+  --ac-text:#f2efff;
+  --ac-muted:rgba(238,235,255,.74);
+  --ac-dim:rgba(238,235,255,.5);
+  --ac-shadow:0 30px 80px rgba(0,0,0,.42);
+}
+
+/* -------- hardcoded dark surfaces, mirrored for light -------- */
+/* Scrims, cover art, avatars and pseudo-element decorations are excluded on
+   purpose: a dark scrim behind a light modal is correct, and artwork is not
+   a surface. */
+[data-mode=light] #account-page .top-nav{background:rgba(218,212,236,.55)!important}
+[data-mode=light] #account-page .mobile-menu{background:rgba(218,212,236,.96)!important}
+[data-mode=light] #owner-panel.owner-active{background:rgba(209,207,228,.96)!important}
+[data-mode=light] #account-page .ac-shell-header{background:rgba(191,191,218,.84)!important}
+[data-mode=light] #account-page .ac-shell-sidebar{background:rgba(204,219,234,.72)!important}
+[data-mode=light] #account-page .card{background:rgba(204,219,234,.70)!important}
+[data-mode=light] #account-page .danger-unlock-row input{background:rgba(212,226,241,.72)!important}
+[data-mode=light] #account-page .field input,#account-page .field textarea,#account-page .field select{background:rgba(212,226,241,.72)!important}
+[data-mode=light] #account-page .ac-sidebar-toggle{background:rgba(204,219,234,.72)!important}
+[data-mode=light] #account-page .ac-shell-header{background:rgba(235,235,235,.75)!important}
+[data-mode=light] #account-page .card{background:rgba(199,208,227,.6)!important}
+[data-mode=light] #account-page .card:hover{background:rgba(199,208,227,.72)!important}
+[data-mode=light] .page-tab-btn:hover{background:rgba(189,198,213,.5)!important}
+[data-mode=light] #nav-account-menu{background:rgba(199,208,227,.95)!important}
+[data-mode=light] #account-page .field input,#account-page .field textarea,#account-page .field select{background:rgba(235,235,235,.25)!important}
+[data-mode=light] #owner-panel.owner-active{background:rgba(202,196,221,.98)!important}
+[data-mode=light] #account-page .section>.card.set-card.ac-danger-card{background:rgba(233,215,221,.42)!important}
+[data-mode=light] .legal-info-panel{background:rgba(192,184,214,.58)!important}
+[data-mode=light] .legal-info-panel{background:rgba(235,235,235,.55)!important}
+[data-mode=light] .info-panel{background:rgba(215,210,227,.85)!important}
+[data-mode=light] #playlist-panel,#queue-panel{background:rgba(211,211,232,.65)!important}
+[data-mode=light] .ap-nav{background:rgba(235,235,235,.5)!important}
+[data-mode=light] footer{background:rgba(211,217,234,.6)!important}
+[data-mode=light] #mobile-menu{background:rgba(215,219,236,.96)!important}
+[data-mode=light] .info-panel{background:rgba(215,210,227,.55)!important}
+[data-mode=light] .legal-header{background:rgba(212,218,236,.97)!important}
+[data-mode=light] #player-panel.player-blank{background:rgba(211,217,234,.6)!important}
+[data-mode=light] .media-player-panel .controls-interface,.player-controls-bg{background:rgba(214,219,232,.95)!important}
+[data-mode=light] .join-panel{background:rgba(211,211,234,.5)!important}
+[data-mode=light] #player-panel:not(.player-blank){background:rgba(235,235,235,.4)!important}
+[data-mode=light] .playlist-grid-view .playlist-item .play-indicator{background:rgba(235,235,235,.6)!important}
+[data-mode=light] .player-sidebar{background:rgba(219,215,229,.75)!important}
+[data-mode=light] .custom-playlist-modal{background:rgba(235,235,235,.6)!important}
+[data-mode=light] #nav-account-menu{background:rgba(209,207,228,.96)!important}
+[data-mode=light] .nav-notif-menu{background:rgba(209,207,228,.96)!important}
+[data-mode=light] .nav-comm-menu{background:rgba(209,207,228,.96)!important}
+[data-mode=light] .cmp-sec-card{background:rgba(199,208,227,.6)!important}
+[data-mode=light] #profileViewModal .pv-banner-wrap:after{background:rgba(215,218,233,.2)!important}
+[data-mode=light] #profile-page .cmp-card-page .pv-pl{background:rgba(235,235,235,.3)!important}
+[data-mode=light] .mobile-bottom-nav{background:rgba(212,210,230,.92)!important}
+[data-mode=light] .mobile-popup-inner{background:rgba(209,207,228,.96)!important}
+[data-mode=light] #nav-account-menu{background:rgba(201,196,221,.98)!important}
+[data-mode=light] .user-menu{background:rgba(217,207,229,.98)!important}
+[data-mode=light] .player-sidebar{background:rgba(210,206,228,.98)!important}
+[data-mode=light] .info-panel-close{background:rgba(218,215,233,.55)!important}
+[data-mode=light] #thw-social-panel{background:rgba(208,212,233,.97)!important}
+[data-mode=light] .thw-social-rules-card{background:rgba(207,211,232,.98)!important}
+[data-mode=light] .player-settings-panel{background:rgba(209,207,228,.96)!important}
+
+/* -------- light: inherited colours -------- */
+/* player-settings.css sets body{color:#fff}. With the page background flipped
+   to #f2f3fb that put white copy on near-white, so the inherited colour has to
+   be flipped explicitly rather than left to the theme tokens. */
+[data-mode=light] body{color:#16112b}
+[data-mode=light] .shortcuts-modal{background:rgba(255,255,255,.86)!important;border-color:rgba(22,17,43,.12)!important;color:#16112b}
+[data-mode=light] .shortcuts-modal-header{color:#16112b}
+[data-mode=light] .shortcuts-modal kbd{background:rgba(22,17,43,.07)!important;border-color:rgba(22,17,43,.14)!important;color:#3c3563}
+[data-mode=light] .shortcuts-row{color:#241e45}
+[data-mode=light] .shortcuts-row span{color:#3c3563}
+[data-mode=light] .shortcuts-detail{color:#514a6b}
+[data-mode=light] .wrldlog-items span,[data-mode=light] .wrldlog-note,[data-mode=light] .wrldlog-title{color:#3c3563}
+[data-mode=light] .wrldlog-modal-body,[data-mode=light] .shortcuts-modal-body{color:#241e45}
+
+/* The lobby hero is a full-bleed photograph. It stays as it is in every mode:
+   darkening or inverting artwork would look worse than a dark photo with
+   light text, and it gives the page a deliberate dark header band above the
+   light body rather than a washed-out one. */
+[data-mode=light] .landing,#data-mode-light-hero{color:#fff}
