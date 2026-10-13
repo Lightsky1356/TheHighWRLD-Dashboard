@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v24';
+const VERSION = 'thw-v25';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -44,7 +44,7 @@ const PRECACHE = [
   './all.min.css?v=thw-v1',
   './account.css?v=thw-v1',
   './player-settings.css?v=thw-v30',
-  './style.css?v=thw-v25',
+  './style.css?v=thw-v26',
   './player-settings.css?v=thw-v22',
   './style.css?v=thw-v22',
   './tailwind.css?v=thw-v1',

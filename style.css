@@ -272,3 +272,15 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
 @media (min-width:640px){
   .vault-discography-view{padding:28px}
 }
+
+/* Collapsible detail under "Beginning of Track" in the Keyboard Shortcuts
+   overlay, matching the disclosure The Vault's PLAYER KEYS panel already has.
+   The row is a button (role=button, tabindex=0) rather than a bare div, so
+   it is reachable and operable from the keyboard; Enter and Space both
+   activate it. Caret rotates purely via inline transform, which is what the
+   click handler sets. */
+.shortcuts-row--disclosure{cursor:pointer;user-select:none;border-radius:6px}
+.shortcuts-row--disclosure:hover{background:rgba(255,255,255,.04)}
+.shortcuts-row--disclosure:focus-visible{outline:2px solid rgba(167,139,250,.7);outline-offset:2px}
+.shortcuts-caret{font-size:6px;margin-right:6px;color:rgba(255,255,255,.35);transition:transform .2s;display:inline-block}
+.shortcuts-detail{font-size:10px;line-height:1.45;color:rgba(255,255,255,.42);padding:2px 0 6px 14px}
