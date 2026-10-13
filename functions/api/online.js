@@ -32,22 +32,23 @@ export async function onRequestPost(context) {
 
   let body;
   try { body = await request.json(); } catch (_) { body = {}; }
-  const uid = String(body.uid || "").slice(0, 64);
-  if (!uid) return json({ ok: false, error: "missing uid" }, 400);
+  const authed = (await isSignedIn(db, request)) ? 1 : 0;
+  /* Signed-in members and signed-out visitors are BOTH recorded now. The old
+     code returned early for anyone not signed in, so no guest row was ever
+     written and `guests` (computed as total minus authed) was permanently 0.
+     Signed-out visitors send a random client id rather than a uid, which is why
+     the identity field falls back to body.visitorId. */
+  const visitorId = String(body.uid || body.visitorId || "").slice(0, 64);
+  if (!visitorId) return json({ ok: false, error: "missing uid" }, 400);
   const name = String(body.name || "").slice(0, 64);
   const now = new Date().toISOString();
-  const authed = (await isSignedIn(db, request, uid)) ? 1 : 0;
-  if (!authed) {
-    const counts = await getCounts(db, false);
-    return json({ ok: true, online: counts.online, guests: counts.guests, tracked: false });
-  }
 
   try {
     await db
       .prepare(
         "INSERT INTO online_visitors (visitor_id, last_seen, name, authed) VALUES (?1, ?2, ?3, ?4) ON CONFLICT(visitor_id) DO UPDATE SET last_seen = ?2, name = ?3, authed = ?4"
       )
-      .bind(uid, now, name, authed)
+      .bind(visitorId, now, name, authed)
       .run();
   } catch (e) {
     return json({ ok: false, error: String(e.message || e) }, 500);
@@ -66,18 +67,15 @@ export async function onRequestGet(context) {
   return json({ ok: true, online: counts.online, guests: counts.guests });
 }
 
-async function isSignedIn(db, request, uid) {
+async function isSignedIn(db, request) {
   try {
     const { getSessionUser } = await import("../_lib/auth.js");
     const session = await getSessionUser(db, request);
     if (session && session.uid) return true;
   } catch (_) {}
-  try {
-    const link = await db.prepare(
-      "SELECT display_name FROM discord_links WHERE site_uid = ?"
-    ).bind(uid).first();
-    if (link && link.display_name) return true;
-  } catch (_) {}
+  /* The old Discord-links fallback let anyone count as signed in by sending a
+     known site uid, which also mislabelled guests. A real session cookie is
+     the only thing that makes someone a member here. */
   return false;
 }
 

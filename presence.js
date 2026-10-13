@@ -62,19 +62,28 @@
     updateBadge();
   }
 
-  function isAuthed() {
-    try { return !!localStorage.getItem('wantedAuthUser'); } catch (_) { return false; }
+  /* Best-effort display name for the heartbeat. Signed-in members have one;
+     guests send an empty string, since a visitor id is not a name. */
+  function displayName() {
+    try {
+      const raw = localStorage.getItem('wantedAuthUser');
+      if (!raw) return '';
+      const parsed = JSON.parse(raw);
+      return String(parsed && (parsed.name || parsed.displayName || parsed.username) || '').slice(0, 64);
+    } catch (_) { return ''; }
   }
 
   async function heartbeat() {
-    if (!isAuthed()) return;
+    /* Everyone heartbeats, not just members. This used to return early for
+       signed-out visitors, which is half of why the guest count was always 0 -
+       the other half was the server refusing to record them. */
     if (document.hidden || inFlight) return;
     inFlight = true;
     try {
       const res = await fetch('/api/online', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: uid() }),
+        body: JSON.stringify({ uid: uid(), name: displayName() }),
       });
       inFlight = false;
       if (!res.ok) return;
