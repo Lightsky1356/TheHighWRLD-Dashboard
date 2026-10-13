@@ -1,0 +1,13 @@
+{
+  "name": "thehighwrld-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TheHighWRLD Dashboard - test suite.",
+  "//type": "REQUIRED. Every file under functions/ is an ES module (import/export). Node treats a bare .js file as CommonJS unless package.json says \"type\": \"module\", and Cloudflare Pages resolves module type from here. Omitting it would silently break every Pages Function in the project.",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/run-all.mjs",
+    "test:crypto": "node tests/crypto-selftest.mjs",
+    "dev": "wrangler pages dev . --port 8788"
+  }
+}

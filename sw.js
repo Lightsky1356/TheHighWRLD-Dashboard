@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v22';
+const VERSION = 'thw-v24';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -24,32 +24,32 @@ const PRECACHE = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './security.js',
+  './security.js?v=thw-v1',
   './api.js',
-  './crypto-js.min.js',
-  './qrcode.min.js',
-  './tracks.js',
-  './browser-id3-writer.js',
-  './account.js',
-  './i18n.js',
-  './script.js',
-  './suggestions.js',
-  './submission-rules-ui.js',
-  './auth.js',
-  './wanted-realtime.js',
-  './community-realtime.js',
-  './presence.js',
-  './pwa.js',
-  './community-realtime.css',
-  './all.min.css',
-  './account.css',
-  './player-settings.css',
-  './style.css',
+  './crypto-js.min.js?v=thw-v1',
+  './qrcode.min.js?v=thw-v1',
+  './tracks.js?v=thw-v2',
+  './browser-id3-writer.js?v=thw-v1',
+  './account.js?v=thw-v1',
+  './i18n.js?v=2',
+  './script.js?v=thw-v21',
+  './suggestions.js?v=thw-v1',
+  './submission-rules-ui.js?v=thw-v1',
+  './auth.js?v=thw-v1',
+  './wanted-realtime.js?v=thw-v1',
+  './community-realtime.js?v=thw-v1',
+  './presence.js?v=thw-v2',
+  './pwa.js?v=thw-v2',
+  './community-realtime.css?v=thw-v1',
+  './all.min.css?v=thw-v1',
+  './account.css?v=thw-v1',
+  './player-settings.css?v=thw-v30',
+  './style.css?v=thw-v25',
   './player-settings.css?v=thw-v22',
   './style.css?v=thw-v22',
-  './tailwind.css',
-  './themes.css',
-  './css2.css',
+  './tailwind.css?v=thw-v1',
+  './themes.css?v=thw-v1',
+  './css2.css?v=thw-v1',
   './fonts/0-Sora-300.woff2',
   './fonts/1-Sora-300.woff2',
   './fonts/2-Sora-400.woff2',
@@ -196,3 +196,91 @@ function trimRuntimeCache(cache) {
     });
   });
 }
+
+/* =============================================================================
+   WEB PUSH
+   Added for background notifications. Nothing above this line knows about push:
+   a device that never subscribes simply never fires these events.
+   ========================================================================== */
+
+const PUSH_TITLE = 'TheHighWRLD';
+
+/* Only these app routes may be opened from a notification. A push payload is
+   server-generated, but the browser can be tricked into relaying one, so the
+   destination is validated again here rather than trusted. Anything else falls
+   back to the lobby instead of navigating. */
+const PUSH_ROUTES = new Set(['social:conversation', 'social:requests', 'social:friends']);
+
+function safeTarget(raw) {
+  return typeof raw === 'string' && PUSH_ROUTES.has(raw) ? raw : null;
+}
+
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (_) {
+    try {
+      const text = event.data ? event.data.text() : '';
+      data = { title: PUSH_TITLE, body: String(text || '').slice(0, 200) };
+    } catch (__) { data = {}; }
+  }
+
+  const title = typeof data.title === 'string' && data.title ? data.title.slice(0, 60) : PUSH_TITLE;
+  const body = typeof data.body === 'string' ? data.body.slice(0, 180) : '';
+  const target = safeTarget(data.url);
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: './icons/icon-192.png',
+      badge: './icons/icon-96.png',
+      // Same-origin only. A push payload must never be able to make the
+      // notification load a remote image and leak that the device is online.
+      tag: typeof data.tag === 'string' ? data.tag.slice(0, 80) : 'thw-notification',
+      renotify: false,
+      vibrate: [40, 30, 40],
+      timestamp: Date.now(),
+      data: { target, type: data.type || '' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = safeTarget(event.notification.data && event.notification.data.target);
+
+  // Without a target there is nothing to route to - just focus the app.
+  if (!target) {
+    event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if ('focus' in c) return c.focus();
+      }
+      return self.clients.openWindow('/');
+    }));
+    return;
+  }
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      // Already open: focus the existing tab and let the page route internally,
+      // rather than opening a second copy of the app.
+      for (const client of list) {
+        if (client.url && client.url.indexOf(self.location.origin) === 0 && 'focus' in client) {
+          client.postMessage({ type: 'thw:push-click', target: target });
+          return client.focus();
+        }
+      }
+      // Cold start: open the app and hand the destination over on load.
+      return self.clients.openWindow('/').then((client) => {
+        if (client) {
+          client.postMessage({ type: 'thw:push-click', target: target });
+          return client.focus();
+        }
+      });
+    })
+  );
+});
+
+/* Tapping "clear all" should not leave stale notifications behind. */
+self.addEventListener('notificationclose', () => { /* nothing to persist */ });
