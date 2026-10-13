@@ -271,10 +271,10 @@ export async function onRequestPost(context) {
         break;
       }
       case "saveMode": {
-        // Only the three known modes are accepted. An unknown value falls back
+        // Only the two known modes are accepted. An unknown value falls back
         // to dark rather than being stored, so a bad value can never leave the
         // site with data-mode set to something no stylesheet matches.
-        const mode = ["light", "dark", "glass"].includes(String(body.mode))
+        const mode = ["dark", "glass"].includes(String(body.mode))
           ? String(body.mode)
           : "dark";
         await db.prepare(

@@ -1239,7 +1239,7 @@ function compactProfileViewHtml(d) {
      needs to change. Dark is deliberately not defined in CSS - it is the
      absence of an override - so switching back to dark reverts exactly to the
      theme's own colours with no reset block that can drift out of date. */
-  var SITE_MODES = ["light", "dark", "glass"];
+  var SITE_MODES = ["dark", "glass"];
   function applyMode(mode) {
     if (SITE_MODES.indexOf(mode) === -1) mode = "dark";
     document.documentElement.setAttribute("data-mode", mode);
