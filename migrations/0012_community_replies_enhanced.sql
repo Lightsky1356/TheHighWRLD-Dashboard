@@ -30,7 +30,8 @@ CREATE INDEX IF NOT EXISTS idx_reply_replies ON reply_reactions(reply_id);
 CREATE INDEX IF NOT EXISTS idx_reply_user ON reply_reactions(user_name);
 
 -- View for getting replies with vote counts and reaction counts for realtime
-CREATE OR REPLACE VIEW replies_with_counts AS
+DROP VIEW IF EXISTS replies_with_counts;
+CREATE VIEW replies_with_counts AS
 SELECT 
   r.id,
   r.track_id,

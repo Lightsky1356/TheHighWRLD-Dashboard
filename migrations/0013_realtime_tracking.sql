@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS connection_heartbeats (
 CREATE INDEX IF NOT EXISTS idx_hb_sessions ON connection_heartbeats(session_id);
 
 -- View for active sessions (last heartbeat within 30 seconds)
-CREATE OR REPLACE VIEW active_sessions AS
+DROP VIEW IF EXISTS active_sessions;
+CREATE VIEW active_sessions AS
 SELECT session_id, user_uid, track_id, connected_at
 FROM realtime_sessions
 WHERE last_heartbeat > datetime('now', '-30 seconds');
