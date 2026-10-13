@@ -31,6 +31,7 @@
     var o = overlay();
     if (!o || o.classList.contains("open")) return;
     lastFocus = document.activeElement;
+    applyAccountRowState();
     previousBodyOverflow = document.body.style.overflow;
     previousRootOverflow = document.documentElement.style.overflow;
     o.classList.add("open");
@@ -72,6 +73,38 @@
     var first = f[0], last = f[f.length - 1];
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+
+  /* Auth-aware label for the account row.
+   *
+   * "Account Settings" is the honest label: /account has no privacy controls.
+   * Profile visibility lives on the self profile page and messaging privacy
+   * lives in the Friends & Messages panel, so promising "& Privacy" here sent
+   * people to a page that does not deliver it.
+   *
+   * Signed out there is no account to manage at all, so the row becomes a sign-in
+   * prompt instead of a dead end. Uses the same localStorage signal the rest of
+   * the site uses (auth.js writes it on sign-in and removes it on sign-out), and
+   * re-evaluated on every open so it stays current after a sign-in. */
+  function signedInNow() {
+    try { return !!localStorage.getItem("wantedAuthUser"); } catch (e) { return false; }
+  }
+
+  function applyAccountRowState() {
+    var link = document.getElementById("legal-account-link");
+    if (!link) return;
+    var label = link.querySelector("[data-legal-account-label]");
+    var icon = link.querySelector("[data-legal-account-icon]");
+    var on = signedInNow();
+    if (label) label.textContent = on ? "Account Settings" : "Sign in to manage your settings";
+    if (icon) icon.className = on ? "fas fa-gear" : "fas fa-right-to-bracket";
+    /* Signed out, the href must not navigate to the account editor. The click
+       handler intercepts it, but removing the href also means it is not a
+       broken link if the handler is ever absent. */
+    if (on) link.setAttribute("href", "/account");
+    else link.removeAttribute("href");
+    link.setAttribute("data-legal-signed-in", on ? "1" : "0");
   }
 
   function boot() {
@@ -120,6 +153,60 @@
        entry point share one code path. */
     document.querySelectorAll("[data-legal-info]").forEach(function (btn) {
       btn.addEventListener("click", function (e) { e.preventDefault(); open(); });
+    });
+
+    /* The links inside the panel are the trap this dialog was built to avoid.
+       TOS/PP/DMCA/Wanted/Suggestions/Account/Roadmap are CLIENT-SIDE routes -
+       switchAppPage builds the target id as `page-section-${page}`. Letting the
+       browser follow href="/TOS" is a real document navigation: Pages serves
+       index.html for the path (200, not a 404), so the whole app re-downloads
+       and re-boots - which reads to the user as the tab refreshing and throws
+       away all in-page state. Intercept them and route them through the SPA
+       like every nav control does. External links (Discord) and /delete-request
+       (a real Pages Function page) are deliberately left alone so they still
+       perform a genuine navigation. */
+    var SPROUTES = {
+      "/TOS": "tos", "/PP": "pp", "/DMCA": "dmca",
+      "/wanted": "wanted", "/suggestions": "suggestions",
+      "/account": "account", "/roadmap": "roadmap"
+    };
+    overlay().addEventListener("click", function (e) {
+      var link = e.target.closest ? e.target.closest(".legal-info-link") : null;
+      if (!link) return;
+      /* Signed-out account row: send them to sign in rather than to an
+         account editor with nothing they can use. */
+      if (link.hasAttribute("data-legal-account") && !signedInNow()) {
+        e.preventDefault();
+        close();
+        if (typeof window.showAuthPage === "function") { try { window.showAuthPage("login"); return; } catch (_) {} }
+        if (typeof window.authGateSignIn === "function") { try { window.authGateSignIn(); } catch (_) {} }
+        return;
+      }
+      var path = (link.getAttribute("href") || "").replace(/\/+$/, "") || "/";
+      var page = SPROUTES[path];
+      /* Not a known SPA route: leave the browser to handle it. */
+      if (!page || typeof window.switchAppPage !== "function") return;
+      e.preventDefault();
+      /* Close first so the panel's overflow locks are released before the page
+         switch scrolls the document to the top. */
+      close();
+      window.switchAppPage(page);
+    });
+
+    /* The Back button on TOS/PP/DMCA is onclick="history.back()", which walks
+       BROWSER history rather than app history. Two problems:
+         - TOS -> PP -> Back lands on PP again, so it reads as a broken button.
+         - On a deep link (/TOS typed directly, or a shared link) there is no
+           in-app history to return to, and history.back() can walk the user
+           straight out of the site.
+       Return to the lobby instead: deterministic, and it can never exit the
+       site. Bound to the document rather than the three buttons so markup added
+       later is covered too. */
+    document.addEventListener("click", function (e) {
+      var back = e.target.closest ? e.target.closest(".legal-page-back") : null;
+      if (!back) return;
+      e.preventDefault();
+      if (typeof window.switchAppPage === "function") window.switchAppPage("home");
     });
   }
 

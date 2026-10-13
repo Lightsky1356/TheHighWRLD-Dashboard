@@ -1,4 +1,9 @@
-/* Recently Played — self profile block + compact player strip.
+/* Recently Played — self profile block only.
+ *
+ * It also used to render a compact strip inside the WRLD Player. That is gone:
+ * the player is for playing, and the strip pushed the playlist and join panel
+ * down the page. The profile block stays, where it belongs.
+ *
  * Data: /api/recent (session-authed, newest first). Consecutive duplicates
  * are collapsed client-side. Logged-out users see nothing (no persistence). */
 (function () {
@@ -7,7 +12,6 @@
   window.__recentMounted = true;
 
   var WID = "ws-recent";
-  var SID = "recent-strip";
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -73,9 +77,7 @@
       ".ws-recent-art{width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#1c1530}" +
       ".ws-recent-tt{flex:1;min-width:0}.ws-recent-tt b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".ws-recent-tt span{font-size:10px;color:rgba(255,255,255,.5);font-family:monospace}" +
-      ".ws-recent-note{font-size:11px;color:rgba(255,255,255,.45);text-align:center;padding:8px 0 2px}" +
-      ".recent-strip{max-width:72rem;margin:0 auto;width:100%;padding:0 1rem 1.5rem}" +
-      ".recent-strip-head{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:8px}";
+      ".ws-recent-note{font-size:11px;color:rgba(255,255,255,.45);text-align:center;padding:8px 0 2px}";
     (document.head || document.documentElement).appendChild(st);
   }
 
@@ -118,25 +120,6 @@
     else body.appendChild(div);
   }
 
-  function renderStrip(items) {
-    var old = document.getElementById(SID);
-    if (old) old.remove();
-    var list = dedupe(items, 5);
-    if (!list.length) return;
-    css();
-    var sec = document.createElement("section");
-    sec.id = SID;
-    sec.className = "recent-strip";
-    sec.innerHTML = '<div class="recent-strip-head"><i class="fas fa-history"></i> Recently played</div>' +
-      list.map(rowHTML).join("");
-    var trend = document.getElementById("trending-sec");
-    if (trend && trend.parentNode) trend.parentNode.insertBefore(sec, trend.nextSibling);
-    else {
-      var plist = document.getElementById("playlist-panel");
-      if (plist && plist.parentNode) plist.parentNode.insertBefore(sec, plist.nextSibling);
-    }
-  }
-
   function load() {
     fetch("/api/recent?limit=20", { cache: "no-store", credentials: "same-origin" })
       .then(function (r) { return r.json(); })
@@ -144,8 +127,6 @@
       .then(function (d) {
         if (!d || d.ok !== true) return;
         renderProfile(d.recent || []);
-        var pp = document.getElementById("page-section-player");
-        if (pp && pp.classList.contains("active")) renderStrip(d.recent || []);
       });
   }
 
@@ -168,15 +149,9 @@
         setTimeout(load, 600);
       };
     } catch (e) {}
-    var pp = document.getElementById("page-section-player");
-    if (pp && window.MutationObserver) {
-      var last = "";
-      new MutationObserver(function () {
-        var now = pp.classList.contains("active") ? "1" : "";
-        if (now && now !== last) load();
-        last = now;
-      }).observe(pp, { attributes: true, attributeFilter: ["class"] });
-    }
+    /* No observer on the player page any more: the strip that used to be
+       re-rendered every time the WRLD Player opened is gone, and the profile
+       block refreshes through profileSectionShown and the 60s poll. */
     load();
     setInterval(load, 60000);
     window.refreshRecent = load;

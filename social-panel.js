@@ -22,6 +22,9 @@
     refreshTimer: null,
     focusBeforeOpen: null,
     rulesOpen: false,
+    /* Which list was open before the Settings button took over the panel, so
+       closing Settings returns there instead of always landing on Friends. */
+    tabBeforeSettings: null,
     /* Whether the panel is currently holding the page scroll lock. Tracked
        separately from the lock count so a resize can re-evaluate it without
        guessing how many holds are outstanding. */
@@ -147,7 +150,7 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v21";
+    css.href = "/social.css?v=thw-v24";
     document.head.appendChild(css);
 
     var root = el("div");
@@ -158,10 +161,11 @@
       '</button>' +
       '<div id="thw-social-overlay" hidden>' +
         '<div id="thw-social-wash" aria-hidden="true"></div>' +
-        '<section id="thw-social-panel" role="dialog" aria-modal="false" aria-labelledby="thw-social-title">' +
+        '<section id="thw-social-panel" role="dialog" aria-modal="true" aria-labelledby="thw-social-title">' +
           '<header class="thw-social-head"><div><h2 class="thw-social-title" id="thw-social-title">Friends &amp; Messages</h2><p class="thw-social-subtitle">Your community, wherever you are</p></div>' +
             '<span class="thw-social-head-actions">' +
             '<button class="thw-social-rules-link" id="thw-social-rules-link" type="button" aria-haspopup="dialog" title="House rules"><i class="fas fa-shield-halved" aria-hidden="true"></i><span>Rules</span></button>' +
+            '<button class="thw-social-settings-link" id="thw-social-settings-link" type="button" aria-controls="thw-social-settings-view" aria-pressed="false" title="Friends &amp; Messaging settings"><i class="fas fa-gear" aria-hidden="true"></i><span>Settings</span></button>' +
             '<button class="thw-social-close" id="thw-social-close" type="button" aria-label="Close Friends and Messages"><i class="fas fa-xmark" aria-hidden="true"></i></button></span></header>' +
           '<nav class="thw-social-tabs" role="tablist" aria-label="Social sections">' +
             '<button class="thw-social-tab" type="button" role="tab" data-tab="friends" aria-selected="true">Friends</button>' +
@@ -187,6 +191,7 @@
               '</div></div>' +
           '</section>' +
           '<section class="thw-social-view" data-view="requests" role="tabpanel"><div class="thw-social-list" id="thw-social-requests"></div></section>' +
+          '<section class="thw-social-view" data-view="settings" id="thw-social-settings-view" role="tabpanel"><div id="thw-social-settings-mount"></div></section>' +
         '</section>' +
       '</div>' +
       '<div class="thw-social-rules" id="thw-social-rules" role="dialog" aria-modal="true" aria-labelledby="thw-social-rules-title" hidden>' +
@@ -205,6 +210,7 @@
     document.getElementById("thw-social-composer").addEventListener("submit", sendMessage);
     document.getElementById("thw-social-reply-cancel").addEventListener("click", clearReply);
     document.getElementById("thw-social-rules-link").addEventListener("click", openRules);
+    document.getElementById("thw-social-settings-link").addEventListener("click", toggleSettings);
     document.getElementById("thw-social-rules").addEventListener("click", function (event) {
       /* Backdrop click closes; clicks inside the card must not. */
       if (event.target === event.currentTarget) closeRules();
@@ -273,7 +279,6 @@
     });
     mountPrivacySettings();
     loadRecentSearches();
-    if (document.getElementById("page-section-account")?.classList.contains("active")) loadPrivacySettings();
   }
 
   /* ---------------------------------------------------------- scroll lock */
@@ -329,6 +334,27 @@
     syncPanelScrollLock();
   });
 
+  /* Make the rest of the document inert while the panel is open.
+   *
+   * aria-modal="true" is only honest if the background really is
+   * unavailable. The `inert` attribute does that in one step: it removes the
+   * subtree from the tab order and the accessibility tree and blocks pointer
+   * interaction, which a manual aria-hidden sweep would not do.
+   *
+   * Only direct children of <body> are marked, and the panel's own root is
+   * skipped so the panel never inerting itself. Iterates a copy because
+   * removeAttribute during iteration would otherwise skip an element. */
+  function setBackgroundInert(on) {
+    var root = document.getElementById("thw-social-root");
+    if (!root) return;
+    var kids = Array.prototype.slice.call(document.body.children);
+    kids.forEach(function (el) {
+      if (el === root || root.contains(el)) return;
+      if (on) el.setAttribute("inert", "");
+      else el.removeAttribute("inert");
+    });
+  }
+
   function setOpen(open) {
     var overlay = document.getElementById("thw-social-overlay");
     var fab = document.getElementById("thw-social-fab");
@@ -336,6 +362,7 @@
     if (open && !state.open) state.focusBeforeOpen = document.activeElement;
     state.open = !!open;
     overlay.hidden = !state.open;
+    setBackgroundInert(!!state.open);
     fab.setAttribute("aria-expanded", state.open ? "true" : "false");
     /* Rules lives inside this panel, so closing the panel closes Rules with it.
        closeRules() drops its own lock hold; without this the count would be left
@@ -372,12 +399,51 @@
     document.querySelectorAll("#thw-social-root [data-view]").forEach(function (node) {
       node.classList.toggle("active", node.dataset.view === tab);
     });
+    /* Settings are fetched when the panel is opened rather than at mount:
+       signed out, /settings returns 401 and the card says so, and there is no
+       reason to ask on every panel open. Re-asking on each visit keeps the
+       selects honest if they were changed in another tab. */
+    if (tab === "settings") loadPrivacySettings();
+  }
+
+  /* Settings sits beside Rules as a header button rather than a fourth tab.
+     It reads as a control for the whole panel, not as another place to look for
+     people, and it keeps the tab bar to the three lists it has always held.
+
+     Toggles: opening it swaps the view, pressing again returns to whichever
+     list was open before, so the button never traps you on a settings page. */
+  function toggleSettings() {
+    var btn = document.getElementById("thw-social-settings-link");
+    var view = document.getElementById("thw-social-settings-view");
+    if (!btn || !view) return;
+    var opening = !view.classList.contains("active");
+    if (opening) {
+      /* Remember the list so closing settings lands back where it was. */
+      if (state.tab !== "settings") state.tabBeforeSettings = state.tab;
+      setTab("settings");
+    } else {
+      setTab(state.tabBeforeSettings && state.tabBeforeSettings !== "settings" ? state.tabBeforeSettings : "friends");
+    }
+    btn.setAttribute("aria-pressed", opening ? "true" : "false");
+    btn.classList.toggle("is-active", opening);
+  }
+
+  /* Pressing a real tab takes you away from settings, so the header button has
+     to stop claiming it is still pressed. */
+  function syncSettingsButton() {
+    var btn = document.getElementById("thw-social-settings-link");
+    var view = document.getElementById("thw-social-settings-view");
+    if (!btn || !view) return;
+    var on = view.classList.contains("active");
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.classList.toggle("is-active", on);
   }
 
   function onClick(event) {
     var tab = event.target.closest("[data-tab]");
     if (tab) {
       setTab(tab.dataset.tab);
+      syncSettingsButton();
       return;
     }
     var convo = event.target.closest("[data-conversation-id]");
@@ -885,6 +951,7 @@
     state.hasOlder = false;
     state.replyTo = null;
     setTab("messages");
+    syncSettingsButton();
     renderConversations(state.boot && state.boot.conversations || []);
     renderThreadHeader(conversation);
     loadMessages(false);
@@ -1349,22 +1416,38 @@
 
   function mountPrivacySettings() {
     if (document.getElementById("thw-social-settings")) return;
-    var anchor = document.getElementById("appearance");
-    var account = document.getElementById("account-page");
-    if (!anchor && !account) return;
+    /* Lives in the panel's Settings tab now, next to the Rules button, rather
+       than buried in Account Settings. Same markup and same endpoints - only
+       the host moved. Two copies would be worse: the card is guarded by its id,
+       so a second mount could never exist anyway. */
+    var mount = document.getElementById("thw-social-settings-mount");
+    if (!mount) return;
     var card = el("section", "thw-social-settings-card");
     card.id = "thw-social-settings";
     card.innerHTML =
       '<h3>Friends &amp; Messaging privacy</h3>' +
       '<p>Choose who can send you friend requests and direct messages, and who can see your online and activity status. Following remains separate.</p>' +
-      '<div class="thw-social-settings-grid">' +
+      '<h4 class="thw-social-settings-group">Who can reach you</h4>' +
+        '<div class="thw-social-settings-grid">' +
         '<label>Friend requests<select name="friend_requests"><option value="everyone">Everyone</option><option value="followers">People I follow</option><option value="nobody">No one</option></select></label>' +
         '<label>Direct messages<select name="direct_messages"><option value="everyone">Everyone</option><option value="friends">Friends only</option><option value="nobody">No one</option></select></label>' +
         '<label>Online status<select name="online_status"><option value="everyone">Everyone</option><option value="friends">Friends only</option><option value="nobody">No one</option></select></label>' +
         '<label>Activity status<select name="activity_status"><option value="everyone">Everyone</option><option value="friends">Friends only</option><option value="nobody">No one</option></select></label>' +
-      '</div><button class="thw-social-settings-save" type="button">Save social privacy</button><span class="thw-social-settings-message" role="status"></span>';
-    if (anchor) anchor.insertAdjacentElement("afterend", card);
-    else account.appendChild(card);
+      '</div>' +
+        /* notifications_enabled lives in user_privacy and is read by the social
+           notify(), which skips writing the notification when it is 0 - so this
+           switch genuinely stops them rather than just recording a preference. */
+        '<h4 class="thw-social-settings-group">Notifications</h4>' +
+        '<label class="thw-social-switch-row">' +
+          '<span class="thw-social-switch-copy"><b>Friends &amp; Messages notifications</b>' +
+          '<small>Friend requests and new messages. Turning this off stops them being created.</small></span>' +
+          /* checked by default, matching the server's default of 1. Signed out the fetch
+             below cannot run, and defaulting to off would show a false "you have
+             notifications off" to anyone who never loaded their real value. */
+          '<input type="checkbox" name="notifications_enabled" class="thw-social-switch" role="switch" checked>' +
+        '</label>' +
+        '<button class="thw-social-settings-save" type="button">Save settings</button><span class="thw-social-settings-message" role="status"></span>';
+    mount.appendChild(card);
     card.querySelector(".thw-social-settings-save").addEventListener("click", savePrivacySettings);
   }
 
@@ -1377,6 +1460,26 @@
         var select = card.querySelector('select[name="' + key + '"]');
         if (select) select.value = data.settings[key];
       });
+      /* The notification switch is stored by a different endpoint (user_privacy,
+         not user_social_settings), so it is fetched separately. A failure here
+         must not blank the selects that did load. */
+      var toggle = card.querySelector('input[name="notifications_enabled"]');
+      if (toggle) {
+        toggle.disabled = true;
+        /* Not /api/privacy - that endpoint only knows the four show_* flags.
+           notifications_enabled is stored in user_privacy but written through
+           the account endpoint, which is what returns the whole privacy row. */
+        fetch("/api/account", { cache: "no-store", credentials: "same-origin" })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (!d || d.ok !== true) return;
+            var priv = d.privacy || {};
+            /* A missing row means enabled, which is how the server defaults it. */
+            toggle.checked = Number(priv.notifications_enabled) !== 0;
+            toggle.disabled = false;
+          })
+          .catch(function () { toggle.disabled = false; });
+      }
       card.querySelector(".thw-social-settings-message").textContent = "";
     }).catch(function (error) {
       card.querySelector(".thw-social-settings-message").textContent =
@@ -1390,13 +1493,49 @@
     var message = card.querySelector(".thw-social-settings-message");
     var settings = {};
     card.querySelectorAll("select").forEach(function (select) { settings[select.name] = select.value; });
+    var toggle = card.querySelector('input[name="notifications_enabled"]');
     save.disabled = true;
-    message.textContent = "Saving…";
-    api("/settings", { method: "POST", body: settings }).then(function () {
-      message.textContent = "Privacy settings saved.";
-    }).catch(function (error) {
-      message.textContent = error.status === 401 ? "Sign in to change these settings." : describeError(error);
-    }).finally(function () { save.disabled = false; });
+    message.textContent = "Saving\u2026";
+
+    /* Two endpoints, because the two halves of this card live in two tables:
+      the selects in user_social_settings, the switch in user_privacy. They
+      are fired together but settled separately, so a failure in one is
+      reported as exactly that - rather than the whole save reading as failed,
+      or worse, silently reporting success for the half that did not save. */
+    var socialSave = api("/settings", { method: "POST", body: settings });
+    var notifySave = toggle
+      ? fetch("/api/account", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ action: "setPrivacy", notifications_enabled: toggle.checked })
+        }).then(function (r) {
+          if (!r.ok) throw new Error("notification setting rejected");
+          return r.json().catch(function () { return {}; });
+        })
+      : Promise.resolve();
+
+    var socialErr = null;
+    var notifyErr = null;
+    socialSave.catch(function (e) { socialErr = e; });
+    notifySave.catch(function (e) { notifyErr = e; });
+
+    Promise.all([
+      socialSave.catch(function () {}),
+      notifySave.catch(function () {})
+    ]).then(function () {
+      if (!socialErr && !notifyErr) {
+        message.textContent = "Settings saved.";
+      } else if (socialErr && notifyErr) {
+        message.textContent = socialErr.status === 401
+            ? "Sign in to change these settings."
+            : "Could not save your settings. Try again.";
+      } else if (socialErr) {
+        message.textContent = "Notifications saved, but the privacy options were not.";
+        } else {
+        message.textContent = "Privacy options saved, but notifications were not.";
+        }
+      }).finally(function () { save.disabled = false; });
   }
 
   function wrapAccountSection() {
@@ -1418,4 +1557,30 @@
     mount();
     wrapAccountSection();
   }
+    /* Public bridge for push-notification clicks. Exposes the panel's EXISTING
+       navigation (setOpen / setTab / openConversation) rather than
+       reimplementing it, so a notification lands in exactly the same view a
+       click inside the panel would reach. Guarded so a second mount cannot
+       redefine it, and defensive throughout: a push click must never throw. */
+    if (!window.THWSocial) {
+      window.THWSocial = {
+        open: function () { try { setOpen(true); } catch (e) {} },
+        goRequests: function () { this.open(); try { setTab("requests"); } catch (e) {} },
+        goFriends: function () { this.open(); try { setTab("friends"); } catch (e) {} },
+        goMessages: function () { this.open(); try { setTab("messages"); } catch (e) {} },
+        /* The push payload carries a conversation id. Look it up in the
+           already-loaded bootstrap so nothing is refetched or guessed; if it
+           is not there yet, fall back to the Messages list rather than
+           guessing. */
+        goConversation: function (conversationId) {
+          this.goMessages();
+          if (!conversationId) return;
+          try {
+            var list = (state.boot && state.boot.conversations) || [];
+            var found = list.filter(function (c) { return c && c.id === conversationId; })[0];
+            if (found) openConversation(found);
+          } catch (e) {}
+        }
+      };
+    }
 })();

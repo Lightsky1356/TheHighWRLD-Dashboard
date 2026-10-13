@@ -223,3 +223,24 @@
   src: url(./fonts/24-Unbounded-900.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+
+/* ============================================================================
+   EMOJI FALLBACK
+   The compiled Tailwind base resolves the body stack to
+   "system-ui, -apple-system, sans-serif". On Windows "system-ui" is Segoe UI,
+   which carries no emoji glyphs, so every emoji that relied on the browser's
+   implicit fallback (playlist categories, the section headings, the WRLD Log
+   icons) drew as a tofu box.
+
+   Naming the colour emoji fonts explicitly - placed BEFORE the generic
+   sans-serif so they are reached for those code points, and after the text
+   fonts so ordinary text is unaffected - makes them render.
+
+   In css2.css because it is the last stylesheet in index.html, so this wins
+   over the base without needing !important.
+   ========================================================================== */
+html,
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI Emoji",
+    "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Symbol", sans-serif;
+}

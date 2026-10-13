@@ -30,10 +30,19 @@
   max-height: min(82vh, 720px);
   display: flex;
   flex-direction: column;
-  background: linear-gradient(165deg, rgba(30, 22, 52, .97), rgba(11, 7, 22, .98));
-  border: 1px solid rgba(167, 139, 250, .22);
+  /* GLASS. The panel is translucent so the blurred page behind the overlay
+     reads through it instead of sitting on top of it as an opaque slab.
+     backdrop-filter lives on the panel itself, never on an ancestor of the
+     position:fixed overlay - a filter up there re-anchors the overlay and
+     blurs the panel too. Safe here because backdrop-filter only creates a
+     containing block for FIXED descendants, and this panel has none.
+     The inset top highlight is what sells it as glass: a lit edge. */
+  background: linear-gradient(165deg, rgba(41, 30, 68, .58), rgba(13, 8, 26, .72));
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+  border: 1px solid rgba(167, 139, 250, .3);
   border-radius: 18px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .6);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .62), inset 0 1px 0 rgba(255, 255, 255, .1);
   overflow: hidden;
   animation: liIn .18s ease-out;
 }
@@ -78,14 +87,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background .15s, color .15s, border-color .15s;
+  transition: background .18s, color .18s, border-color .18s, box-shadow .18s;
 }
 .legal-info-close:hover,
 .legal-info-close:focus-visible {
-  background: rgba(255, 255, 255, .12);
+  background: rgba(239, 68, 68, .26);
   color: #fff;
   outline: none;
-  border-color: rgba(167, 139, 250, .5);
+  border-color: rgba(248, 113, 113, .62);
+  box-shadow: 0 0 16px rgba(239, 68, 68, .28);
 }
 
 .legal-info-body {
@@ -121,23 +131,63 @@
   color: rgba(255, 255, 255, .74);
   font-size: 12px;
   font-weight: 500;
-  transition: background .15s, border-color .15s, color .15s;
+  transition: background .18s, border-color .18s, color .18s, box-shadow .18s;
 }
+/* ============================================================================
+   PER-ROW HOVER ACCENTS
+
+   Each row used to share one violet hover, so every row felt identical and the
+   panel read as an undifferentiated list. Each link now carries a data-accent and
+   declares --accent as space-separated RGB channels, so the single hover rule
+   below can tint the wash, border, left edge, glow and icon per row.
+
+   Chosen to stay inside the site's existing palette (violet / cyan / amber /
+   emerald on a near-black glass) while remaining distinguishable from each
+   other, and so a destructive-sounding action does not glow green:
+     terms=amber  privacy=cyan  dmca=violet  wanted=emerald  suggestions=yellow
+     discord=indigo  account=sky  deletion=rose  roadmap=pink
+   ========================================================================== */
+.legal-info-link[data-accent="tos"]        { --accent: 245, 158, 11; }
+.legal-info-link[data-accent="privacy"]    { --accent: 34, 211, 238; }
+.legal-info-link[data-accent="dmca"]       { --accent: 167, 139, 250; }
+.legal-info-link[data-accent="wanted"]     { --accent: 52, 211, 153; }
+.legal-info-link[data-accent="suggestions"]{ --accent: 250, 204, 21; }
+.legal-info-link[data-accent="discord"]    { --accent: 129, 140, 248; }
+.legal-info-link[data-accent="account"]    { --accent: 56, 189, 248; }
+.legal-info-link[data-accent="deletion"]   { --accent: 251, 113, 133; }
+.legal-info-link[data-accent="roadmap"]    { --accent: 244, 114, 182; }
+/* Rows with no data-accent keep the original violet. */
+.legal-info-link { --accent: 139, 92, 246; }
+
 .legal-info-link:hover,
 .legal-info-link:focus-visible {
-  background: rgba(167, 139, 250, .1);
-  border-color: rgba(167, 139, 250, .26);
+  background: rgba(var(--accent), .26);
+  border-color: rgba(var(--accent), .6);
   color: #fff;
   outline: none;
+  box-shadow: inset 3px 0 0 rgb(var(--accent)), 0 0 20px rgba(var(--accent), .22);
 }
 .legal-info-link > i {
   width: 16px;
   text-align: center;
   font-size: 10px;
-  color: rgba(167, 139, 250, .72);
+  /* Resting icon carries a faint version of its row's accent, so the pairing is
+     hinted before hover rather than arriving as a surprise. */
+  color: rgba(var(--accent), .68);
   flex-shrink: 0;
+  transition: color .18s;
 }
-.legal-info-link .li-go { margin-left: auto; font-size: 8px; opacity: .4; flex-shrink: 0; }
+.legal-info-link:hover > i,
+.legal-info-link:focus-visible > i { color: rgb(var(--accent)); }
+.legal-info-link .li-go {
+  margin-left: auto;
+  font-size: 8px;
+  opacity: .4;
+  flex-shrink: 0;
+  transition: opacity .18s, transform .18s;
+}
+.legal-info-link:hover .li-go,
+.legal-info-link:focus-visible .li-go { opacity: 1; transform: translateX(3px); color: rgb(var(--accent)); }
 
 .legal-info-foot {
   padding: 12px 16px;
@@ -228,6 +278,13 @@
   .legal-info-overlay{
     backdrop-filter:blur(8px) saturate(1.15) !important;
     -webkit-backdrop-filter:blur(8px) saturate(1.15) !important;
+  }
+  /* The panel needs the same opt-in as the overlay: without it the global
+     kill-switch strips its blur and it renders as a flat translucent slab,
+     which is worse than the opaque version it replaced. */
+  .legal-info-panel{
+    backdrop-filter:blur(18px) saturate(1.45) !important;
+    -webkit-backdrop-filter:blur(18px) saturate(1.45) !important;
   }
 }
 

@@ -715,11 +715,14 @@ html.scroll-locked,html.scroll-locked body{overflow:hidden}
   body{
     padding-bottom: calc(var(--mbn-h) + 12px) !important;
   }
-  .site-online-badge{
-    bottom: calc(var(--mbn-h) + 8px);
+  /* Online above guests on mobile too. Upgraded from .site-online-badge to an
+     id: style.css now positions both badges by id, and an id out-specifies a
+     class, so a class rule here would be ignored regardless of load order. */
+  #site-online-badge{
+    bottom: calc(var(--mbn-h) + 39px);
   }
   #site-guest-badge{
-    bottom: calc(var(--mbn-h) + 39px);
+    bottom: calc(var(--mbn-h) + 8px);
   }
   .mobile-popup{
     bottom: calc(var(--mbn-h) + 8px);

@@ -137,12 +137,15 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
 @keyframes ps-bump{0%{transform:scale(1)}40%{transform:scale(1.09)}100%{transform:scale(1)}}
 .site-online-badge b{min-width:1.5em;text-align:right}
 
-/* ===== Guest badge (signed-out visitors) ===== */
-#site-guest-badge{position:fixed;bottom:52px;left:16px;z-index:90}
+/* ===== Presence badges (signed-out visitors) =====
+   Online sits ABOVE guests. Both are fixed independently, so each carries its
+   own bottom value rather than sharing the base .site-online-badge rule. */
+#site-guest-badge{position:fixed;bottom:16px;left:16px;z-index:90}
+#site-online-badge{position:fixed;bottom:52px;left:16px;z-index:90}
 #site-guest-badge .guest-dot{background:#a78bfa;box-shadow:0 0 6px rgba(167,139,250,.5)}
 #site-guest-badge .guest-dot::after{border-color:rgba(167,139,250,.55)}
 #site-guest-badge:hover{border-color:rgba(167,139,250,.4);box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 20px rgba(167,139,250,.3)}
-@media (max-width:900px){#site-guest-badge{left:12px;bottom:112px}}
+@media (max-width:900px){#site-guest-badge{left:12px}#site-online-badge{bottom:112px}}
 
 /* ===== Juice bio mobile revamp ===== */
 @media (max-width:640px){
@@ -162,7 +165,7 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
 /* ===== Compact presence badges on small screens ===== */
 @media (max-width:640px){
   .site-online-badge{padding:5px 10px;font-size:10px;gap:5px}
-  #site-guest-badge{bottom:104px}
+  #site-online-badge{bottom:104px}
 }
 /* ===== Bottom nav safe-area + thumb reach ===== */
 @media (min-width:769px){
