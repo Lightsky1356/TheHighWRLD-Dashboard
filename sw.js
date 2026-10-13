@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v28';
+const VERSION = 'thw-v29';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
