@@ -402,7 +402,7 @@
       ov.className = "plui-ov";
       ov.id = "plui-ov";
       var h = '<div class="plui-box"><div class="plui-share-top">' +
-        '<img class="plui-share-cover" src="' + esc(cov) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+        '<img decoding="async" class="plui-share-cover" src="' + esc(cov) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
         '<div><div class="plui-share-title">' + esc(pl.name) + '</div>' +
         '<div class="plui-share-sub">by ' + esc(pl.owner_name || "anon") + " &middot; " + pl.tracks.length + " tracks" +
         (totalDur(pl.tracks) ? " &middot; " + esc(fmtDur(totalDur(pl.tracks))) : "") + "</div>" +

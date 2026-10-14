@@ -75,7 +75,7 @@
       '<p class="gal-sub">Made by the WRLD, for the WRLD.</p></div>' +
       '<div class="gal-upload"><h4>Submit your art</h4>' +
       '<input type="file" id="gal-file" accept="image/jpeg,image/png,image/webp,image/gif">' +
-      '<img class="gal-prev" id="gal-prev" alt="">' +
+      '<img decoding="async" class="gal-prev" id="gal-prev" alt="">' +
       '<input type="text" id="gal-title" maxlength="80" placeholder="Title">' +
       '<input type="text" id="gal-cap" maxlength="300" placeholder="Caption (optional)">' +
       '<button type="button" class="gal-btn" id="gal-submit">Submit for review</button>' +
@@ -182,7 +182,7 @@
 
   function cardHTML(it) {
     return '<button type="button" class="gal-item" data-gal="' + it.id + '">' +
-      '<img src="/api/gallery?id=' + it.id + '" alt="" loading="lazy">' +
+      '<img decoding="async" src="/api/gallery?id=' + it.id + '" alt="" loading="lazy">' +
       '<div class="gal-cap">' + esc(it.title || "Untitled") + "</div>" +
       '<div class="gal-by">by ' + esc(it.user_name || "anon") + "</div></button>";
   }
@@ -224,7 +224,7 @@
         var h = '<div class="gal-sec-t">Your submissions</div>';
         d.items.forEach(function (it) {
           var st = it.status === "approved" ? '<span class="gal-st ok">live</span>' : '<span class="gal-st">' + esc(it.status) + "</span>";
-          h += '<div class="gal-own"><img src="/api/gallery?id=' + it.id + (it.status === "approved" ? "" : "") + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' +
+          h += '<div class="gal-own"><img decoding="async" src="/api/gallery?id=' + it.id + (it.status === "approved" ? "" : "") + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' +
             "<span>" + esc(it.title || "Untitled") + "</span>" + st +
             '<button type="button" class="gal-mini" data-gal-del="' + it.id + '" title="Delete"><i class="fas fa-trash"></i></button></div>';
         });
@@ -244,7 +244,7 @@
         if (!d || d.ok !== true || !(d.items || []).length) { wrap.innerHTML = ""; return; }
         var h = '<div class="gal-sec-t">Review queue (' + d.items.length + ")</div>";
         d.items.forEach(function (it) {
-          h += '<div class="gal-own"><img src="/api/gallery?id=' + it.id + "&code=" + encodeURIComponent(code) + '" alt="" loading="lazy">' +
+          h += '<div class="gal-own"><img decoding="async" src="/api/gallery?id=' + it.id + "&code=" + encodeURIComponent(code) + '" alt="" loading="lazy">' +
             "<span>" + esc(it.title || "Untitled") + " — " + esc(it.user_name || "") + "</span>" +
             '<button type="button" class="gal-btn" data-gal-ok="' + it.id + '">Approve</button>' +
             '<button type="button" class="gal-mini" data-gal-no="' + it.id + '" title="Reject"><i class="fas fa-xmark"></i></button></div>';
@@ -271,8 +271,8 @@
         ov.className = "gal-ov";
         ov.id = "gal-ov";
         var inner = it
-          ? '<img src="/api/gallery?id=' + it.id + '" alt=""><h3>' + esc(it.title || "Untitled") + "</h3><p>by " + esc(it.user_name || "anon") + (it.caption ? " — " + esc(it.caption) : "") + "</p>"
-          : '<img src="/api/gallery?id=' + esc(String(id)) + '" alt="">';
+          ? '<img decoding="async" src="/api/gallery?id=' + it.id + '" alt=""><h3>' + esc(it.title || "Untitled") + "</h3><p>by " + esc(it.user_name || "anon") + (it.caption ? " — " + esc(it.caption) : "") + "</p>"
+          : '<img decoding="async" src="/api/gallery?id=' + esc(String(id)) + '" alt="">';
         ov.innerHTML = '<div class="gal-box">' + inner +
           '<div class="row"><button type="button" class="gal-btn" data-gal-x="1">Close</button>' +
           (it ? '<button type="button" class="gal-btn" data-gal-rep="' + it.id + '"><i class="fas fa-flag"></i> Report</button>' : "") + "</div></div>";

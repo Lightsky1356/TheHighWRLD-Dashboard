@@ -571,7 +571,7 @@
       /* picture */
       + '<div class="pe-fld"><span class="pe-lbl">' + esc(tt("pePicture", "Profile picture")) + "</span>"
       + '<div class="pe-avrow">'
-      + '<img class="pe-avprev" id="pe-av" alt="">'
+      + '<img decoding="async" class="pe-avprev" id="pe-av" alt="">'
       + '<div class="pe-avbtns">'
       + '<button type="button" class="pe-btn pe-btn-gold" id="pe-av-btn"><i class="fas fa-camera" aria-hidden="true"></i> ' + esc(tt("peChangePic", "Change picture")) + "</button>"
       + '<button type="button" class="pe-btn" id="pe-av-remove"><i class="fas fa-eraser" aria-hidden="true"></i> ' + esc(tt("peRemovePic", "Remove")) + "</button>"
@@ -826,7 +826,7 @@
   function paintAvatar(container, src, name, radius) {
     if (!container) return;
     container.innerHTML = src
-      ? '<img src="' + esc(src) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:' + (radius || "inherit") + '">'
+      ? '<img decoding="async" src="' + esc(src) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:' + (radius || "inherit") + '">'
       : esc(initial(name));
   }
 
@@ -837,7 +837,7 @@
     paintAvatar(document.getElementById("navAvatarInner"), src, name, "inherit");
     paintAvatar(document.getElementById("mbnAvatarInner"), src, name, "50%");
     var card = document.querySelector("#profilePageBody .cmp-avatar");
-    if (card) card.innerHTML = src ? '<img src="' + esc(src) + '" alt="">' : esc(initial(name));
+    if (card) card.innerHTML = src ? '<img decoding="async" src="' + esc(src) + '" alt="">' : esc(initial(name));
   }
 
   /* Push the new values into the profile card, the nav and the mobile tab. */

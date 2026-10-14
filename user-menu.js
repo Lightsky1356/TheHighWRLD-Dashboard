@@ -375,9 +375,15 @@
     if (menuel && openBtn) positionMenu(openBtn, menuel);
   });
 
+  /* passive + capture. Capture is kept so the menu tracks scrolls on inner
+     scrollers too, but it was registered non-passive, which makes the browser
+     wait for this handler before it can paint - and positionMenu() forces a
+     synchronous layout by reading getBoundingClientRect()/offsetWidth and then
+     writing four style properties, so each scroll event during an open menu cost
+     a forced reflow. Nothing here calls preventDefault, so passive is safe. */
   window.addEventListener('scroll', function () {
     if (menuel && openBtn) positionMenu(openBtn, menuel);
-  }, true);
+  }, { capture: true, passive: true });
 
   /* Unblock-to-view links rendered inside blocked content cards. */
   document.addEventListener('click', function (e) {

@@ -86,7 +86,7 @@
     var cov = coverFor(r.title) || "Juice-WRLD.png";
     return '<button type="button" class="ws-top" data-ws-title="' + esc(r.title) + '">' +
       '<span class="ws-rank">#' + r.rank + '</span>' +
-      '<img class="ws-art" src="' + esc(cov) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+      '<img decoding="async" class="ws-art" src="' + esc(cov) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
       '<span class="ws-tt"><b>' + esc(r.title) + '</b><span>' + Number(r.plays || 0) + ' plays</span></span>' +
       '<i class="fas fa-play" style="color:rgba(255,255,255,.3);font-size:10px"></i></button>';
   }

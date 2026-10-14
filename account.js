@@ -130,10 +130,10 @@
     var p = _profile;
     var aInner = document.getElementById("profileAvatarInner");
     if (aInner) {
-      aInner.innerHTML = p.avatar ? '<img src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : esc(initial(p.name));
+      aInner.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : esc(initial(p.name));
     }
     var nav = document.getElementById("navAvatarInner");
-    if (nav) nav.innerHTML = p.avatar ? '<img src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : esc(initial(p.name));var mbn = document.getElementById("mbnAvatarInner");if (mbn) mbn.innerHTML = p.avatar ? '<img src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : esc(initial(p.name));
+    if (nav) nav.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : esc(initial(p.name));var mbn = document.getElementById("mbnAvatarInner");if (mbn) mbn.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : esc(initial(p.name));
     var n = document.getElementById("profileName"); if (n) n.textContent = p.name || "999_" + uidSuffix;
     var h = document.getElementById("profileHandle");
     if (h) h.innerHTML = "@" + esc(String(profileUsername() || p.name || "999").toLowerCase()) + ((_data && _data.discord && _data.discord.linked) ? ' <span class="disc-tag"><i class="fab fa-discord"></i> #' + uidSuffix + "</span>" : "");
@@ -158,8 +158,8 @@
     var mS = document.getElementById("mStatus"); if (mS) mS.value = p.status;
     var pn = document.getElementById("profName"); if (pn) pn.value = p.name;
     var pb = document.getElementById("profBio"); if (pb) pb.value = p.bio;
-    var ap = document.getElementById("avatarPreview"); if (ap) ap.innerHTML = p.avatar ? '<img src="' + esc(p.avatar) + '" alt="">' : '<i class="fas fa-user"></i>';
-    var mp = document.getElementById("mAvatarPreview"); if (mp) mp.innerHTML = p.avatar ? '<img src="' + esc(p.avatar) + '" alt="">' : '<i class="fas fa-user"></i>';
+    var ap = document.getElementById("avatarPreview"); if (ap) ap.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="">' : '<i class="fas fa-user"></i>';
+    var mp = document.getElementById("mAvatarPreview"); if (mp) mp.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="">' : '<i class="fas fa-user"></i>';
   }
 
   /* ---------- Compact profile card (Wanted / Suggestions tabs) ---------- */
@@ -184,7 +184,7 @@
     return (secs ? Math.floor(secs / 3600) : 32) + "h+";
   }
   function cmpAvatarHtml(avatar, name) {
-    return avatar ? '<img src="' + esc(avatar) + '" alt="">' : esc(initial(name));
+    return avatar ? '<img decoding="async" src="' + esc(avatar) + '" alt="">' : esc(initial(name));
   }
   function cmpVerifiedHtml(linked) {
     return linked ? '<span class="cmp-verified"><i class="fab fa-discord"></i> ' + esc(_tt("verifiedBadge", "Verified")) + '</span>' : '';  }
@@ -264,14 +264,14 @@ function compactProfileViewHtml(d) {
     var pr = d.profile || {}, st = d.stats || {}, dc = d.discord || {};
     var name = pr.name || "999";
     var uname = pr.username || d.handle || d.uid || name;
-    var avatar = pr.avatar ? '<img src="' + esc(pr.avatar) + '" alt="" onerror="this.style.display=\'none\'">' : esc(initial(name));
+    var avatar = pr.avatar ? '<img decoding="async" src="' + esc(pr.avatar) + '" alt="" onerror="this.style.display=\'none\'">' : esc(initial(name));
     var verified = !!(dc.linked || pr.verified);
     var status = pr.status || "Online";
     var dotC = "#64748b";
     if (status === "Online") dotC = "#10b981";
     else if (status === "Idle") dotC = "#f59e0b";
     else if (status === "Do Not Disturb") dotC = "#ef4444";
-    var banner = pr.banner ? '<img src="' + esc(pr.banner) + '" alt="" onerror="this.style.display=\'none\'">' : '';
+    var banner = pr.banner ? '<img decoding="async" src="' + esc(pr.banner) + '" alt="" onerror="this.style.display=\'none\'">' : '';
     var links = (d.links || []).filter(function (l) { return l && l.url; });
     var mine = String(d.uid || "") === String(typeof uid !== "undefined" ? uid : "");
     var plays = (d.topPlays || []).slice(0, 5).map(function (t) {
@@ -698,7 +698,7 @@ function compactProfileViewHtml(d) {
       var idx = trackIndexByTitleFuzzy(f.title);
       var cov = (idx >= 0 && trackList[idx] && trackList[idx].cover) ? trackList[idx].cover : "";
       var initials = String(f.title || "??").split(/\s+/).map(function (w) { return w.charAt(0); }).join("").slice(0, 2).toUpperCase() || "??";
-      var art = cov ? '<img class="fav-art-img" src="' + esc(cov) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '<span class="fav-initials">' + esc(initials) + '</span>';
+      var art = cov ? '<img decoding="async" class="fav-art-img" src="' + esc(cov) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '<span class="fav-initials">' + esc(initials) + '</span>';
       var like = own ? '<button class="fav-like" data-fav="' + esc(f.title) + '" title="' + esc(_tt("unfavorite", "Unfavorite")) + '"><i class="fas fa-heart"></i></button>' : (idx >= 0 ? '<button class="fav-info-btn" data-trackinfo="' + idx + '" title="Info"><i class="fas fa-circle-info"></i></button>' : '<span class="fav-like off"><i class="fas fa-heart"></i></span>');
       var showTitle = (idx >= 0 && trackList[idx] && trackList[idx].title) ? trackList[idx].title : f.title;
       var tg = (idx >= 0 && trackList[idx]) ? (trackList[idx].tag || trackList[idx].category || "") : ""; var tagHtml = tg ? '<div class="fav-tag">' + esc(String(tg).slice(0, 80)) + '</div>' : ''; return '<div class="fav-card" data-play-idx="' + idx + '" role="button" tabindex="0"><div class="fav-art">' + art + '<div class="fav-zoom"><span class="fav-play-btn"><i class="fas fa-play"></i></span></div></div>' + '<div class="fav-info"><div class="fav-main"><div class="fav-text"><div class="fav-name">' + esc(showTitle) + '</div>' + tagHtml + '</div>' + like + '</div><div class="fav-sub">' + esc(_tt("saved", "saved")) + ' &middot; ' + esc(fmtDate(f.created_at)) + '</div></div></div>';
@@ -921,7 +921,7 @@ function compactProfileViewHtml(d) {
     var bio = document.getElementById("discBio");
     if (bio) { bio.textContent = d.bio || ""; bio.style.display = d.bio ? "" : "none"; }
     var box = document.getElementById("discAvatarBox");
-    if (box) box.innerHTML = d.avatar ? '<img src="' + esc(d.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : '<i class="fab fa-discord"></i>';
+    if (box) box.innerHTML = d.avatar ? '<img decoding="async" src="' + esc(d.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : '<i class="fab fa-discord"></i>';
     var btn = document.getElementById("linkDiscordBtn");
     if (btn) btn.innerHTML = d.linked ? '<i class="fas fa-rotate-right"></i> ' + esc(_tt("refreshWord", "Refresh")) : '<i class="fab fa-discord"></i> ' + esc(_tt("link", "Link"));
     var dcStatus = document.getElementById("dcStatus");
@@ -1352,7 +1352,7 @@ function compactProfileViewHtml(d) {
     var editBtn = document.getElementById("editProfileBtn");
     if (editBtn) editBtn.addEventListener("click", function () {
       var mp = document.getElementById("mAvatarPreview");
-      if (mp) mp.innerHTML = _profile.avatar ? '<img src="' + esc(_profile.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : '<i class="fas fa-user"></i>';
+      if (mp) mp.innerHTML = _profile.avatar ? '<img decoding="async" src="' + esc(_profile.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : '<i class="fas fa-user"></i>';
       openModal("editProfileModal");
       fillMLinks();
     });
@@ -1362,7 +1362,7 @@ function compactProfileViewHtml(d) {
       fileToDataURL(mAv.files[0], 256, 256, function (url) {
         _profile.avatar = url;
         var mp = document.getElementById("mAvatarPreview");
-        if (mp) mp.innerHTML = '<img src="' + url + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
+        if (mp) mp.innerHTML = '<img decoding="async" src="' + url + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
       });
     });
     var dbiSave = document.getElementById("dbiSaveBtn");
@@ -1409,7 +1409,7 @@ function compactProfileViewHtml(d) {
       fileToDataURL(avFile.files[0], 256, 256, function (url) {
         _profile.avatar = url;
         var ap = document.getElementById("avatarPreview");
-        if (ap) ap.innerHTML = '<img src="' + url + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
+        if (ap) ap.innerHTML = '<img decoding="async" src="' + url + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
       });
     });
     var profSave = document.getElementById("profSaveBtn");
@@ -1838,7 +1838,7 @@ function compactProfileViewHtml(d) {
     window.acctJump = acctJump;
     window.openEditProfile = function () {
       var mp = document.getElementById("mAvatarPreview");
-      if (mp) mp.innerHTML = _profile.avatar ? '<img src="' + esc(_profile.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : '<i class="fas fa-user"></i>';
+      if (mp) mp.innerHTML = _profile.avatar ? '<img decoding="async" src="' + esc(_profile.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : '<i class="fas fa-user"></i>';
       openModal("editProfileModal");
       fillMLinks();
     };
@@ -2013,7 +2013,7 @@ window.profileSectionShown = function () {
           _profile.avatar = url;
           persistProfile();
           var a = document.getElementById("ppAvatar");
-          if (a) a.innerHTML = '<img src="' + esc(url) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
+          if (a) a.innerHTML = '<img decoding="async" src="' + esc(url) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
           toast(_tt("toastProfileUpdated", "Profile updated"), "success");
         });
         avFile.value = "";

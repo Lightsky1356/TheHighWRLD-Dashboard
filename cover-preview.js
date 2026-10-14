@@ -38,7 +38,7 @@
     }
 
     /* showCoverArt() reads its image with e.querySelector("img"), which finds
-       nothing when handed the <img> itself - that is the reason double-clicking
+       nothing when handed the <img decoding="async"> itself - that is the reason double-clicking
        the player cover used to do nothing. script.js now accepts either, so the
        element can be passed straight in; no wrapper, and crucially the player
        cover is never moved out of the DOM. */

@@ -254,11 +254,11 @@
     var isAuthor = r.d && getUid() && state.oldServer.me && r.d === state.oldServer.me.id;
     var canDelete = isOwner || isAuthor;
     // A stored Discord avatar URL goes stale whenever the user changes (or
-    // removes) their avatar. Hiding the <img> on error left a blank gap next to
+    // removes) their avatar. Hiding the <img decoding="async"> on error left a blank gap next to
     // the name, so fall back to Discord's default avatar for that user id, and
     // to the generic placeholder if even that is unavailable.
     var avatarHtml = r.a
-      ? '<img class="wanted-reply-avatar" src="' + esc(r.a) + '" alt="" data-wa-discord="' + esc(r.d || '') + '" onerror="window.__wantedAvaFail&&window.__wantedAvaFail(this)">'
+      ? '<img decoding="async" class="wanted-reply-avatar" src="' + esc(r.a) + '" alt="" data-wa-discord="' + esc(r.d || '') + '" onerror="window.__wantedAvaFail&&window.__wantedAvaFail(this)">'
       : wantedAvatarFallback();
     var editedBadge = r.e ? '<span class="wanted-edited-badge">edited</span>' : '';
 

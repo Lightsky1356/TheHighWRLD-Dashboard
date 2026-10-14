@@ -105,7 +105,7 @@
     var cover = hit.cover || FALLBACK_COVER;
     var rk = t.rank === 1 ? "trending-rank r1" : "trending-rank";
     return '<button type="button" class="trending-card" data-trending-title="' + esc(t.title) + '">' +
-      '<span class="trending-cover"><img src="' + esc(cover) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'' + FALLBACK_COVER + '\'">' +
+      '<span class="trending-cover"><img decoding="async" src="' + esc(cover) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'' + FALLBACK_COVER + '\'">' +
       '<span class="trending-play-ov"><span><i class="fas fa-play"></i></span></span>' +
       '<span class="' + rk + '">#' + t.rank + '</span></span>' +
       '<span class="trending-meta"><span class="trending-name">' + esc(t.title) + '</span>' +

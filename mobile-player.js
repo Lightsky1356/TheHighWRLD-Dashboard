@@ -255,7 +255,7 @@
     ov.innerHTML =
       '<div class="mplayer-grab" aria-hidden="true"></div>' +
       '<div class="mplayer-top"><span>Now Playing</span><button type="button" class="mplayer-x" data-mp-x aria-label="Close">×</button></div>' +
-      '<img class="mplayer-cover" data-mp="cover" src="' + esc(coverSrc()) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+      '<img decoding="async" class="mplayer-cover" data-mp="cover" src="' + esc(coverSrc()) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
       '<div class="mplayer-title" data-mp="title">' + esc(txt("mini-title") || "Nothing playing") + "</div>" +
       '<div class="mplayer-artist" data-mp="artist">' + esc(txt("mini-artist") || "Juice WRLD") + "</div>" +
       '<div class="mplayer-prog" data-mp="prog" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +

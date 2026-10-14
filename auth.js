@@ -36,6 +36,61 @@
      page, which installed a scroll listener + navigator fingerprinting that ran
      on every scroll event on every tab (the source of the scroll lag). The
      hcaptcha.com CDN stays as a fallback if the vendored copy fails. */
+  /* ---------- Deferred hCaptcha iframes ----------
+     The four vendored widget snapshots in index.html carry data-src instead of
+     src. With src hardcoded, 2,656 KB - 48% of a cold guest page load - was
+     fetched on every page view for widgets that sit inside display:none sections
+     until a sign-in, sign-up or profile form is opened. loading="lazy" was tried
+     and measured: an iframe in a display:none subtree has no scroll position to
+     defer from, so all four still loaded.
+
+     Armed here rather than from a hook on showAuthPage() because the forms are
+     reachable by the nav buttons, the mobile menu, account-gate, deep links and
+     the mobile profile popup; a hook on the wrong route would leave the weight
+     loading for some visitors while looking fixed. "Has a layout box" is the one
+     condition every route passes through. */
+  (function armCaptchaFrames() {
+    var pending = [];
+    var queued = false;
+
+    function scan() {
+      for (var i = 0; i < pending.length; i++) {
+        var el = pending[i];
+        if (el.getAttribute("src")) continue;
+        /* offsetParent is null under display:none ancestors, which is the state
+           being waited out; the rect check covers position:fixed. */
+        if (el.offsetParent === null && !el.getClientRects().length) continue;
+        var src = el.getAttribute("data-src");
+        if (src) el.setAttribute("src", src);
+      }
+    }
+
+    function schedule() {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; scan(); });
+    }
+
+    function collect() {
+      var found = document.querySelectorAll("iframe[data-src]");
+      for (var i = 0; i < found.length; i++) pending.push(found[i]);
+      schedule();
+    }
+
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", collect);
+    else collect();
+
+    /* Attribute-only observation: a reveal happens by style/class/hidden changing
+       on an ancestor, so this stays cheap enough to leave running. */
+    try {
+      new MutationObserver(schedule).observe(document.documentElement, {
+        attributes: true, subtree: true, attributeFilter: ["style", "class", "hidden"]
+      });
+    } catch (e) {}
+
+    window.addEventListener("resize", schedule, { passive: true });
+  })();
+
   function loadCaptchaScript() {
     if (captchaLoaded || window.hcaptcha || !cfg.hcaptchaSiteKey) return;
     captchaLoaded = true;

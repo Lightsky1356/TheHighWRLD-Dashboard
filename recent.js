@@ -94,7 +94,7 @@
     var cov = coverFor(r.title) || "Juice-WRLD.png";
     var when = ago(r.ts);
     return '<button type="button" class="ws-recent-row" data-recent-title="' + esc(r.title) + '">' +
-      '<img class="ws-recent-art" src="' + esc(cov) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+      '<img decoding="async" class="ws-recent-art" src="' + esc(cov) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
       '<span class="ws-recent-tt"><b>' + esc(r.title) + '</b>' + (when ? '<span>' + esc(when) + '</span>' : "") + '</span>' +
       '<i class="fas fa-play" style="color:rgba(255,255,255,.3);font-size:10px"></i></button>';
   }

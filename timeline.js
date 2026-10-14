@@ -108,7 +108,7 @@
       h += '<div class="era-year">' + esc(String(y)) + (y === peakY ? ' <span class="era-peak">· peak year</span>' : "") + "</div>";
       byYear[y].slice(0, 8).forEach(function (t) {
         h += '<button type="button" class="era-track" data-era-idx="' + t.idx + '">' +
-          '<img class="era-art" src="' + esc(t.cover || "Juice-WRLD.png") + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+          '<img decoding="async" class="era-art" src="' + esc(t.cover || "Juice-WRLD.png") + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
           '<span class="era-tt">' + esc(t.title) + '</span>' +
           '<i class="fas fa-play" style="color:rgba(255,255,255,.3);font-size:10px"></i></button>';
       });

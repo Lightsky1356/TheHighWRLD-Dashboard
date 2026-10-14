@@ -200,7 +200,7 @@
       const isMine = p.author_uid && p.author_uid === STATE.uid;
       return `<div class="comm-post" data-post-id="${esc(p.id)}">
         <div class="comm-post-head">
-          <img class="comm-ava" src="${esc(p.avatar) || AVA_FALLBACK}" onerror="window.__commAvaFail&&window.__commAvaFail(this)" alt="">
+          <img decoding="async" class="comm-ava" src="${esc(p.avatar) || AVA_FALLBACK}" onerror="window.__commAvaFail&&window.__commAvaFail(this)" alt="">
           <div class="comm-post-who">
             <span class="comm-post-author"${(p.author_uid || p.user_name) ? ` data-profile-link="${esc(p.author_uid || p.user_name)}"` : ``}>${esc(p.user_name)}</span>
             <span class="comm-post-time">${timeAgo(p.created_at)}</span>
@@ -280,7 +280,7 @@
     const dispName = isMine ? 'You' : (r.user_name || 'Guest');
     return `<div class="comm-reply${tmp ? ' optimistic' : ''}" data-reply-id="${esc(r.id)}">
       <div class="comm-reply-head">
-        <img class="comm-ava" src="${esc(r.avatar) || AVA_FALLBACK}" onerror="window.__commAvaFail&&window.__commAvaFail(this)" alt="">
+        <img decoding="async" class="comm-ava" src="${esc(r.avatar) || AVA_FALLBACK}" onerror="window.__commAvaFail&&window.__commAvaFail(this)" alt="">
         <div class="comm-reply-who">
           <span class="comm-reply-author"${(r.author_uid || dispName) ? ` data-profile-link="${esc(r.author_uid || dispName)}"` : ``}>${esc(dispName)}</span>
           <span class="comm-reply-time">${timeAgo(r.created_at)}${r.edited_at ? ' · edited' : ''}</span>

@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v36';
+const VERSION = 'thw-v38';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -30,14 +30,14 @@ const PRECACHE = [
   './qrcode.min.js?v=thw-v1',
   './tracks.js?v=thw-v2',
   './browser-id3-writer.js?v=thw-v1',
-  './account.js?v=thw-v1',
+  './account.js?v=thw-v2',
   './i18n.js?v=2',
-  './script.js?v=thw-v28',
+  './script.js?v=thw-v29',
   './suggestions.js?v=thw-v1',
   './submission-rules-ui.js?v=thw-v1',
   './auth.js?v=thw-v2',
-  './wanted-realtime.js?v=thw-v1',
-  './community-realtime.js?v=thw-v1',
+  './wanted-realtime.js?v=thw-v2',
+  './community-realtime.js?v=thw-v2',
   './presence.js?v=thw-v2',
   './pwa.js?v=thw-v2',
   './community-realtime.css?v=thw-v1',
@@ -86,6 +86,53 @@ const PRECACHE = [
   './icons/icon-maskable-192.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
+
+  /* --- page stylesheets --- */
+  './roadmap.css?v=thw-v24',
+  './failed-projects.css?v=thw-v4',
+  './legal-info.css?v=thw-v3',
+  './simple-toast.css?v=thw-v2',
+  './cover-preview.css?v=thw-v1',
+
+  /* --- page scripts --- */
+  './user-relations.js?v=thw-v1',
+  './user-menu.js?v=thw-v2',
+  './player-settings.js?v=thw-v1',
+  './reports.js?v=thw-v1',
+  './player-performance.js?v=thw-v3',
+  './vault-discography.js?v=thw-v1',
+  './global-search.js?v=thw-v2',
+  './trending.js?v=thw-v2',
+  './owner-search.js?v=thw-v1',
+  './owner-announce.js?v=thw-v1',
+  './bans.js?v=thw-v1',
+  './automod-ui.js?v=thw-v1',
+  './report-status.js?v=thw-v1',
+  './ban-screen.js?v=thw-v1',
+  './wrld-stats.js?v=thw-v6',
+  './recent.js?v=thw-v4',
+  './trackinfo.js?v=thw-v1',
+  './profile-enhancements.js?v=thw-v30',
+  './roadmap-data.js?v=thw-v25',
+  './roadmap.js?v=thw-v25',
+  './timeline.js?v=thw-v2',
+  './gallery.js?v=thw-v2',
+  './failed-projects-data.js?v=thw-v12',
+  './failed-projects.js?v=thw-v12',
+  './presets.js?v=thw-v1',
+  './mobile-player.js?v=thw-v2',
+  './follows.js?v=thw-v1',
+  './privacy.js?v=thw-v1',
+  './playlists-ui.js?v=thw-v2',
+  './drops.js?v=thw-v1',
+  './legal-info.js?v=thw-v4',
+  './social-panel.js?v=thw-v28',
+  './push-client.js?v=thw-v2',
+  './simple-toast.js?v=thw-v4',
+  './cover-preview.js?v=thw-v2',
+
+  /* --- misc page assets --- */
+  './Juice-WRLD.png?v=2',
 ];
 
 /* Requests that must NEVER be served from cache (privacy / correctness). */
@@ -103,14 +150,28 @@ function isStaticAsset(url) {
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) =>
-      cache.addAll(PRECACHE).catch((err) => {
-        // Individual asset failures (e.g. an icon missing on first deploy)
-        // shouldn't prevent shell install; log and continue.
-        console.warn('[SW] precache partial:', err && err.message);
-        return cache;
-      })
-    ).then(() => self.skipWaiting())
+    caches.open(SHELL_CACHE).then((cache) => {
+      /* Added one at a time rather than with cache.addAll(). addAll() is atomic:
+         a single 404 rejects the whole batch, so one bad URL would leave the
+         shell with almost nothing cached and every page would fail offline -
+         which is exactly what a longer PRECACHE list makes more likely. Each
+         entry is independent here, so a failure costs one asset instead of all
+         of them, and the names are logged so the broken URL is visible instead
+         of silent. */
+      const failed = [];
+      return Promise.all(
+        PRECACHE.map((url) =>
+          cache.add(new Request(url, { cache: 'reload' })).catch(() => {
+            failed.push(url);
+            return null;
+          })
+        )
+      ).then(() => {
+        if (failed.length) {
+          console.warn('[SW] precache missed ' + failed.length + ':', failed.join(', '));
+        }
+      });
+    }).then(() => self.skipWaiting())
   );
 });
 
