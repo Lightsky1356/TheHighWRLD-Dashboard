@@ -1,0 +1,542 @@
+/* About + Partnership pages.
+   ---------------------------------------------------------------------------
+   Two static content pages added to the top nav beside the Roadmap icon. They
+   share one sheet because they share one layout: an eyebrow/title header, a row
+   of stat chips, a responsive card grid, a feature list, and a social row. The
+   `.abp-` prefix is used by both so nothing here collides with an existing page.
+
+   The palette deliberately mirrors roadmap.css (same cyan/violet accents, same
+   line and card treatments) so the two pages read as part of the same site. The
+   variables are redeclared here rather than borrowed from --rm-*: roadmap.css is
+   a separate concern and these pages should not break if it changes.
+
+   Nothing in this file overrides a theme. The pages sit on whatever
+   [data-theme] is active and use translucent surfaces, so all 32 themes - and
+   the Glass mode in site-mode.css - apply to them without any extra work. That is
+   why surfaces are rgba() rather than fixed colours, and why text inherits.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --abp-cyan: #22d3ee;
+  --abp-cyan-soft: #67e8f9;
+  --abp-violet: #a855f7;
+  --abp-violet-soft: #a78bfa;
+  /* The partner studio brands around a vivid green, so the partnership page has
+     its own accent set and overrides this locally on .abp-page--partner. */
+  --abp-green: #4ade80;
+  --abp-green-soft: #86efac;
+  --abp-accent: var(--abp-cyan);
+  --abp-accent-soft: var(--abp-cyan-soft);
+  --abp-line: rgba(255, 255, 255, 0.1);
+  --abp-line-soft: rgba(255, 255, 255, 0.07);
+  --abp-card: linear-gradient(135deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.018));
+  --abp-card-solid: rgba(255, 255, 255, 0.04);
+  --abp-text: rgba(255, 255, 255, 0.95);
+  --abp-muted: rgba(156, 163, 175, 0.85);
+  --abp-dim: rgba(156, 163, 175, 0.72);
+}
+
+.abp-page--partner {
+  --abp-accent: var(--abp-green);
+  --abp-accent-soft: var(--abp-green-soft);
+}
+
+/* ===== shell ===== */
+
+.abp-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 96px 16px 40px;
+}
+
+.abp-header {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.abp-eyebrow {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--abp-accent);
+}
+
+.abp-title {
+  margin: 10px auto 0;
+  max-width: 24ch;
+  font-size: clamp(1.4rem, 5.4vw, 2.2rem);
+  line-height: 1.2;
+  font-weight: 800;
+  color: var(--abp-text);
+}
+
+.abp-lede {
+  margin: 14px auto 0;
+  max-width: 68ch;
+  font-size: 0.95rem;
+  line-height: 1.68;
+  color: var(--abp-muted);
+}
+
+.abp-lede a {
+  color: var(--abp-accent-soft);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.abp-lede a:hover {
+  color: var(--abp-accent);
+  border-bottom-color: var(--abp-accent);
+}
+
+/* ===== stat chips ===== */
+
+.abp-stats {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.abp-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--abp-line);
+  background: var(--abp-card-solid);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--abp-muted);
+}
+
+.abp-stat b {
+  color: var(--abp-text);
+  font-weight: 800;
+}
+
+/* ===== section blocks ===== */
+
+.abp-sec {
+  margin-top: 34px;
+}
+
+.abp-sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.abp-sec-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--abp-text);
+}
+
+.abp-sec-note {
+  font-size: 0.8rem;
+  color: var(--abp-dim);
+}
+
+.abp-body {
+  margin: 0;
+  max-width: 82ch;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--abp-muted);
+}
+
+.abp-body + .abp-body {
+  margin-top: 12px;
+}
+
+.abp-body b {
+  color: var(--abp-text);
+  font-weight: 700;
+}
+
+/* ===== card grid ===== */
+
+.abp-grid {
+  display: grid;
+  gap: 11px;
+  /* auto-fit + minmax keeps this at one column on a phone with no media query,
+     so there is no breakpoint to get wrong at the 768px edge. */
+  grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
+}
+
+.abp-card {
+  position: relative;
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 15px;
+  border-radius: 14px;
+  border: 1px solid var(--abp-line);
+  background: var(--abp-card);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.abp-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.abp-card-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.abp-card-ico {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid var(--abp-line);
+  background: var(--abp-card-solid);
+  color: var(--abp-accent);
+  font-size: 0.78rem;
+}
+
+.abp-card-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--abp-text);
+  /* Long project names (Fileify Images, Anti Social Mod) must wrap or break the
+     flex row rather than push the icon off the card. */
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.abp-card-text {
+  font-size: 0.82rem;
+  line-height: 1.62;
+  color: var(--abp-muted);
+}
+
+.abp-card-tag {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--abp-line-soft);
+  background: rgba(0, 0, 0, 0.24);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--abp-dim);
+}
+
+.abp-card-tag--accent {
+  border-color: color-mix(in srgb, var(--abp-accent) 34%, transparent);
+  color: var(--abp-accent);
+}
+
+/* colour mix is progressive enhancement only - the tag is still legible without
+   it, so no @supports wrapper here. site-mode.css learned that lesson the hard
+   way: wrapping rules in @supports made the browser fold the whole block into the
+   supports rule and silently drop it. */
+
+/* ===== feature list (add-ons / mods) ===== */
+
+.abp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.abp-item {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 13px 15px;
+  border-radius: 13px;
+  border: 1px solid var(--abp-line);
+  background: var(--abp-card);
+}
+
+.abp-item-ico {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--abp-accent);
+  font-size: 0.82rem;
+}
+
+.abp-item-main {
+  min-width: 0;
+}
+
+.abp-item-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--abp-text);
+  overflow-wrap: anywhere;
+}
+
+.abp-item-text {
+  margin-top: 3px;
+  font-size: 0.81rem;
+  line-height: 1.6;
+  color: var(--abp-muted);
+}
+
+/* A caveat attached to one entry (the GPU warning on the seasonal mods) needs to
+   sit with that entry rather than become a floating footnote. */
+.abp-item-flag {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.34);
+  background: rgba(251, 191, 36, 0.1);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fcd34d;
+}
+
+/* ===== callout ===== */
+
+.abp-callout {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--abp-line);
+  background: var(--abp-card-solid);
+}
+
+.abp-callout-ico {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--abp-accent);
+  font-size: 0.86rem;
+}
+
+.abp-callout-text {
+  font-size: 0.84rem;
+  line-height: 1.65;
+  color: var(--abp-muted);
+}
+
+.abp-callout-text b {
+  color: var(--abp-text);
+  font-weight: 700;
+}
+
+/* ===== social row ===== */
+
+.abp-socials-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--abp-dim);
+}
+
+.abp-handle {
+  display: block;
+  margin-top: 1px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  color: var(--abp-accent-soft);
+  overflow-wrap: anywhere;
+}
+
+.abp-socials {
+  list-style: none;
+  margin: 11px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(214px, 1fr));
+}
+
+.abp-social {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 13px;
+  border: 1px solid var(--abp-line);
+  background: var(--abp-card);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+a.abp-social:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.abp-social-ico {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--abp-line);
+  background: rgba(0, 0, 0, 0.26);
+  color: var(--abp-accent);
+  font-size: 0.95rem;
+}
+
+.abp-social-main {
+  /* block, and it grows: the social is a flex row, so without flex-grow this
+     column would only be as wide as its text and the external-link glyph would
+     sit right next to the handle instead of at the row's far edge. */
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.abp-social-name {
+  /* display:block is load-bearing. Both this and .abp-handle are <span>s inside a
+     span, so without it they lay out on one line and render as
+     "TikTok@lightsky1356". */
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--abp-text);
+}
+
+/* A social that has not been confirmed yet. Deliberately NOT a link: an <a>
+   without an href is not focusable, so there is nothing for a keyboard user to
+   land on and no dead click target. It reads as pending rather than broken. */
+.abp-social--pending {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: none;
+  cursor: default;
+}
+
+.abp-social--pending .abp-social-ico,
+.abp-social--pending .abp-social-name {
+  color: var(--abp-dim);
+}
+
+.abp-social-pending-tag {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--abp-dim);
+}
+
+.abp-external {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--abp-dim);
+  font-size: 0.68rem;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+a.abp-social:hover .abp-external {
+  color: var(--abp-accent);
+  transform: translate(2px, -2px);
+}
+
+/* ===== footer note ===== */
+
+.abp-foot {
+  margin-top: 30px;
+  padding-top: 18px;
+  border-top: 1px solid var(--abp-line-soft);
+  text-align: center;
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: var(--abp-dim);
+}
+
+/* ===== nav buttons ===== */
+
+/* The two new nav buttons reuse page-tab-ico so they pick up the icon-tab sizing
+   already defined in account.css. Only the accent tint is new, and it is scoped
+   to the id so it cannot leak into the Roadmap button next to them. */
+#page-nav-about > i {
+  color: var(--abp-cyan);
+}
+
+#page-nav-partner > i {
+  color: var(--abp-green);
+}
+
+#page-nav-about:hover > i,
+#page-nav-about.active > i {
+  color: var(--abp-cyan-soft);
+}
+
+#page-nav-partner:hover > i,
+#page-nav-partner.active > i {
+  color: var(--abp-green-soft);
+}
+
+/* ===== narrow screens ===== */
+
+@media (max-width: 767px) {
+  .abp-page {
+    padding: 76px 14px 32px;
+  }
+
+  .abp-grid,
+  .abp-list,
+  .abp-socials {
+    /* One column is the correct floor for every phone width, so the
+       auto-fit tracks collapse on their own. Only the gaps need trimming. */
+    gap: 9px;
+  }
+
+  .abp-card,
+  .abp-item,
+  .abp-social {
+    padding: 13px;
+  }
+}
+
+/* ===== reduced motion ===== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .abp-card:hover,
+  a.abp-social:hover,
+  .abp-external {
+    transform: none;
+    transition: none;
+  }
+}

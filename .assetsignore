@@ -1,0 +1,17 @@
+# Exclude build scratch from the Pages asset set.
+#
+# pages_build_output_dir is "." (the repo root), so wrangler writes its esbuild
+# scratch to .wrangler/tmp INSIDE the directory being served. The asset watcher
+# then sees wrangler's own scratch as a change and rebuilds, which writes more
+# scratch, which triggers another rebuild. That loop is why local responses
+# sometimes took four minutes and why the dev server would die under memory
+# pressure.
+#
+# --persist-to moves the state/cache out of the project, but it does not move
+# .wrangler/tmp, so the loop still happens. Ignoring the directory stops the
+# watcher from ever seeing it.
+#
+# Everything else here is deliberately NOT ignored: the site really is served
+# from the repo root, so functions/, migrations/ and the artwork are all part of
+# the upload the way they are today.
+.wrangler/

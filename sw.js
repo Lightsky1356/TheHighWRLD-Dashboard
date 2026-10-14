@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v33';
+const VERSION = 'thw-v36';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -49,6 +49,7 @@ const PRECACHE = [
   './tailwind.css?v=thw-v1',
   './themes.css?v=thw-v1',
   './css2.css?v=thw-v1',
+  './about.css?v=thw-v2',
   './fonts/0-Sora-300.woff2',
   './fonts/1-Sora-300.woff2',
   './fonts/2-Sora-400.woff2',
