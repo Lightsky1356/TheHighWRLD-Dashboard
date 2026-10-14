@@ -130,7 +130,16 @@ window.MATURE_COVERS = [
 (function () {
   var KEY = "matureBlur";
   var REVEALED_KEY = "matureRevealed";
-  function blurEnabled() { try { return localStorage.getItem(KEY) !== "0"; } catch (e) { return true; } }
+  function isGuest() {
+    /* Same signal as account.js isSignedInNow(), read directly because that
+       function is not exported and script.js must not depend on load order. */
+    try { return !localStorage.getItem("wantedAuthUser"); } catch (e) { return true; }
+  }
+  function blurEnabled() {
+    /* A signed-out visitor cannot turn the blur off, whatever is stored. */
+    if (isGuest()) return true;
+    try { return localStorage.getItem(KEY) !== "0"; } catch (e) { return true; }
+  }
   /* Percent-decoding matters here. showCoverArt() assigns o.src = a.src, and .src is
      always the resolved absolute URL, so the lightbox ends up holding
      ".../Covers/Right,%20Left.png" while the player holds the literal
@@ -168,8 +177,14 @@ window.MATURE_COVERS = [
     } catch (e) { /* private mode or corrupt value: start from everything blurred */ }
     return _revealed;
   }
-  function isRevealed(src) { return !!revealedSet()[coverKey(src)]; }
+  function isRevealed(src) {
+    /* A guest must not inherit a reveal the same browser recorded while signed
+       in, so this reads false even when the cover is in the reveal set. */
+    if (isGuest()) return false;
+    return !!revealedSet()[coverKey(src)];
+  }
   function setRevealed(src, on) {
+    if (isGuest()) return false;
     var k = coverKey(src);
     if (!k) return false;
     if (on) revealedSet()[k] = true; else delete revealedSet()[k];
@@ -346,6 +361,10 @@ window.MATURE_COVERS = [
            handler rather than after it. */
         e.preventDefault();
         e.stopPropagation();
+        /* Signed out: the click is consumed but reveals nothing, so a guest
+           cannot cycle a flagged cover open. Stopping propagation either way
+           keeps the click from also starting the track behind it. */
+        if (isGuest()) return;
         var on = !el.classList.contains("revealed");
         setRevealed(el.getAttribute("src"), on);
         el.classList.toggle("revealed", on);
@@ -373,8 +392,19 @@ window.MATURE_COVERS = [
   }, true);
   function syncToggle() {
     var el = document.getElementById("matureBlurToggle");
-    if (el) el.checked = blurEnabled();
+    if (el) {
+      el.checked = blurEnabled();
+      el.disabled = isGuest();
+    }
+    var row = document.getElementById("matureBlurRow");
+    if (row) row.hidden = isGuest();
+    var note = document.getElementById("matureBlurGuestNote");
+    if (note) note.hidden = !isGuest();
   }
+  /* Sign-in and sign-out happen in place: neither auth.js nor account.js
+     reloads or dispatches an event, so boot() does not re-run on a session
+     change. auth.js calls this from the two places that write wantedAuthUser. */
+  window.THWMatureAuthSync = function () { syncToggle(); scan(null, true); };
   document.addEventListener("change", function (e) {
     if (e.target && e.target.id === "matureBlurToggle") {
       try { localStorage.setItem(KEY, e.target.checked ? "1" : "0"); } catch (err) {}
@@ -382,6 +412,9 @@ window.MATURE_COVERS = [
     }
   });
   window.setMatureBlur = function (on) {
+    /* Refused while signed out, and the stored value is re-asserted as on so a
+       guest's blur cannot be turned off from the console either. */
+    if (isGuest()) { syncToggle(); scan(null, true); return; }
     try { localStorage.setItem(KEY, on ? "1" : "0"); } catch (err) {}
     scan(null, true);
     syncToggle();

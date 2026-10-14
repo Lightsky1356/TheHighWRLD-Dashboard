@@ -84,6 +84,9 @@
       localStorage.setItem("wantedUserId", u.uid);
       localStorage.setItem("wantedAuthUser", JSON.stringify(u));
     } catch (e) {}
+    /* Re-assert the mature-cover rule: signed in, the blur toggle becomes
+       available again. */
+    if (typeof window.THWMatureAuthSync === "function") window.THWMatureAuthSync();
     if (window._wantedUserId !== undefined) window._wantedUserId = u.uid;
     if (typeof window.__setAccountUid === "function") window.__setAccountUid(u.uid);
     var signedInGroup = $("navAccountSignedIn"), sUp = $("authNavSignup"), sIn = $("authNavSignin"), sOut = $("authNavSignout");
@@ -117,6 +120,9 @@
   function applyLoggedOut() {
     user = null;
     try { localStorage.removeItem("wantedAuthUser"); } catch (e) {}
+    /* Signed out: flagged covers must blur again and the toggle must go away.
+       Without this the page would keep the signed-in view of the setting. */
+    if (typeof window.THWMatureAuthSync === "function") window.THWMatureAuthSync();
     var signedInGroup = $("navAccountSignedIn"), sUp = $("authNavSignup"), sIn = $("authNavSignin"), sOut = $("authNavSignout");
     var mUp = $("authMNavSignup"), mIn = $("authMNavSignin"), mOut = $("authMNavSignout");
     var wrap = $("nav-account-wrap"), navBtn = $("navPillAuthBtn"), menu = $("nav-account-menu");
