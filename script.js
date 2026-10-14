@@ -191,13 +191,21 @@ window.MATURE_COVERS = [
     try { localStorage.setItem(REVEALED_KEY, JSON.stringify(Object.keys(revealedSet()))); } catch (e) {}
     return !!on;
   }
-  function isFlagged(img) {
-    var src = img.getAttribute("src") || "";
+  function isFlaggedUrl(url) {
     var list = window.MATURE_COVERS || [];
-    if (!src || !list.length) return false;
-    src = norm(src);
-    for (var i = 0; i < list.length; i++) { if (list[i] && src.indexOf(norm(list[i])) !== -1) return true; }
+    if (!url || !list.length) return false;
+    url = norm(url);
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && url.indexOf(norm(list[i])) !== -1) return true;
+    }
     return false;
+  }
+  
+  /* Split out from isFlagged() so the <img> path and the background-image
+     path below run one matching rule. Duplicating the substring test is how
+     these two would drift apart. */
+  function isFlagged(img) {
+    return isFlaggedUrl(img.getAttribute("src"));
   }
   /* The marker scales with the artwork it sits on rather than snapping between a
      few hardcoded sizes. The cover's width is published as --cov-w on the badge
@@ -304,18 +312,40 @@ window.MATURE_COVERS = [
     else img.classList.remove("revealed");
     syncBadge(img, !img.classList.contains("revealed"));
   }
+  /* Covers painted as a CSS background-image rather than an <img>. Opt in by
+     putting the cover URL in data-cover-url; scan()/scanNode() pick it up from
+     there, so a surface cannot reintroduce the unblurred-cover bug by using a
+     background instead of an <img>. Keyed on data-cover-url for the same reason
+     apply() is keyed on src: the same element can be reused for a different
+     cover, and an element-level flag would leave the previous cover's state. */
+  function applyBg(el, force) {
+    if (!el || el.nodeType !== 1) return;
+    var url = el.getAttribute("data-cover-url") || "";
+    if (!force && el.__matureBgUrl === url) return;
+    el.__matureBgUrl = url;
+    if (!isFlaggedUrl(url) || !blurEnabled()) {
+      el.classList.remove("cov-mature");
+      return;
+    }
+    el.classList.add("cov-mature");
+  }
   function scan(root, force) {
     root = root || document;
     if (!root.querySelectorAll) return;
     var imgs = root.querySelectorAll("img");
     for (var i = 0; i < imgs.length; i++) apply(imgs[i], force);
+    var bgs = root.querySelectorAll("[data-cover-url]");
+    for (var j = 0; j < bgs.length; j++) applyBg(bgs[j], force);
   }
   function scanNode(node) {
     if (!node || node.nodeType !== 1) return;
     if (node.tagName === "IMG") { apply(node); return; }
+    if (node.hasAttribute && node.hasAttribute("data-cover-url")) { applyBg(node); return; }
     if (!node.querySelectorAll) return;
     var imgs = node.querySelectorAll("img");
     for (var i = 0; i < imgs.length; i++) apply(imgs[i]);
+    var bgs = node.querySelectorAll("[data-cover-url]");
+    for (var j = 0; j < bgs.length; j++) applyBg(bgs[j]);
   }
   var timer = null, _pending = [];
   function schedule(nodes) {

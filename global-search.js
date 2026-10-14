@@ -462,7 +462,7 @@
         any = true;
         h += '<div class="gs-group"><div class="gs-group-title">' + esc(_tt("gsTracks", "Tracks")) + ' <span class="gs-count">' + tracks.length + '</span></div>';
         tracks.slice(0, 6).forEach(function (t) {
-          var cover = (t.cover) ? '<span class="gs-art" style="background-image:url(\'' + esc(t.cover) + '\')"></span>' : '<span class="gs-art"><i class="fas fa-music"></i></span>';
+          var cover = (t.cover) ? '<span class="gs-art" data-cover-url="' + esc(t.cover) + '" style="background-image:url(\'' + esc(t.cover) + '\')"></span>' : '<span class="gs-art"><i class="fas fa-music"></i></span>';
           h += '<button type="button" class="gs-row" data-gs-play="' + (t._idx != null ? t._idx : "") + '" data-gs-title="' + esc(t.title || "") + '">' +
             cover + '<span class="gs-row-txt"><b>' + esc(t.title || "") + '</b><span class="gs-row-sub">' + esc(t.album || t.artist || "999") + '</span></span><i class="fas fa-play gs-row-go"></i></button>';
         });
