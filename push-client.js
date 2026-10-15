@@ -295,35 +295,56 @@
   // iPadOS reports a Macintosh UA identical to a real Mac; only
   // platform === "MacIntel" with maxTouchPoints > 1 tells them apart.
   // A stored value that is not a User-Agent is already a label and passes through.
+  // A readable device name.
+  //
+  // The User-Agent cannot be trusted for Apple hardware. Request Desktop Website
+  // makes an iPhone report a Macintosh UA with platform MacIntel and maxTouchPoints
+  // 5 - identical in all three respects to an iPad, which is how this once reported
+  // a phone as "iPad 5-point touch". screen.width is the signal that does not lie:
+  // no iPhone reaches 768 CSS px, every iPad does, and it describes the physical
+  // panel rather than the emulated viewport, so desktop mode cannot fake it.
+  // A stored value that is not a User-Agent is already a label and passes through.
   function deviceLabel(ua) {
     var s = String(ua || "");
     if (!/mozilla\//i.test(s)) return s || "This device";
     var lower = s.toLowerCase();
-    var touch = (typeof navigator !== "undefined" && navigator.maxTouchPoints) || 0;
-    var platform = (typeof navigator !== "undefined" && navigator.platform) || "";
-    var base = "This device";
+    var nav = (typeof navigator !== "undefined") ? navigator : {};
+    var touch = nav.maxTouchPoints || 0;
+    var screenW = (typeof screen !== "undefined" && screen && screen.width) || 0;
+    var base = "";
+
     if (lower.indexOf("android") !== -1) base = "Android";
     else if (/iphone|ipod/.test(lower)) base = "iPhone";
     else if (/ipad/.test(lower)) base = "iPad";
     else if (lower.indexOf("cros") !== -1) base = "Chromebook";
     else if (lower.indexOf("windows") !== -1) base = "Windows PC";
     else if (lower.indexOf("macintosh") !== -1) {
-      if (lower.indexOf("mobile") !== -1) base = "iPhone";
-      else if (platform === "MacIntel" && touch > 1) base = "iPad";
-      else base = "Mac";
+      if (lower.indexOf("mobile") !== -1) {
+        base = "iPhone";
+      } else if (touch > 0 && screenW && screenW <= 1200) {
+        // Desktop-mode iPhone or an iPad - the UA is identical for both. The boundary
+        // is 500, not 768: the widest iPhone is about 440 CSS px and the smallest
+        // iPad is 744, so 768 would call an iPad mini a phone.
+        base = screenW < 500 ? "iPhone" : "iPad";
+      } else {
+        // A Mac. macOS reports maxTouchPoints > 0 on any Mac with a Touch Bar or a
+        // touchscreen, so touch alone would label those an iPad. Every iPad tops out
+        // around 1024 CSS px and every Mac is wider than 1200, which settles it.
+        base = "Mac";
+      }
     } else if (lower.indexOf("linux") !== -1) base = "Linux PC";
+
+    if (!base) base = "This device";
 
     var model = "";
     var m = s.match(/iPhone(\d+[,_]\d+)/);
     if (m) model = m[1].replace(",", " ");
     if (!model) { var g = s.match(/Android\s+([\d.]+)/); if (g) model = g[1]; }
     if (!model) { var w = s.match(/Windows NT\s+([\d.]+)/); if (w) model = w[1]; }
-    if (base === "iPad" && !model) {
-      model = touch ? String(touch) + "-point touch" : "touch";
-    }
     return model ? base + " " + model : base;
   }
-  function render() {
+
+  function render() {
     var host = document.getElementById("thw-push-section");
     if (!host) return;
 
