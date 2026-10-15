@@ -24,6 +24,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const BASE = "http://127.0.0.1:8788";
 
 const GROUPS = [
+  { name: "parse-gate", file: "./parse-gate.test.mjs", needsServer: false },
   { name: "crypto", file: "./crypto-selftest.mjs", needsServer: false },
   { name: "push-api", file: "./push-api.test.mjs", needsServer: true },
   { name: "notifications", file: "./notifications-optout.test.mjs", needsServer: true },
