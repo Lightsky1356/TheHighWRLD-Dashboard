@@ -395,17 +395,20 @@ footer .hub-panel select{border-color:var(--th-border2)}
 .wanted-reply-reply-indicator i{font-size:8px;color:rgba(212,165,116,.5)}
 
 /* Mobile Bottom Nav - compact 5-column tab bar (mobile only)
-   The frosted background here is deliberate and works. Do not "fix" it.
-   This bar was suspected of failing to paint its own background on iOS,
-   because a screenshot showed page text readable through it. It was not.
-   The real cause was #wrldlog-overlay: script.js called showWrldLog() from a
-   boot-time setTimeout, which put a position:fixed; inset:0; z-index:9999 box
-   with backdrop-filter:blur(16px) over the entire page on every load. The bar
-   was fine - a blurred scrim was painted on top of it, and that same scrim
-   was swallowing every touch on the page.
-   If the bar ever looks washed out or transparent again, look for a full-screen
-   overlay above it before touching this rule. */
-.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;box-sizing:border-box;background:rgba(14,12,28,.92);backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3);border-top:1px solid rgba(255,255,255,.1);box-shadow:0 -4px 18px rgba(0,0,0,.35);padding:5px 4px calc(5px + env(safe-area-inset-bottom,0px));align-items:center}
+   Height is a constant 54px: 5px padding + 44px item + 5px padding.
+   It deliberately does NOT pad by env(safe-area-inset-bottom). In a Home
+   Screen install that inset is 34px, which used to make the bar ~88px tall and
+   left ~39px of empty bar below the labels - it read as a bar floating too high
+   with a big gap under the labels. The home-indicator strip below the bar now
+   shows the page instead. Do not reintroduce the env() padding here; if the
+   labels ever need to clear a larger inset, reduce the 44px item height, which
+   is Apple's minimum touch target, rather than growing the bar.
+   --mbn-h mirrors this height and is used by body padding, the online/guest
+   badges, #scrollTopBtn, #nightLightToggle, the social FAB and panel, and the
+   failed-projects / roadmap footers. Keep the two in step.
+   The frosted background here works and is deliberate - see the note below about
+   #wrldlog-overlay before blaming it for anything. */
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;box-sizing:border-box;background:rgba(14,12,28,.92);backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3);border-top:1px solid rgba(255,255,255,.1);box-shadow:0 -4px 18px rgba(0,0,0,.35);padding:5px 4px 5px;align-items:center}
 .mbn-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-sizing:border-box;padding:3px 2px;border:none;background:transparent;color:rgba(255,255,255,.4);font-size:11px;font-weight:600;cursor:pointer;border-radius:12px;transition:color .2s,background .2s;min-width:0;height:44px;min-height:44px}
 .mbn-item i{font-size:20px;line-height:20px;width:20px;height:20px;display:block;text-align:center;flex-shrink:0}
 .mbn-item span:not(.mbn-avatar){font-size:10px;line-height:12px;white-space:nowrap;flex-shrink:0}
@@ -719,8 +722,10 @@ html.scroll-locked,html.scroll-locked body{overflow:hidden}
 /* ===== Mobile bottom nav: content clearance + safe area (mobile only) ===== */
 @media (max-width:767px){
   :root{
-    --mbn-safe: env(safe-area-inset-bottom, 0px);
-    --mbn-h: calc(55px + var(--mbn-safe));
+    /* Height of .mobile-bottom-nav: 5px padding + 44px item + 5px padding. The bar
+       no longer pads by env(safe-area-inset-bottom); see the note on that rule. */
+    --mbn-h: 54px;
+    --mbn-safe: 0px; /* retired */
   }
   body{
     padding-bottom: calc(var(--mbn-h) + 12px) !important;
