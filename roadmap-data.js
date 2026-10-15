@@ -112,10 +112,10 @@
     {
       id: "offline-pwa",
       title: "Offline caching and installable app",
-      description: "Caching is built and switched off. sw.js precaches 117 files with a per-entry install, an activate step and a fetch handler, and the web manifest is in place - but nothing registers the worker, so none of it runs. Wiring up registration, then the install prompt and update flow, is what is left.",
-      status: "in-progress",
+      description: "Live. pwa.js registers sw.js on load, which precaches 117 files with a per-entry install, an activate step and a fetch handler, and the web manifest is in place. The worker installs, activates and takes control; registration was confirmed at runtime, not just read off the source. What is left is the install prompt and a clearer update flow.",
+      status: "completed",
       category: ["performance"],
-      progress: 60,
+      progress: 100,
       lastUpdated: "2026-10-14"
     },
     {
@@ -136,7 +136,7 @@
     {
       id: "browser-notifications",
       title: "Browser notifications",
-      description: "Opt-in notifications for wanted-vault votes, replies to your posts and new suggestions. The client, the subscription sync and the service worker handler are all written and passing their suites. Delivery is blocked: the client waits on navigator.serviceWorker.ready but nothing registers a worker, so subscribe is unreachable until offline caching is switched on.",
+      description: "Opt-in notifications for wanted-vault votes, replies to your posts and new suggestions. The client, the subscription sync, the VAPID signing on the server and the worker's showNotification handler are all written and passing their suites, and the worker is registered, so the subscribe path is reachable. The VAPID secrets are now set. End-to-end delivery has not been confirmed yet - it needs a signed-in test, because /api/push returns the public key to authenticated callers only.",
       status: "in-progress",
       category: ["community"],
       progress: 70,
