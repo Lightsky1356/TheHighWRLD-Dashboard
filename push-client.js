@@ -80,7 +80,11 @@
   function currentSubscription() {
     return withTimeout(
       navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }),
-      5000,
+      /* The shell is 113 precache entries / ~4.96MB (measured against
+         production, all 200). That install overran the old 5s budget even
+         from a warm desktop, so a phone timed out while the worker was
+         still installing perfectly normally. */
+      30000,
       "sw_ready_timeout"
     );
   }
@@ -290,9 +294,17 @@
     }).catch(function (err) {
       if (!document.getElementById("thw-push-section")) return;
       var timedOut = err && err.message === "sw_ready_timeout";
+      /* The install is still running, not broken. Re-render the moment the
+         worker goes active so the real state appears on its own, rather than
+         making the user close and reopen the app to come back to this screen. */
+      if (timedOut && "serviceWorker" in navigator) {
+        navigator.serviceWorker.ready.then(function () {
+          if (document.getElementById("thw-push-section")) render();
+        }).catch(function () {});
+      }
       var w = el("div", "thw-push");
       w.appendChild(el("p", "thw-push-status thw-push-status--warn", timedOut
-        ? "The offline app is still starting, so this device's notification state is not available yet. Close and reopen TheHighWRLD and try again."
+        ? "Still downloading the offline app. This will update on its own in a moment."
         : "Could not read the push subscription for this device. Notifications may still work; recheck after reopening the app."));
       host.appendChild(w);
     });
