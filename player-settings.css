@@ -1366,3 +1366,9 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
    is not supported at all, an opaque colour is used instead of leaving the
    content readable through the bar. */
 
+/* Section headings inside the mobile popups, used to break the Community
+   popup's six items into two groups. Deliberately one step down from
+   .mobile-popup-head (which is 13px/800/uppercase) so the sections read as
+   subordinate to the panel's own title rather than competing with it. */
+.mobile-popup-group{padding:9px 12px 3px;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.34)}
+.mobile-popup-group:first-child{padding-top:2px}
