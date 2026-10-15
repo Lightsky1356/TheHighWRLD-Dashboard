@@ -174,9 +174,9 @@
           return sendSubscription(sub);
         })
         .then(function () { toast("Push notifications enabled for this device.", "success"); })
-        .catch(function () { toast("Could not enable push notifications on this device.", "error"); });
+        .catch(function (err) { toast("Could not enable push: " + ((err && err.message) || "unknown error"), "error"); });
     }).catch(function () {
-      toast("Could not enable push notifications on this device.", "error");
+      toast("Could not enable push: " + ((err && err.message) || "unknown error"), "error");
     }).then(function () {
       loadState().then(render).catch(render);
     });
@@ -194,7 +194,7 @@
           toast(wasSubscribed ? "Push notifications turned off for this device." : "This device was already off.", "success");
         });
       })
-      .catch(function () { toast("Could not turn off notifications on this device.", "error"); })
+      .catch(function (err) { toast("Could not turn off: " + ((err && err.message) || "unknown error"), "error"); })
       .then(function () { loadState().then(render).catch(render); });
   }
 
