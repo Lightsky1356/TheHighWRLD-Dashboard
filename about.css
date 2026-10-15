@@ -484,29 +484,6 @@ a.abp-social:hover .abp-external {
   color: var(--abp-dim);
 }
 
-/* ===== nav buttons ===== */
-
-/* The two new nav buttons reuse page-tab-ico so they pick up the icon-tab sizing
-   already defined in account.css. Only the accent tint is new, and it is scoped
-   to the id so it cannot leak into the Roadmap button next to them. */
-#page-nav-about > i {
-  color: var(--abp-cyan);
-}
-
-#page-nav-partner > i {
-  color: var(--abp-green);
-}
-
-#page-nav-about:hover > i,
-#page-nav-about.active > i {
-  color: var(--abp-cyan-soft);
-}
-
-#page-nav-partner:hover > i,
-#page-nav-partner.active > i {
-  color: var(--abp-green-soft);
-}
-
 /* ===== narrow screens ===== */
 
 @media (max-width: 767px) {

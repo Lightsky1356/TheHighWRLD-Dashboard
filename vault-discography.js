@@ -1,17 +1,18 @@
 (function () {
-  var projects = [
-    { title: "Goodbye & Good Riddance", date: "May 23, 2018", type: "Studio album", label: "Grade A Productions / Interscope Records" },
-    { title: "Death Race for Love", date: "March 8, 2019", type: "Studio album", label: "Grade A Productions / Interscope Records" },
-    { title: "Legends Never Die", date: "July 10, 2020", type: "Studio album", label: "Grade A Productions / Interscope Records" },
-    { title: "Fighting Demons", date: "December 10, 2021", type: "Studio album", label: "Grade A Productions / Interscope Records" }
-  ];
-  var mixtapes = [
-    { title: "JuiceWRLD 9 9 9", date: "June 15, 2017", type: "Mixtape" },
-    { title: "What Is Love?", date: "2015", type: "Mixtape" }
-  ];
-  var eps = [
-    { title: "The Pre-Party", date: "September 2024", type: "Extended play", label: "Grade A Productions / Interscope Records" }
-  ];
+    var projects = [
+    { key: "goodbye", date: "May 23, 2018", type: "Studio album", label: "Grade A Productions / Interscope Records", title: "Goodbye & Good Riddance" },
+    { key: "death", date: "March 8, 2019", type: "Studio album", label: "Grade A Productions / Interscope Records", title: "Death Race for Love" },
+    { key: "legends", date: "July 10, 2020", type: "Studio album", label: "Grade A Productions / Interscope Records", title: "Legends Never Die" },
+    { key: "demons", date: "December 10, 2021", type: "Studio album", label: "Grade A Productions / Interscope Records", title: "Fighting Demons" },
+    { key: "party", date: "April 5, 2024", type: "Studio album", label: "Grade A Productions / Interscope Records", title: "The Party Never Ends" }
+  ];;
+    var mixtapes = [
+    { key: "999", date: "June 15, 2017", type: "Mixtape", title: "JuiceWRLD 9 9 9" },
+    { key: "what", date: "2015", type: "Mixtape", title: "What Is Love?" }
+  ];;
+    var eps = [
+    { key: "preparty", date: "September 2024", type: "Extended play", label: "Grade A Productions / Interscope Records", title: "The Pre-Party" }
+  ];;
   var singles = [
     ["All Girls Are the Same", "2018"], ["Lucid Dreams", "2018"], ["Lean wit Me", "2018"],
     ["Wasted", "2018"], ["Armed and Dangerous", "2018"], ["Robbery", "2019"],
@@ -37,8 +38,33 @@
   function esc(value) {
     return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
+  /* Release artwork, keyed by the short key carried on each release.
+     Falls back to the disc mark when a release has no art - currently only
+     "What Is Love?" (2015), which is absent from the Cover Art Archive, has a
+     single MusicBrainz release with no CAA entry, and is not in the iTunes
+     catalogue. A missing file also falls back rather than leaving a broken image,
+     so deleting an asset degrades to the mark instead of an empty box. */
+  var RELEASE_ART = {
+    "999": "./AlbumArt/999.jpg",
+    "death": "./AlbumArt/death.jpg",
+    "demons": "./AlbumArt/demons.jpg",
+    "goodbye": "./AlbumArt/goodbye.jpg",
+    "legends": "./AlbumArt/legends.jpg",
+    "party": "./AlbumArt/party.jpg",
+    "preparty": "./AlbumArt/preparty.jpg"
+  };
+
+  function releaseArt(key) {
+    if (!key) return "";
+    return RELEASE_ART[key] || "";
+  }
+
   function projectCard(item) {
-    return '<article class="vault-release-card"><div class="vault-release-mark"><i class="fas fa-compact-disc"></i></div><div><h3>' + esc(item.title) + '</h3><p class="vault-release-date">' + esc(item.date) + '</p><span class="vault-release-type">' + esc(item.type) + '</span>' + (item.label ? '<p class="vault-release-label">' + esc(item.label) + '</p>' : '') + '</div></article>';
+    var art = releaseArt(item.key);
+    var mark = art
+      ? '<img class="vault-release-art" src="' + esc(art) + '" alt="" decoding="async" loading="lazy" onerror="this.outerHTML=&#39;<div class=\'vault-release-mark\'><i class=\'fas fa-compact-disc\'></i></div>&#39;">'
+      : '<div class="vault-release-mark"><i class="fas fa-compact-disc"></i></div>';
+    return '<article class="vault-release-card">' + mark + '<div class="vault-release-body"><h3>' + esc(item.title) + '</h3><p class="vault-release-date">' + esc(item.date) + '</p><span class="vault-release-type">' + esc(item.type) + '</span>' + (item.label ? '<p class="vault-release-label">' + esc(item.label) + '</p>' : '') + '</div></article>';
   }
   function rows(items, guest) {
     return items.map(function (item) {

@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v38';
+const VERSION = 'thw-v40';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -30,21 +30,21 @@ const PRECACHE = [
   './qrcode.min.js?v=thw-v1',
   './tracks.js?v=thw-v2',
   './browser-id3-writer.js?v=thw-v1',
-  './account.js?v=thw-v2',
+  './account.js?v=thw-v3',
   './i18n.js?v=2',
-  './script.js?v=thw-v29',
+  './script.js?v=thw-v30',
   './suggestions.js?v=thw-v1',
   './submission-rules-ui.js?v=thw-v1',
   './auth.js?v=thw-v2',
-  './wanted-realtime.js?v=thw-v2',
-  './community-realtime.js?v=thw-v2',
+  './wanted-realtime.js?v=thw-v3',
+  './community-realtime.js?v=thw-v3',
   './presence.js?v=thw-v2',
   './pwa.js?v=thw-v2',
   './community-realtime.css?v=thw-v1',
   './all.min.css?v=thw-v1',
   './account.css?v=thw-v1',
   './player-settings.css?v=thw-v31',
-  './style.css?v=thw-v26',
+  './style.css?v=thw-v27',
   './site-mode.css?v=thw-v2',
   './tailwind.css?v=thw-v1',
   './themes.css?v=thw-v1',
@@ -96,43 +96,52 @@ const PRECACHE = [
 
   /* --- page scripts --- */
   './user-relations.js?v=thw-v1',
-  './user-menu.js?v=thw-v2',
+  './user-menu.js?v=thw-v3',
   './player-settings.js?v=thw-v1',
   './reports.js?v=thw-v1',
   './player-performance.js?v=thw-v3',
-  './vault-discography.js?v=thw-v1',
+  './vault-discography.js?v=thw-v2',
   './global-search.js?v=thw-v2',
-  './trending.js?v=thw-v2',
+  './trending.js?v=thw-v3',
   './owner-search.js?v=thw-v1',
   './owner-announce.js?v=thw-v1',
   './bans.js?v=thw-v1',
   './automod-ui.js?v=thw-v1',
   './report-status.js?v=thw-v1',
   './ban-screen.js?v=thw-v1',
-  './wrld-stats.js?v=thw-v6',
-  './recent.js?v=thw-v4',
+  './wrld-stats.js?v=thw-v7',
+  './recent.js?v=thw-v5',
   './trackinfo.js?v=thw-v1',
-  './profile-enhancements.js?v=thw-v30',
+  './profile-enhancements.js?v=thw-v31',
   './roadmap-data.js?v=thw-v25',
   './roadmap.js?v=thw-v25',
-  './timeline.js?v=thw-v2',
-  './gallery.js?v=thw-v2',
+  './timeline.js?v=thw-v3',
+  './gallery.js?v=thw-v3',
   './failed-projects-data.js?v=thw-v12',
   './failed-projects.js?v=thw-v12',
   './presets.js?v=thw-v1',
-  './mobile-player.js?v=thw-v2',
+  './mobile-player.js?v=thw-v3',
   './follows.js?v=thw-v1',
   './privacy.js?v=thw-v1',
-  './playlists-ui.js?v=thw-v2',
+  './playlists-ui.js?v=thw-v3',
   './drops.js?v=thw-v1',
   './legal-info.js?v=thw-v4',
   './social-panel.js?v=thw-v28',
   './push-client.js?v=thw-v2',
   './simple-toast.js?v=thw-v4',
-  './cover-preview.js?v=thw-v2',
+  './cover-preview.js?v=thw-v3',
 
   /* --- misc page assets --- */
   './Juice-WRLD.png?v=2',
+
+  /* --- album artwork for the Vault discography --- */
+  './AlbumArt/999.jpg',
+  './AlbumArt/death.jpg',
+  './AlbumArt/demons.jpg',
+  './AlbumArt/goodbye.jpg',
+  './AlbumArt/legends.jpg',
+  './AlbumArt/party.jpg',
+  './AlbumArt/preparty.jpg',
 ];
 
 /* Requests that must NEVER be served from cache (privacy / correctness). */
