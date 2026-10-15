@@ -97,6 +97,7 @@
       .then(function (d) {
         if (!d || d.ok !== true) throw new Error("push_state_unavailable");
         state.publicKey = d.publicKey || "";
+    state.loaded = true;
         state.devices = d.devices || [];
         return d;
       });
@@ -255,6 +256,41 @@
      and hid a real problem: iOS Home Screen web apps report a desktop-class UA, so
      "Macintosh; Intel Mac OS X" with no "Mobile/" token is a Mac, not a phone.
      That is exactly how the registered device was identified as a Mac. */
+  /* The server returns only a prefix of each endpoint, by design: the full value
+     is a credential for that device's push channel and is never echoed into a
+     page. A 48-character prefix is still enough to tell devices apart. */
+  function endpointPrefix(endpoint) {
+    return String(endpoint || "").slice(0, 48);
+  }
+
+  function serverKnowsEndpoint(endpoint) {
+    var want = endpointPrefix(endpoint);
+    if (!want) return true;
+    var list = state.devices || [];
+    for (var i = 0; i < list.length; i++) {
+      var got = String((list[i] && list[i].endpointPreview) || "").replace(/\.$/, "");
+      if (got && got === want) return true;
+    }
+    return false;
+  }
+
+  // A local subscription the server has never seen means no push can ever arrive,
+  // yet the panel reads healthy and offers only Turn off. Re-register it.
+  function resyncUnknownSubscription(sub) {
+    if (!sub || !sub.endpoint) return;
+    if (state.resyncing) return;
+    if (serverKnowsEndpoint(sub.endpoint)) return;
+    state.resyncing = true;
+    sendSubscription(sub)
+      .then(function () { return loadState(); })
+      .then(function () { return render(); })
+      .catch(function () {
+        /* Leave state.resyncing set: a failing POST should not retry on every
+           render. The next successful loadState + render clears it below. */
+        state.resyncing = false;
+      });
+  }
+
   function deviceLabel(ua) {
     var s = String(ua || "");
     var lower = s.toLowerCase();
@@ -286,6 +322,17 @@
 
     currentSubscription().then(function (sub) {
       if (!document.getElementById("thw-push-section")) return;
+      // state.devices is what makes a mismatch detectable. Fetch it first if it has
+      // not been loaded, otherwise an empty list on first paint would look like a
+      // mismatch and fire a spurious POST.
+      if (!state.loaded) {
+        loadState().then(function () {
+          state.resyncing = false;
+          return render();
+        }).catch(render);
+        return;
+      }
+      resyncUnknownSubscription(sub);
       var info = statusLine(sub);
       var canEnable = supportsPush() && Notification.permission !== "denied" && !(isIOS() && !isStandalone());
 
