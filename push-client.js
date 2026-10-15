@@ -102,13 +102,34 @@
       });
   }
 
+  /* PushSubscription.keys is a method in the spec and is absent on some engines -
+   on iPhone sub.keys was undefined, so sub.keys.p256dh threw and the POST was
+   never sent. toJSON().keys is the cross-browser shape and is synchronous in both
+   Chrome and Safari. The old property access is kept only as a fallback, and a
+   missing key set now produces a named error instead of a TypeError from inside an
+   object literal. */
+  function subscriptionKeys(sub) {
+    try {
+      if (typeof sub.toJSON === "function") {
+        var json = sub.toJSON();
+        if (json && json.keys && json.keys.p256dh && json.keys.auth) return json.keys;
+      }
+    } catch (_) {}
+    try {
+      if (sub.keys && sub.keys.p256dh && sub.keys.auth) return sub.keys;
+    } catch (_) {}
+    return null;
+  }
+
   function sendSubscription(sub) {
+    var keys = subscriptionKeys(sub);
+    if (!keys) return Promise.reject(new Error("no_subscription_keys"));
     return fetch(API, {
       method: "POST",
       cache: "no-store",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } }),
+      body: JSON.stringify({ endpoint: sub.endpoint, keys: keys }),
     }).then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || d.ok !== true) throw new Error("subscribe_failed");
@@ -187,7 +208,13 @@
       .then(function (sub) {
         var endpoint = sub ? sub.endpoint : null;
         var steps = sub ? sub.unsubscribe().then(function () { return true; }) : Promise.resolve(false);
-        return steps.then(function (wasSubscribed) {
+        /* wasSubscribed used to be a parameter of the first callback but was read
+           in the second, which cannot see it - so the success toast threw
+           ReferenceError and the catch reported "Could not turn off" on every
+           path, including a successful unsubscribe. Declared out here instead. */
+        var wasSubscribed = false;
+        return steps.then(function (didHave) {
+          wasSubscribed = didHave;
           // Only tell the server to drop it if the browser actually had one.
           return endpoint ? removeSubscription(endpoint) : null;
         }).then(function () {
