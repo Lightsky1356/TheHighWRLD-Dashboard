@@ -395,7 +395,7 @@ footer .hub-panel select{border-color:var(--th-border2)}
 .wanted-reply-reply-indicator i{font-size:8px;color:rgba(212,165,116,.5)}
 
 /* Mobile Bottom Nav — compact 5-column tab bar (mobile only) */
-.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;box-sizing:border-box;background:rgba(14,12,28,.92);backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3);border-top:1px solid rgba(255,255,255,.1);box-shadow:0 -4px 18px rgba(0,0,0,.35);padding:5px 4px calc(5px + env(safe-area-inset-bottom,0px));align-items:center}
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;box-sizing:border-box;background:rgba(9,7,18,.96);backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3);border-top:1px solid rgba(255,255,255,.1);box-shadow:0 -4px 18px rgba(0,0,0,.35);padding:5px 4px calc(5px + env(safe-area-inset-bottom,0px));align-items:center}
 .mbn-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-sizing:border-box;padding:3px 2px;border:none;background:transparent;color:rgba(255,255,255,.4);font-size:11px;font-weight:600;cursor:pointer;border-radius:12px;transition:color .2s,background .2s;min-width:0;height:44px;min-height:44px}
 .mbn-item i{font-size:20px;line-height:20px;width:20px;height:20px;display:block;text-align:center;flex-shrink:0}
 .mbn-item span:not(.mbn-avatar){font-size:10px;line-height:12px;white-space:nowrap;flex-shrink:0}
@@ -1344,3 +1344,12 @@ html.is-scrolling #player-sun{
    suggestions.js, account.js and user-menu.js toggle that one directly and
    would drop this lock if it were shared. */
 html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
+
+/* The bar's legibility must not depend on backdrop-filter. On an iPhone the
+   frosted layer failed to composite and the paragraph behind the bar showed
+   straight through it, so the background was raised to .96. Where the property
+   is not supported at all, an opaque colour is used instead of leaving the
+   content readable through the bar. */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .mobile-bottom-nav{background:#090712}
+}
