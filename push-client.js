@@ -249,6 +249,35 @@
     return { tone: "idle", text: "Turn on notifications to get friend requests and messages when TheHighWRLD is closed." };
   }
 
+  /* A readable device name derived from the stored User-Agent.
+
+     The panel used to print the raw UA, which made two devices indistinguishable
+     and hid a real problem: iOS Home Screen web apps report a desktop-class UA, so
+     "Macintosh; Intel Mac OS X" with no "Mobile/" token is a Mac, not a phone.
+     That is exactly how the registered device was identified as a Mac. */
+  function deviceLabel(ua) {
+    var s = String(ua || "");
+    var lower = s.toLowerCase();
+    var base = "This device";
+    if (lower.indexOf("android") !== -1) base = "Android";
+    else if (/iphone|ipod/.test(lower)) base = "iPhone";
+    else if (/ipad/.test(lower)) base = "iPad";
+    else if (lower.indexOf("cros") !== -1) base = "Chromebook";
+    else if (lower.indexOf("windows") !== -1) base = "Windows PC";
+    else if (lower.indexOf("macintosh") !== -1) {
+      /* iOS reports a desktop UA but always carries "Mobile/". */
+      base = lower.indexOf("mobile") !== -1 ? "iPhone" : "Mac";
+    } else if (lower.indexOf("linux") !== -1) base = "Linux PC";
+
+    /* The model is what tells two of your own phones apart. */
+    var model = "";
+    var m = s.match(/iPhone(\d+[,_]\d+)/);
+    if (m) model = m[1].replace(",", " ");
+    if (!model) { var a = s.match(/Android\s+([\d.]+)/); if (a) model = a[1]; }
+    if (!model) { var w = s.match(/Windows NT\s+([\d.]+)/); if (w) model = w[1]; }
+    return model ? base + " " + model : base;
+  }
+
   function render() {
     var host = document.getElementById("thw-push-section");
     if (!host) return;
@@ -293,7 +322,7 @@
         list.appendChild(head);
         state.devices.slice(0, 8).forEach(function (d) {
           var li = el("li", "thw-push-device");
-          var name = el("span", "thw-push-device-name", (d.userAgent || "Device").slice(0, 48));
+          var name = el("span", "thw-push-device-name", deviceLabel(d.userAgent));
           var when = el("span", "thw-push-device-when", (d.createdAt || "").slice(0, 10));
           li.appendChild(name);
           li.appendChild(when);

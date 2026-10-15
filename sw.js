@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v55';
+const VERSION = 'thw-v56';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -127,7 +127,7 @@ const PRECACHE = [
   './drops.js?v=thw-v1',
   './legal-info.js?v=thw-v4',
   './social-panel.js?v=thw-v29',
-  './push-client.js?v=thw-v5',
+  './push-client.js?v=thw-v6',
   './simple-toast.js?v=thw-v4',
   './cover-preview.js?v=thw-v3',
 
