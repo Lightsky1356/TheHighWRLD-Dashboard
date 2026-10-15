@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v40';
+const VERSION = 'thw-v42';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -44,7 +44,7 @@ const PRECACHE = [
   './all.min.css?v=thw-v1',
   './account.css?v=thw-v1',
   './player-settings.css?v=thw-v31',
-  './style.css?v=thw-v27',
+  './style.css?v=thw-v29',
   './site-mode.css?v=thw-v2',
   './tailwind.css?v=thw-v1',
   './themes.css?v=thw-v1',
@@ -100,7 +100,7 @@ const PRECACHE = [
   './player-settings.js?v=thw-v1',
   './reports.js?v=thw-v1',
   './player-performance.js?v=thw-v3',
-  './vault-discography.js?v=thw-v2',
+  './vault-discography.js?v=thw-v3',
   './global-search.js?v=thw-v2',
   './trending.js?v=thw-v3',
   './owner-search.js?v=thw-v1',

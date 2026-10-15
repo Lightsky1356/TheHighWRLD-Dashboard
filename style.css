@@ -301,23 +301,32 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
 .shortcuts-row--disclosure:focus-visible{outline:2px solid rgba(167,139,250,.7);outline-offset:2px}
 .shortcuts-caret{font-size:6px;margin-right:6px;color:rgba(255,255,255,.35);transition:transform .2s;display:inline-block}
 .shortcuts-detail{font-size:10px;line-height:1.45;color:rgba(255,255,255,.42);padding:2px 0 6px 14px}
-/* ===== About / Partnership controls (mobile only) =====
-   These moved out of the top nav, which is still present on mobile and was
-   carrying them on top of five other tabs plus search and the auth control. They
-   are a standalone fixed control with no nav ancestry, so they are not part of
-   the nav's tab list, active-state handling or keyboard order.
+/* ===== About / Partnership controls =====
+   Two placements, one visible at a time, so neither viewport has a duplicate:
 
-   Hidden by default and revealed only under the site's most-used mobile
-   breakpoint. Positioned below the mini player, which is fixed at top:6px
-   right:52px and at least 180px wide, so the top-right corner on that line is
-   already taken.
+     >= 768px  two page-tab-btn icon buttons in the top nav, after Roadmap
+     <= 767px  a standalone fixed control at the top right
 
-   z-index 95 puts it ABOVE the nav (z-50) and below the mini player (9999).
-   Above the nav is deliberate: the nav is full-width, so on a narrow phone its
-   wrapped content can reach the top-right corner, and a control that slipped
-   behind it would be both hidden and unclickable. Sitting on top means it stays
-   reachable; at 76x42 it is small enough to cover only nav padding. */
+   The nav buttons use display:none rather than visibility:hidden below the
+   breakpoint, because a visibility:hidden button stays in the nav's tab order and
+   remains reachable by keyboard - which is exactly what the mobile move was for.
+   At 768px the nav buttons are inline-flex so they keep the sizing that
+   .page-tab-btn.page-tab-ico already gives them in account.css.
+
+   The mobile control has no nav ancestry, so on a phone it is not part of the
+   nav's tab list, active-state handling or keyboard order. It sits below the mini
+   player, which is fixed at top:6px right:52px and at least 180px wide.
+
+   z-index 95 on the mobile control puts it above the nav (z-50) and below the mini
+   player (9999). Above the nav is deliberate: the nav box is full-width, so wrapped
+   nav content on a narrow phone can reach the corner, and a control behind it would
+   be both hidden and unclickable. */
 .mobile-page-links{display:none}
+#page-nav-about,#page-nav-partner{display:none}
+#page-nav-about>i{color:#22d3ee}
+#page-nav-partner>i{color:#4ade80}
+#page-nav-about:hover>i,#page-nav-about.active>i{color:#67e8f9}
+#page-nav-partner:hover>i,#page-nav-partner.active>i{color:#86efac}
 @media (max-width:767px){
 .mobile-page-links{align-items:center;background:rgba(10,8,22,.82);backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);border:1px solid rgba(255,255,255,.1);border-radius:999px;box-shadow:0 6px 22px rgba(0,0,0,.45);display:flex;gap:2px;padding:4px;position:fixed;right:10px;top:54px;z-index:95}
 .mobile-page-link{align-items:center;background:transparent;border:0;border-radius:999px;color:rgba(203,213,225,.9);cursor:pointer;display:flex;height:32px;justify-content:center;padding:0;transition:background .2s ease,color .2s ease;width:32px}
@@ -327,3 +336,18 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
 .mobile-page-link--partner i{color:#4ade80}
 .mobile-page-link--partner:hover i{color:#86efac}
 }
+@media (min-width:768px){
+#page-nav-about,#page-nav-partner{display:inline-flex}
+.mobile-page-links{display:none}
+}
+
+/* ===== Mobile / iOS chrome =====
+   color-scheme: dark tells the browser the page is dark from top to bottom, so
+   form controls, scrollbars and the surrounding UI chrome render dark instead of
+   being auto-inverted. It was unset everywhere in the project. Paired with the
+   color-scheme meta in index.html.
+
+   This does NOT control Safari's in-browser status bar - Safari ignores
+   apple-mobile-web-app-status-bar-style unless the app is installed to the Home
+   Screen, and that chrome belongs to the browser. */
+:root{color-scheme:dark}
