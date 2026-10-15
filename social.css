@@ -362,3 +362,18 @@ html.thw-social-scrolllock body {
   white-space:nowrap;
 }
 .thw-push-device-when{color:rgba(255,255,255,.36);font-size:10px;flex-shrink:0}
+
+/* The Settings view is the one view that does not supply its own scroll
+   container. Every other view puts an overflow:auto list inside .thw-social-view,
+   which is overflow:hidden; this view mounts a single plain-flow
+   #thw-social-settings-mount instead. On a wide desktop panel the content fits
+   and the clip is invisible, but the phone panel runs from top:72px down to the
+   bottom nav plus the safe area - the privacy card and the push section overflow,
+   get clipped, and with no scroller there is nowhere to drag. min-height:0 and
+   flex:1 are inherited from .thw-social-view, which is what lets a flex child
+   shrink and scroll instead of stretching the panel. */
+#thw-social-settings-view{
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
