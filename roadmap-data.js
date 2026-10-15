@@ -112,11 +112,11 @@
     {
       id: "offline-pwa",
       title: "Offline caching and installable app",
-      description: "There is an old service worker file in the repository, but it is not registered and the site actively unregisters any worker it finds, so caching is genuinely off today. Deciding whether to bring it back - safely - is the first step, then the install prompt and update flow.",
-      status: "planned",
+      description: "Caching is built and switched off. sw.js precaches 117 files with a per-entry install, an activate step and a fetch handler, and the web manifest is in place - but nothing registers the worker, so none of it runs. Wiring up registration, then the install prompt and update flow, is what is left.",
+      status: "in-progress",
       category: ["performance"],
-      progress: 15,
-      lastUpdated: "2026-10-03"
+      progress: 60,
+      lastUpdated: "2026-10-14"
     },
     {
       id: "richer-profiles",
@@ -136,9 +136,11 @@
     {
       id: "browser-notifications",
       title: "Browser notifications",
-      description: "Opt-in notifications for wanted-vault votes, replies to your posts and new suggestions.",
-      status: "planned",
-      category: ["community"]
+      description: "Opt-in notifications for wanted-vault votes, replies to your posts and new suggestions. The client, the subscription sync and the service worker handler are all written and passing their suites. Delivery is blocked: the client waits on navigator.serviceWorker.ready but nothing registers a worker, so subscribe is unreachable until offline caching is switched on.",
+      status: "in-progress",
+      category: ["community"],
+      progress: 70,
+      lastUpdated: "2026-10-14"
     },
     {
       id: "era-metadata",
@@ -152,9 +154,11 @@
     {
       id: "desktop-app-wrapper",
       title: "Desktop app wrapper",
-      description: "An Electron shell for the dashboard already exists in the repository. Packaging it and keeping it in sync with the site is being scoped.",
-      status: "considering",
-      category: ["desktop"]
+      description: "An Electron shell for the dashboard is built: electron-app carries a 12KB main process, a preload bridge, an offline fallback page, an icon and a package.json with start and dist scripts and electron-builder output configured. Publishing a signed build and keeping the bundled copy in step with the site is what is left.",
+      status: "in-progress",
+      category: ["desktop"],
+      progress: 55,
+      lastUpdated: "2026-10-14"
     },
     {
       id: "offline-audio-cache",

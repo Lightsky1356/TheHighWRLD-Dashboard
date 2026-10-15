@@ -317,11 +317,9 @@
     var dr = $("btnDiscordRegister"); if (dr) dr.addEventListener("click", function () { oauthTo("/api/discord/login?mode=login", "discord"); });
     var sUp = $("authNavSignup"); if (sUp) sUp.addEventListener("click", function () { window.showAuthPage("register"); });
     var navBtn = $("navPillAuthBtn"); if (navBtn) navBtn.addEventListener("click", function () { window.showAuthPage("login"); });
-    var mUp = $("authMNavSignup"); if (mUp) mUp.addEventListener("click", function () { window.showAuthPage("register"); });
     var sIn = $("authNavSignin"); if (sIn) sIn.addEventListener("click", function () { window.showAuthPage("login"); });
-    var mIn = $("authMNavSignin"); if (mIn) mIn.addEventListener("click", function () { window.showAuthPage("login"); });
     var sOut = $("authNavSignout"); if (sOut) sOut.addEventListener("click", signOut);
-    var mOut = $("authMNavSignout"); if (mOut) mOut.addEventListener("click", signOut);
+    var ppSignout = $("ppSignoutBtn"); if (ppSignout) ppSignout.addEventListener("click", signOut);
   }
 
   function boot() {

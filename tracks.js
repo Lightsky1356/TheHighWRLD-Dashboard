@@ -760,7 +760,7 @@ const trackList=[
   },
   {
     title: "Heavy (Sessions)",
-    tag: "Heavy (Where To Start) (Sessions) (GB&GR)",
+    tag: "Heavy (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Heavy%20(Sessions)%20(GB%26GR).mp3",
