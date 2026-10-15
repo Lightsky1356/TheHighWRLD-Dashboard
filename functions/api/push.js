@@ -155,8 +155,12 @@ export async function onRequest(context) {
       if (!isB64Url(keys.p256dh, MAX_KEY)) return json({ ok: false, error: "invalid_p256dh" }, 400);
       if (!isB64Url(keys.auth, MAX_KEY)) return json({ ok: false, error: "invalid_auth" }, 400);
 
-      const ua = String(request.headers.get("User-Agent") || "").slice(0, 180);
+      // Prefer the client-supplied label. The User-Agent alone cannot separate an
+      // iPad from a Mac - iPadOS reports a desktop Macintosh UA - and only the page
+      // can see navigator.platform and maxTouchPoints. Falls back to the raw UA so
+      // an older client that sends no header is still recorded faithfully.
       const label = readDeviceName(request);
+      const ua = label || String(request.headers.get("User-Agent") || "").slice(0, 180);
 
       // Upsert on endpoint: re-granting permission or reinstalling must update
       // the existing row rather than pile up duplicates for one device.

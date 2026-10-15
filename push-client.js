@@ -129,7 +129,7 @@
       method: "POST",
       cache: "no-store",
       credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-THW-Device": deviceLabel(navigator.userAgent) },
       body: JSON.stringify({ endpoint: sub.endpoint, keys: keys }),
     }).then(function (r) { return r.json(); })
       .then(function (d) {
@@ -143,7 +143,7 @@
       method: "DELETE",
       cache: "no-store",
       credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-THW-Device": deviceLabel(navigator.userAgent) },
       body: JSON.stringify({ endpoint: endpoint }),
     }).then(function (r) { return r.json(); });
   }
@@ -153,7 +153,7 @@
       method: "POST",
       cache: "no-store",
       credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-THW-Device": deviceLabel(navigator.userAgent) },
       body: JSON.stringify({ action: "unsubscribeAll" }),
     }).then(function (r) { return r.json(); });
   }
@@ -291,9 +291,16 @@
       });
   }
 
+  // A readable device name. platform and maxTouchPoints are included because
+  // iPadOS reports a Macintosh UA identical to a real Mac; only
+  // platform === "MacIntel" with maxTouchPoints > 1 tells them apart.
+  // A stored value that is not a User-Agent is already a label and passes through.
   function deviceLabel(ua) {
     var s = String(ua || "");
+    if (!/mozilla\//i.test(s)) return s || "This device";
     var lower = s.toLowerCase();
+    var touch = (typeof navigator !== "undefined" && navigator.maxTouchPoints) || 0;
+    var platform = (typeof navigator !== "undefined" && navigator.platform) || "";
     var base = "This device";
     if (lower.indexOf("android") !== -1) base = "Android";
     else if (/iphone|ipod/.test(lower)) base = "iPhone";
@@ -301,20 +308,22 @@
     else if (lower.indexOf("cros") !== -1) base = "Chromebook";
     else if (lower.indexOf("windows") !== -1) base = "Windows PC";
     else if (lower.indexOf("macintosh") !== -1) {
-      /* iOS reports a desktop UA but always carries "Mobile/". */
-      base = lower.indexOf("mobile") !== -1 ? "iPhone" : "Mac";
+      if (lower.indexOf("mobile") !== -1) base = "iPhone";
+      else if (platform === "MacIntel" && touch > 1) base = "iPad";
+      else base = "Mac";
     } else if (lower.indexOf("linux") !== -1) base = "Linux PC";
 
-    /* The model is what tells two of your own phones apart. */
     var model = "";
     var m = s.match(/iPhone(\d+[,_]\d+)/);
     if (m) model = m[1].replace(",", " ");
-    if (!model) { var a = s.match(/Android\s+([\d.]+)/); if (a) model = a[1]; }
+    if (!model) { var g = s.match(/Android\s+([\d.]+)/); if (g) model = g[1]; }
     if (!model) { var w = s.match(/Windows NT\s+([\d.]+)/); if (w) model = w[1]; }
+    if (base === "iPad" && !model) {
+      model = touch ? String(touch) + "-point touch" : "touch";
+    }
     return model ? base + " " + model : base;
   }
-
-  function render() {
+  function render() {
     var host = document.getElementById("thw-push-section");
     if (!host) return;
 
