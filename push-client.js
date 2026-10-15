@@ -380,10 +380,20 @@
       readPushTrace().then(function (t) {
         if (!t || !document.getElementById("thw-push-section")) return;
         var when = new Date(t.at || Date.now());
-        var text = t.error
-          ? "Worker got a push but it failed: " + t.error
-          : "Worker last got a push at " + when.toLocaleTimeString() +
+        // Three distinct readings. 'ready' is written when this worker activates and
+        // is not yet overwritten by a push, so it distinguishes a live worker that has
+        // received nothing from an older worker that cannot report at all - which
+        // otherwise look the same, and that ambiguity is what stalled this.
+        var text;
+        if (t.error) {
+          text = "Worker got a push but it failed: " + t.error;
+        } else if (t.kind === "ready") {
+          text = "Worker " + (t.version || "") + " is live since " +
+            when.toLocaleTimeString() + ". No push has reached it yet.";
+        } else {
+          text = "Worker last got a push at " + when.toLocaleTimeString() +
             (t.title ? " - " + t.title : "");
+        }
         wrap.appendChild(el("p", "thw-push-trace", text));
       });
 

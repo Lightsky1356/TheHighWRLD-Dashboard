@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v60';
+const VERSION = 'thw-v61';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -127,7 +127,7 @@ const PRECACHE = [
   './drops.js?v=thw-v1',
   './legal-info.js?v=thw-v4',
   './social-panel.js?v=thw-v29',
-  './push-client.js?v=thw-v10',
+  './push-client.js?v=thw-v11',
   './simple-toast.js?v=thw-v4',
   './cover-preview.js?v=thw-v3',
 
@@ -189,6 +189,12 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== SHELL_CACHE && k !== RUNTIME_CACHE && k !== TRACE_CACHE).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
+    /* Announce this worker on activate, so the panel can tell "this worker is live
+       and no push has arrived" apart from "an older worker is running". Those two
+       look identical from the panel otherwise, because both show no push line, and
+       that ambiguity is exactly what stalled this. A push overwrites the entry
+       with kind: 'push'. */
+    .then(() => writeTrace({ at: Date.now(), kind: 'ready', version: VERSION, error: null }))
   );
 });
 
@@ -313,7 +319,7 @@ self.addEventListener('push', (event) => {
   const target = safeTarget(data.url);
 
   // Record that the event fired, before anything can fail.
-  writeTrace({ at: Date.now(), title: title, body: body, error: null });
+  writeTrace({ at: Date.now(), kind: 'push', title: title, body: body, error: null });
 
   event.waitUntil(
     self.registration.showNotification(title, {
