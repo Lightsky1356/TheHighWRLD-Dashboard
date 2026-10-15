@@ -344,6 +344,14 @@
     return model ? base + " " + model : base;
   }
 
+  // Reads the service worker's push trace, so we can tell a push that never
+  // arrived from one that arrived and was suppressed by the OS.
+  function readPushTrace() {
+    if (!("caches" in window)) return Promise.resolve(null);
+    return caches.match("/__thw_push_trace")
+      .then(function (r) { return r ? r.json() : null; })
+      .catch(function () { return null; });
+  }
   function render() {
     var host = document.getElementById("thw-push-section");
     if (!host) return;
@@ -369,6 +377,15 @@
       var wrap = el("div", "thw-push");
       var status = el("p", "thw-push-status thw-push-status--" + info.tone, info.text);
       wrap.appendChild(status);
+      readPushTrace().then(function (t) {
+        if (!t || !document.getElementById("thw-push-section")) return;
+        var when = new Date(t.at || Date.now());
+        var text = t.error
+          ? "Worker got a push but it failed: " + t.error
+          : "Worker last got a push at " + when.toLocaleTimeString() +
+            (t.title ? " - " + t.title : "");
+        wrap.appendChild(el("p", "thw-push-trace", text));
+      });
 
       var row = el("div", "thw-push-actions");
 

@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v59';
+const VERSION = 'thw-v60';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -43,7 +43,7 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v1',
   './all.min.css?v=thw-v1',
   './account.css?v=thw-v1',
-  './player-settings.css?v=thw-v38',
+  './player-settings.css?v=thw-v39',
   './style.css?v=thw-v29',
   './site-mode.css?v=thw-v2',
   './tailwind.css?v=thw-v1',
@@ -127,7 +127,7 @@ const PRECACHE = [
   './drops.js?v=thw-v1',
   './legal-info.js?v=thw-v4',
   './social-panel.js?v=thw-v29',
-  './push-client.js?v=thw-v9',
+  './push-client.js?v=thw-v10',
   './simple-toast.js?v=thw-v4',
   './cover-preview.js?v=thw-v3',
 
@@ -187,7 +187,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== SHELL_CACHE && k !== RUNTIME_CACHE).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== SHELL_CACHE && k !== RUNTIME_CACHE && k !== TRACE_CACHE).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
@@ -285,6 +285,18 @@ function safeTarget(raw) {
   return typeof raw === 'string' && PUSH_ROUTES.has(raw) ? raw : null;
 }
 
+/* Observation point for the push chain: one cache entry, overwritten per push,
+   holding what arrived and anything that threw. Not the subscription, not user
+   data - the payload is this app's own notification content. */
+const TRACE_CACHE = 'thw-push-trace';
+const TRACE_URL = '/__thw_push_trace';
+function writeTrace(entry) {
+  return caches.open(TRACE_CACHE).then(function (c) {
+    return c.put(TRACE_URL, new Response(JSON.stringify(entry), {
+      headers: { 'Content-Type': 'application/json' }
+    }));
+  }).catch(function () {});
+}
 self.addEventListener('push', (event) => {
   let data = {};
   try {
@@ -300,6 +312,9 @@ self.addEventListener('push', (event) => {
   const body = typeof data.body === 'string' ? data.body.slice(0, 180) : '';
   const target = safeTarget(data.url);
 
+  // Record that the event fired, before anything can fail.
+  writeTrace({ at: Date.now(), title: title, body: body, error: null });
+
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
@@ -312,6 +327,8 @@ self.addEventListener('push', (event) => {
       vibrate: [40, 30, 40],
       timestamp: Date.now(),
       data: { target, type: data.type || '' },
+    }).catch(function (err) {
+      return writeTrace({ at: Date.now(), error: String((err && err.message) || err) });
     })
   );
 });

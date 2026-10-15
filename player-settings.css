@@ -1375,3 +1375,7 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
    subordinate to the panel's own title rather than competing with it. */
 .mobile-popup-group{padding:9px 12px 3px;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.34)}
 .mobile-popup-group:first-child{padding-top:2px}
+
+/* Push-chain observation line. Quiet on purpose: it reports what the service
+   worker last received, which is diagnostic rather than an error state. */
+.thw-push-trace{margin:6px 0 0;font-size:10.5px;line-height:1.5;color:rgba(255,255,255,.42)}
