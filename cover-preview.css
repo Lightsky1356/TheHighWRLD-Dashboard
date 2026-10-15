@@ -32,3 +32,15 @@
 
 .cp-open:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
 .cp-open i { font-size: .95em; }
+
+/* The View cover button is hidden on phones. Its label needs more width than a
+   narrow player column has, and it was wrapping onto two lines beside the
+   artwork. The element stays in the DOM and its handler stays wired by
+   cover-preview.js, so desktop is untouched and nothing that queries
+   #cover-preview-btn finds it missing. */
+@media (max-width:767px){
+  #cover-preview-btn,
+  .cp-open{
+    display:none !important
+  }
+}

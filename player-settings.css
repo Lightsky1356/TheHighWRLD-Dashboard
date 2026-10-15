@@ -1311,7 +1311,10 @@ html.is-scrolling .bm-el{
 /* While scrolling, soften the backdrop blur on the fixed chrome (nav pill,
    bottom nav, floating buttons). A 18-20px backdrop blur is re-rasterized on
    every scroll frame; 6px keeps the glass look but costs far less. Returns to
-   full blur ~140ms after scrolling stops. */
+   full blur ~140ms after scrolling stops.
+   Note these must be backdrop-filter, not filter. filter blurs the element's
+   own painted content - using it here blurred the Join panel's text and the
+   player controls on every scroll frame. */
 html.is-scrolling #nav-pill,
 html.is-scrolling .mobile-bottom-nav,
 html.is-scrolling #scrollTopBtn,
@@ -1323,19 +1326,22 @@ html.is-scrolling #nightLightToggle{
 /* Same treatment for the heavy in-viewport glass surfaces. A live census of the
    rendered page found only 9 of 102 blur/filter elements actually intersecting
    the viewport, but those 9 are the expensive ones: .join-panel carried a 40px
-   backdrop blur across ~377k px2, #player-panel 16px over ~101k, #player-sun a
+   backdrop blur across ~377k px2, and #player-sun a
    40px filter over ~139k. Pausing their motion above stops them being repainted,
    but the blur was still re-rasterised every scroll frame because everything
    behind them was moving. Values at rest are unchanged - only a gesture softens
    them, snapping back ~140ms after scrolling stops like the rule above. */
 html.is-scrolling .join-panel,
-html.is-scrolling #player-panel,
 html.is-scrolling .nav-comm-menu,
-html.is-scrolling .nav-account-menu,
-html.is-scrolling .navNotifMenu,
+html.is-scrolling .nav-account-menu{
+backdrop-filter:blur(6px) saturate(1.15) !important;
+-webkit-backdrop-filter:blur(6px) saturate(1.15) !important;
+}
 
+/* #player-sun is the exception: it is blurred with filter at rest, not with a
+   backdrop-filter, so filter is the correct property to soften it. */
 html.is-scrolling #player-sun{
-  filter:blur(18px) !important;
+filter:blur(18px) !important;
 }
 
 /* ---- Small phones: keep the panel compact and the CTA row tappable ---- */
