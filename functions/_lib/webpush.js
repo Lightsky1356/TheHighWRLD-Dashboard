@@ -236,8 +236,18 @@ export async function sendPush(env, subscription, payload) {
     const res = await fetch(endpoint, {
       method: "POST",
       headers: {
-        TTL: "86400",
-        Urgency: "normal",
+        // Apple maps Urgency onto apns-priority. "normal" becomes 5, which APNs
+        // treats as deferrable under power considerations - the payload is queued
+        // for later rather than delivered promptly. Paired with a one-day TTL that
+        // is indistinguishable from "accepted and silently dropped": every send
+        // returns 2xx, nothing appears, and for a day there is no way to tell
+        // "queued" from "lost". That is the exact shape of this bug.
+        //
+        // A friend request or a message wants to arrive now, not eventually, so
+        // this asks for immediate delivery and keeps the payload an hour rather
+        // than a day.
+        TTL: "3600",
+        Urgency: "high",
         "Content-Encoding": "aes128gcm",
         "Content-Type": "application/octet-stream",
         "Content-Length": String(body.length),
