@@ -1,21 +1,31 @@
 /* WRLD LOG - Version History panel.
 
-   Reuses the shape of the Legal & Info modal (centred card on desktop, bottom
-   sheet on mobile) because that one already solves the awkward parts: a real
-   focus trap, Escape that unwinds one level, and an .open class rather than the
-   inline style.display the old overlay relied on.
+   Deliberately styled to match the WRLD LOG splash modal it is reached from,
+   rather than inventing a second look. The splash's own rules are the source of
+   truth for the values used here:
 
-   Two things worth knowing about the styling here:
+     header      font-size 13, weight 700, #fcd34d, letter-spacing .5px, uppercase
+     badge pill  rgba(252,211,77,.12) on rgba(252,211,77,.3), uppercase, 1.5px
+     chip        rgba(255,255,255,.06) on rgba(255,255,255,.1), text .85 white
+     note        10.5px, rgba(255,255,255,.55)
+     close       no background, rgba(255,255,255,.3), 20px, white on hover
+     dividers    rgba(255,255,255,.06)
 
-   1. Mobile bottom navigation. The sheet must clear the 54px nav bar AND the
-      home-indicator inset, or the last release ends up underneath both and the
-      list appears not to scroll to its end. --mbn-h is the nav height already
-      defined by player-settings.css; reusing it means the two cannot drift.
+   The palette is the splash's gold, not the cyan used elsewhere in this file's
+   neighbours - a Version History panel that opened from the WRLD LOG and then
+   turned a different colour read as two unrelated features.
 
-   2. Backdrop-filter. player-settings.css has a mobile rule that strips
-      backdrop-filter from everything under 768px for performance. This panel
-   opts back in with !important at the same specificity, or the glass silently
-   disappears on exactly the device most likely to open it. */
+   Two things worth knowing about the mobile half:
+
+   1. Bottom navigation. The sheet must clear the 54px nav bar AND the
+      home-indicator inset, or the last release is permanently underneath both
+      and the list looks like it will not scroll to its end. --mbn-h is defined
+      by player-settings.css; reusing it means the two cannot drift apart.
+
+   2. Backdrop-filter. player-settings.css strips backdrop-filter from everything
+      under 768px for performance. This panel opts back in with !important at the
+      same specificity, or the glass silently vanishes on the device most likely
+      to open it. */
 
 .wrldlog-vh-overlay {
   position: fixed;
@@ -25,125 +35,150 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(10, 7, 18, .45);
+  background: rgba(10, 7, 18, .35);
   backdrop-filter: blur(16px) saturate(1.3);
   -webkit-backdrop-filter: blur(16px) saturate(1.3);
 }
 .wrldlog-vh-overlay.open { display: flex; }
 
 .wrldlog-vh-panel {
-  width: min(720px, 100%);
+  width: min(700px, 100%);
   max-height: min(84vh, 760px);
   display: flex;
   flex-direction: column;
-  border-radius: 18px;
-  border: 1px solid rgba(34, 211, 238, .16);
-  background: linear-gradient(160deg, rgba(20, 18, 32, .92), rgba(12, 14, 24, .95));
+  border-radius: 20px;
+  border: 1px solid rgba(252, 211, 77, .14);
+  background: linear-gradient(160deg, rgba(20, 16, 30, .93), rgba(12, 10, 20, .96));
   box-shadow: 0 24px 70px rgba(0, 0, 0, .55);
   overflow: hidden;
 }
 
+/* ---- header: mirrors .shortcuts-modal-header ---- */
 .wrldlog-vh-head {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, .07);
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
 }
 .wrldlog-vh-head h2 {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
+  color: #fcd34d;
   letter-spacing: .5px;
   text-transform: uppercase;
-  color: #67e8f9;
 }
 .wrldlog-vh-count {
   display: block;
-  margin-top: 2px;
-  font-size: 11px;
+  margin-top: 3px;
+  font-size: 10.5px;
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
-  color: rgba(255, 255, 255, .45);
+  color: rgba(255, 255, 255, .55);
 }
+.wrldlog-vh-head-actions { display: flex; align-items: center; gap: 8px; }
+
+/* Mirrors .shortcuts-close - bare glyph, no chrome, brightens on hover. */
 .wrldlog-vh-close {
-  flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, .08);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, .04);
-  color: rgba(255, 255, 255, .6);
-  font-size: 15px;
+  background: 0 0;
+  border: none;
+  padding: 0 4px;
+  line-height: 1;
+  font-size: 20px;
+  color: rgba(255, 255, 255, .3);
   cursor: pointer;
-  transition: color .15s ease, background .15s ease;
+  transition: color .15s ease;
 }
 .wrldlog-vh-close:hover,
-.wrldlog-vh-close:focus-visible { color: #fff; background: rgba(255, 255, 255, .1); outline: none; }
+.wrldlog-vh-close:focus-visible { color: #fff; outline: none; }
 
+/* The book-open trigger, as it sits in the WRLD LOG header. */
+.wrldlog-vh-open {
+  background: 0 0;
+  border: none;
+  padding: 0 2px;
+  line-height: 1;
+  font-size: 14px;
+  color: rgba(252, 211, 77, .55);
+  cursor: pointer;
+  transition: color .15s ease, transform .15s ease;
+}
+.wrldlog-vh-open:hover,
+.wrldlog-vh-open:focus-visible { color: #fcd34d; outline: none; transform: translateY(-1px); }
+
+/* ---- search ---- */
 .wrldlog-vh-search {
   flex: 0 0 auto;
-  padding: 12px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, .05);
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
 }
 .wrldlog-vh-search input {
   width: 100%;
   padding: 9px 12px;
-  border: 1px solid rgba(255, 255, 255, .09);
+  border: 1px solid rgba(255, 255, 255, .1);
   border-radius: 10px;
-  background: rgba(0, 0, 0, .3);
+  background: rgba(255, 255, 255, .04);
   color: #fff;
-  font-size: 13px;
+  font-size: 12px;
 }
 .wrldlog-vh-search input::placeholder { color: rgba(255, 255, 255, .35); }
 .wrldlog-vh-search input:focus {
   outline: none;
-  border-color: rgba(34, 211, 238, .45);
-  box-shadow: 0 0 0 3px rgba(34, 211, 238, .1);
+  border-color: rgba(252, 211, 77, .45);
+  box-shadow: 0 0 0 3px rgba(252, 211, 77, .1);
 }
 
+/* ---- list ---- */
 .wrldlog-vh-list {
   flex: 1 1 auto;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: 6px 10px 14px;
+  padding: 6px 12px 16px;
 }
 
-.wrldlog-vh-item { border-bottom: 1px solid rgba(255, 255, 255, .05); }
+.wrldlog-vh-item { border-bottom: 1px solid rgba(255, 255, 255, .06); }
 .wrldlog-vh-item:last-child { border-bottom: 0; }
+.wrldlog-vh-item[hidden] { display: none; }
 
 .wrldlog-vh-toggle {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 8px;
+  gap: 12px;
+  padding: 11px 8px;
   border: 0;
+  border-radius: 8px;
   background: none;
   color: inherit;
   text-align: left;
   cursor: pointer;
   font: inherit;
+  transition: background .15s ease;
 }
-.wrldlog-vh-toggle:hover { background: rgba(255, 255, 255, .03); }
-.wrldlog-vh-toggle:focus-visible { outline: 2px solid rgba(34, 211, 238, .6); outline-offset: -2px; }
+.wrldlog-vh-toggle:hover { background: rgba(255, 255, 255, .04); }
+.wrldlog-vh-toggle:focus-visible { outline: 1px solid rgba(252, 211, 77, .6); outline-offset: -1px; }
 
+/* Gold, uppercase, letter-spaced - the same treatment the splash gives its badge. */
 .wrldlog-vh-v {
   flex: 0 0 auto;
-  min-width: 46px;
-  font-size: 12px;
+  min-width: 44px;
+  font-size: 10px;
   font-weight: 700;
-  color: #67e8f9;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #fcd34d;
 }
+
+/* Chip text colour, so a collapsed row reads at the same weight as a splash chip. */
 .wrldlog-vh-title {
   flex: 1 1 auto;
-  font-size: 13px;
+  font-size: 11.5px;
+  font-weight: 600;
   color: rgba(255, 255, 255, .85);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -152,46 +187,28 @@
 .wrldlog-vh-chev {
   flex: 0 0 auto;
   font-size: 11px;
-  color: rgba(255, 255, 255, .35);
-  transition: transform .18s ease;
+  color: rgba(255, 255, 255, .3);
+  transition: transform .18s ease, color .18s ease;
 }
-.wrldlog-vh-toggle[aria-expanded="true"] .wrldlog-vh-chev { transform: rotate(90deg); }
+.wrldlog-vh-toggle[aria-expanded="true"] .wrldlog-vh-chev { transform: rotate(90deg); color: #fcd34d; }
+.wrldlog-vh-toggle[aria-expanded="true"] .wrldlog-vh-v { color: #fde68a; }
 
 .wrldlog-vh-notes {
   margin: 0;
-  padding: 0 8px 14px 64px;
-  font-size: 12.5px;
-  line-height: 1.65;
+  padding: 2px 8px 14px 64px;
+  font-size: 11.5px;
+  line-height: 1.75;
   color: rgba(255, 255, 255, .6);
 }
-.wrldlog-vh-item[hidden] { display: none; }
 
 .wrldlog-vh-empty {
-  padding: 28px 12px;
+  padding: 30px 12px;
   text-align: center;
-  font-size: 12.5px;
-  color: rgba(255, 255, 255, .4);
+  font-size: 11px;
+  color: rgba(255, 255, 255, .45);
 }
 
-/* The book button that opens this, sitting in the Vault's WRLD LOG header. */
-.wrldlog-vh-open {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(34, 211, 238, .22);
-  border-radius: 9px;
-  background: rgba(34, 211, 238, .08);
-  color: #67e8f9;
-  font-size: 13px;
-  cursor: pointer;
-  flex: 0 0 auto;
-  transition: background .15s ease, color .15s ease;
-}
-.wrldlog-vh-open:hover,
-.wrldlog-vh-open:focus-visible { background: rgba(34, 211, 238, .18); color: #fff; outline: none; }
-
-/* Compact summary that replaces the duplicated inline version list on the Vault.
+/* Compact summary that replaced the duplicated inline version list on the Vault.
    The full history now lives in exactly one place: this panel. */
 .wrldlog-vh-summary {
   display: flex;
@@ -199,35 +216,36 @@
   gap: 10px;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, .07);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, .03);
-  color: rgba(255, 255, 255, .8);
-  font-size: 12.5px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .06);
+  color: rgba(255, 255, 255, .85);
+  font-size: 11px;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
   font-family: inherit;
+  transition: background .15s ease;
 }
 .wrldlog-vh-summary:hover,
-.wrldlog-vh-summary:focus-visible { background: rgba(255, 255, 255, .06); outline: none; }
+.wrldlog-vh-summary:focus-visible { background: rgba(255, 255, 255, .1); outline: none; }
 .wrldlog-vh-summary .wrldlog-vh-v { min-width: 0; }
-.wrldlog-vh-summary-label { margin-left: auto; color: rgba(255, 255, 255, .45); font-size: 11.5px; white-space: nowrap; }
+.wrldlog-vh-summary-label { margin-left: auto; color: rgba(255, 255, 255, .55); font-weight: 500; white-space: nowrap; }
 
 @media (max-width: 767px) {
   .wrldlog-vh-overlay {
     padding: 0;
     align-items: flex-end;
-    /* Opt back in past the blanket mobile backdrop-filter kill-switch. */
     backdrop-filter: blur(14px) !important;
     -webkit-backdrop-filter: blur(14px) !important;
   }
   .wrldlog-vh-panel {
     width: 100%;
     max-height: 88vh;
-    border-radius: 18px 18px 0 0;
+    border-radius: 20px 20px 0 0;
     border-bottom: 0;
   }
-  /* Clear the 54px bottom nav plus the home indicator, so the final release is
+  /* Clear the bottom nav plus the home indicator so the final release is
      reachable rather than permanently hidden behind the nav. */
   .wrldlog-vh-list {
     padding-bottom: calc(20px + var(--mbn-h, 54px) + env(safe-area-inset-bottom, 0px));
@@ -237,7 +255,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wrldlog-vh-chev { transition: none; }
+  .wrldlog-vh-chev,
+  .wrldlog-vh-open { transition: none; }
 }
 
 /* Scroll lock. Its own class rather than the site-wide `.scroll-locked`, because

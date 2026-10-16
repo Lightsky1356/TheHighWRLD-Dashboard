@@ -188,6 +188,13 @@
     var o = overlay();
     if (!o) return;
     build();
+    /* The trigger now lives in the WRLD LOG splash, so opening this from there
+       would otherwise stack two full-screen overlays. Close the splash first -
+       the user is going forward, not back. */
+    var splash = document.getElementById("wrldlog-overlay");
+    if (splash && getComputedStyle(splash).display !== "none" && typeof window.closeWrldLog === "function") {
+      window.closeWrldLog();
+    }
     lastFocus = trigger || document.activeElement;
     o.classList.add("open");
     o.removeAttribute("aria-hidden");
@@ -205,7 +212,26 @@
     o.setAttribute("aria-hidden", "true");
     document.documentElement.classList.remove("wrldlog-vh-scrolllock");
     if (lastFocus && lastFocus.focus) {
-      try { lastFocus.focus(); } catch (_) {}
+      /* The trigger usually sits inside the WRLD LOG splash, and opening the
+         panel closes that splash - so the element we were about to return focus
+         to is now display:none, and focusing it would move focus into a hidden
+         subtree, which browsers then immediately drop.
+
+         The Vault summary is the other way in, but it only exists visibly while
+         the Vault page is the active one. So every candidate is checked before
+         being focused, and if none is visible we simply leave focus alone rather
+         than forcing it somewhere worse than it already is. */
+      var candidates = [
+        lastFocus,
+        document.querySelector("[data-wrldlog-summary]"),
+        document.querySelector("#wrldlog-overlay [data-wrldlog-history]"),
+      ];
+      for (var i = 0; i < candidates.length; i++) {
+        var t = candidates[i];
+        if (t && t.offsetParent !== null) {
+          try { t.focus(); break; } catch (_) {}
+        }
+      }
     }
     lastFocus = null;
   }
