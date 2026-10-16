@@ -137,7 +137,21 @@
         '<div class="era-years" hidden></div></div>';
     });
     sec.innerHTML = h + "</div>";
-    head.parentNode.insertBefore(sec, head.nextSibling);
+    /* Anchor changed from "immediately after the page header" to "immediately after
+       the Biography / Discography panel".
+
+       Era Explorer was being wedged between the header and the bio panel, so on a
+       phone you scrolled past eleven collapsed era nodes before seeing anything
+       else. The static HTML already has Biography/Discography as the first
+       content block - this insertion was the only thing pushing it down.
+
+       Deliberately NOT moving the bio wrapper in index.html instead: the Vault's
+       accent colours are positional via #community-updates > div:nth-of-type(N),
+       and #era-explorer is a <section> rather than a <div>, so relocating it here
+       cannot renumber a single one of them. */
+    var host = head.parentNode;
+    var bio = host.querySelector(".mb-6.max-w-3xl.mx-auto");
+    host.insertBefore(sec, bio ? bio.nextSibling : head.nextSibling);
     sec._model = model;
     sec.addEventListener("click", function (ev) {
       var play = ev.target.closest ? ev.target.closest("[data-era-idx]") : null;

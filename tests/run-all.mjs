@@ -97,6 +97,25 @@ async function bootServer() {
   return false;
 }
 
+/* Retry once. The first attempt loses a race against a previous wrangler that is
+   still releasing :8788 - taskkill returns before the socket is actually free -
+   and wrangler then fails to bind and exits. A transient port collision is not a
+   test failure, and reporting it as one sends people looking for a bug that is
+   not in the code. */
+async function bootServerWithRetry() {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const child = startServer();
+    if (!child) return false;
+    if (await bootServer()) return child;
+    killServerTree(child);
+    if (attempt === 1) {
+      console.log("  dev server did not come up; retrying once (port may still be releasing)");
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+  }
+  return false;
+}
+
 function seed() {
   const r = spawnSync(process.execPath, [join(HERE, "seed.mjs")], {
     stdio: "inherit",
@@ -135,11 +154,7 @@ if (GROUPS.some((g) => g.needsServer)) {
       console.log("using the dev server already running on :" + PORT);
     } else {
       console.log(`starting the dev server on :${PORT}…`);
-      server = startServer();
-      if (!(await bootServer())) {
-        killServerTree(server);
-        server = null;
-      }
+      server = await bootServerWithRetry();
     }
     console.log(server || (await serverUp()) ? "dev server is up" : "dev server did not start");
   } else {
