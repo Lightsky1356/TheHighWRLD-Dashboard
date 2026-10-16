@@ -36,6 +36,13 @@ const statements = [];
 
 /* Children before parents, so nothing is orphaned by a foreign key. */
 statements.push(`DELETE FROM push_subscriptions WHERE uid IN (${UIDS});`);
+/* Per-category prefs too. The notification-prefs suite deliberately writes
+   non-default preferences to prove a uid in the request body cannot redirect the
+   write, and does not restore them afterwards. Without clearing this table here
+   the first run passes and every later run fails on the "another account is
+   untouched" assertion - reading its own leftovers. Found the hard way: the suite
+   was green, then went red on the very next run with no code change. */
+statements.push(`DELETE FROM user_notification_prefs WHERE uid IN (${UIDS});`);
 statements.push(`DELETE FROM community_notifications WHERE recipient_uid IN (${UIDS});`);
 statements.push(`DELETE FROM follows WHERE follower_uid IN (${UIDS}) OR followed_uid IN (${UIDS});`);
 statements.push(`DELETE FROM sessions WHERE uid IN (${UIDS});`);
