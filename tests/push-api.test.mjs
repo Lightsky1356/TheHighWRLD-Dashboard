@@ -40,8 +40,22 @@ check("subscribe device B", r.status === 200 && r.json.ok === true, `status=${r.
 
 r = await call("GET");
 check("two devices listed for one user", r.json && r.json.deviceCount === 2, `deviceCount=${r.json && r.json.deviceCount}`);
-check("endpoint is NOT echoed in full", r.json && (r.json.devices || []).every((d) => d.endpointPreview && !d.endpointPreview.startsWith(EP_A.slice(0, 20)) + "full"),
-  JSON.stringify((r.json && r.json.devices || [])[0]));
+/* This assertion was `!d.endpointPreview.startsWith(...) + "full"`, and `+`
+   binds tighter than `!`: that evaluates to `true + "full"` or `false + "full"`,
+   both of which are non-empty strings and therefore always truthy. It had never
+   asserted anything - it would have passed if the endpoint were echoed back in
+   full, which is exactly the leak the name says it is guarding against.
+
+   The real property: the server returns a truncated preview, never the endpoint. */
+const previews = (r.json && r.json.devices) || [];
+check(
+  "endpoint is NOT echoed in full",
+  previews.length === 2 &&
+    previews.every((d) => typeof d.endpointPreview === "string" &&
+      d.endpointPreview.endsWith("…") &&
+      d.endpointPreview.length < EP_A.length),
+  JSON.stringify(previews[0])
+);
 
 // 3. Re-subscribing the same endpoint must upsert, not duplicate
 r = await call("POST", { endpoint: EP_A, keys: KEY_A }, { "X-THW-Device": "Pixel Test renamed" });
@@ -77,3 +91,8 @@ check("no devices remain", r.json && r.json.deviceCount === 0, `deviceCount=${r.
 console.log(out.join("\n"));
 const failed = out.filter((l) => l.startsWith("FAIL")).length;
 console.log(`\n${out.length - failed}/${out.length} passed, ${failed} failed`);
+
+/* This suite used to print its failures and exit 0, so the runner recorded a
+   1/17 run as PASS. A test that cannot fail is worse than no test: it reports
+   success while the thing it covers is broken. */
+process.exitCode = failed ? 1 : 0;

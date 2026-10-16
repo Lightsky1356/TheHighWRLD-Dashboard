@@ -69,21 +69,34 @@ export async function onRequestPost(context) {
       if (rej) return rej.response;
     } catch (_) {}
     if (action === "follow") {
-      await db.prepare(
+      const ins = await db.prepare(
         "INSERT OR IGNORE INTO follows (follower_uid, followed_uid) VALUES (?, ?)"
       ).bind(me.uid, target).run();
-      try {
-        const msg = (me.name || "Someone") + " started following you";
-        await createNotification(db, context.env, target, {
-          type: "follow",
-          actorUid: me.uid,
-          actorName: me.name || "",
-          message: msg,
-        });
-      } catch (_) {}
+
+      /* INSERT OR IGNORE does nothing when the follow already exists, but the
+         notification was created regardless. So a double-tap on Follow, or any
+         client that re-POSTs follow while already following, filled the target's
+         list with duplicate "started following you" entries - the follow row did
+         not change, only their inbox did.
+
+         meta.changes is 0 when the row was already there, which is exactly the
+         case that must stay silent. */
+      const created = !!(ins && ins.meta && Number(ins.meta.changes) > 0);
+
+      if (created) {
+        try {
+          const msg = (me.name || "Someone") + " started following you";
+          await createNotification(db, context.env, target, {
+            type: "follow",
+            actorUid: me.uid,
+            actorName: me.name || "",
+            message: msg,
+          });
+        } catch (_) {}
+      }
       // Include actor uid for deep-linking (reuse post_id slot is wrong here;
       // the client resolves via actor lookup instead — see follows.js).
-      return json({ ok: true, following: true });
+      return json({ ok: true, following: true, created });
     }
     if (action === "unfollow") {
       await db.prepare(
