@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v69';
+const VERSION = 'thw-v71';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -102,7 +102,7 @@ const PRECACHE = [
   './player-performance.js?v=thw-v3',
   './vault-discography.js?v=thw-v3',
   './global-search.js?v=thw-v2',
-  './about-tabs.js?v=thw-v1',
+  './about-tabs.js?v=thw-v3',
   './trending.js?v=thw-v3',
   './owner-search.js?v=thw-v1',
   './owner-announce.js?v=thw-v1',
@@ -172,18 +172,42 @@ self.addEventListener('install', (event) => {
          of them, and the names are logged so the broken URL is visible instead
          of silent. */
       const failed = [];
-      return Promise.all(
-        PRECACHE.map((url) =>
-          cache.add(new Request(url, { cache: 'reload' })).catch(() => {
+
+      /* Concurrency is capped at 6 rather than firing every entry at once.
+       *
+       * PRECACHE.map + Promise.all issues all of them in the same tick, so a
+       * page load opens ~113 simultaneous connections. Against a CDN that is
+       * unremarkable. Against `wrangler pages dev` - one node process on one
+       * port - it saturates the server, and the page's OWN asset requests queue
+       * behind them and come back 502.
+       *
+       * The service worker does not invent those errors, it relays them: a cache
+       * miss falls through to fetch() and hands back whatever the server said.
+       * The symptom therefore pointed at the stylesheets, when the cause was
+       * the precache storm happening alongside them. The page rendered with no
+       * CSS at all and nothing in the markup was wrong.
+       *
+       * Batching keeps the install quick while leaving the server room to
+       * answer the page that triggered it. */
+      const CONCURRENCY = 6;
+      let cursor = 0;
+      const next = function () {
+        if (cursor >= PRECACHE.length) return Promise.resolve();
+        const url = PRECACHE[cursor++];
+        return cache
+          .add(new Request(url, { cache: 'reload' }))
+          .catch(function () {
             failed.push(url);
-            return null;
           })
-        )
-      ).then(() => {
-        if (failed.length) {
-          console.warn('[SW] precache missed ' + failed.length + ':', failed.join(', '));
-        }
-      });
+          .then(next);
+      };
+
+      return Array.from({ length: Math.min(CONCURRENCY, PRECACHE.length) }, next)
+        .then(() => {
+          if (failed.length) {
+            console.warn('[SW] precache missed ' + failed.length + ':', failed.join(', '));
+          }
+        });
     }).then(() => self.skipWaiting())
   );
 });
