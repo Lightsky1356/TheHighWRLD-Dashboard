@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v68';
+const VERSION = 'thw-v69';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -102,6 +102,7 @@ const PRECACHE = [
   './player-performance.js?v=thw-v3',
   './vault-discography.js?v=thw-v3',
   './global-search.js?v=thw-v2',
+  './about-tabs.js?v=thw-v1',
   './trending.js?v=thw-v3',
   './owner-search.js?v=thw-v1',
   './owner-announce.js?v=thw-v1',
