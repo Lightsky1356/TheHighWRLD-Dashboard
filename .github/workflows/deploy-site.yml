@@ -12,6 +12,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Gate on the suites that need nothing but node, before anything ships.
+      #
+      # Offline on purpose. The server-backed groups boot wrangler and a local D1,
+      # which is not something to discover is broken on the deploy pipeline; they
+      # stay a local `npm test` concern for now.
+      #
+      # What this does catch is the failure that actually reached production
+      # twice: a malformed PRECACHE entry in sw.js, which parses as nothing useful
+      # and silently kills the service worker on every device. parse-gate exists
+      # for exactly that and was never wired to anything automatic.
+      - name: Gate - sw.js parse and push crypto
+        run: |
+          node tests/parse-gate.test.mjs
+          node tests/crypto-selftest.mjs
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
