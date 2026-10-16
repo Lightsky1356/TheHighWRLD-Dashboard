@@ -352,6 +352,114 @@
       .then(function (r) { return r ? r.json() : null; })
       .catch(function () { return null; });
   }
+
+  /* ---------------- delivery indicator ----------------
+
+     Four states, chosen to match what can actually be known:
+
+       off        not subscribed for this device
+       confirmed  a push reached the service worker (kind:'push' in the trace)
+       problem    the worker received one and it threw; the message is shown
+       waiting    subscribed, worker live, but no push has arrived yet
+
+     "waiting" is the interesting one. It is the state that distinguishes a working
+     server from a working phone, which is the entire remaining question here: a
+     push service can return 201 and iOS still discard it before the worker runs. */
+
+  function setLive(dot, text, tone, msg) {
+    dot.className = "thw-push-dot" + (tone ? " thw-push-dot--" + tone : "");
+    text.textContent = msg;
+  }
+
+  function paintLive(dot, text, t, subscribed) {
+    if (!subscribed) {
+      setLive(dot, text, "", "Push is off for this device.");
+      return;
+    }
+    if (t && t.error) {
+      setLive(dot, text, "bad", "A push reached the app but failed: " + t.error);
+      return;
+    }
+    if (t && t.kind === "push") {
+      setLive(dot, text, "good",
+        "Delivery confirmed at " + new Date(t.at || Date.now()).toLocaleTimeString() + ".");
+      return;
+    }
+    // A kind:'ready' entry means this worker activated and has not been pushed to
+    // since. No entry at all means an older worker is still running, which is worth
+    // saying plainly rather than reporting the same "waiting" state for both.
+    if (!t) {
+      setLive(dot, text, "warn", "This device is running an older worker. Reopen the app to update it.");
+      return;
+    }
+    setLive(dot, text, "warn", "Subscribed, but no push has reached this device yet.");
+  }
+
+  /* Sends a real push at this account and then watches the worker's trace, so the
+     answer to "is it working?" comes back in the panel instead of needing someone
+     with server access to fire one by hand. 30s: Apple accepted one of these in
+     under a second, so if nothing lands inside that window it is not in flight. */
+  var TEST_WAIT_MS = 30_000;
+
+  function runPushTest(btn, dot, text) {
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+    setLive(dot, text, "wait", "Test sent. Waiting for this device…");
+
+    fetch(API.replace(/\/push(\?|$)/, "/push-test$1"), {
+      method: "POST",
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    })
+      .then(function (r) {
+        return r.json().catch(function () { return { ok: false, error: "http_" + r.status }; })
+          .then(function (d) {
+            if (!r.ok || !d || d.ok !== true) throw new Error((d && d.error) || ("http_" + r.status));
+            return d;
+          });
+      })
+      .then(function (d) {
+        if (d.skipped) {
+          setLive(dot, text, "wait", "Just tested — give it a moment.");
+          return null;
+        }
+        if (!d.sent) {
+          throw new Error("the push service refused it");
+        }
+        return pollForPush(dot, text, btn);
+      })
+      .catch(function (err) {
+        setLive(dot, text, "bad", "Test failed: " + ((err && err.message) || "unknown error"));
+        btn.disabled = false;
+        btn.textContent = "Send a test push";
+      });
+  }
+
+  function pollForPush(dot, text, btn) {
+    var deadline = Date.now() + TEST_WAIT_MS;
+    var tick = function () {
+      readPushTrace().then(function (t) {
+        if (t && t.kind === "push" && !t.error) {
+          setLive(dot, text, "good",
+            "Delivery confirmed at " + new Date(t.at || Date.now()).toLocaleTimeString() + ".");
+          return true;
+        }
+        return false;
+      }).then(function (arrived) {
+        if (arrived) return;
+        if (Date.now() >= deadline) {
+          setLive(dot, text, "warn", "Nothing arrived within 30 seconds. The server accepted it; this device did not get it.");
+          btn.disabled = false;
+          btn.textContent = "Send a test push";
+          return;
+        }
+        setTimeout(tick, 2500);
+      }).catch(function () { /* cache read failed; the deadline branch recovers */ });
+    };
+    tick();
+  }
   function render() {
     var host = document.getElementById("thw-push-section");
     if (!host) return;
@@ -377,24 +485,19 @@
       var wrap = el("div", "thw-push");
       var status = el("p", "thw-push-status thw-push-status--" + info.tone, info.text);
       wrap.appendChild(status);
+      /* Delivery indicator. A plain "enabled" line cannot express the thing that
+         actually matters here: the push service can accept a payload with HTTP 201
+         and iOS still drop it before the service worker is involved. Only the
+         worker's own trace can tell those apart, so it drives the indicator. */
+      var live = el("div", "thw-push-live");
+      var dot = el("span", "thw-push-dot thw-push-dot--wait");
+      var liveText = el("span", "thw-push-live-text", "Checking whether pushes arrive…");
+      live.appendChild(dot);
+      live.appendChild(liveText);
+      wrap.appendChild(live);
+
       readPushTrace().then(function (t) {
-        if (!t || !document.getElementById("thw-push-section")) return;
-        var when = new Date(t.at || Date.now());
-        // Three distinct readings. 'ready' is written when this worker activates and
-        // is not yet overwritten by a push, so it distinguishes a live worker that has
-        // received nothing from an older worker that cannot report at all - which
-        // otherwise look the same, and that ambiguity is what stalled this.
-        var text;
-        if (t.error) {
-          text = "Worker got a push but it failed: " + t.error;
-        } else if (t.kind === "ready") {
-          text = "Worker " + (t.version || "") + " is live since " +
-            when.toLocaleTimeString() + ". No push has reached it yet.";
-        } else {
-          text = "Worker last got a push at " + when.toLocaleTimeString() +
-            (t.title ? " - " + t.title : "");
-        }
-        wrap.appendChild(el("p", "thw-push-trace", text));
+        paintLive(dot, liveText, t, !!sub);
       });
 
       var row = el("div", "thw-push-actions");
@@ -414,6 +517,13 @@
         on.addEventListener("click", enable);
         row.appendChild(on);
       }
+      if (sub) {
+        var test = el("button", "thw-push-btn thw-push-btn--test", "Send a test push");
+        test.type = "button";
+        test.addEventListener("click", function () { runPushTest(test, dot, liveText); });
+        row.appendChild(test);
+      }
+
       wrap.appendChild(row);
 
       /* Server-side device list, so a user can revoke a phone they no longer

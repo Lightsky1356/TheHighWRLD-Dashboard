@@ -1376,6 +1376,16 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
 .mobile-popup-group{padding:9px 12px 3px;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.34)}
 .mobile-popup-group:first-child{padding-top:2px}
 
-/* Push-chain observation line. Quiet on purpose: it reports what the service
-   worker last received, which is diagnostic rather than an error state. */
-.thw-push-trace{margin:6px 0 0;font-size:10.5px;line-height:1.5;color:rgba(255,255,255,.42)}
+/* Push delivery indicator. Sits above the status line because it answers the
+   question that matters: the server accepted the push, but did the phone get
+   it? "Enabled" cannot express that, and this is the state that has been
+   invisible all along. */
+.thw-push-live{display:flex;align-items:center;gap:9px;margin:0 0 9px}
+.thw-push-dot{width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:rgba(255,255,255,.3)}
+.thw-push-dot--good{background:#3ddc84;box-shadow:0 0 0 3px rgba(61,220,132,.15)}
+.thw-push-dot--warn{background:#ffb020;box-shadow:0 0 0 3px rgba(255,176,32,.15)}
+.thw-push-dot--bad{background:#ff5f56;box-shadow:0 0 0 3px rgba(255,95,86,.15)}
+.thw-push-dot--wait{background:#4aa8ff;animation:thw-push-pulse 1.1s ease-in-out infinite}
+.thw-push-live-text{font-size:11.5px;line-height:1.45;color:rgba(255,255,255,.62)}
+@keyframes thw-push-pulse{0%,100%{opacity:.3}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.thw-push-dot--wait{animation:none}}
