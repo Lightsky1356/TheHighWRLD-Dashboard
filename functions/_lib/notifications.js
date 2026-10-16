@@ -44,6 +44,77 @@ export async function notificationsEnabled(db, uid) {
   }
 }
 
+/* Which preference category each notification type belongs to.
+   Types absent from this map are not user-configurable and are always delivered
+   (subject to the master switch): follow, playlist, drop, suggestion, wanted,
+   moderation, warning, ban, appeal. Moderation notices stay non-optional on
+   purpose - someone who has been banned should never be able to tune that away
+   by accident. */
+const TYPE_CATEGORY = {
+  reply: "replies",
+  wanted_reply: "wanted_replies",
+  mention: "mentions",
+  vote: "upvotes",
+  upvote: "upvotes",
+  reply_vote: "upvotes",
+  dm_message: "direct_messages",
+  friend_request: "friend_requests",
+  friend_accepted: "friend_requests",
+};
+
+/* Types covered by the partial unique index in migration 0037. Only these are
+   safe to deduplicate: re-delivering a vote is the bug, re-delivering a message
+   is the feature. */
+const IDEMPOTENT_TYPES = ["vote", "upvote", "reply_vote"];
+
+/**
+ * Per-category preferences for a user. Returns all-true defaults when there is
+ * no row, matching the fail-open rule above: an existing account must keep its
+ * current behaviour without needing a backfill.
+ */
+export async function notificationPrefs(db, uid) {
+  const defaults = {
+    replies: 1,
+    wanted_replies: 1,
+    mentions: 1,
+    upvotes: 1,
+    direct_messages: 1,
+    friend_requests: 1,
+    in_site: 1,
+    push: 1,
+    message_previews: 1,
+  };
+  if (!uid) return defaults;
+  try {
+    const row = await db
+      .prepare("SELECT * FROM user_notification_prefs WHERE uid = ?")
+      .bind(uid)
+      .first();
+    if (!row) return defaults;
+    for (const k of Object.keys(defaults)) {
+      if (row[k] !== undefined && row[k] !== null) defaults[k] = Number(row[k]) !== 0 ? 1 : 0;
+    }
+    return defaults;
+  } catch (_) {
+    // Fail open. A missing prefs table or a broken read must not silently mute
+    // every notification on the site.
+    return defaults;
+  }
+}
+
+/**
+ * May this user be notified about this event type at all?
+ * Honours the master switch first, then the per-category opt-out.
+ */
+export async function categoryEnabled(db, uid, type) {
+  const master = await notificationsEnabled(db, uid);
+  if (!master) return false;
+  const category = TYPE_CATEGORY[String(type || "")];
+  if (!category) return true;
+  const prefs = await notificationPrefs(db, uid);
+  return prefs.in_site !== 0 && prefs[category] !== 0;
+}
+
 /**
  * Create a notification and broadcast it.
  *
@@ -58,24 +129,46 @@ export async function createNotification(db, env, recipientUid, options) {
   if (!recipientUid) return null;
 
   if (!(await notificationsEnabled(db, recipientUid))) return null;
+  /* Narrower opt-outs sit under the master switch, checked here rather than at
+     each of the thirteen call sites for the same reason the master switch is:
+     a new feature must not be able to skip the preference by forgetting it. */
+  if (!(await categoryEnabled(db, recipientUid, opts.type))) return null;
+
+  const type = String(opts.type || "notice");
+  const postId = opts.postId == null ? null : opts.postId;
+  const replyId = opts.replyId == null ? null : opts.replyId;
+  const actorUid = String(opts.actorUid || "");
+  /* Self-notification is never right. Several call sites already guard for it;
+     doing it here too means a future call site cannot forget. */
+  if (actorUid && actorUid === String(recipientUid)) return null;
+
+  const idempotent = IDEMPOTENT_TYPES.indexOf(type) !== -1;
 
   try {
     const inserted = await db
       .prepare(
-        "INSERT INTO community_notifications " +
+        "INSERT " + (idempotent ? "OR IGNORE " : "") + "INTO community_notifications " +
           "(recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) " +
           "VALUES (?, ?, ?, ?, ?, ?, ?)"
       )
       .bind(
         recipientUid,
-        String(opts.type || "notice"),
-        String(opts.actorUid || ""),
+        type,
+        actorUid,
         String(opts.actorName || "Member"),
         String(opts.message || ""),
-        opts.postId == null ? null : opts.postId,
-        opts.replyId == null ? null : opts.replyId
+        postId,
+        replyId
       )
       .run();
+
+    /* OR IGNORE on an idempotent type means the row already existed, so this was
+       a retry or a repeated upvote. meta.changes of 0 is the signal; returning
+       early keeps the client from being told about a notification it already
+       has. */
+    if (idempotent && inserted && inserted.meta && Number(inserted.meta.changes) === 0) {
+      return { id: 0, deduped: true };
+    }
 
     const id = inserted && inserted.meta && inserted.meta.last_row_id ? Number(inserted.meta.last_row_id) : 0;
 
@@ -86,12 +179,12 @@ export async function createNotification(db, env, recipientUid, options) {
       recipientUid,
       notification: {
         id,
-        type: String(opts.type || "notice"),
+        type,
         message: String(opts.message || ""),
-        post_id: opts.postId == null ? null : opts.postId,
-        reply_id: opts.replyId == null ? null : opts.replyId,
+        post_id: postId,
+        reply_id: replyId,
         actor: String(opts.actorName || "Member"),
-        actor_uid: String(opts.actorUid || ""),
+        actor_uid: actorUid,
       },
     });
 

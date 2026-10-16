@@ -99,50 +99,35 @@ export async function onRequestPatch(context) {
     vals.push(id);
     await db.prepare("UPDATE reports SET " + sets.join(", ") + " WHERE id = ?").bind(...vals).run();
     await hubBroadcast(context.env, { type: "report:updated", reportId: id });
-    // Report-resolved notice: tell the reporter their report was reviewed.
+    // Report-reviewed notice: tell the reporter their report was reviewed.
+    //
+    // This block used to be followed by a second, near-identical one doing the
+    // same lookup and sending a differently-worded message, so resolving a single
+    // report notified the reporter twice for one event. The second copy is gone;
+    // its one useful detail - which piece of content was reported - is folded in
+    // here so nothing is lost by removing it.
     try {
       if (body.status !== undefined) {
         const st = String(body.status || "").toUpperCase();
         if (st === "RESOLVED" || st === "DISMISSED") {
           const rep = await db.prepare(
-            "SELECT reporter_discord_id FROM reports WHERE id = ?"
+            "SELECT reporter_discord_id, target_type, snapshot_title FROM reports WHERE id = ?"
           ).bind(id).first();
           if (rep && rep.reporter_discord_id) {
             const who = await db.prepare(
               "SELECT site_uid FROM discord_links WHERE discord_id = ?"
             ).bind(rep.reporter_discord_id).first();
             if (who && who.site_uid) {
+              const subject = String(rep.snapshot_title || rep.target_type || "your report").slice(0, 60);
               const msg = st === "RESOLVED"
-                ? "Your report was reviewed — thanks for keeping the WRLD clean."
-                : "Your report was reviewed with no action taken.";
+                ? "Your report on " + subject + " was reviewed — thanks for keeping the WRLD clean."
+                : "Your report on " + subject + " was reviewed with no action taken.";
               await createNotification(db, context.env, who.site_uid, {
                 type: "moderation",
                 actorName: "Staff",
                 message: msg,
               });
             }
-          }
-        }
-      }
-    } catch (_) {}
-    // Moderation notice: tell the reporter their report was reviewed.
-    try {
-      if (body.status !== undefined) {
-        const rep = await db.prepare(
-          "SELECT reporter_discord_id, reporter_name, target_type, snapshot_title FROM reports WHERE id = ?"
-        ).bind(id).first();
-        if (rep && rep.reporter_discord_id) {
-          const who = await db.prepare(
-            "SELECT site_uid FROM discord_links WHERE discord_id = ?"
-          ).bind(rep.reporter_discord_id).first();
-          if (who && who.site_uid) {
-            const st = String(body.status || "").toUpperCase();
-            const msg = "Your report on " + String(rep.snapshot_title || rep.target_type || "content").slice(0, 60) + " was reviewed (" + st + ")";
-            await createNotification(db, context.env, who.site_uid, {
-              type: "moderation",
-              actorName: "Staff",
-              message: msg,
-            });
           }
         }
       }

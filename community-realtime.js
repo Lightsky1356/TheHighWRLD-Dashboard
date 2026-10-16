@@ -536,7 +536,18 @@
       case 'reaction:removed':
         break;
       case 'notification:created':
-        try { if (typeof window.notifyLive === 'function') window.notifyLive(msg.notification); } catch (_) {}
+        /* This called window.notifyLive, which is defined nowhere in the project -
+           a repo-wide search finds the call and no definition. Every live
+           notification arriving over the community socket was therefore dropped
+           on the floor, silently, with the typeof guard hiding the fact.
+
+           account.js already listens for a 'thw:notification' DOM event to
+           refresh the bell, and that is what presence.js dispatches for the same
+           server event. Dispatching it here makes the community socket behave
+           like the presence socket instead of going nowhere. */
+        try {
+          window.dispatchEvent(new CustomEvent('thw:notification', { detail: msg }));
+        } catch (_) {}
         break;
       default:
         break;

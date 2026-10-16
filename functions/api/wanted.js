@@ -2,6 +2,7 @@ import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
 import { banRejection } from "../_lib/bans.js";
 import { moderateContent } from "../_lib/automod.js";
 import { evaluateSurfaceRules, recordRuleFlags } from "../_lib/submissionRules.js";
+import { notificationsEnabled } from "../_lib/notifications.js";
 
 const OWNER_DISCORD_ID_DEFAULT = "1016529053659967629";
 
@@ -247,27 +248,48 @@ export async function onRequestPost(context) {
             "SELECT site_uid FROM discord_links WHERE discord_id = ?"
           ).bind(parentAuthorId).first();
           if (target && target.site_uid && target.site_uid !== user) {
-            const n = await db.prepare(
-              "INSERT INTO notifications (uid, type, message, track_id, reply_id, actor) VALUES (?, 'reply', ?, ?, ?, ?)"
-            ).bind(
-              target.site_uid,
-              link.display_name + " replied to your comment on " + String(track).slice(0, 80),
-              String(track).slice(0, 80),
-              replyId,
-              link.display_name
-            ).run();
-            await hubBroadcast(env, {
-              type: "notification:created",
-              recipientUid: target.site_uid,
-              notification: {
-                id: n.meta && n.meta.last_row_id ? Number(n.meta.last_row_id) : 0,
-                type: "reply",
-                message: link.display_name + " replied to your comment on " + String(track).slice(0, 80),
-                track_id: String(track).slice(0, 80),
-                reply_id: replyId,
-                actor: link.display_name,
-              },
-            });
+            /* This writes the LEGACY notifications row, not
+               community_notifications, so it used to bypass
+               user_privacy.notifications_enabled entirely - the exact bug the
+               shared helper exists to prevent. A user who turned notifications
+               off still got every Wanted Vault reply.
+
+               The legacy row is kept deliberately rather than migrated: it
+               carries track_id, which community_notifications has no column for
+               and which the client needs to navigate to the right track.
+
+               Self-notifications are already excluded above by target.site_uid !==
+               user. */
+            if (await notificationsEnabled(db, target.site_uid)) {
+              const msgText = link.display_name + " replied to your comment on " + String(track).slice(0, 80);
+              const n = await db.prepare(
+                "INSERT INTO notifications (uid, type, message, track_id, reply_id, actor) VALUES (?, 'reply', ?, ?, ?, ?)"
+              ).bind(
+                target.site_uid,
+                msgText,
+                String(track).slice(0, 80),
+                replyId,
+                link.display_name
+              ).run();
+              await hubBroadcast(env, {
+                type: "notification:created",
+                // private routes the event to the recipient's own hub connection
+                // only. Without it the broadcast carried no recipient scoping.
+                private: true,
+                recipientUid: target.site_uid,
+                notification: {
+                  // No `id` here. It is a legacy notifications row id, and the
+                  // client treats notification.id as a community_notifications
+                  // id - so echoing it here made mark-as-read target the wrong
+                  // row. The client refetches on this event, so it is not needed.
+                  type: "reply",
+                  message: msgText,
+                  track_id: String(track).slice(0, 80),
+                  reply_id: replyId,
+                  actor: link.display_name,
+                },
+              });
+            }
           }
         }
         break;
@@ -310,16 +332,30 @@ export async function onRequestPost(context) {
                 "SELECT site_uid FROM discord_links WHERE discord_id = ?"
               ).bind(rr.discord_id).first();
               if (tgt && tgt.site_uid && tgt.site_uid !== user) {
-                const label = v === 1 ? "upvoted" : "downvoted";
-                await db.prepare(
-                  "INSERT INTO notifications (uid, type, message, track_id, reply_id, actor) VALUES (?, 'vote', ?, ?, ?, ?)"
-                ).bind(
-                  tgt.site_uid,
-                  (link.display_name || "Someone") + " " + label + " your comment on " + String(rr.track_id).slice(0, 80),
-                  String(rr.track_id).slice(0, 80),
-                  rid,
-                  link.display_name || ""
-                ).run();
+                /* Same opt-out gate as the reply path above - this legacy table
+                   is not covered by createNotification, so the preference has to
+                   be honoured explicitly or a user who opted out still hears
+                   about every vote on their comment.
+
+                   Also only a NEW vote notifies. Re-voting with the same value
+                   deletes the row (a toggle), and switching 1 -> -1 is an update:
+                   neither is a fresh vote worth a notification, so `voted` alone
+                   would spam the author on every click. */
+                const alreadyVoted = await db.prepare(
+                  "SELECT value FROM reply_votes WHERE site_uid = ? AND reply_id = ? AND value = ?"
+                ).bind(user, rid, v).first();
+                if (!alreadyVoted && await notificationsEnabled(db, tgt.site_uid)) {
+                  const label = v === 1 ? "upvoted" : "downvoted";
+                  await db.prepare(
+                    "INSERT INTO notifications (uid, type, message, track_id, reply_id, actor) VALUES (?, 'vote', ?, ?, ?, ?)"
+                  ).bind(
+                    tgt.site_uid,
+                    (link.display_name || "Someone") + " " + label + " your comment on " + String(rr.track_id).slice(0, 80),
+                    String(rr.track_id).slice(0, 80),
+                    rid,
+                    link.display_name || ""
+                  ).run();
+                }
               }
             }
           } catch (e) {}

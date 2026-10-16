@@ -195,11 +195,17 @@ export async function onRequestPost(context) {
         return json({ ok: false, error: "forbidden" }, 403);
       }
       if (action === "favorite") {
-        await db.prepare(
+        const ins = await db.prepare(
           "INSERT OR IGNORE INTO playlist_favorites (uid, playlist_id) VALUES (?, ?)"
         ).bind(user.uid, id).run();
+        /* INSERT OR IGNORE does nothing when the favourite already exists, but
+           the notification was created regardless - so a double-tap, or any client
+           that re-POSTs "favorite" while already favourited, sent the owner
+           another "saved your playlist" notice every single time. Only a row that
+           was actually inserted is worth telling anyone about. */
+        const created = !!(ins && ins.meta && Number(ins.meta.changes) > 0);
         try {
-          if (String(pl.uid || "") !== String(user.uid)) {
+          if (created && String(pl.uid || "") !== String(user.uid)) {
             const msg = (user.name || "Someone") + ' saved your playlist "' + String(pl.name || "").slice(0, 60) + '"';
             await createNotification(db, context.env, pl.uid, {
               type: "playlist",

@@ -42,6 +42,7 @@ const GROUPS = [
   { name: "crypto", file: "./crypto-selftest.mjs", needsServer: false },
   { name: "push-api", file: "./push-api.test.mjs", needsServer: true },
   { name: "notifications", file: "./notifications-optout.test.mjs", needsServer: true },
+  { name: "notification-prefs", file: "./notification-prefs.test.mjs", needsServer: true },
 ];
 
 const SERVER_BOOT_TIMEOUT_MS = 120_000;
