@@ -301,6 +301,17 @@
   }
 
   function bind() {
+    /* The Vault's summary button had its count baked into the markup, written
+       when the inline list still held 30 rows. The list then gained v4.6 from
+       the splash badge, so the button said 30 while the panel listed 31. Counted
+       from the data instead, so it cannot drift again. */
+    var summaryLabel = document.querySelector("[data-wrldlog-summary] .wrldlog-vh-summary-label");
+    if (summaryLabel && data.length) {
+      summaryLabel.textContent = "View all " + data.length + " releases";
+    }
+    var summaryVersion = document.querySelector("[data-wrldlog-summary] .wrldlog-vh-v");
+    if (summaryVersion && data.length) summaryVersion.textContent = data[0].version;
+
     var trigger = document.querySelector("[data-wrldlog-history]");
     if (trigger && !trigger.dataset.wrldlogBound) {
       trigger.dataset.wrldlogBound = "1";
