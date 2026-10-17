@@ -146,7 +146,7 @@ const PRECACHE = [
   './AlbumArt/legends.jpg',
   './AlbumArt/party.jpg',
   './AlbumArt/preparty.jpg',
-  './cover-artists.js?v=thw-v84',
+  './cover-artists.js?v=thw-v85',
 ];
 
 /* Requests that must NEVER be served from cache (privacy / correctness). */

@@ -16,6 +16,12 @@
 // size can say which submission became the published cover. Picking one would be
 // a guess, and a guess here is a false name on someone's artwork.
 //
+// A further 9 covers the site DOES credit are contradicted by the same folder - the
+// credited artist holds no file of that name - and are equally left alone. They are
+// enumerated in CONTESTED below with their candidates, so the open question can be
+// put to Rubixo rather than lost. See the comment on CONTESTED for why no
+// replacement could be justified.
+//
 // This extends artistData - the site's existing credit table - instead of adding
 // a second one, so the "Cover made by X" line and the artist panel both pick
 // these up unchanged.
@@ -140,11 +146,91 @@
   // is available to the UI instead of being thrown away.
   var AMBIGUOUS_CANDIDATES = {"Rashy":25,"Raiden":22,"Cody":8,"kurtfr3d":7,"Majinboof":7,"Skyler":6,"AGreatIstone":5,"Carson":5,"BaileysArtWrld":5,"ShroomTweak":5,"Brook":4,"Az":4,"Racks":4,"Lila":4,"Ayoub":4,"Emvy":4,"HunterMfckr":4,"Hollycoverworld":4,"JP":3,"LDH":3,"TheMemeWizard":3,"Quaza":3,"Filler":3,"Rider":3,"360NoScope":3,"Novanityneo":3,"danteh.arts":3,"VXD":3,"Outlyning":3,"Zek":2,"Thraxjpg":2,"Davi":2,"Bradley":2,"Jareddior":2,"Rafa":2,"coffeedih":2,"Fracayaso":2,"ZS":2,"Isa":2,"Cgofran":1,"Dyl":1,"abnyart":1,"HirotoGODZ":1,"Rappulse":1,"iCorrupt":1,"Big_Bag_1266":1,"RockstarKnight":1,"Dawids.Graphix":1,"josiahxinfinite":1,"Exzey":1,"babydragon7746":1,"Alebvf":1,"Felipe":1,"pludo":1,"Snovex":1,"XDVivid":1,"RealS3R":1,"YDS":1,"melodic.media":1,"Linco":1,"Shai Graphics":1,"Christian Asano":1,"luisitxo":1,"Jleo":1,"PC":1,"Fuegotoons":1,"Vumpkin":1,"Frank McNally":1};
 
+  // Covers the site credits that the comp folder does not support. RECORDED, not
+  // changed: every one of these 9 keeps the credit it has always had.
+  //
+  // Re-checked against the folder on 2026-10-17, not against the older audit. In all
+  // 9 the artist the site credits holds no file of that name, so the credit is
+  // contradicted. Nothing available here can say who should hold it instead, so
+  // nothing is moved.
+  //
+  // Why no replacement is proposed. The site re-encodes its covers down to 500x500,
+  // so for the six published at that size a byte ratio carries no information - the
+  // rule built on it scored 19% against 80 known credits, worse than a coin toss.
+  // Three are published at 2048 or 4096 square and so are NOT re-encoded, which
+  // ought to make their published byte count meaningful and let a candidate be ruled
+  // out simply for being smaller than the published copy. That test cannot be used:
+  // the leading candidate is smaller than the published copy in all three, which
+  // means those were re-encoded too and the constraint does not hold. Ranking by
+  // closeness then collapses back to the 19% rule.
+  //
+  // Two further traps, both visible below. Rashy appears among the candidates for 6
+  // of the 9 and holds 25 files the site cannot attribute at all, so Rashy having a
+  // copy is close to meaningless - it looks like whoever consolidated the folder.
+  // And several apparent candidates are shared buckets (Unofficial Alts, Unknown
+  // Unsorted, Cover WRLD), which can never be credited to an individual, so their
+  // presence narrows nothing either.
+  //
+  // ONE piece of evidence here is not from the folder. The artwork for Codeine
+  // Guzzler is signed, bottom left corner, reading "Amz" in a graffiti hand. It is
+  // the only one of the 9 that carries a signature at all - the other 8 were checked
+  // corner by corner and have none. "Amz" matches no candidate for that cover, and
+  // the name the site credits, Az, is not among them either, so on its own it settles
+  // nothing; it is kept because it is the only direct statement of authorship
+  // anywhere in this set.
+  //
+  // WHAT WOULD SETTLE ALL NINE: one answer from Rubixo, who runs the comp, naming the
+  // artist behind each cover. The candidates are listed per cover below so that
+  // question can be asked without repeating the search.
+  var CONTESTED = [
+    { cover: "Rotate.png", credited: "Raiden", published: "212,403 B, 2048x2048 JPEG (not re-encoded)",
+      cands: [["AGreatIstone", "207 KB"], ["HunterMfckr", "417 KB"]],
+      note: "closest is AGreatIstone at 2.0x nearer than HunterMfckr, and 97% of the published size" },
+    { cover: "Codeine Guzzler.jpg", credited: "Az", published: "1,274,286 B, 4096x4096 JPEG (not re-encoded)",
+      cands: [["ShroomTweak", "778 KB"], ["Felipe", "2.6 MB"], ["Bradley", "16.0 MB"]],
+      signature: "Amz",
+      note: "ShroomTweak is SMALLER than the published copy so cannot be an un-re-encoded source; Felipe is the nearest above it. Other rows are variants (v1, v2, Alt, No Text) or a shared bucket" },
+    { cover: "Don't Go.png", credited: "AGreatIstone", published: "4,001,198 B, 2048x2048 PNG (not re-encoded)",
+      cands: [["Rashy", "8.1 MB"], ["Cody", "109 KB"]],
+      note: "Cody is far smaller than the published copy; Rashy is the only exact-name holder above it, but see the Rashy caveat above" },
+    { cover: "Obsessed.png", credited: "Raiden", published: "270,465 B, 500x500 PNG (re-encoded, size not evidence)",
+      cands: [["Thraxjpg", "762 KB"], ["Lila", "2.3 MB"]],
+      note: "JP's rows are a different composition (Cerebral), not this cover" },
+    { cover: "His To Keep.png", credited: "Welish", published: "356,493 B, 500x500 PNG (re-encoded, size not evidence)",
+      cands: [["AGreatIstone", "287 KB"], ["ZS", "442 KB"], ["Rashy", "503 KB"]],
+      note: "six named holders and the top two are only 1.5x apart - too close to call" },
+    { cover: "Slenderman.png", credited: "Lila", published: "139,660 B, 500x500 PNG (re-encoded, size not evidence)",
+      cands: [["Dawids.Graphix", "283 KB"], ["VXD", "1.1 MB"], ["TheMemeWizard", "5.4 MB"]],
+      note: "Dawids.Graphix is the only holder in the published size's order of magnitude" },
+    { cover: "Rose Petals.png", credited: "Raiden", published: "283,589 B, 400x400 PNG (re-encoded, size not evidence)",
+      cands: [["AGreatIstone", "195 KB"], ["Cody", "217 KB"]],
+      note: "AMBIGUOUS - the top two are within 11% and cannot be separated by any available measure" },
+    { cover: "Plight.png", credited: "AGreatIstone", published: "152,033 B, 500x500 PNG (re-encoded, size not evidence)",
+      cands: [["Az", "99 KB"], ["ZS", "542 KB"]],
+      note: "Az is 5.5x nearer than ZS" },
+    { cover: "Tick Tock.png", credited: "Carson", published: "256,618 B, 500x500 PNG (re-encoded, size not evidence)",
+      cands: [["Frank McNally", "4.1 MB"], ["Rashy", "21.1 MB"]],
+      note: "no holder anywhere near the published size; Jamothy's row is a different composition (AP Tick -Tock)" }
+  ];
+
+  // Exposed for the console and for anything that wants to render the dispute.
+  // Deliberately not rendered: a cover already shows its credited name, and adding a
+  // "disputed" badge to 9 covers would say less than the record does here.
+  window.__thwContestedCredits = CONTESTED;
+
   console.log(
     "[cover-artists] " + artistData.length + " artists (" + addedArtists + " new), " +
     addedCredits + " credits applied, " + skipped + " already present, " +
     moved + " corrected, " + renamed + " renamed (" + renameDropped + " skipped)"
   );
+
+  if (CONTESTED.length) {
+    console.log(
+      "[cover-artists] " + CONTESTED.length + " credits are contradicted by the comp folder and were left as they are: " +
+      CONTESTED.map(function (c) { return c.cover; }).join(", ") +
+      ". Rubixo can settle all of them; see CONTESTED in cover-artists.js."
+    );
+  }
 
   _renderCoverArtistFooter(artistData, SHARED_BUCKETS, AMBIGUOUS_CANDIDATES);
 })();
