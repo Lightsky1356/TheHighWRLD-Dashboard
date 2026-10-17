@@ -7,7 +7,7 @@
 //            its actual bottom before this was taken, so it is complete: 120 artists.
 //            Most have no credit on the site, which is why this file exists.
 //
-//   CREDITS  9 covers attributed by the single-artist rule - exactly one artist in
+//   CREDITS  8 covers attributed by the single-artist rule - exactly one artist in
 //            the comp holds a file of that name. That rule was scored against the
 //            credits the site already had and was correct 21 of 21.
 //
@@ -58,7 +58,13 @@
     addedArtists++;
   }
 
-  var CREDITS = [{"name":"AGreatIstone","title":"Heart Racing","cover":"Heart Racing.jpg"},{"name":"Raiden","title":"Right, Left (Sessions)","cover":"Right, Left.png"},{"name":"Davi","title":"Semi Addict (Sessions)","cover":"Semi Addict.png"},{"name":"Skyler","title":"Xmas List","cover":"X-Mas List.png"},{"name":"Felipe","title":"Don't Know What I'm On (Sessions)","cover":"Don't Know What I'm On.png"},{"name":"Bradley","title":"Red Bull (Terrified) (Sessions)","cover":"Red Bull.png"},{"name":"AGreatIstone","title":"Flaws And Sins (Sessions)","cover":"Flaws & Sins.png"},{"name":"Lila","title":"Jeffrey (Sessions)","cover":"GB&GR.png"},{"name":"Davi","title":"Candles (Sessions)","cover":"Candles.png"}];
+  // Lila's Jeffrey (Sessions) was removed from here on the owner's word, which is why
+  // the count in the header is 8 rather than 9. GB&GR.png is era artwork shared by four
+  // tracks - Jeffrey (Sessions), Not Enough (Sessions), Wasted (Sessions) and Lean
+  // Wit' Me (Sessions) - so one credit for it stands for all four, and whoever drew
+  // that artwork is not Lila. Only the panel tile goes: the cover still loads for all
+  // four tracks in the player.
+  var CREDITS = [{"name":"AGreatIstone","title":"Heart Racing","cover":"Heart Racing.jpg"},{"name":"Raiden","title":"Right, Left (Sessions)","cover":"Right, Left.png"},{"name":"Davi","title":"Semi Addict (Sessions)","cover":"Semi Addict.png"},{"name":"Skyler","title":"Xmas List","cover":"X-Mas List.png"},{"name":"Felipe","title":"Don't Know What I'm On (Sessions)","cover":"Don't Know What I'm On.png"},{"name":"Bradley","title":"Red Bull (Terrified) (Sessions)","cover":"Red Bull.png"},{"name":"AGreatIstone","title":"Flaws And Sins (Sessions)","cover":"Flaws & Sins.png"},{"name":"Davi","title":"Candles (Sessions)","cover":"Candles.png"}];
 
   var addedCredits = 0, skipped = 0;
   for (var c = 0; c < CREDITS.length; c++) {
