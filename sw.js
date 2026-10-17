@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v83';
+const VERSION = 'thw-v84';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -147,6 +147,7 @@ const PRECACHE = [
   './AlbumArt/legends.jpg',
   './AlbumArt/party.jpg',
   './AlbumArt/preparty.jpg',
+  './cover-artists.js?v=thw-v84',
 ];
 
 /* Requests that must NEVER be served from cache (privacy / correctness). */

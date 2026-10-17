@@ -701,6 +701,44 @@ else structureOk("cover-gradients.js loads after script.js, so the merge has som
   }
 }
 
+/* ---- 14. scripts that extend the page's globals are deferred ----
+ *
+ * cover-artists.js was added without `defer` while script.js - which declares
+ * artistData - has it. A plain <script src> runs the moment the parser reaches
+ * it; a deferred one waits for parsing to finish. So the new file executed first,
+ * artistData did not exist yet, and it logged "artistData missing" and did
+ * nothing at all.
+ *
+ * Nothing caught it. The tag was present, the file parsed, the server served it,
+ * and the page behaved exactly as before the change - the whole point of the
+ * change silently did not happen. Ordering was never the problem; attribute
+ * parity was.
+ *
+ * This asserts that anything loading after script.js is deferred, which is what
+ * "extends a global declared in script.js" requires in practice. */
+{
+  const scriptTagAt = html.indexOf("./script.js");
+  const tagRe = /<script\b[^>]*>/gi;
+  const late = [];
+  let m;
+  while ((m = tagRe.exec(html)) !== null) {
+    if (m.index < scriptTagAt) continue;          // runs before script.js anyway
+    if (/src=/i.test(m[0]) && !/\bdefer\b/i.test(m[0])) {
+      const src = /src="([^"]+)"/.exec(m[0]);
+      late.push(src ? src[1] : m[0].slice(0, 60));
+    }
+  }
+  if (late.length) {
+    for (const l of late.slice(0, 6)) {
+      structureFail(`script loads after script.js but is not deferred, so it runs before artistData exists: ${l}`);
+    }
+    if (late.length > 6) structureFail(`...and ${late.length - 6} more undeferred scripts after script.js`);
+  } else {
+    const after = [...html.matchAll(/<script\b[^>]*>/gi)].filter((x) => x.index > scriptTagAt).length;
+    structureOk(`all ${after} script tags after script.js are deferred`);
+  }
+}
+
 /* The same check against what the browser actually parsed, which is the only
    place the nesting above was ever going to show up. */
 failures += structureFailures;
