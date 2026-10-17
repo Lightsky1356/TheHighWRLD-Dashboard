@@ -25,6 +25,14 @@
    Registered under both the bare filename and the Covers/ path, because
    getCoverGradientValue tries the bare key first and the prefixed one second.
 
+   These values double as TEXT. applyMainGradient() paints #track-title and
+   #track-tag with the gradient as a text fill, so a stop that reads as a fine
+   dark background leaves the title unreadable on a near-black panel. Smith &
+   Wesson is the one entry that does not use the mean lightness of its bins: it
+   takes the 75th percentile instead, which is the lit highlight rather than the
+   average tone, lifting the first stop from 30% to 35% against a map median of
+   36%. Same two hues, still 30 degrees apart, still read off the artwork.
+
    gradientCache is cleared on load: a lookup that already missed would have
    cached the fallback, and the new value would never be read.
    ========================================================================== */
@@ -86,8 +94,8 @@
     "Covers/Codeine Cobain.png": "linear-gradient(135deg,#050505,#251000,#8a4d2b)",
     "The Party Never Ends.png": "linear-gradient(135deg,#481340,#e34f94,#f9c96b)",
     "Covers/The Party Never Ends.png": "linear-gradient(135deg,#481340,#e34f94,#f9c96b)",
-    "Smith & Wesson.png": "linear-gradient(135deg,hsl(10,32%,30%),hsl(40,24%,32%))",
-    "Covers/Smith & Wesson.png": "linear-gradient(135deg,hsl(10,32%,30%),hsl(40,24%,32%))",
+    "Smith & Wesson.png": "linear-gradient(135deg,hsl(10,33%,35%),hsl(40,24%,41%))",
+    "Covers/Smith & Wesson.png": "linear-gradient(135deg,hsl(10,33%,35%),hsl(40,24%,41%))",
   };
 
   for (var key in GRADIENTS) {
