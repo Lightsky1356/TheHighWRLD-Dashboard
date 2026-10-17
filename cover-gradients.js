@@ -36,8 +36,8 @@
   if (typeof coverGradientMap !== "object" || coverGradientMap === null) return;
 
   var GRADIENTS = {
-    "734.png": "linear-gradient(135deg,hsl(220,35%,36%),hsl(60,29%,30%))",
-    "Covers/734.png": "linear-gradient(135deg,hsl(220,35%,36%),hsl(60,29%,30%))",
+    "734.png": "linear-gradient(135deg,#17151d,#59476c,#6d5aa8)",
+    "Covers/734.png": "linear-gradient(135deg,#17151d,#59476c,#6d5aa8)",
     "Heart Racing.jpg": "linear-gradient(135deg,hsl(40,49%,49%),hsl(219,43%,42%))",
     "Covers/Heart Racing.jpg": "linear-gradient(135deg,hsl(40,49%,49%),hsl(219,43%,42%))",
     "Hop Out.png": "linear-gradient(135deg,hsl(29,41%,51%),hsl(189,35%,43%))",
@@ -48,20 +48,20 @@
     "Covers/Candles.png": "linear-gradient(135deg,hsl(299,47%,40%),hsl(28,41%,34%))",
     "Cigarettes.png": "linear-gradient(135deg,hsl(12,30%,36%),hsl(219,24%,30%))",
     "Covers/Cigarettes.png": "linear-gradient(135deg,hsl(12,30%,36%),hsl(219,24%,30%))",
-    "DRFL.png": "linear-gradient(135deg,hsl(19,49%,36%),hsl(319,43%,30%))",
-    "Covers/DRFL.png": "linear-gradient(135deg,hsl(19,49%,36%),hsl(319,43%,30%))",
+    "DRFL.png": "linear-gradient(135deg,#100807,#85251d,#8f5a28)",
+    "Covers/DRFL.png": "linear-gradient(135deg,#100807,#85251d,#8f5a28)",
     "Feeling.png": "linear-gradient(135deg,hsl(207,55%,36%),hsl(46,49%,30%))",
     "Covers/Feeling.png": "linear-gradient(135deg,hsl(207,55%,36%),hsl(46,49%,30%))",
     "Flintstones.png": "linear-gradient(135deg,hsl(30,55%,45%),hsl(160,49%,38%))",
     "Covers/Flintstones.png": "linear-gradient(135deg,hsl(30,55%,45%),hsl(160,49%,38%))",
     "Flaws & Sins.png": "linear-gradient(135deg,hsl(19,49%,36%),hsl(228,43%,31%))",
     "Covers/Flaws & Sins.png": "linear-gradient(135deg,hsl(19,49%,36%),hsl(228,43%,31%))",
-    "WOD.png": "linear-gradient(135deg,hsl(351,48%,52%),hsl(47,42%,46%))",
-    "Covers/WOD.png": "linear-gradient(135deg,hsl(351,48%,52%),hsl(47,42%,46%))",
-    "GB&GR.png": "linear-gradient(135deg,hsl(50,38%,52%),hsl(200,32%,46%))",
-    "Covers/GB&GR.png": "linear-gradient(135deg,hsl(50,38%,52%),hsl(200,32%,46%))",
-    "Legends.png": "linear-gradient(135deg,hsl(208,44%,52%),hsl(27,38%,46%))",
-    "Covers/Legends.png": "linear-gradient(135deg,hsl(208,44%,52%),hsl(27,38%,46%))",
+    "WOD.png": "linear-gradient(135deg,#fff7ef,#f7a5b7,#c57be0)",
+    "Covers/WOD.png": "linear-gradient(135deg,#fff7ef,#f7a5b7,#c57be0)",
+    "GB&GR.png": "linear-gradient(135deg,#24232c,#665c75,#a5c8d8)",
+    "Covers/GB&GR.png": "linear-gradient(135deg,#24232c,#665c75,#a5c8d8)",
+    "Legends.png": "linear-gradient(135deg,#202126,#b8bc91,#f3eee3)",
+    "Covers/Legends.png": "linear-gradient(135deg,#202126,#b8bc91,#f3eee3)",
     "Move The Bale.png": "linear-gradient(135deg,hsl(23,54%,52%),hsl(171,48%,46%))",
     "Covers/Move The Bale.png": "linear-gradient(135deg,hsl(23,54%,52%),hsl(171,48%,46%))",
     "Nightmare.png": "linear-gradient(135deg,hsl(50,55%,47%),hsl(239,49%,40%))",
@@ -82,6 +82,8 @@
     "Covers/Sometimes.png": "linear-gradient(135deg,hsl(240,55%,36%),hsl(210,49%,30%))",
     "My Life In A Nutshell.png": "linear-gradient(135deg,hsl(20,30%,36%),hsl(218,24%,30%))",
     "Covers/My Life In A Nutshell.png": "linear-gradient(135deg,hsl(20,30%,36%),hsl(218,24%,30%))",
+    "Codeine Cobain.png": "linear-gradient(135deg,#050505,#251000,#8a4d2b)",
+    "Covers/Codeine Cobain.png": "linear-gradient(135deg,#050505,#251000,#8a4d2b)",
   };
 
   for (var key in GRADIENTS) {
