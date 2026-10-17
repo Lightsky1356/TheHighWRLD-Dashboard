@@ -3165,10 +3165,14 @@ const trackList=[
      by Gezin and WondaGurl and recorded 14 June 2018; Genius and Audiomack agree
      on the credit.
 
-     Smith & Wesson is in neither the catalogue nor the wrld log. It surfaced in
-     late-2024 footage with no producer or date recorded anywhere readable, so
-     producer and year are left off the way Percs and Play Fair are, and its tag
-     names no era for the same reason, as Percs and Haze do. */
+     Smith & Wesson is in neither the catalogue nor the wrld log, but Genius does
+     credit it: producer Danny Wolf, engineered by Max Lord at a home studio in
+     Encino Hills, first previewed 22 June 2019 - two months after Juice died, and
+     a freestyle rather than a Grade A session, so the tag names no era, as Percs
+     and Haze do not. The year is the recorded year, matching Heart Racing, which
+     sits on a 2024 album but is dated 2019. Genius files it under the alt name
+     "Let's Ride", lifted from the hook, but the file, the cover and the rest of
+     the catalogue call it Smith & Wesson, so the tag follows those. */
   {
     title: "Royer (Sessions)",
     tag: "Royer (Sessions) (WOD)",
@@ -3187,7 +3191,9 @@ const trackList=[
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Smith%20%26%20Wesson.mp3",
     duration: 217,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Smith%20%26%20Wesson.png"
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Smith%20%26%20Wesson.png",
+    producer: "Danny Wolf",
+    year: "2019"
   },
   {
     title: "The Party Never Ends (Sessions)",
