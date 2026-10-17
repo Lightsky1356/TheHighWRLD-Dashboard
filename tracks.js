@@ -636,7 +636,18 @@ const trackList=[
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Flavor.png",
     producer: "CashMoneyAp",
     year: "2017"
+  },  {
+    title: "Floating",
+    tag: "Floating (Float Over My Demons) (Scheming) (Weekend) (DRFL)",
+    artist: "Juice WRLD",
+    category: "leaks",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Floating%20(v3).mp3",
+    duration: 204,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Floating.jpg",
+    producer: "Max Lord & PVLACE",
+    year: "2019"
   },
+
   {
     title: "For A Tee",
     tag: "For A Tee (Damm Right) (What I Wanna Do) (DRFL)",
@@ -757,7 +768,18 @@ const trackList=[
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Haze.png",
     producer: "DT & Nick Mira",
     year: ""
+  },  {
+    title: "Heart Racing",
+    tag: "Heart Racing (Drive Me Crazy) (OUT)",
+    artist: "Juice WRLD",
+    category: "leaks",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Heart%20Racing%20(v1).mp3",
+    duration: 223,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Heart%20Racing.jpg",
+    producer: "Nick Mira",
+    year: "2019"
   },
+
   {
     title: "Heavy (Sessions)",
     tag: "Heavy (Sessions) (GB&GR)",
@@ -823,7 +845,18 @@ const trackList=[
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Hook.png",
     producer: "J.Views & LEALE",
     year: "2017"
+  },  {
+    title: "Hop Out",
+    tag: "Hop Out (Same Clothes) (GB&GR)",
+    artist: "Juice WRLD",
+    category: "leaks",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Hop%20Out%20(Sessions).mp3",
+    duration: 275,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Hop%20Out.png",
+    producer: "CBMIX",
+    year: "2018"
   },
+
   {
     title: "Hope U Understand (Sessions)",
     tag: "Hope U Understand (Lil Bitch) (Nothing To Lose) (Hope You Understand) (Sessions) (GB&GR)",
