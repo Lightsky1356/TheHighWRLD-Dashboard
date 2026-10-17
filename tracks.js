@@ -3167,10 +3167,8 @@ const trackList=[
 
      Smith & Wesson is in neither the catalogue nor the wrld log, but Genius does
      credit it: producer Danny Wolf, engineered by Max Lord at a home studio in
-     Encino Hills, first previewed 22 June 2019 - two months after Juice died, and
-     a freestyle rather than a Grade A session, so the tag names no era, as Percs
-     and Haze do not. The year is the recorded year, matching Heart Racing, which
-     sits on a 2024 album but is dated 2019.
+     Encino Hills. The year is the recorded year, matching Heart Racing, which sits
+     on a 2024 album but is dated 2019.
 
      Its alt names come from three sources. Genius titles it "Let's Ride (Smith &
      Wesson)", and juicewrldvault.com lists it as "Let's Ride (v1.2)" over the
@@ -3178,9 +3176,18 @@ const trackList=[
      the name on the tape, "Smith & Wesson" is what it is better known as, and the
      DW in that filename is Danny Wolf. "Comply" and "Hollow Tips" are hook lines,
      naming it the same way "Omen" and "Overseer" name Blood, Sweat, Tears; the
-     vault carries both in its alternateTitles and Last.fm lists them too. No
-     version marker: the vault's v1.2 runs 2:51 and this file measures 3:37, so it
-     is a different take and calling it v1.2 would be wrong. */
+     vault carries both in its alternateTitles and Last.fm lists them too.
+
+     No version marker, though the vault calls its copy v1.2: that runs 2:50 and
+     this file measures 3:37, so this is a longer take and calling it v1.2 would be
+     wrong.
+
+     The era is OUT, which the vault states outright on the track's own page, and
+     which is the same code juicewrldapi.com uses. The recording date is contested
+     - Genius says first previewed 22 June 2019, the vault's file record says 14
+     June, and its recording details say recorded 16 June - but every source puts
+     it in 2019, two months after Juice died, and that is all the year field
+     records. */
   {
     title: "Royer (Sessions)",
     tag: "Royer (Sessions) (WOD)",
@@ -3194,7 +3201,7 @@ const trackList=[
   },
   {
     title: "Smith & Wesson",
-    tag: "Smith & Wesson (Let's Ride) (Comply) (Hollow Tips)",
+    tag: "Smith & Wesson (Let's Ride) (Comply) (Hollow Tips) (OUT)",
     artist: "Juice WRLD",
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Smith%20%26%20Wesson.mp3",
