@@ -263,6 +263,25 @@ async function main() {
     jsErrors.length = 0;
     netWarnings.length = 0;
     await cdp.send("Page.navigate", { url });
+
+    /* Poll for readiness rather than sleeping a fixed time. A fixed settle produced
+       phantom failures - on a loaded machine (12 Edge processes, disk nearly full)
+       the page had not finished booting after 3.5s, so /about reported the home
+       section and a partial nav list, which read exactly like the deep-link
+       regression it was meant to catch. Now the check waits for the app to
+       actually be ready, and only falls back to the timer if it never is. */
+    const deadline = Date.now() + 30000;
+    let ready = false;
+    while (Date.now() < deadline) {
+      await sleep(250);
+      try {
+        const r = await cdp.evalJson(
+          `(document.readyState === "complete" && typeof trackList !== "undefined" && trackList.length > 0 && document.querySelectorAll(".app-page").length >= 20) ? "1" : "0"`,
+        );
+        if (r === "1") { ready = true; break; }
+      } catch (_) {}
+    }
+    if (!ready) console.log(`  note  ${url} never reported ready within 30s; measuring anyway`);
     await sleep(settleMs);
     await cdp.evalJson(HELPERS);
     return cdp.evalJson(`JSON.stringify({

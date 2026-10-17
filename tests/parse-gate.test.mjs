@@ -550,33 +550,48 @@ if (panelZ === null) {
   structureOk(`the cover lightbox (${lightboxZ}) stacks above the info panel (${panelZ})`);
 }
 
-/* ---- 11. the lightbox has no prev/next arrows ----
+/* ---- 11. the lightbox arrows exist, and are shown only when there is a list ----
  *
- * They were removed on request. The buttons are gone from the markup and their
- * .lb-nav rules are gone from the stylesheet, but prevCover/nextCover stay: they
- * are still bound to ArrowLeft/ArrowRight while the lightbox is open, so keyboard
- * navigation still works and only the visible controls are gone.
+ * They were removed outright at one point because the "View cover" entry point
+ * has nothing to step between - it shows one track. But the artist panel's covers
+ * are a real list, and _getCovers() returns exactly that, so removing them broke
+ * the one place they were useful. They are back and are now toggled per-open.
  *
- * Checked both halves. Leaving the CSS behind is harmless but dead, and leaving
- * the markup behind would put the arrows back on screen with no styling to match.
+ * Two failure modes worth guarding: the buttons missing from the markup again,
+ * and them being permanently visible - which would put the arrows back on the
+ * info-panel view where pressing one jumped to an unrelated artist's artwork,
+ * because indexOf returns -1 for a cover that is not in the artist panel's list.
  */
 const lbBlock = html.slice(html.indexOf('id="cover-lightbox"'), html.indexOf('id="cover-lightbox"') + 900);
-if (lbBlock.includes("lb-nav")) {
-  structureFail("the cover lightbox still contains a .lb-nav arrow button");
-} else if (lbBlock.includes("prevCover") || lbBlock.includes("nextCover")) {
-  structureFail("the lightbox markup still calls prevCover/nextCover even though the arrows were removed");
+const navButtons = (lbBlock.match(/class="lb-nav/g) || []).length;
+if (navButtons !== 2) {
+  structureFail(`the lightbox has ${navButtons} arrow buttons, expected 2`);
 } else {
-  structureOk("the cover lightbox has no arrow buttons");
+  structureOk("the lightbox has its prev/next arrow buttons");
 }
-if (readFileSync(join(ROOT, "player-settings.css"), "utf8").includes("lb-nav")) {
-  structureFail("player-settings.css still carries .lb-nav rules for arrows that no longer exist");
+if (!readFileSync(join(ROOT, "player-settings.css"), "utf8").includes(".lb-nav")) {
+  structureFail("player-settings.css no longer styles .lb-nav, so the arrows would be unstyled");
 } else {
-  structureOk("the .lb-nav stylesheet rules are gone with the buttons");
+  structureOk("the .lb-nav stylesheet rules are back with the buttons");
 }
+
+/* The arrows must be decided at open time, not baked into the markup. */
+if (!/t\.length>1&&_currentCoverIdx>-1/.test(scriptSrc)) {
+  structureFail("showCoverArt no longer decides whether to show the arrows, so they are always visible - including where there is nothing to step between");
+} else {
+  structureOk("the arrows are shown only when the artist panel has a list and the open cover is in it");
+}
+/* And navigating from outside that list must not jump to an unrelated cover. */
+if (!/function _navigateCover\(e\)\{var t=_getCovers\(\);t\.length&&_currentCoverIdx>-1&&/.test(scriptSrc)) {
+  structureFail("_navigateCover no longer refuses to navigate when the open cover is outside the artist panel's list");
+} else {
+  structureOk("navigation refuses to step when the open cover is not in the list");
+}
+
 const lbHasClose = /id="cover-lightbox"[\s\S]{0,700}?hideCoverArt\(\)/.test(html);
 const lbHasImg = /id="cover-lightbox"[\s\S]{0,700}?id="cover-lightbox-img"/.test(html);
 if (!lbHasClose || !lbHasImg) {
-  structureFail("the lightbox lost its close button or its image while the arrows were being removed");
+  structureFail("the lightbox lost its close button or its image");
 } else {
   structureOk("the lightbox still has its image, close button and label");
 }
