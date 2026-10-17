@@ -272,47 +272,73 @@ if (drifted.length || uncached.length) {
   structureOk(`${localRefs.length} local assets, tokens match PRECACHE exactly`);
 }
 
-/* ---- 6. URL routing is wired up correctly ----
+/* ---- 6. URL routing is intact, in the one place it lives ----
  *
- * router.js only works because it loads after script.js. Every script is deferred,
- * so they execute in document order, and script.js installs the switchAppPage
- * wrapper that router.js wraps. If the tag is ever moved above script.js, the
- * router captures nothing, warns once in the console, and URL routing silently
- * does nothing - deep links would keep falling back to the home page with no
- * other symptom. */
-const ROUTER = "router.js";
-const routerAt = html.indexOf(`./${ROUTER}?`);
-const scriptAt = html.indexOf("./script.js?");
-if (routerAt === -1) {
-  structureFail(`${ROUTER} is not referenced by index.html, so /about and /partner are not routed`);
-} else if (routerAt < scriptAt) {
-  structureFail(`${ROUTER} loads before script.js and cannot wrap switchAppPage; move its script tag after script.js`);
-} else {
-  structureOk(`${ROUTER} loads after script.js, so it wraps the real switchAppPage`);
-}
+ * Routing is account.js's NAV_URL, plus a boot hook that resolves the path, plus
+ * a popstate handler. A separate router.js briefly duplicated all of that and was
+ * removed: two tables for one job, and the duplicate sat inside account.js's
+ * wrapper so its boot redirect never fired.
+ *
+ * What actually broke deep links was in script.js, not in either table. Its boot
+ * timer ended with an unconditional switchAppPage("home"), and account.js's
+ * wrapper turns every call into a pushState of that page's URL - so it rewrote
+ * /player, /vault, /wanted, /account, /TOS and the rest to "/" after account.js had
+ * already routed them correctly. Only /roadmap survived, because roadmap.js
+ * carries its own rescue. Both halves of the fix are asserted below, because
+ * either one alone leaves deep links silently broken. */
+const accountSrc = readFileSync(join(ROOT, "account.js"), "utf8");
+const scriptSrc = readFileSync(join(ROOT, "script.js"), "utf8");
 
-/* A route pointing at a section that is missing, or buried inside another one,
- * is the exact failure the About tab split caused: the URL resolves fine and the
- * page stays blank. So each route is checked against the section it targets. */
-const routerSrc = existsSync(join(ROOT, ROUTER)) ? readFileSync(join(ROOT, ROUTER), "utf8") : "";
-const routed = [...routerSrc.matchAll(/\[\s*"(\/[^"]+)"\s*,\s*"([a-z0-9-]+)"\s*\]/g)].map((mm) => ({ path: mm[1], page: mm[2] }));
-if (!routed.length) {
-  structureFail(`no routes found in ${ROUTER}; the Map should hold ["/about", "about"]-style pairs`);
+const navBlock = accountSrc.match(/var NAV_URL = \{([^}]*)\}/);
+if (!navBlock) {
+  structureFail("could not find NAV_URL in account.js");
 } else {
+  const routes = [...navBlock[1].matchAll(/(\w+):\s*"(\/[^"]*)"/g)].map((mm) => ({ page: mm[1], path: mm[2] }));
+
+  for (const required of [{ page: "about", path: "/about" }, { page: "partner", path: "/partner" }]) {
+    const hit = routes.find((r) => r.page === required.page);
+    if (!hit) structureFail(`NAV_URL has no "${required.page}" entry, so ${required.path} is not routable`);
+    else if (hit.path !== required.path) structureFail(`NAV_URL routes "${required.page}" to ${hit.path}, expected ${required.path}`);
+  }
+  if (routes.length && routes.every((r) => r.page !== "about" || r.path === "/about")) {
+    structureOk(`NAV_URL routes ${routes.length} pages, including /about and /partner`);
+  }
+
+  /* A route whose section is missing or buried is a blank page, not a 404 - the
+     same failure the About tab split caused. Checked against the depth map the
+     section-4 guard already built. */
   let routeOk = true;
-  for (const r of routed) {
+  for (const r of routes) {
     const id = `page-section-${r.page}`;
-    if (!depths.has(id)) {
-      structureFail(`route ${r.path} targets ${id}, which does not exist`);
-      routeOk = false;
-    } else if (depths.get(id) !== 1 && !(depths.get(id) === 2 && ALWAYS_NESTED.has(id))) {
+    if (!depths.has(id)) continue; // owner/profile are routed without their own .app-page
+    const d = depths.get(id);
+    if (d !== 1 && !(d === 2 && ALWAYS_NESTED.has(id))) {
       structureFail(`route ${r.path} targets ${id}, which is nested and can never be shown`);
       routeOk = false;
     }
   }
-  if (routeOk) {
-    structureOk(`${routed.length} routes resolve to showable sections: ${routed.map((r) => r.path).join(", ")}`);
-  }
+  if (routeOk) structureOk("every NAV_URL route that has a page section points at a showable one");
+}
+
+/* script.js's boot timer must not force the home page when the URL says otherwise. */
+const BOOT_FORCES_HOME =
+  'setTimeout(function(){try{window.switchAppPage("home")}catch(e){}showWrldLog()},0);';
+const BOOT_YIELDS =
+  'setTimeout(function(){try{if((location.pathname||"/").replace(/\\/+$/,"")==="/")window.switchAppPage("home")}catch(e){}showWrldLog()},0);';
+if (scriptSrc.includes(BOOT_FORCES_HOME)) {
+  structureFail("script.js's boot timer still forces the home page on every load, which rewrites every deep link to /");
+} else if (!scriptSrc.includes(BOOT_YIELDS)) {
+  structureFail("script.js's boot timer no longer matches the expected guarded form; deep links may be broken again");
+} else {
+  structureOk("script.js's boot timer only forces home at /, so deep links survive it");
+}
+
+/* And account.js must send an unrecognised path home rather than leaving the page
+   blank, since script.js now declines to do it. */
+if (!accountSrc.includes('window.switchAppPage(bootPage || "home")')) {
+  structureFail("account.js's boot hook no longer falls back to home for an unknown path; such a load would render nothing");
+} else {
+  structureOk("account.js's boot hook resolves known paths and falls back to home");
 }
 
 failures += structureFailures;

@@ -2356,7 +2356,10 @@ window.profileSectionShown = function () {
     else if (ppath.indexOf("/profile/") === 0) { if (window.openProfile) window.openProfile(decodeURIComponent(ppath.slice(9))); }
     else {
       var bootPage = NAV_URL_REV[ppath];
-      if (bootPage && window.switchAppPage) window.switchAppPage(bootPage);
+      /* An unrecognised path used to fall through and leave whatever the boot
+         timer last showed on screen. It resolves to home instead, so this hook is
+         the single thing that decides what a cold load shows. */
+      if (window.switchAppPage) window.switchAppPage(bootPage || "home");
     }
   });
 
@@ -2369,7 +2372,12 @@ window.profileSectionShown = function () {
 
   /* ---------- Navigation router: activeTab + URL routing ---------- */
   var _activeTab = "lobby";
-  var NAV_URL = { home: "/", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA" };
+  /* about and partner were briefly routed by a separate router.js before this was
+   found: this map already is the site's one routing table, and a second table
+   meant two sources of truth for the same job. _navPillFor already resolves both
+   to their real nav buttons (page-nav-about, page-nav-partner), so nothing else
+   needed changing to highlight them. */
+var NAV_URL = { home: "/", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", about: "/about", partner: "/partner" };
   var NAV_URL_REV = {};
   Object.keys(NAV_URL).forEach(function (k) { NAV_URL_REV[NAV_URL[k]] = k; });
   function _navTabFor(page) {
