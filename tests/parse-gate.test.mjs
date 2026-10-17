@@ -148,15 +148,42 @@ const aboutBlockOf = (src) => {
   return e < 0 ? null : src.slice(s, e);
 };
 
-const curAbout = aboutBlockOf(html);
-const baseAbout = aboutBlockOf(
-  execFileSync("git", ["show", `${BASELINE_REV}:index.html`], {
-    maxBuffer: 64 * 1024 * 1024,
-  }).toString("utf8"),
-);
+/* Reading the baseline needs that object in the local clone, and actions/checkout
+ * defaults to fetch-depth 1, where it is not. `git show` then fails with "invalid
+ * object name", and because the read was unguarded that exception took the whole
+ * gate - and with it the deploy - down. The object is fetched if it is missing; if
+ * even that fails the comparison is skipped loudly rather than failing a deploy
+ * over a limitation of the environment rather than a defect in the page. */
+const readBaselineIndex = () => {
+  const read = () =>
+    execFileSync("git", ["show", `${BASELINE_REV}:index.html`], {
+      maxBuffer: 64 * 1024 * 1024,
+    }).toString("utf8");
+  try {
+    return { html: read(), ok: true };
+  } catch (_) {
+    for (const args of [["fetch", "--deepen", "200"], ["fetch", "origin", BASELINE_REV, "--depth=1"]]) {
+      try { execFileSync("git", args, { stdio: "ignore" }); } catch (__) {}
+    }
+    try {
+      return { html: read(), ok: true };
+    } catch (e) {
+      const last = String(e.stderr || e.message || e).trim().split(/\r?\n/).pop();
+      return { html: null, ok: false, error: last };
+    }
+  }
+};
 
-if (!curAbout || !baseAbout) {
+const curAbout = aboutBlockOf(html);
+const baseline = readBaselineIndex();
+const baseAbout = baseline.ok ? aboutBlockOf(baseline.html) : null;
+
+if (!curAbout || (baseline.ok && !baseAbout)) {
   structureFail("could not isolate the About block (needs '<div class=\"abp-page\">' then page-section-partner)");
+} else if (!baseline.ok) {
+  console.log(`  SKIP  About content comparison - ${BASELINE_REV} is not in this clone`);
+  console.log(`        ${baseline.error}`);
+  console.log("        Checkout with fetch-depth: 0 for this guard to run here.");
 } else {
   /* The Info tab contributes exactly two sections and four jump links and
      nothing else matching these patterns. Any other difference means the tab

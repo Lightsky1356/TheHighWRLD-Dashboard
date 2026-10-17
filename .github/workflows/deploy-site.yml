@@ -11,7 +11,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # Full history, deliberately. The default is fetch-depth 1, and parse-gate
+      # compares the About block against a fixed baseline commit; on a shallow clone
+      # that object is absent and the guard cannot run. Full history keeps the
+      # comparison real rather than skipped.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
