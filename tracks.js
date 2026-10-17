@@ -3147,5 +3147,57 @@ const trackList=[
     duration: 328,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Play%20Fair.png",
     year: "2018"
+  },
+  /* Royer, Smith & Wesson and The Party Never Ends arrived after the rest.
+
+     Durations were measured from the audio files themselves rather than taken
+     from the catalogue, and they disagree with it: Royer runs 3:12 here against
+     1:26 in the catalogue, and The Party Never Ends runs 12:25 against 2:20
+     released, 3:50 for v1 and 1:01 for v2. Both files are full session takes,
+     so the catalogue's lengths would have been wrong on the progress bar.
+
+     Royer's producer and era come from juicewrldapi.com - Rvssian, recorded
+     15 October 2018. It uses the WOD era artwork because the repo has no
+     Covers/Royer.png, which is how Smile and I Want It, both WOD sessions,
+     already get theirs.
+
+     The Party Never Ends is Abyss, the WOD-era demo of NO BYSTANDERS, produced
+     by Gezin and WondaGurl and recorded 14 June 2018; Genius and Audiomack agree
+     on the credit.
+
+     Smith & Wesson is in neither the catalogue nor the wrld log. It surfaced in
+     late-2024 footage with no producer or date recorded anywhere readable, so
+     producer and year are left off the way Percs and Play Fair are, and its tag
+     names no era for the same reason, as Percs and Haze do. */
+  {
+    title: "Royer (Sessions)",
+    tag: "Royer (Sessions) (WOD)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Royer%20(Sessions).mp3",
+    duration: 192,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/WOD.png",
+    producer: "Rvssian",
+    year: "2018"
+  },
+  {
+    title: "Smith & Wesson",
+    tag: "Smith & Wesson",
+    artist: "Juice WRLD",
+    category: "leaks",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Smith%20%26%20Wesson.mp3",
+    duration: 217,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Smith%20%26%20Wesson.png"
+  },
+  {
+    title: "The Party Never Ends (Sessions)",
+    tag: "The Party Never Ends (Abyss) (Sessions)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/The%20Party%20Never%20Ends%20(Sessions).mp3",
+    duration: 745,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/The%20Party%20Never%20Ends.png",
+    producer: "Gezin & WondaGurl",
+    year: "2018"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});

@@ -86,6 +86,8 @@
     "Covers/Codeine Cobain.png": "linear-gradient(135deg,#050505,#251000,#8a4d2b)",
     "The Party Never Ends.png": "linear-gradient(135deg,#481340,#e34f94,#f9c96b)",
     "Covers/The Party Never Ends.png": "linear-gradient(135deg,#481340,#e34f94,#f9c96b)",
+    "Smith & Wesson.png": "linear-gradient(135deg,hsl(10,32%,30%),hsl(40,24%,32%))",
+    "Covers/Smith & Wesson.png": "linear-gradient(135deg,hsl(10,32%,30%),hsl(40,24%,32%))",
   };
 
   for (var key in GRADIENTS) {
