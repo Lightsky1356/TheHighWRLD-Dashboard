@@ -93,4 +93,28 @@ for (const f of js) {
 if (jsBad === 0) console.log(`  PASS  ${js.length} page scripts parse`);
 failures += jsBad;
 
+/* ---- 3. index.html has not lost an element boundary ----
+ *
+ * Added after a surgical edit to the About page ate the `<div ` in front of
+ * `id="page-section-partner"`. The page still parsed, every script still
+ * executed, and every count-based check still passed - but the partner section's
+ * opening tag became an empty <div></div>, so its attributes rendered as visible
+ * text on the page and its contents, including a second copy of the nav bar,
+ * were hoisted into the About page.
+ *
+ * It survived three commits because the page was rendering unstyled at the time,
+ * so it was invisible, and because the browser check that would have caught it
+ * could not run.
+ *
+ * A JS parse gate cannot see this class of bug. It is an HTML structure problem,
+ * and it is cheap to check, so it is checked. */
+const boundary = /(?<!<div )id="page-section-[a-z]+" class="app-page"/g;
+const leaked = [...html.matchAll(boundary)].map((m) => m[0]);
+if (leaked.length) {
+  for (const l of leaked) console.log("  FAIL  element boundary lost, attributes will render as text: " + l);
+  failures += leaked.length;
+} else {
+  console.log("  PASS  every page section keeps its opening tag");
+}
+
 process.exit(failures ? 1 : 0);
