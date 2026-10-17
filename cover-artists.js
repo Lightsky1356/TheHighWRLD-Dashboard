@@ -67,9 +67,73 @@
     addedCredits++;
   }
 
+  // Credits naming a cover file the site no longer loads. The artwork was
+  // renamed and the credit never followed, so the artist panel was rendering a
+  // thumbnail for a file that 404s. The stale entry is REMOVED and, where the
+  // current filename is not already credited, added under the same artist -
+  // which the comp folder still supports for that file.
+  var RENAMES = [{"stale":"Eye's Closed.png","current":"Eyes Closed.png","from":"Raiden","title":"Eyes Closed"},{"stale":"Tsunami_Soul 2.png","current":"Tsunami Soul 2.png","from":"Rashy","title":"Tsunami Soul 2 (Sessions)"},{"stale":"Devil_Horns.png","current":"Devil Horns.png","from":"Skyler","title":"Devil Horns (Sessions)"},{"stale":"X-mas List.png","current":"X-Mas List.png","from":"Skyler","title":"Xmas List"}];
+
+  var renamed = 0, renameDropped = 0;
+  for (var rn = 0; rn < RENAMES.length; rn++) {
+    var pair = RENAMES[rn];
+    var staleOwner = null;
+    for (var s2 = 0; s2 < artistData.length; s2++) {
+      var st = artistData[s2].tracks;
+      for (var s3 = 0; s3 < st.length; s3++) if (st[s3][1] === pair.stale) { staleOwner = artistData[s2]; break; }
+      if (staleOwner) break;
+    }
+    if (!staleOwner) { renameDropped++; continue; }
+    staleOwner.tracks = staleOwner.tracks.filter(function (x) { return x[1] !== pair.stale; });
+    var keep = byName[pair.from];
+    if (!keep) { renameDropped++; continue; }
+    var have2 = false;
+    for (var s4 = 0; s4 < keep.tracks.length; s4++) if (keep.tracks[s4][1] === pair.current) have2 = true;
+    if (!have2) keep.tracks.push([pair.title, pair.current]);
+    renamed++;
+  }
+
   // Shared buckets hold artwork without naming who made it. They are listed so
   // the roster is complete, but they can never be credited to an artist.
   var SHARED_BUCKETS = ["Cover WRLD","Official Covers","Unknown Unsorted","WRLD Covers"];
+
+  // Credits already on the site that the comp folder contradicts, and where
+  // exactly one artist holds the file. These are MOVED, not duplicated - the
+  // cover is removed from whoever held it and given to the artist the comp
+  // names, so the lookup cannot report two names for one cover.
+  //
+  // 5 of them. Each was confirmed on a live search with controls: one already-correct
+  // single-artist cover still resolved to its credited artist, and one known
+  // three-way cover still came back ambiguous. The remaining contradicted
+  // credits are held by two to six artists and are deliberately left alone.
+  var CORRECTIONS = [{"cover":"Lit.png","from":"Deej","to":"AGreatIstone","title":"Lit"},{"cover":"Love Ain't Meant For Demons.png","from":"Raiden","to":"Brook","title":"Love Ain't Meant For Demons (Sessions)"},{"cover":"On My Ex Dont Know How To Act.png","from":"Brook","to":"AGreatIstone","title":"On My Ex"},{"cover":"Reach.png","from":"Raiden","to":"Isa","title":"Reach (Sessions)"},{"cover":"You Ain't Safe.png","from":"Carson","to":"Rashy","title":"You Ain't Safe"}];
+
+  var moved = 0, notFound = 0;
+  for (var k = 0; k < CORRECTIONS.length; k++) {
+    var fix = CORRECTIONS[k];
+    var holder = null, heldTitle = null;
+    for (var a = 0; a < artistData.length; a++) {
+      var t = artistData[a].tracks;
+      for (var b = 0; b < t.length; b++) {
+        if (t[b][1] === fix.cover) { holder = artistData[a]; heldTitle = t[b][0]; break; }
+      }
+      if (holder) break;
+    }
+    if (!holder) { notFound++; continue; }
+    // Move, not copy: remove the cover from whoever holds it, so the lookup
+    // cannot end up reporting two different names for one cover.
+    holder.tracks = holder.tracks.filter(function (x) { return x[1] !== fix.cover; });
+    var dest = byName[fix.to];
+    if (!dest) {
+      dest = { name: fix.to, pfp: null, color: hueFor(fix.to), tracks: [] };
+      artistData.push(dest);
+      byName[dest.name] = dest;
+    }
+    var already = false;
+    for (var q = 0; q < dest.tracks.length; q++) if (dest.tracks[q][1] === fix.cover) already = true;
+    if (!already) dest.tracks.push([fix.title || heldTitle || fix.cover, fix.cover]);
+    moved++;
+  }
 
   // Artists who submitted a file matching one of the site's covers, without it
   // being possible to tell which submission was published. Exposed so the count
@@ -78,7 +142,8 @@
 
   console.log(
     "[cover-artists] " + artistData.length + " artists (" + addedArtists + " new), " +
-    addedCredits + " credits applied, " + skipped + " already present"
+    addedCredits + " credits applied, " + skipped + " already present, " +
+    moved + " corrected, " + renamed + " renamed (" + renameDropped + " skipped)"
   );
 
   _renderCoverArtistFooter(artistData, SHARED_BUCKETS, AMBIGUOUS_CANDIDATES);

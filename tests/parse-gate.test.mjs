@@ -739,6 +739,115 @@ else structureOk("cover-gradients.js loads after script.js, so the merge has som
   }
 }
 
+/* ---- 14. cover credits are consistent ----
+ *
+ * cover-artists.js adds 97 artists and moves 5 credits between existing ones.
+ * Both operations edit artistData at runtime, so neither shows up in the source
+ * and both fail silently: a credit added twice gives one cover two artists, and a
+ * credit added for a cover no track uses is dead weight that looks like data.
+ *
+ * The corrections move rather than copy - the cover is removed from whoever held
+ * it before being given to the artist the comp folder names. That is checked
+ * here, offline, by replaying what the file does. */
+{
+  const caPath = join(ROOT, "cover-artists.js");
+  if (!existsSync(caPath)) {
+    structureOk("cover-artists.js not present, so there is nothing to gate");
+  } else {
+    const ca = readFileSync(caPath, "utf8");
+
+    // Replay it: the same create-then-credit-then-correct order the file uses.
+    const artistAt4 = scriptSrc.indexOf("var artistData");
+    const open4 = scriptSrc.indexOf("[", artistAt4);
+    let d4 = 0, k4 = open4, inS4 = null;
+    for (; k4 < scriptSrc.length; k4++) {
+      const c4 = scriptSrc[k4];
+      if (inS4) { if (c4 === "\\") { k4++; continue; } if (c4 === inS4) inS4 = null; continue; }
+      if (c4 === '"' || c4 === "'") { inS4 = c4; continue; }
+      if (c4 === "[") d4++;
+      else if (c4 === "]") { d4--; if (d4 === 0) break; }
+    }
+    const data = new Function("return " + scriptSrc.slice(open4, k4 + 1) + ";")();
+
+    const grab = (marker) => {
+      const m = new RegExp(`var ${marker} = (\\[[\\s\\S]*?\\]);`).exec(ca);
+      if (!m) return [];
+      try { return new Function("return " + m[1] + ";")(); } catch (_) { return []; }
+    };
+    const newArtists = grab("NEW_ARTISTS");
+    const credits = grab("CREDITS");
+    const corrections = grab("CORRECTIONS");
+    const renames = grab("RENAMES");
+
+    const byName = new Map(data.map((a) => [a.name, a]));
+    for (const n of newArtists) {
+      if (!byName.has(n)) {
+        const fresh = { name: n, pfp: null, color: "hsl(0,60%,50%)", tracks: [] };
+        data.push(fresh);
+        byName.set(n, fresh);
+      }
+    }
+    for (const c of credits) {
+      const a = byName.get(c.name);
+      if (a && !a.tracks.some((t) => t[1] === c.cover)) a.tracks.push([c.title, c.cover]);
+    }
+    for (const fix of corrections) {
+      const holder = data.find((a) => a.tracks.some((t) => t[1] === fix.cover));
+      if (holder) holder.tracks = holder.tracks.filter((t) => t[1] !== fix.cover);
+      let dest = byName.get(fix.to);
+      if (!dest) { dest = { name: fix.to, pfp: null, color: "hsl(0,60%,50%)", tracks: [] }; data.push(dest); byName.set(dest.name, dest); }
+      if (!dest.tracks.some((t) => t[1] === fix.cover)) dest.tracks.push([fix.title || fix.cover, fix.cover]);
+    }
+
+    for (const pair of renames) {
+      const stale = data.find((a) => a.tracks.some((t) => t[1] === pair.stale));
+      if (!stale) continue;
+      stale.tracks = stale.tracks.filter((t) => t[1] !== pair.stale);
+      const dest = byName.get(pair.from);
+      if (dest && !dest.tracks.some((t) => t[1] === pair.current)) dest.tracks.push([pair.title, pair.current]);
+    }
+
+    // One cover, one artist.
+    const owners = new Map();
+    for (const a of data) for (const t of a.tracks || []) {
+      if (!owners.has(t[1])) owners.set(t[1], []);
+      if (!owners.get(t[1]).includes(a.name)) owners.get(t[1]).push(a.name);
+    }
+    const doubles = [...owners.entries()].filter(([, names]) => names.length > 1);
+    for (const [cover, names] of doubles.slice(0, 5)) {
+      structureFail(`cover credited to ${names.length} artists: ${cover} -> ${names.join(" / ")}`);
+    }
+    if (doubles.length > 5) structureFail(`...and ${doubles.length - 5} more doubly-credited covers`);
+    if (!doubles.length) structureOk(`no cover is credited to more than one artist (${owners.size} credited)`);
+
+    // Nothing invented: every credited cover must be one the site actually uses.
+    const list4 = new Function(tracksSrc + "; return trackList;")();
+    const used4 = new Set(list4.map((t) => safeDecode4(stripPrefix4(t.cover))));
+    const orphans = [...owners.keys()].filter((c) => !used4.has(c));
+    for (const o of orphans.slice(0, 5)) structureFail(`credited cover no track uses: ${o}`);
+    if (orphans.length > 5) structureFail(`...and ${orphans.length - 5} more orphaned credits`);
+    if (!orphans.length) structureOk("every credited cover belongs to a real track");
+
+    // The panel dereferences artist.color unconditionally.
+    const noColour4 = data.filter((a) => !a.color);
+    if (noColour4.length) {
+      for (const a of noColour4.slice(0, 5)) structureFail(`artist has no colour, which throws in the panel: ${a.name}`);
+      if (noColour4.length > 5) structureFail(`...and ${noColour4.length - 5} more`);
+    } else {
+      structureOk(`all ${data.length} artists carry a colour`);
+    }
+
+    structureOk(`replayed: ${newArtists.length} artists added, ${credits.length} credits applied, ${corrections.length} corrected, ${renames.length} renamed`);
+  }
+}
+
+function stripPrefix4(c) {
+  return String(c || "").replace("https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/", "").replace(/^Covers\//, "");
+}
+function safeDecode4(v) {
+  try { return decodeURIComponent(v); } catch (_) { return v; }
+}
+
 /* The same check against what the browser actually parsed, which is the only
    place the nesting above was ever going to show up. */
 failures += structureFailures;
