@@ -8,6 +8,8 @@
   "scripts": {
     "test": "node tests/run-all.mjs",
     "test:crypto": "node tests/crypto-selftest.mjs",
-    "dev": "wrangler pages dev . --port 8788"
+    "dev": "node scripts/dev-server.cjs",
+    "dev:functions": "wrangler pages dev . --port 8789",
+    "dev:all": "wrangler pages dev . --port 8789 & node scripts/dev-server.cjs"
   }
 }
