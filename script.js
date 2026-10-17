@@ -25,9 +25,21 @@ function _coverWebp(p){
 function setCoverSrc(img,cover){
   if(!img)return;
   var png=String(cover||"")||"Juice-WRLD.png",webp=_coverWebp(png);
-  if(!webp){img.onerror=null;img.src=png;return}
-  img.onerror=function(){img.onerror=null;img.src=png};
-  img.src=webp;
+  img.onerror=null;
+  if(!webp){img.src=png;return}
+  /* Probe the WebP on a detached Image and assign only a URL already known to
+     load, instead of assigning the WebP and retrying from onerror. #player-cover
+     also has a global error listener that fires on the same error and overwrites
+     whatever this function set, so a cover with no WebP sibling landed on
+     Juice-WRLD.png rather than its own art. Assigning only verified URLs leaves
+     that listener as the single fallback owner, and the probe warms the cache so
+     the real assignment fetches nothing extra. The token guard drops a probe
+     whose track has already been superseded. */
+  var token=(img._coverToken=(img._coverToken||0)+1);
+  var probe=new Image();
+  probe.onload=function(){if(img._coverToken===token)img.src=webp};
+  probe.onerror=function(){if(img._coverToken===token)img.src=png};
+  probe.src=webp;
 }
 window.setCoverSrc=setCoverSrc;
 /* Exported so player-performance.js reuses this matcher instead of keeping its
