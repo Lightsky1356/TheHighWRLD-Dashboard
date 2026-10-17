@@ -474,7 +474,7 @@ const trackList=[
   },
   {
     title: "Diors (Sessions)",
-    tag: "Diors (Sessions) (WOD)",
+    tag: "Diors (Wockhardt Tech) (Sessions) (WOD)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Diors%20(Sessions)%20(WOD).mp3",
@@ -2387,7 +2387,7 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Alkaline (Sessions)",
+    title: "Alkaline",
     tag: "Alkaline (999) (GB&GR)",
     artist: "Juice WRLD",
     category: "leaks",
