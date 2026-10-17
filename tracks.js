@@ -3220,5 +3220,16 @@ const trackList=[
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/The%20Party%20Never%20Ends.png",
     producer: "Gezin & WondaGurl",
     year: "2018"
+  },
+  {
+    title: "Spanglish (Sessions)",
+    tag: "Spanglish (Rich And Blind) (Sessions) (WOD)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Spanglish%20(Sessions).mp3",
+    duration: 426,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Spanglish.png",
+    producer: "Take A Daytrip",
+    year: "2018"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});

@@ -28,7 +28,7 @@ const PRECACHE = [
   './api.js',
   './crypto-js.min.js?v=thw-v2',
   './qrcode.min.js?v=thw-v2',
-  './tracks.js?v=thw-v5',
+  './tracks.js?v=thw-v6',
   './browser-id3-writer.js?v=thw-v2',
   './account.js?v=thw-v6',
   './i18n.js?v=2',
