@@ -117,4 +117,125 @@ if (leaked.length) {
   console.log("  PASS  every page section keeps its opening tag");
 }
 
+/* ---- 4. the About tab split did not bury any page section ----
+ *
+ * The guard above catches a lost opening tag. This catches the other failure the
+ * same edit produced, which is quieter still.
+ *
+ * Wrapping the About body meant the body's own trailing `</div>` - the one closing
+ * .abp-page - ended up inside the new wrapper, so that close was consumed by the
+ * wrapper instead. Two divs were then left open: page-section-about never closed,
+ * and so page-section-partner and page-section-roadmap became its children.
+ *
+ * switchAppPage() shows its target with `display: block !important` and hides
+ * every other `.app-page`. A section nested inside another one cannot be shown,
+ * because its ancestor is display:none no matter what is set on the child. So
+ * both pages rendered as a blank panel with the nav bar visible and no error in
+ * any console - which is exactly what was reported.
+ *
+ * Content counts cannot see this, so the About block is compared against the
+ * commit before any tab work, and every page section is checked for being a
+ * top-level element. */
+const BASELINE_REV = "870ebbe";
+let structureFailures = 0;
+const structureFail = (m) => { console.log("  FAIL  " + m); structureFailures++; };
+const structureOk = (m) => console.log("  PASS  " + m);
+
+const aboutBlockOf = (src) => {
+  const s = src.indexOf('<div class="abp-page">');
+  if (s < 0) return null;
+  const e = src.indexOf('id="page-section-partner"', s);
+  return e < 0 ? null : src.slice(s, e);
+};
+
+const curAbout = aboutBlockOf(html);
+const baseAbout = aboutBlockOf(
+  execFileSync("git", ["show", `${BASELINE_REV}:index.html`], {
+    maxBuffer: 64 * 1024 * 1024,
+  }).toString("utf8"),
+);
+
+if (!curAbout || !baseAbout) {
+  structureFail("could not isolate the About block (needs '<div class=\"abp-page\">' then page-section-partner)");
+} else {
+  /* The Info tab contributes exactly two sections and four jump links and
+     nothing else matching these patterns. Any other difference means the tab
+     edit ate or duplicated original content. */
+  const expectedDelta = [
+    ['<section class="abp-sec"', 2],
+    ['class="abp-social"', 0],
+    ['releases/download/v1\\.0\\.1', 0],
+    ['class="abp-card-top abp-link"', 4],
+  ];
+  let contentOk = true;
+  for (const [pat, delta] of expectedDelta) {
+    const re = new RegExp(pat, "g");
+    const base = (baseAbout.match(re) || []).length;
+    const cur = (curAbout.match(re) || []).length;
+    if (cur !== base + delta) {
+      structureFail(`About content ${pat} is ${cur}, expected ${base + delta} (baseline ${base})`);
+      contentOk = false;
+    }
+  }
+  if (contentOk) structureOk(`About block keeps its content (${expectedDelta.length} patterns vs ${BASELINE_REV})`);
+}
+
+/* A duplicate id makes getElementById return the first match, so the second copy
+   silently stops being wired to its tab or its script. */
+const idCounts = new Map();
+for (const mm of html.matchAll(/id="([a-z][a-z0-9-]*)"/g)) {
+  idCounts.set(mm[1], (idCounts.get(mm[1]) || 0) + 1);
+}
+const dupes = [...idCounts.entries()].filter(([, n]) => n > 1);
+if (dupes.length) {
+  for (const [id, n] of dupes) structureFail(`id "${id}" appears ${n} times`);
+} else {
+  structureOk(`${idCounts.size} ids, all unique`);
+}
+
+/* Depth of every page section. home, gallery, failed and player sit one level
+   down inside the always-visible <main> wrapper; they have always been that way
+   and all four render, so they are the baseline rather than a defect. Anything
+   else not at depth 1 is new nesting that switchAppPage cannot undo. */
+const sections = [...html.matchAll(/id="(page-section-[a-z]+)"/g)].map((mm) => ({ id: mm[1], at: mm.index }));
+sections.sort((a, b) => a.at - b.at);
+const ALWAYS_NESTED = new Set([
+  "page-section-home",
+  "page-section-gallery",
+  "page-section-failed",
+  "page-section-player",
+]);
+const depths = new Map();
+{
+  let ti = 0, depth = 0, i = 0;
+  while (i < html.length && ti < sections.length) {
+    const o = html.indexOf("<div", i);
+    const c = html.indexOf("</div>", i);
+    if (c === -1) break;
+    if (o !== -1 && o < c) {
+      while (ti < sections.length && sections[ti].at < o) depths.set(sections[ti++].id, depth);
+      depth++;
+      i = o + 4;
+    } else {
+      while (ti < sections.length && sections[ti].at < c) depths.set(sections[ti++].id, depth);
+      depth--;
+      if (depth < 0) depth = 0; // pre-existing over-close, tolerated
+      i = c + 6;
+    }
+  }
+  while (ti < sections.length) depths.set(sections[ti++].id, depth);
+}
+const buried = sections
+  .filter((s) => {
+    const d = depths.get(s.id);
+    return !(d === 2 && ALWAYS_NESTED.has(s.id)) && d !== 1;
+  })
+  .map((s) => `${s.id} (depth ${depths.get(s.id)})`);
+if (buried.length) {
+  for (const b of buried) structureFail(`page section buried inside another element, can never be shown: ${b}`);
+} else {
+  structureOk(`${sections.length - ALWAYS_NESTED.size} page sections at top level, none buried`);
+}
+failures += structureFailures;
+
 process.exit(failures ? 1 : 0);

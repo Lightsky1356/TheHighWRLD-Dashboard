@@ -36,6 +36,11 @@ const path = require("path");
 const ROOT = path.resolve(__dirname, "..");
 const PORT = parseInt(process.env.PORT || "8787", 10);
 const WRANGLER_PORT = parseInt(process.env.WRANGLER_PORT || "8789", 10);
+/* 0.0.0.0 by default rather than loopback, so the site is also reachable on the
+   machine's LAN address. Loopback-only means any tooling outside this machine -
+   a browser harness, a phone on the same wifi - cannot load the page at all,
+   which is indistinguishable from the server being broken. */
+const HOST = process.env.HOST || "0.0.0.0";
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -173,8 +178,8 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, "127.0.0.1", () => {
-  console.log("dev server   http://127.0.0.1:" + PORT + "/");
+server.listen(PORT, HOST, () => {
+  console.log("dev server   http://127.0.0.1:" + PORT + "/  (also http://<lan-ip>:" + PORT + "/)");
   console.log("functions    proxied to http://127.0.0.1:" + WRANGLER_PORT);
   console.log("assets       served from disk, Cache-Control: no-store");
 });
