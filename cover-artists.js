@@ -108,11 +108,21 @@
   // cover is removed from whoever held it and given to the artist the comp
   // names, so the lookup cannot report two names for one cover.
   //
-  // 5 of them. Each was confirmed on a live search with controls: one already-correct
+  // 5 of them. Four were confirmed on a live search with controls: one already-correct
   // single-artist cover still resolved to its credited artist, and one known
   // three-way cover still came back ambiguous. The remaining contradicted
   // credits are held by two to six artists and are deliberately left alone.
-  var CORRECTIONS = [{"cover":"Lit.png","from":"Deej","to":"AGreatIstone","title":"Lit"},{"cover":"Love Ain't Meant For Demons.png","from":"Raiden","to":"Brook","title":"Love Ain't Meant For Demons (Sessions)"},{"cover":"On My Ex Dont Know How To Act.png","from":"Brook","to":"AGreatIstone","title":"On My Ex"},{"cover":"Reach.png","from":"Raiden","to":"Isa","title":"Reach (Sessions)"},{"cover":"You Ain't Safe.png","from":"Carson","to":"Rashy","title":"You Ain't Safe"}];
+  //
+  // On My Ex is the exception among these five, and it goes back to Brook on the
+  // owner's word rather than on the folder's. It was moved Brook -> AGreatIstone
+  // because AGreatIstone holds "On My Ex .jpg" while Brook holds nothing by that
+  // name. Re-checked directly on 2026-10-17, and the move does not hold up: the
+  // published file is "On My Ex Dont Know How To Act.png" and NEITHER artist holds
+  // that name. Brook has "On My Ex (Don't Know How To Act).png" at 1.9 MB,
+  // AGreatIstone has "On My Ex (Dont Know How To Act).jpg" at 391 KB - both
+  // near-misses on punctuation, so the folder contradicted the original credit for
+  // a reason that is about the filename, not about who made the picture.
+  var CORRECTIONS = [{"cover":"Lit.png","from":"Deej","to":"AGreatIstone","title":"Lit"},{"cover":"Love Ain't Meant For Demons.png","from":"Raiden","to":"Brook","title":"Love Ain't Meant For Demons (Sessions)"},{"cover":"On My Ex Dont Know How To Act.png","from":"AGreatIstone","to":"Brook","title":"On My Ex"},{"cover":"Reach.png","from":"Raiden","to":"Isa","title":"Reach (Sessions)"},{"cover":"You Ain't Safe.png","from":"Carson","to":"Rashy","title":"You Ain't Safe"}];
 
   var moved = 0, notFound = 0;
   for (var k = 0; k < CORRECTIONS.length; k++) {
