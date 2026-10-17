@@ -295,13 +295,25 @@ if (!navBlock) {
 } else {
   const routes = [...navBlock[1].matchAll(/(\w+):\s*"(\/[^"]*)"/g)].map((mm) => ({ page: mm[1], path: mm[2] }));
 
-  for (const required of [{ page: "about", path: "/about" }, { page: "partner", path: "/partner" }]) {
+  const REQUIRED_ROUTES = [
+    { page: "about", path: "/about" },
+    { page: "partner", path: "/partner" },
+    { page: "gallery", path: "/gallery" },
+    { page: "downloads", path: "/downloads" },
+    { page: "failed", path: "/failed" },
+    { page: "login", path: "/login" },
+    // Not requested, but showAuthPage() switches between login and register with
+    // one function, so routing only the first would leave the URL naming a page
+    // that is no longer on screen the moment "Create one" is clicked.
+    { page: "register", path: "/register" },
+  ];
+  for (const required of REQUIRED_ROUTES) {
     const hit = routes.find((r) => r.page === required.page);
     if (!hit) structureFail(`NAV_URL has no "${required.page}" entry, so ${required.path} is not routable`);
     else if (hit.path !== required.path) structureFail(`NAV_URL routes "${required.page}" to ${hit.path}, expected ${required.path}`);
   }
-  if (routes.length && routes.every((r) => r.page !== "about" || r.path === "/about")) {
-    structureOk(`NAV_URL routes ${routes.length} pages, including /about and /partner`);
+  if (routes.length && REQUIRED_ROUTES.every((r) => routes.some((x) => x.page === r.page && x.path === r.path))) {
+    structureOk(`NAV_URL routes ${routes.length} pages, including all ${REQUIRED_ROUTES.length} required paths`);
   }
 
   /* A route whose section is missing or buried is a blank page, not a 404 - the
@@ -318,6 +330,26 @@ if (!navBlock) {
     }
   }
   if (routeOk) structureOk("every NAV_URL route that has a page section points at a showable one");
+}
+
+/* A route with no nav button must say so explicitly. The default is
+   "page-nav-" + page, and for Gallery, Downloads, Failed Projects and the auth
+   pages that id does not exist - so the fallback would silently depend on
+   getElementById returning null rather than on anything being correct. */
+const pillFor = accountSrc.match(/function _navPillFor\(page\) \{([\s\S]*?)\n  \}/);
+if (!pillFor) {
+  structureFail("could not find _navPillFor in account.js");
+} else {
+  const body = pillFor[1];
+  const needsNoPill = ["gallery", "downloads", "failed", "login", "register"];
+  const explicit = new Set();
+  for (const m of body.matchAll(/page === "([a-z]+)"/g)) explicit.add(m[1]);
+  const missing = needsNoPill.filter((p) => !explicit.has(p));
+  if (missing.length) {
+    structureFail(`_navPillFor does not mention ${missing.join(", ")}, so these would fall through to a nav button that does not exist`);
+  } else {
+    structureOk(`_navPillFor handles the ${needsNoPill.length} routes that have no nav button`);
+  }
 }
 
 /* script.js's boot timer must not force the home page when the URL says otherwise. */

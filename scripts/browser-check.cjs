@@ -159,6 +159,19 @@ const HELPERS = `
       ? 0
       : new Set([...document.querySelectorAll("nav [id^=page-nav-]")].map(e => e.closest("nav"))).size,
     bottomNavCount: () => document.querySelectorAll(".mobile-bottom-nav").length,
+    // A visible section is not a working page. The lost-<div> bug produced a
+    // section that was on screen and contained nothing, so "visible" alone is
+    // exactly the assertion that let that through.
+    content: () => {
+      const vis = [...document.querySelectorAll(".app-page")]
+        .filter(e => getComputedStyle(e).display !== "none");
+      const sec = vis[0];
+      if (!sec) return null;
+      return {
+        text: (sec.innerText || "").trim().length,
+        controls: sec.querySelectorAll("button, a[href], [onclick], input, textarea, select").length,
+      };
+    },
     leakedText: () => {
       const t = document.body.innerText || "";
       const i = t.indexOf('id="page-section-');
@@ -259,6 +272,7 @@ async function main() {
       mainNav: __probe.mainNavCount(),
       bottomNavCount: __probe.bottomNavCount(),
       leaked: __probe.leakedText(),
+      content: __probe.content(),
       router: typeof window.__thwRouter,
       title: document.title,
     })`);
@@ -282,6 +296,14 @@ const expectations = [
     { path: "/vault", want: "page-section-hub", note: "the vault" },
     { path: "/wanted", want: "page-section-wanted", note: "wanted" },
     { path: "/TOS", want: "page-section-tos", note: "terms of service" },
+    // Gallery, Downloads, Failed Projects and the auth pages have no nav button,
+    // so these also confirm the pill is handled rather than left pointing at an id
+    // that does not exist.
+    { path: "/gallery", want: "page-section-gallery", note: "gallery" },
+    { path: "/downloads", want: "page-section-downloads", note: "downloads" },
+    { path: "/failed", want: "page-section-failed", note: "failed projects" },
+    { path: "/login", want: "page-section-login", note: "login" },
+    { path: "/register", want: "page-section-register", note: "register" },
     { path: "/nosuchroute", want: "page-section-home", note: "unknown path falls back home" },
   ];
 
@@ -300,6 +322,13 @@ const expectations = [
     );
     check(`${e.path} runs with no JavaScript error`, jsErrors.length === 0,
       jsErrors.length ? jsErrors.slice(0, 2).join(" | ").slice(0, 220) : "");
+
+    const c = s.content;
+    check(
+      `${e.path} renders content, not an empty shell`,
+      !!c && c.text >= 50 && c.controls >= 1,
+      c ? `text=${c.text} controls=${c.controls}` : "no visible section",
+    );
     missingAssets.add(...netWarnings);
   }
 

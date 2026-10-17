@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v74';
+const VERSION = 'thw-v75';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -30,7 +30,7 @@ const PRECACHE = [
   './qrcode.min.js?v=thw-v2',
   './tracks.js?v=thw-v3',
   './browser-id3-writer.js?v=thw-v2',
-  './account.js?v=thw-v5',
+  './account.js?v=thw-v6',
   './i18n.js?v=2',
   './script.js?v=thw-v36',
   './suggestions.js?v=thw-v2',

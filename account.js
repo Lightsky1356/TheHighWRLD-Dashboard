@@ -2377,7 +2377,7 @@ window.profileSectionShown = function () {
    meant two sources of truth for the same job. _navPillFor already resolves both
    to their real nav buttons (page-nav-about, page-nav-partner), so nothing else
    needed changing to highlight them. */
-var NAV_URL = { home: "/", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", about: "/about", partner: "/partner" };
+var NAV_URL = { home: "/", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", about: "/about", partner: "/partner", gallery: "/gallery", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register" };
   var NAV_URL_REV = {};
   Object.keys(NAV_URL).forEach(function (k) { NAV_URL_REV[NAV_URL[k]] = k; });
   function _navTabFor(page) {
@@ -2392,6 +2392,12 @@ var NAV_URL = { home: "/", player: "/player", hub: "/vault", wanted: "/wanted", 
   function _navPillFor(page) {
     if (page === "wanted" || page === "suggestions") return "page-nav-wanted";
     if (page === "profile" || page === "account" || page === "owner") return "";
+    /* These have no button in the nav bar at all - Gallery and Downloads are
+       reached from elsewhere in the vault, Failed Projects from its own card, and
+       the sign-in button is navPillAuthBtn rather than a page-nav-* id. Returning
+       "" hides the pill deliberately, instead of relying on getElementById
+       returning null for a button that was never there. */
+    if (page === "gallery" || page === "downloads" || page === "failed" || page === "login" || page === "register") return "";
     if (page === "tos" || page === "pp" || page === "dmca") return "page-nav-home";
     return "page-nav-" + page;
   }
