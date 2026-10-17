@@ -48,8 +48,8 @@
     "Covers/Candles.png": "linear-gradient(135deg,hsl(299,47%,40%),hsl(28,41%,34%))",
     "Cigarettes.png": "linear-gradient(135deg,hsl(12,30%,36%),hsl(219,24%,30%))",
     "Covers/Cigarettes.png": "linear-gradient(135deg,hsl(12,30%,36%),hsl(219,24%,30%))",
-    "DRFL.png": "linear-gradient(135deg,#100807,#85251d,#8f5a28)",
-    "Covers/DRFL.png": "linear-gradient(135deg,#100807,#85251d,#8f5a28)",
+    "DRFL.png": "linear-gradient(135deg,#100b0a,#7d2e1c,#773c91)",
+    "Covers/DRFL.png": "linear-gradient(135deg,#100b0a,#7d2e1c,#773c91)",
     "Feeling.png": "linear-gradient(135deg,hsl(207,55%,36%),hsl(46,49%,30%))",
     "Covers/Feeling.png": "linear-gradient(135deg,hsl(207,55%,36%),hsl(46,49%,30%))",
     "Flintstones.png": "linear-gradient(135deg,hsl(30,55%,45%),hsl(160,49%,38%))",
@@ -84,6 +84,8 @@
     "Covers/My Life In A Nutshell.png": "linear-gradient(135deg,hsl(20,30%,36%),hsl(218,24%,30%))",
     "Codeine Cobain.png": "linear-gradient(135deg,#050505,#251000,#8a4d2b)",
     "Covers/Codeine Cobain.png": "linear-gradient(135deg,#050505,#251000,#8a4d2b)",
+    "The Party Never Ends.png": "linear-gradient(135deg,#481340,#e34f94,#f9c96b)",
+    "Covers/The Party Never Ends.png": "linear-gradient(135deg,#481340,#e34f94,#f9c96b)",
   };
 
   for (var key in GRADIENTS) {
