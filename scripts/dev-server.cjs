@@ -149,14 +149,28 @@ const server = http.createServer((req, res) => {
           ...proxied.headers,
           "Cache-Control": "no-store",
         });
+        proxied.on("error", () => res.destroy());
         proxied.pipe(res);
       }
     );
+    /* The backend can fail after the response has already started - mid-body,
+       for instance. Sending a 502 at that point is a second writeHead, which
+       throws ERR_HTTP_HEADERS_SENT. Uncaught, that kills the whole dev server,
+       so the next request cannot even connect and the site looks broken rather
+       than reporting an unreachable backend. This fired every time the Functions
+       runtime was restarted, which is why the server kept dying mid-session. */
     proxy.on("error", () => {
+      if (res.headersSent) {
+        res.destroy();
+        return;
+      }
       send(res, 502, JSON.stringify({ ok: false, error: "functions_unavailable" }), {
         "Content-Type": "application/json; charset=utf-8",
       });
     });
+    // A client that disconnects mid-request is routine, not a crash.
+    res.on("error", () => {});
+    req.on("error", () => {});
     req.pipe(proxy);
     return;
   }

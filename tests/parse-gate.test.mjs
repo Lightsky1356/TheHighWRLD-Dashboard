@@ -518,6 +518,69 @@ if (!artistDataMatch) {
   }
 }
 
+/* ---- 10. the cover lightbox stacks above the info panel ----
+ *
+ * Both were z-index:10000 in player-settings.css. Equal values stack in document
+ * order and #cover-lightbox is written before #info-panel, so the panel painted
+ * over the lightbox and View cover appeared to open behind it. Harmless while the
+ * button lived in the player; broken once it moved into the panel.
+ *
+ * The comparison is done by reading both numbers out of the CSS rather than by
+ * clicking the button, because a tie does not look like a failure in a screenshot
+ * until the two overlap - which is exactly when nobody is looking at the CSS. */
+const psCss = readFileSync(join(ROOT, "player-settings.css"), "utf8");
+const zIndexOf = (css, selector) => {
+  const re = new RegExp(`(?:^|[}{;\\s])${selector.replace(/[.#]/g, "\\$&")}\\s*(?:,[^{]*)?\\{([^}]*)\\}`, "g");
+  let best = null;
+  for (const m of css.matchAll(re)) {
+    const z = /z-index:\s*(\d+)/.exec(m[1]);
+    if (z) best = Number(z[1]);
+  }
+  return best;
+};
+const panelZ = zIndexOf(psCss, ".info-panel");
+const lightboxZ = zIndexOf(readFileSync(join(ROOT, "cover-preview.css"), "utf8"), "#cover-lightbox");
+if (panelZ === null) {
+  structureFail("could not find .info-panel's z-index in player-settings.css");
+} else if (lightboxZ === null) {
+  structureFail("#cover-lightbox has no z-index in cover-preview.css, so it competes with the info panel at 10000");
+} else if (lightboxZ <= panelZ) {
+  structureFail(`#cover-lightbox is z-index ${lightboxZ} and .info-panel is ${panelZ}, so the panel paints over the lightbox`);
+} else {
+  structureOk(`the cover lightbox (${lightboxZ}) stacks above the info panel (${panelZ})`);
+}
+
+/* ---- 11. the lightbox has no prev/next arrows ----
+ *
+ * They were removed on request. The buttons are gone from the markup and their
+ * .lb-nav rules are gone from the stylesheet, but prevCover/nextCover stay: they
+ * are still bound to ArrowLeft/ArrowRight while the lightbox is open, so keyboard
+ * navigation still works and only the visible controls are gone.
+ *
+ * Checked both halves. Leaving the CSS behind is harmless but dead, and leaving
+ * the markup behind would put the arrows back on screen with no styling to match.
+ */
+const lbBlock = html.slice(html.indexOf('id="cover-lightbox"'), html.indexOf('id="cover-lightbox"') + 900);
+if (lbBlock.includes("lb-nav")) {
+  structureFail("the cover lightbox still contains a .lb-nav arrow button");
+} else if (lbBlock.includes("prevCover") || lbBlock.includes("nextCover")) {
+  structureFail("the lightbox markup still calls prevCover/nextCover even though the arrows were removed");
+} else {
+  structureOk("the cover lightbox has no arrow buttons");
+}
+if (readFileSync(join(ROOT, "player-settings.css"), "utf8").includes("lb-nav")) {
+  structureFail("player-settings.css still carries .lb-nav rules for arrows that no longer exist");
+} else {
+  structureOk("the .lb-nav stylesheet rules are gone with the buttons");
+}
+const lbHasClose = /id="cover-lightbox"[\s\S]{0,700}?hideCoverArt\(\)/.test(html);
+const lbHasImg = /id="cover-lightbox"[\s\S]{0,700}?id="cover-lightbox-img"/.test(html);
+if (!lbHasClose || !lbHasImg) {
+  structureFail("the lightbox lost its close button or its image while the arrows were being removed");
+} else {
+  structureOk("the lightbox still has its image, close button and label");
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

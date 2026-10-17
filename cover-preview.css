@@ -40,6 +40,25 @@
    (.info-panel-cover-row) that centres its children, so the label fits at every
    width. Leaving the hide in place would have hidden the feature on phones for
    no remaining reason. */
+/* The lightbox must sit ABOVE the info panel.
+ *
+ * #cover-lightbox and .info-panel were both z-index:10000 in player-settings.css.
+ * Equal values stack in document order, and #cover-lightbox is written before
+ * #info-panel, so the panel painted over the lightbox and the preview appeared to
+ * open behind it. That never showed before this button moved into the panel: it
+ * used to be opened from the player, where no panel was on screen to compete.
+ *
+ * 10003 puts it above the other overlay tier (10001 global search, 10002 gallery,
+ * bans, playlists, mobile player) and still well below the ban screen (20000),
+ * script.js's layers (20500-21000), player-settings' 99990 and security.js's
+ * 2147483647 - this is transient UI, and nothing should outrank those.
+ *
+ * cover-preview.css is loaded after player-settings.css, so this same-specificity
+ * id rule wins without !important. */
+#cover-lightbox {
+  z-index: 10003;
+}
+
 .cp-open {
   margin-top: 12px;
 }

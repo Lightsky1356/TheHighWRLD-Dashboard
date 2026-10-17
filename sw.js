@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v79';
+const VERSION = 'thw-v81';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -43,7 +43,7 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v2',
-  './player-settings.css?v=thw-v41',
+  './player-settings.css?v=thw-v42',
   './style.css?v=thw-v30',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
@@ -92,7 +92,7 @@ const PRECACHE = [
   './failed-projects.css?v=thw-v5',
   './legal-info.css?v=thw-v4',
   './simple-toast.css?v=thw-v3',
-  './cover-preview.css?v=thw-v4',
+  './cover-preview.css?v=thw-v5',
 
   /* --- page scripts --- */
   './user-relations.js?v=thw-v2',
