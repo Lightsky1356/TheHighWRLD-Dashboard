@@ -631,13 +631,10 @@ if (!lbHasClose || !lbHasImg) {
  * unnoticed for so long.
  *
  * 16 covers were missing (26 tracks - several share era artwork, so one gap hid
- * five tracks at a time) and 7 more were wrong. cover-gradients.js now supplies
- * all of them, derived from the artwork. This asserts that no track in the vault
- * reaches the hash fallback, and that the fixes file actually loads after
- * script.js - coverGradientMap is declared with `var`, so the merge only works
- * if script.js has already run.
+ * five tracks at a time) and 7 more were wrong. All of them are now derived from
+ * the artwork and live in the single coverGradientMap in script.js. This asserts
+ * that no track in the vault reaches the hash fallback.
  */
-const coverGradientSrc = readFileSync(join(ROOT, "cover-gradients.js"), "utf8");
 const mapAt2 = scriptSrc.indexOf("coverGradientMap={");
 let vaultMap = null;
 if (mapAt2 >= 0) {
@@ -654,12 +651,7 @@ if (mapAt2 >= 0) {
 if (!vaultMap) {
   structureFail("could not read coverGradientMap from script.js");
 } else {
-  // Merge in what cover-gradients.js will add, then resolve every track's cover.
-  const extraKeys = [...coverGradientSrc.matchAll(/^\s{4}"([^"]+)":\s*"linear-gradient/gm)].map((m) => m[1]);
-  const merged = { ...vaultMap };
-  const pairs = [...coverGradientSrc.matchAll(/^\s{4}"([^"]+)":\s*("(?:[^"\\]|\\.)*")/gm)];
-  for (const [, k, v] of pairs) merged[k] = JSON.parse(v);
-
+  const merged = vaultMap;
   const COVER_PREFIX = "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/";
   const strip = (c) => String(c || "").replace(COVER_PREFIX, "").replace(/^Covers\//, "");
   const safeDecode = (v) => { try { return decodeURIComponent(v); } catch (_) { return v; } };
@@ -674,19 +666,61 @@ if (!vaultMap) {
     for (const u of unresolved.slice(0, 8)) structureFail(`cover gradient falls back to a hash of the filename: ${u}`);
     if (unresolved.length > 8) structureFail(`...and ${unresolved.length - 8} more`);
   } else {
-    structureOk(`all ${list2.length} covers resolve to a real gradient, none to the filename hash`);
+    structureOk(`all ${list2.length} covers resolve to a real gradient, none to the filename hash (${Object.keys(merged).length} map keys)`);
   }
-  if (extraKeys.length) structureOk(`cover-gradients.js supplies ${extraKeys.length} map keys`);
-  else structureFail("cover-gradients.js contains no gradient entries");
 }
 
-/* The merge only works after script.js has run, since coverGradientMap is a `var`
-   there. */
-const cgTag = html.indexOf("./cover-gradients.js?");
-const scriptTag2 = html.indexOf("./script.js?");
-if (cgTag === -1) structureFail("cover-gradients.js is not referenced by index.html");
-else if (cgTag < scriptTag2) structureFail("cover-gradients.js loads before script.js, so coverGradientMap does not exist yet");
-else structureOk("cover-gradients.js loads after script.js, so the merge has somewhere to land");
+/* ---- there is exactly one gradient table ----
+ *
+ * coverGradientMap was assembled from three places: the literal in script.js, an
+ * Object.assign(coverGradientMap, {...}) block at the bottom of script.js, and
+ * cover-gradients.js. Precedence was load order, so 13 keys took their value from
+ * whichever file happened to load last rather than from intent, and the block at the
+ * bottom of a minified file is not something anyone reads by accident.
+ *
+ * A fourth table would be the same trap under a new filename, so this fails on any
+ * gradient table anywhere other than the one in script.js. */
+const gradientTablesElsewhere = [];
+if (/Object\.assign\(\s*coverGradientMap/.test(scriptSrc)) {
+  gradientTablesElsewhere.push("an Object.assign(coverGradientMap, ...) block in script.js");
+}
+// Matching the bare filename was too blunt: script.js documents this consolidation
+// in prose, and that comment mentions cover-gradients.js by name. What matters is
+// whether something would still LOAD a second table, so these match the loading
+// forms - a script src, a precache entry, or the file existing at all.
+if (/src=["'][^"']*cover-gradients\.js/.test(html)) {
+  gradientTablesElsewhere.push("a <script src> in index.html");
+}
+if (/["'][^"']*cover-gradients\.js/.test(swSrc)) {
+  gradientTablesElsewhere.push("an entry in the sw.js precache list");
+}
+if (existsSync(join(ROOT, "cover-gradients.js"))) {
+  gradientTablesElsewhere.push("cover-gradients.js still exists on disk");
+}
+if (gradientTablesElsewhere.length) {
+  for (const t of gradientTablesElsewhere) structureFail(`cover gradients are defined in more than one place: ${t}`);
+} else {
+  structureOk(`cover gradients come from one table only (${Object.keys(vaultMap || {}).length} keys in script.js)`);
+}
+
+/* The cache clear at the bottom of script.js is load-bearing and easy to lose in a
+   consolidation like this one. A lookup that missed before the table was complete
+   caches the filename-hash fallback, and without the clear it never re-reads the
+   real value - so gradients would be right in the source and wrong on screen. */
+if (/delete gradientCache\[cover\]/.test(scriptSrc)) {
+  structureOk("gradientCache is cleared after the table is built, so a stale filename-hash fallback is re-read");
+} else {
+  structureFail("gradientCache is never cleared, so a lookup that cached the filename hash keeps serving it");
+}
+
+/* cover-gradients.js exported this hook for anything reading the table from outside.
+   It pointed at that file's 52 keys; it now points at the whole map, which is a
+   superset, so every lookup that used to resolve still does. */
+if (/window\.__thwCoverGradients\s*=/.test(scriptSrc)) {
+  structureOk("window.__thwCoverGradients is still exported");
+} else {
+  structureFail("window.__thwCoverGradients is no longer exported");
+}
 
 /* ---- 13. no script tag is nested inside another ----
  *
