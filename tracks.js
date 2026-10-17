@@ -2145,7 +2145,7 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Tsunami Soul 2 (We Outta Here) (Sessions)",
+    title: "Tsunami Soul 2 (Sessions)",
     tag: "Tsunami Soul 2 (We Outta Here) (Coming With Me) (Sessions) (DRFL)",
     artist: "Juice WRLD",
     category: "sessions",
