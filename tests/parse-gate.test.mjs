@@ -596,6 +596,113 @@ if (!lbHasClose || !lbHasImg) {
   structureOk("the lightbox still has its image, close button and label");
 }
 
+/* ---- 12. every cover resolves to a real gradient ----
+ *
+ * getCoverGradientValue() hashes the cover's FILENAME when it finds no entry, so
+ * a missing gradient is not blank - it is confidently wrong. "Smile (Sessions)"
+ * came out pink because S is early in the alphabet, which is why the cause went
+ * unnoticed for so long.
+ *
+ * 16 covers were missing (26 tracks - several share era artwork, so one gap hid
+ * five tracks at a time) and 7 more were wrong. cover-gradients.js now supplies
+ * all of them, derived from the artwork. This asserts that no track in the vault
+ * reaches the hash fallback, and that the fixes file actually loads after
+ * script.js - coverGradientMap is declared with `var`, so the merge only works
+ * if script.js has already run.
+ */
+const coverGradientSrc = readFileSync(join(ROOT, "cover-gradients.js"), "utf8");
+const mapAt2 = scriptSrc.indexOf("coverGradientMap={");
+let vaultMap = null;
+if (mapAt2 >= 0) {
+  const open2 = scriptSrc.indexOf("{", mapAt2);
+  let d2 = 0, k2 = open2;
+  for (; k2 < scriptSrc.length; k2++) {
+    if (scriptSrc[k2] === "{") d2++;
+    else if (scriptSrc[k2] === "}") { d2--; if (d2 === 0) break; }
+  }
+  try {
+    vaultMap = new Function("return " + scriptSrc.slice(open2, k2 + 1) + ";")();
+  } catch (_) {}
+}
+if (!vaultMap) {
+  structureFail("could not read coverGradientMap from script.js");
+} else {
+  // Merge in what cover-gradients.js will add, then resolve every track's cover.
+  const extraKeys = [...coverGradientSrc.matchAll(/^\s{4}"([^"]+)":\s*"linear-gradient/gm)].map((m) => m[1]);
+  const merged = { ...vaultMap };
+  const pairs = [...coverGradientSrc.matchAll(/^\s{4}"([^"]+)":\s*("(?:[^"\\]|\\.)*")/gm)];
+  for (const [, k, v] of pairs) merged[k] = JSON.parse(v);
+
+  const COVER_PREFIX = "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/";
+  const strip = (c) => String(c || "").replace(COVER_PREFIX, "").replace(/^Covers\//, "");
+  const safeDecode = (v) => { try { return decodeURIComponent(v); } catch (_) { return v; } };
+
+  const list2 = new Function(tracksSrc + "; return trackList;")();
+  const unresolved = [];
+  for (const tr of list2) {
+    const k = safeDecode(strip(tr.cover));
+    if (!merged[k] && !merged["Covers/" + k]) unresolved.push(`${tr.title} (${k})`);
+  }
+  if (unresolved.length) {
+    for (const u of unresolved.slice(0, 8)) structureFail(`cover gradient falls back to a hash of the filename: ${u}`);
+    if (unresolved.length > 8) structureFail(`...and ${unresolved.length - 8} more`);
+  } else {
+    structureOk(`all ${list2.length} covers resolve to a real gradient, none to the filename hash`);
+  }
+  if (extraKeys.length) structureOk(`cover-gradients.js supplies ${extraKeys.length} map keys`);
+  else structureFail("cover-gradients.js contains no gradient entries");
+}
+
+/* The merge only works after script.js has run, since coverGradientMap is a `var`
+   there. */
+const cgTag = html.indexOf("./cover-gradients.js?");
+const scriptTag2 = html.indexOf("./script.js?");
+if (cgTag === -1) structureFail("cover-gradients.js is not referenced by index.html");
+else if (cgTag < scriptTag2) structureFail("cover-gradients.js loads before script.js, so coverGradientMap does not exist yet");
+else structureOk("cover-gradients.js loads after script.js, so the merge has somewhere to land");
+
+/* ---- 13. no script tag is nested inside another ----
+ *
+ * The cover-gradients.js tag was first added directly after script.js's opening
+ * tag rather than after its closing one, so it became literal text inside that
+ * element. Nothing noticed: the file parsed, every other script loaded, and the
+ * server was seen serving the tag - but the browser never created the element, so
+ * the file was never requested. parse-gate read index.html and saw the tag, which
+ * is exactly why a check on the source is not enough on its own.
+ *
+ * Caught by walking the tags properly: every <script> that has a src must be
+ * closed before the next one opens. */
+{
+  const tagRe = /<script\b[^>]*>/gi;
+  let m;
+  let open = null;
+  let nested = [];
+  let checked = 0;
+  while ((m = tagRe.exec(html)) !== null) {
+    const closeRe = /<\/script\s*>/gi;
+    closeRe.lastIndex = m.index + m[0].length;
+    const close = closeRe.exec(html);
+    const nextOpen = html.indexOf("<script", m.index + m[0].length);
+    if (!close) {
+      nested.push(`${m[0].slice(0, 60)} is never closed`);
+      continue;
+    }
+    if (nextOpen !== -1 && nextOpen < close.index) {
+      nested.push(`${m[0].slice(0, 50)} contains another <script before its own </script>`);
+      continue;
+    }
+    if (/src=/i.test(m[0])) checked++;
+    open = m[0];
+  }
+  if (nested.length) {
+    for (const n of nested) structureFail("nested script tag: " + n);
+  } else {
+    structureOk(`${checked} external script tags, none nested inside another`);
+  }
+}
+
+/* The same check against what the browser actually parsed, which is the only
+   place the nesting above was ever going to show up. */
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);
