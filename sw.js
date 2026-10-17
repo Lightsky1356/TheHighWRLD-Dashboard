@@ -32,7 +32,7 @@ const PRECACHE = [
   './browser-id3-writer.js?v=thw-v2',
   './account.js?v=thw-v6',
   './i18n.js?v=2',
-  './script.js?v=thw-v42',
+  './script.js?v=thw-v43',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v4',
@@ -43,7 +43,7 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v2',
-  './player-settings.css?v=thw-v45',
+  'player-settings.css?v=thw-v46',
   './style.css?v=thw-v30',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
@@ -146,7 +146,7 @@ const PRECACHE = [
   './AlbumArt/legends.jpg',
   './AlbumArt/party.jpg',
   './AlbumArt/preparty.jpg',
-  './cover-artists.js?v=thw-v89',
+  './cover-artists.js?v=thw-v90',
 ];
 
 /* Requests that must NEVER be served from cache (privacy / correctness). */

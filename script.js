@@ -243,9 +243,12 @@ window.MATURE_COVERS = [
   function isFlaggedUrl(url) {
     var list = window.MATURE_COVERS || [];
     if (!url || !list.length) return false;
-    url = norm(url);
+    var key = coverKey(url).replace(/\.[a-z0-9]+$/, "");
+    if (!key) return false;
     for (var i = 0; i < list.length; i++) {
-      if (list[i] && url.indexOf(norm(list[i])) !== -1) return true;
+      if (!list[i]) continue;
+      var stem = coverKey(list[i]).replace(/\.[a-z0-9]+$/, "");
+      if (stem && stem === key) return true;
     }
     return false;
   }
