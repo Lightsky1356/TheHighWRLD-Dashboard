@@ -1980,17 +1980,6 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Spanglish",
-    tag: "Spanglish (Rich And Blind) (v3) (WOD)",
-    artist: "Juice WRLD",
-    category: "leaks",
-    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Spanglish%20(v3).mp3",
-    duration: 223,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Spanglish.png",
-    producer: "Take A Daytrip",
-    year: "2018"
-  },
-  {
     title: "Starstruck",
     tag: "Starstruck (V2) (WOD)",
     artist: "Juice WRLD",
