@@ -43,7 +43,7 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v2',
-  './player-settings.css?v=thw-v44',
+  './player-settings.css?v=thw-v45',
   './style.css?v=thw-v30',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
@@ -146,7 +146,7 @@ const PRECACHE = [
   './AlbumArt/legends.jpg',
   './AlbumArt/party.jpg',
   './AlbumArt/preparty.jpg',
-  './cover-artists.js?v=thw-v87',
+  './cover-artists.js?v=thw-v88',
 ];
 
 /* Requests that must NEVER be served from cache (privacy / correctness). */

@@ -1387,3 +1387,20 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
 .thw-push-live-text{font-size:11.5px;line-height:1.45;color:rgba(255,255,255,.62)}
 @keyframes thw-push-pulse{0%,100%{opacity:.3}50%{opacity:1}}
 @media (prefers-reduced-motion:reduce){.thw-push-dot--wait{animation:none}}
+
+/* ============================================================================
+   MATURE COVERS IN THE ARTIST PANELS
+   Covers the owner nominated are blurred until deliberately revealed: on hover with
+   a pointer, or on click/tap, which is what a touch device gets. The tile already
+   carries the track name in its title attribute, so a blurred cover is identifiable
+   without revealing it.
+
+   Scoped to #ap-covers so the player, the playlist rows and the lightbox are
+   untouched - in the player a track has already been chosen deliberately.
+   ========================================================================== */
+#ap-covers .thw-mature-tile{position:relative}
+#ap-covers .thw-mature-tile img{filter:blur(16px) saturate(.55);transform:scale(1.06);transition:filter .18s ease,transform .18s ease}
+#ap-covers .thw-mature-tile:hover img,#ap-covers .thw-mature-tile.thw-mature-open img{filter:none;transform:none}
+#ap-covers .thw-mature-tile::after{content:'EXPLICIT';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-8deg);padding:2px 4px;border-radius:3px;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.28);color:rgba(255,255,255,.94);font:700 7px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.6px;white-space:nowrap;pointer-events:none}
+#ap-covers .thw-mature-tile:hover::after,#ap-covers .thw-mature-tile.thw-mature-open::after{display:none}
+@media (prefers-reduced-motion:reduce){#ap-covers .thw-mature-tile img{transition:none}}
