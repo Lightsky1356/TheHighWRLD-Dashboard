@@ -638,7 +638,7 @@ const trackList=[
     year: "2017"
   },  {
     title: "Floating",
-    tag: "Floating (Float Over My Demons) (Scheming) (Weekend) (DRFL)",
+    tag: "Floating (Float Over My Demons) (Scheming) (Weekend) (v3) (DRFL)",
     artist: "Juice WRLD",
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Floating%20(v3).mp3",
@@ -770,7 +770,7 @@ const trackList=[
     year: ""
   },  {
     title: "Heart Racing",
-    tag: "Heart Racing (Drive Me Crazy) (OUT)",
+    tag: "Heart Racing (Drive Me Crazy) (v1) (OUT)",
     artist: "Juice WRLD",
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Heart%20Racing%20(v1).mp3",

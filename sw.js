@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v76';
+const VERSION = 'thw-v78';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -92,7 +92,7 @@ const PRECACHE = [
   './failed-projects.css?v=thw-v5',
   './legal-info.css?v=thw-v4',
   './simple-toast.css?v=thw-v3',
-  './cover-preview.css?v=thw-v3',
+  './cover-preview.css?v=thw-v4',
 
   /* --- page scripts --- */
   './user-relations.js?v=thw-v2',
@@ -102,7 +102,7 @@ const PRECACHE = [
   './player-performance.js?v=thw-v4',
   './vault-discography.js?v=thw-v4',
   './global-search.js?v=thw-v3',
-  './about-tabs.js?v=thw-v4',
+  './about-tabs.js?v=thw-v5',
   './trending.js?v=thw-v4',
   './owner-search.js?v=thw-v2',
   './owner-announce.js?v=thw-v2',
@@ -133,7 +133,7 @@ const PRECACHE = [
   './social-panel.js?v=thw-v30',
   './push-client.js?v=thw-v13',
   './simple-toast.js?v=thw-v5',
-  './cover-preview.js?v=thw-v4',
+  './cover-preview.js?v=thw-v5',
 
   /* --- misc page assets --- */
   './Juice-WRLD.png?v=2',

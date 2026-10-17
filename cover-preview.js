@@ -1,8 +1,9 @@
 /* ============================================================================
    COVER PREVIEW
-   The "View cover" button under the big artwork in the WRLD Player. It opens
+   The "View cover" button in the WRLD Player's info panel. It opens
    the site's existing cover lightbox (#cover-lightbox) on the currently playing
-   track's artwork.
+   track's artwork. It used to sit under the big artwork in the player itself;
+   it lives in the info panel now, so the player column carries only controls.
 
    Deliberately thin: the lightbox already has its own markup, navigation,
    arrow-key handling and Escape handling, so this only supplies the trigger and
@@ -66,7 +67,13 @@
   }
 
   function mount() {
-    var wrapper = document.getElementById("vinyl-wrapper");
+    /* Under the artwork, but inside the info panel rather than beside the
+       player's big vinyl. .info-panel-cover-row is a centred flex column, so the
+       pill drops straight in below the cover image with no CSS change needed.
+       .info-panel-cover-wrap was the other candidate and is wrong: it has a fixed
+       size at every breakpoint (168px, 150px, 124px...), so a child would either
+       overflow it or squash the image. */
+    var wrapper = document.querySelector(".info-panel-cover-row");
     if (!wrapper) return;
     var btn = document.createElement("button");
     btn.type = "button";

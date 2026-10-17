@@ -373,6 +373,86 @@ if (!accountSrc.includes('window.switchAppPage(bootPage || "home")')) {
   structureOk("account.js's boot hook resolves known paths and falls back to home");
 }
 
+/* ---- 7. no published track count is hardcoded ----
+ *
+ * The About hero stat and the WRLD LOG footer both used to carry a typed-in
+ * catalogue size, and both went stale the moment tracks were added - the footer
+ * was previously found claiming 30 while the panel above it listed 31. They are
+ * now written from trackList, so what is checked here is that neither has drifted
+ * back to a literal.
+ *
+ * The literal is compared against trackList's real length, so a stale number
+ * fails even though it is a plausible-looking count. */
+const tracksSrc = readFileSync(join(ROOT, "tracks.js"), "utf8");
+let trackCount = null;
+try {
+  trackCount = new Function(tracksSrc + "; return trackList.length;")();
+} catch (e) {
+  structureFail("tracks.js does not parse, so the track count cannot be verified: " + e.message);
+}
+if (trackCount !== null) {
+  const PUBLISHED = [
+    { id: "abp-hero-tracks", where: "the About page hero stat" },
+    { id: "wrldlog-track-count", where: "the WRLD LOG footer" },
+  ];
+  for (const p of PUBLISHED) {
+    const re = new RegExp(`id="${p.id}"[^>]*>(\\d+)<`);
+    const m = html.match(re);
+    if (!m) {
+      structureFail(`could not find #${p.id}, the count in ${p.where}`);
+    } else if (Number(m[1]) !== trackCount) {
+      structureFail(`${p.where} says ${m[1]} but trackList holds ${trackCount} tracks`);
+    }
+  }
+  if (PUBLISHED.every((p) => {
+    const m = html.match(new RegExp(`id="${p.id}"[^>]*>(\\d+)<`));
+    return m && Number(m[1]) === trackCount;
+  })) {
+    structureOk(`both published track counts match trackList (${trackCount})`);
+  }
+
+  // And they must actually be written at runtime, not just correct in the markup.
+  const aboutTabs = readFileSync(join(ROOT, "about-tabs.js"), "utf8");
+  const unwired = PUBLISHED.filter((p) => !aboutTabs.includes(p.id));
+  if (unwired.length) {
+    structureFail(`about-tabs.js never updates ${unwired.map((p) => "#" + p.id).join(" and ")}, so they will drift on the next track added`);
+  } else {
+    structureOk("about-tabs.js derives both counts from trackList at runtime");
+  }
+}
+
+/* ---- 8. the View cover button lives in the info panel ----
+ *
+ * It is built at runtime by cover-preview.js rather than present in the markup,
+ * so nothing else checks where it ends up. It used to be appended to
+ * #vinyl-wrapper, in the player's main column; it belongs in the info panel now.
+ * If the mount target is ever reverted the button silently reappears in the wrong
+ * place, and if the info panel's cover row is renamed the button stops being
+ * created at all - with no error, since mount() just returns.
+ *
+ * Also asserts it is not being hidden on phones any more: it used to be, because
+ * its label wrapped in the narrow player column, and that reason does not apply
+ * inside a centred modal. */
+const cpJs = readFileSync(join(ROOT, "cover-preview.js"), "utf8");
+const cpCss = readFileSync(join(ROOT, "cover-preview.css"), "utf8");
+if (!cpJs.includes(".info-panel-cover-row")) {
+  structureFail("cover-preview.js does not mount the View cover button into .info-panel-cover-row");
+} else if (/getElementById\("vinyl-wrapper"\)/.test(cpJs)) {
+  structureFail("cover-preview.js still mounts the View cover button into the player's vinyl wrapper");
+} else {
+  structureOk("the View cover button is mounted into the info panel, not the player column");
+}
+if (!html.includes('class="info-panel-cover-row"')) {
+  structureFail("the info panel has no .info-panel-cover-row for the View cover button to mount into");
+} else {
+  structureOk("the info panel still provides .info-panel-cover-row");
+}
+if (/#cover-preview-btn[\s\S]{0,80}display:\s*none/.test(cpCss)) {
+  structureFail("cover-preview.css still hides the View cover button on phones, which would hide the feature entirely");
+} else {
+  structureOk("the View cover button is no longer hidden on phones");
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

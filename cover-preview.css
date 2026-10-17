@@ -1,6 +1,6 @@
 /* ============================================================================
    COVER PREVIEW
-   Styles for the "View cover" button under the big artwork in the WRLD Player.
+   Styles for the "View cover" button in the WRLD Player's info panel.
    The preview itself reuses the site's existing #cover-lightbox, so none of its
    styling is duplicated here.
    ========================================================================== */
@@ -33,14 +33,13 @@
 .cp-open:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
 .cp-open i { font-size: .95em; }
 
-/* The View cover button is hidden on phones. Its label needs more width than a
-   narrow player column has, and it was wrapping onto two lines beside the
-   artwork. The element stays in the DOM and its handler stays wired by
-   cover-preview.js, so desktop is untouched and nothing that queries
-   #cover-preview-btn finds it missing. */
-@media (max-width:767px){
-  #cover-preview-btn,
-  .cp-open{
-    display:none !important
-  }
+/* The View cover button used to be hidden on phones. The stated reason was that
+   its label needs more width than the narrow player column has, and that it was
+   wrapping onto two lines beside the artwork. That no longer applies: the button
+   lives inside the info panel, which is a centred modal, in a flex column
+   (.info-panel-cover-row) that centres its children, so the label fits at every
+   width. Leaving the hide in place would have hidden the feature on phones for
+   no remaining reason. */
+.cp-open {
+  margin-top: 12px;
 }

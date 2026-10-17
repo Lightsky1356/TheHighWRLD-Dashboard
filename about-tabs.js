@@ -22,6 +22,29 @@
   "use strict";
 
   var TABS = ["about", "info"];
+
+  /* Two other places on the site publish the catalogue size: this page's hero
+   * stat and the WRLD LOG footer. Both used to hardcode it, and both drifted - the
+   * WRLD LOG footer was found earlier saying "Track count now at 30" while the
+   * panel it sits under listed 31 releases. Adding three tracks just made them
+   * wrong again.
+   *
+   * So they are derived from trackList rather than typed in, and the markup keeps
+   * a correct fallback so the number is right even before this runs. Declared
+   * before the guards below because it has to run even if the About page's tab
+   * markup is ever missing, and it is called unconditionally rather than from
+   * paint(), since the WRLD LOG footer is reachable without opening this page. */
+  function syncPublishedCounts() {
+    if (typeof trackList === "undefined" || !trackList || !trackList.length) return;
+    var total = String(trackList.length);
+    var hero = document.getElementById("abp-hero-tracks");
+    if (hero) hero.textContent = total;
+    var wl = document.getElementById("wrldlog-track-count");
+    if (wl) wl.textContent = total;
+  }
+  syncPublishedCounts();
+  window.addEventListener("load", syncPublishedCounts);
+
   var page = document.getElementById("page-section-about");
   if (!page) return;
 
