@@ -453,6 +453,71 @@ if (/#cover-preview-btn[\s\S]{0,80}display:\s*none/.test(cpCss)) {
   structureOk("the View cover button is no longer hidden on phones");
 }
 
+/* ---- 9. the cover-credit lookup decodes filenames ----
+ *
+ * The info panel credits a cover by matching the cover's filename against
+ * artistData. The filenames in trackList are URL-encoded ("AP%20TikTok.png")
+ * while artistData spells them decoded ("AP TikTok.png"), so a strict comparison
+ * never matched and 202 of 286 tracks rendered "Cover made by N/A".
+ *
+ * This recomputes the same lookup both ways, so the mismatch cannot come back
+ * unnoticed. It also reports how many tracks have no credit at all, which is a
+ * data gap rather than a bug - artistData simply does not cover them, and N/A is
+ * the honest answer for those. */
+const artistDataMatch = scriptSrc.match(/artistData=\[/);
+if (!artistDataMatch) {
+  structureFail("could not find artistData in script.js");
+} else {
+  const open = scriptSrc.indexOf("[", artistDataMatch.index);
+  let depth = 0, k = open;
+  for (; k < scriptSrc.length; k++) {
+    if (scriptSrc[k] === "[") depth++;
+    else if (scriptSrc[k] === "]") { depth--; if (depth === 0) break; }
+  }
+  let artistData = null;
+  try {
+    artistData = new Function("return " + scriptSrc.slice(open, k + 1) + ";")();
+  } catch (e) {
+    structureFail("artistData in script.js could not be read: " + e.message);
+  }
+  if (artistData && trackCount !== null) {
+    const COVER_PREFIX = "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/";
+    const strip = (c) => String(c || "").replace(COVER_PREFIX, "").replace(/^Covers\//, "");
+    const safeDecode = (v) => { try { return decodeURIComponent(v); } catch (_) { return v; } };
+
+    const list = new Function(tracksSrc + "; return trackList;")();
+    const credited = new Set();
+    for (const a of artistData) for (const [, f] of a.tracks) credited.add(f);
+
+    const matched = list.filter((tr) => credited.has(safeDecode(strip(tr.cover)))).length;
+    const uncredited = list.length - matched;
+
+    /* Two separate things are being checked, and the first is the one that
+       actually catches a regression. An earlier version of this guard decoded the
+       filenames itself and only counted the matches, so it passed whether or not
+       script.js decoded anything - it was measuring the data rather than the code
+       path, and removing the decode entirely still reported a full score.
+       So the presence of the decode in script.js is asserted directly, and the
+       match count is only a sanity check on the data. */
+    const creditAt = scriptSrc.indexOf('document.getElementById("info-cover-credit")');
+    const creditEnd = scriptSrc.indexOf('t.textContent="Cover made by "', creditAt);
+    const creditBlock = creditAt >= 0 && creditEnd > creditAt ? scriptSrc.slice(creditAt, creditEnd) : "";
+    if (!creditBlock) {
+      structureFail("could not isolate the cover-credit lookup in script.js");
+    } else if (!/decodeURIComponent/.test(creditBlock)) {
+      structureFail("the cover-credit lookup no longer decodes the filename, so every cover with a space in its name reads \"Cover made by N/A\"");
+    } else {
+      structureOk("the cover-credit lookup decodes filenames before matching artistData");
+    }
+
+    if (matched < list.length * 0.75) {
+      structureFail(`only ${matched} of ${list.length} covers can be credited, which means the decode is not reaching the comparison`);
+    } else {
+      structureOk(`${matched} of ${list.length} covers resolve to an artist (${uncredited} have no credit in artistData)`);
+    }
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);
