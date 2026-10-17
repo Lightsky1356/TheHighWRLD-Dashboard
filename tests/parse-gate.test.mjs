@@ -236,6 +236,85 @@ if (buried.length) {
 } else {
   structureOk(`${sections.length - ALWAYS_NESTED.size} page sections at top level, none buried`);
 }
+/* ---- 5. asset tokens agree between index.html and sw.js ----
+ *
+ * Every local asset the page loads is also in PRECACHE, spelled the same way -
+ * same file, same ?v= token. The two drift apart easily because bumping a token
+ * means editing two files, and a half-done bump is silent: the page requests
+ * ./router.js?v=thw-v2 while the worker precached ./router.js?v=thw-v1, so the
+ * offline path keeps serving the old file and the fresh one is never used. Worse,
+ * a cached 502 for a script replays with no console error and no execution, which
+ * looks exactly like a JavaScript bug.
+ *
+ * This is the check that was missing while that rule caused repeated outages. */
+const localRefs = [];
+for (const mm of html.matchAll(/<script[^>]*\ssrc=["'](\.\/[^"']+)["']/gi)) localRefs.push(mm[1]);
+for (const mm of html.matchAll(/<link[^>]*\srel=["']?stylesheet["']?[^>]*href=["'](\.\/[^"']+)["']/gi)) localRefs.push(mm[1]);
+
+const swSrc = readFileSync(SW, "utf8");
+const pcStart = swSrc.indexOf("const PRECACHE = [");
+const pcEnd = pcStart === -1 ? -1 : swSrc.indexOf("];", pcStart);
+const pcEntries = pcStart === -1 ? [] : [...swSrc.slice(pcStart, pcEnd).matchAll(/'([^']+)'/g)].map((mm) => mm[1]);
+const pcSet = new Set(pcEntries);
+const drifted = [];
+const uncached = [];
+for (const ref of localRefs) {
+  if (pcSet.has(ref)) continue;
+  const bare = ref.replace(/^\.\//, "").split("?")[0];
+  const variants = pcEntries.filter((p) => p.replace(/^\.\//, "").split("?")[0] === bare);
+  if (variants.length) drifted.push(`${ref}  vs PRECACHE ${variants.join(", ")}`);
+  else uncached.push(ref);
+}
+if (drifted.length || uncached.length) {
+  for (const d of drifted) structureFail(`token drift, the offline path would serve a different file: ${d}`);
+  for (const u of uncached) structureFail(`loaded by index.html but absent from PRECACHE: ${u}`);
+} else {
+  structureOk(`${localRefs.length} local assets, tokens match PRECACHE exactly`);
+}
+
+/* ---- 6. URL routing is wired up correctly ----
+ *
+ * router.js only works because it loads after script.js. Every script is deferred,
+ * so they execute in document order, and script.js installs the switchAppPage
+ * wrapper that router.js wraps. If the tag is ever moved above script.js, the
+ * router captures nothing, warns once in the console, and URL routing silently
+ * does nothing - deep links would keep falling back to the home page with no
+ * other symptom. */
+const ROUTER = "router.js";
+const routerAt = html.indexOf(`./${ROUTER}?`);
+const scriptAt = html.indexOf("./script.js?");
+if (routerAt === -1) {
+  structureFail(`${ROUTER} is not referenced by index.html, so /about and /partner are not routed`);
+} else if (routerAt < scriptAt) {
+  structureFail(`${ROUTER} loads before script.js and cannot wrap switchAppPage; move its script tag after script.js`);
+} else {
+  structureOk(`${ROUTER} loads after script.js, so it wraps the real switchAppPage`);
+}
+
+/* A route pointing at a section that is missing, or buried inside another one,
+ * is the exact failure the About tab split caused: the URL resolves fine and the
+ * page stays blank. So each route is checked against the section it targets. */
+const routerSrc = existsSync(join(ROOT, ROUTER)) ? readFileSync(join(ROOT, ROUTER), "utf8") : "";
+const routed = [...routerSrc.matchAll(/\[\s*"(\/[^"]+)"\s*,\s*"([a-z0-9-]+)"\s*\]/g)].map((mm) => ({ path: mm[1], page: mm[2] }));
+if (!routed.length) {
+  structureFail(`no routes found in ${ROUTER}; the Map should hold ["/about", "about"]-style pairs`);
+} else {
+  let routeOk = true;
+  for (const r of routed) {
+    const id = `page-section-${r.page}`;
+    if (!depths.has(id)) {
+      structureFail(`route ${r.path} targets ${id}, which does not exist`);
+      routeOk = false;
+    } else if (depths.get(id) !== 1 && !(depths.get(id) === 2 && ALWAYS_NESTED.has(id))) {
+      structureFail(`route ${r.path} targets ${id}, which is nested and can never be shown`);
+      routeOk = false;
+    }
+  }
+  if (routeOk) {
+    structureOk(`${routed.length} routes resolve to showable sections: ${routed.map((r) => r.path).join(", ")}`);
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

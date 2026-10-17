@@ -12,7 +12,7 @@
 // Run:  npm test
 //
 // Groups:
-//   offline  - parse-gate, crypto. No server, no network.
+//   offline  - parse-gate, router, crypto. No server, no network.
 //   server   - push-api, notifications. Need a dev server on :8788.
 //
 // WHY THIS STARTS ITS OWN SERVER
@@ -39,6 +39,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 
 const GROUPS = [
   { name: "parse-gate", file: "./parse-gate.test.mjs", needsServer: false },
+  { name: "router", file: "./router.test.mjs", needsServer: false },
   { name: "crypto", file: "./crypto-selftest.mjs", needsServer: false },
   { name: "push-api", file: "./push-api.test.mjs", needsServer: true },
   { name: "notifications", file: "./notifications-optout.test.mjs", needsServer: true },
