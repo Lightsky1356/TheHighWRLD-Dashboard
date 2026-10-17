@@ -223,6 +223,42 @@
       note: "no holder anywhere near the published size; Jamothy's row is a different composition (AP Tick -Tock)" }
   ];
 
+  // Sort every artist's covers A-Z, applied here once the credits, corrections and
+  // renames are all in, so the order reflects the final set rather than the order
+  // things happened to be appended in - which was a mix of whatever the site shipped
+  // with and the order this file happened to apply them.
+  //
+  // Safe to do. The only reader in script.js that looks at artistData[].tracks is the
+  // "Cover made by X" lookup, which scans every artist for a filename match and breaks
+  // on the first hit, so it does not care what order the entries are in; every other
+  // ".tracks" in script.js belongs to a playlist or a wanted list.
+  //
+  // Sorted on the title, because that is what the credit is about, case-insensitively,
+  // with the filename as a tiebreak so two entries sharing a title still land in a
+  // defined order. Plain comparison rather than localeCompare, so the result cannot
+  // shift with the visitor's locale.
+  //
+  // Only the credits array is sorted. AMBIGUOUS_CANDIDATES is keyed by artist and is
+  // left exactly as harvested.
+  var resorted = 0, sortedCovers = 0, sortedArtists = 0;
+  for (var sa = 0; sa < artistData.length; sa++) {
+    var list = artistData[sa].tracks;
+    if (!list || list.length < 2) continue;
+    var head = list[0][1];
+    list.sort(function (x, y) {
+      var a = String(x && x[0] != null ? x[0] : "").toLowerCase();
+      var b = String(y && y[0] != null ? y[0] : "").toLowerCase();
+      if (a < b) return -1;
+      if (a > b) return 1;
+      var fa = String((x && x[1]) || "").toLowerCase();
+      var fb = String((y && y[1]) || "").toLowerCase();
+      return fa < fb ? -1 : fa > fb ? 1 : 0;
+    });
+    sortedArtists++;
+    sortedCovers += list.length;
+    if (list[0][1] !== head) resorted++;
+  }
+
   // Exposed for the console and for anything that wants to render the dispute.
   // Deliberately not rendered: a cover already shows its credited name, and adding a
   // "disputed" badge to 9 covers would say less than the record does here.
@@ -232,6 +268,11 @@
     "[cover-artists] " + artistData.length + " artists (" + addedArtists + " new), " +
     addedCredits + " credits applied, " + skipped + " already present, " +
     moved + " corrected, " + renamed + " renamed (" + renameDropped + " skipped)"
+  );
+
+  console.log(
+    "[cover-artists] sorted A-Z: " + sortedCovers + " covers across " +
+    sortedArtists + " artists (" + resorted + " changed order)"
   );
 
   if (CONTESTED.length) {
