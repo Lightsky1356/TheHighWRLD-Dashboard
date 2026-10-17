@@ -4,7 +4,7 @@
 // Two separate things live here, kept apart on purpose:
 //
 //   ARTISTS  every artist folder in the comp. The root listing was scrolled to
-//            its actual bottom before this was taken, so it is complete: 119 artists.
+//            its actual bottom before this was taken, so it is complete: 120 artists.
 //            Most have no credit on the site, which is why this file exists.
 //
 //   CREDITS  9 covers attributed by the single-artist rule - exactly one artist in
@@ -41,7 +41,7 @@
   var byName = {};
   for (var i = 0; i < artistData.length; i++) byName[artistData[i].name] = artistData[i];
 
-  var NEW_ARTISTS = ["360NoScope","abnyart","AlreadyDavid999","antiwrld999","Aogiritrap","Ayoub","babydragon7746","Batsy","Big_Bag_1266","Blejdon","cccc c cCcc cCCc CC c","Centi","Cgofran","Cheerio","Christian Asano","Cody","coffeedih","Dan","danteh.arts","Dawids.Graphix","DiegoPSD","Dyl","Echo","Emvy","Exzey","Felipe","flame","Flashh","Formats","Fracayaso","Frank McNally","Fuegotoons","fvtal","Guwac","HirotoGODZ","Hollycoverworld","HRiiLSS","HunterMfckr","icedood","iCorrupt","inspiredus","Jamothy","Jareddior","Jleo","josiahxinfinite","JP","Juan_Wick","jxck","krishagraiya","kurtfr3d","LDH","lemonjah","Leo","Liddlemuffin","Linco","LongStoryShorts","luisitxo","Majinboof","malupias","melodic.media","Miqeo","Neonxraa","novah","Novanityneo","nxfour","Outlyning","PC","pludo","Quaza","Rafa","Rappulse","RealS3R","Revo","RockstarKnight","Rubixo","Samz","Shadore","Shai Graphics","ShroomTweak","Snovex","StacxActivist","The Roach","Thraxjpg","tiz","tommyygig","tree.o","TuckGFX","TxmpestFaltered","Vexed","VilentCow","Vro","Vumpkin","Wraith","XDVivid","YDS","Zek","ZS"];
+  var NEW_ARTISTS = ["360NoScope","abnyart","AlreadyDavid999","antiwrld999","Aogiritrap","Ayoub","babydragon7746","Batsy","Big_Bag_1266","Blejdon","cccc c cCcc cCCc CC c","Centi","Cgofran","Cheerio","Christian Asano","Cody","coffeedih","Dan","danteh.arts","Dawids.Graphix","DiegoPSD","Dyl","Echo","Emvy","Exzey","Felipe","Filler","flame","Flashh","Formats","Fracayaso","Frank McNally","Fuegotoons","fvtal","Guwac","HirotoGODZ","Hollycoverworld","HRiiLSS","HunterMfckr","icedood","iCorrupt","inspiredus","Jamothy","Jareddior","Jleo","josiahxinfinite","JP","Juan_Wick","jxck","krishagraiya","kurtfr3d","LDH","lemonjah","Leo","Liddlemuffin","Linco","LongStoryShorts","luisitxo","Majinboof","malupias","melodic.media","Miqeo","Neonxraa","novah","Novanityneo","nxfour","Outlyning","PC","pludo","Quaza","Rafa","Rappulse","RealS3R","Revo","RockstarKnight","Rubixo","Samz","Shadore","Shai Graphics","ShroomTweak","Snovex","StacxActivist","The Roach","Thraxjpg","tiz","tommyygig","tree.o","TuckGFX","TxmpestFaltered","Vexed","VilentCow","Vro","Vumpkin","Wraith","XDVivid","YDS","Zek","ZS"];
 
   var addedArtists = 0;
   for (var n = 0; n < NEW_ARTISTS.length; n++) {
@@ -95,7 +95,7 @@
 
   // Shared buckets hold artwork without naming who made it. They are listed so
   // the roster is complete, but they can never be credited to an artist.
-  var SHARED_BUCKETS = ["Cover WRLD","Official Covers","Unknown Unsorted","WRLD Covers"];
+  var SHARED_BUCKETS = [];
 
   // Credits already on the site that the comp folder contradicts, and where
   // exactly one artist holds the file. These are MOVED, not duplicated - the
@@ -157,7 +157,7 @@
 // all 22 button hues turned out to be derived from the artist's own color field,
 // so rendering color instead reproduces the same palette.
 //
-// Generating it is what lets 119 artists be listed instead of 22, and it means the
+// Generating it is what lets 120 artists be listed instead of 22, and it means the
 // roster has one home rather than two that must be kept in step by hand.
 function _renderCoverArtistFooter(artists, buckets, ambiguous) {
   var btns = document.querySelectorAll('button[onclick*="toggleArtistPanel"]');
@@ -170,7 +170,7 @@ function _renderCoverArtistFooter(artists, buckets, ambiguous) {
   if (all < btns.length) host = document.body;
   if (host === document.body) return;
 
-  // Only artists with a credited cover get a button. The 97 comp artists whose work is
+  // Only artists with a credited cover get a button. The 98 comp artists whose work is
   // not provably on the site stay in artistData but out of the list, because a
   // button that opens an empty panel is worse than no button.
   var withCovers = [];
