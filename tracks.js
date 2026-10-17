@@ -3170,9 +3170,17 @@ const trackList=[
      Encino Hills, first previewed 22 June 2019 - two months after Juice died, and
      a freestyle rather than a Grade A session, so the tag names no era, as Percs
      and Haze do not. The year is the recorded year, matching Heart Racing, which
-     sits on a 2024 album but is dated 2019. Genius files it under the alt name
-     "Let's Ride", lifted from the hook, but the file, the cover and the rest of
-     the catalogue call it Smith & Wesson, so the tag follows those. */
+     sits on a 2024 album but is dated 2019.
+
+     Its alt names come from three sources. Genius titles it "Let's Ride (Smith &
+     Wesson)", and juicewrldvault.com lists it as "Let's Ride (v1.2)" over the
+     source file "Juice Wrld - lets ride v1.2 (shoot DW).wav" - so "Let's Ride" was
+     the name on the tape, "Smith & Wesson" is what it is better known as, and the
+     DW in that filename is Danny Wolf. "Comply" and "Hollow Tips" are hook lines,
+     naming it the same way "Omen" and "Overseer" name Blood, Sweat, Tears; the
+     vault carries both in its alternateTitles and Last.fm lists them too. No
+     version marker: the vault's v1.2 runs 2:51 and this file measures 3:37, so it
+     is a different take and calling it v1.2 would be wrong. */
   {
     title: "Royer (Sessions)",
     tag: "Royer (Sessions) (WOD)",
@@ -3186,7 +3194,7 @@ const trackList=[
   },
   {
     title: "Smith & Wesson",
-    tag: "Smith & Wesson",
+    tag: "Smith & Wesson (Let's Ride) (Comply) (Hollow Tips)",
     artist: "Juice WRLD",
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Smith%20%26%20Wesson.mp3",
