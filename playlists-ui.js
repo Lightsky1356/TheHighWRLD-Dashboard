@@ -1,7 +1,8 @@
 /* Server Playlists manager — self-profile "My Playlists" card + public share view.
  * Full CRUD against /api/playlists (session-authed, ownership-checked server-side).
  * Share URLs look like ?playlist=<share_key>; opening one renders the public
- * playlist modal anywhere. Queue-all is desktop-only (fine pointer). */
+ * playlist modal anywhere. Queue-all is offered on every input type: it was gated behind a (pointer:fine)
+ * check, which hid it on phones and on touchscreens with a mouse attached. */
 (function () {
   "use strict";
   if (window.__playlistsUiMounted) return;
@@ -51,10 +52,6 @@
   function fmtDur(sec) {
     sec = Math.round(Number(sec) || 0);
     return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
-  }
-
-  function isDesktop() {
-    try { return window.matchMedia && window.matchMedia("(pointer:fine)").matches; } catch (e) { return true; }
   }
 
   function isSelfProfile() {
@@ -151,7 +148,7 @@
       '<button type="button" class="plui-vis ' + esc(p.visibility) + '" data-act="vis" title="Cycle visibility">' + esc(p.visibility) + "</button></div>" +
       '<div class="plui-btns">' +
       '<button type="button" class="plui-btn" data-act="play"><i class="fas fa-play"></i> Play</button>';
-    if (isDesktop()) h += '<button type="button" class="plui-btn" data-act="queue"><i class="fas fa-list-ul"></i> Queue</button>';
+    h += '<button type="button" class="plui-btn" data-act="queue"><i class="fas fa-list-ul"></i> Queue</button>';
     h += '<button type="button" class="plui-btn" data-act="tracks"><i class="fas fa-music"></i> Tracks</button>' +
       '<button type="button" class="plui-btn" data-act="rename"><i class="fas fa-pen"></i></button>' +
       '<button type="button" class="plui-btn" data-act="share"><i class="fas fa-share-nodes"></i></button>' +
@@ -332,7 +329,7 @@
           if (!p) return;
           var idxs = titlesToIdx(p.tracks || []);
           if (act === "play") playIndexes(idxs, 0);
-          else if (act === "queue") { if (isDesktop()) queueIndexes(idxs); }
+          else if (act === "queue") { queueIndexes(idxs); }
           else {
             var box = row.querySelector(".plui-tracks");
             if (box.hidden) renderTracks(box, p);
@@ -409,7 +406,7 @@
         (pl.desc ? '<div class="plui-share-sub">' + esc(pl.desc) + "</div>" : "") + "</div></div>";
       h += '<div class="plui-btns" style="margin:0 0 10px">' +
         '<button type="button" class="plui-btn" data-share="play"><i class="fas fa-play"></i> Play</button>';
-      if (isDesktop()) h += '<button type="button" class="plui-btn" data-share="queue"><i class="fas fa-list-ul"></i> Queue</button>';
+      h += '<button type="button" class="plui-btn" data-share="queue"><i class="fas fa-list-ul"></i> Queue</button>';
       h += '<button type="button" class="plui-btn" data-share="fav"><i class="fas fa-heart"></i> ' + (pl.favorited ? pl.fav_count + " Saved" : "Save") + "</button>" +
         '<button type="button" class="plui-btn" data-share="close"><i class="fas fa-xmark"></i> Close</button></div>';
       h += '<div class="plui-tracks" style="border:none;padding:0">';
@@ -426,7 +423,7 @@
         var a = b.getAttribute("data-share");
         var idxs = titlesToIdx(pl.tracks || []);
         if (a === "play") { ov.remove(); playIndexes(idxs, 0); }
-        else if (a === "queue") { if (isDesktop()) queueIndexes(idxs); }
+        else if (a === "queue") { queueIndexes(idxs); }
         else if (a === "close") ov.remove();
         else if (a === "copy") {
           var inp = ov.querySelector(".plui-share-link input");

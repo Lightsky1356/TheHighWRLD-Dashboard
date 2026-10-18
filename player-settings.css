@@ -1420,3 +1420,40 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
 #ap-close{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;font-size:15px!important;margin-top:env(safe-area-inset-top,0px)}
 #ap-close:focus-visible{outline:2px solid rgba(255,255,255,.7);outline-offset:2px}
 }
+/* ============================================================================
+   QUEUE
+   Row layout for queue-ui.js. The action cluster is the new part; the cover, the
+   title block and the empty states are the ones script.js already rendered,
+   kept as they were.
+
+   Reordering is done with the per-row up and down buttons rather than a drag.
+   A drag handle on a phone competes with the list's own scrolling for the same
+   gesture, and a gesture that silently reorders the wrong track is worse than
+   buttons that do the same job identically on every device.
+   ========================================================================== */
+
+
+
+.queue-item-current{box-shadow:inset 2px 0 0 #22d3ee}
+.queue-item-current .queue-item-title{color:#fff}
+.queue-item-actions{display:flex;align-items:center;gap:2px;flex:0 0 auto;margin-left:auto}
+.queue-act{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:transparent;border:0;color:rgba(255,255,255,.35);font-size:10px;cursor:pointer;transition:background .18s ease,color .18s ease}
+.queue-act:hover:not(:disabled){background:rgba(255,255,255,.1);color:#fff}
+.queue-act:disabled{opacity:.25;cursor:default}
+.queue-act[data-act="remove"]:hover:not(:disabled){color:#f87171}
+.queue-act[data-act="playnext"]:hover:not(:disabled){color:#22d3ee}
+.queue-act:focus-visible{outline:2px solid rgba(255,255,255,.6);outline-offset:1px}
+
+/* Phone sizes. The dropdown was pinned to 160-200px by the width overrides
+   above, which is not enough room for a tap target beside the artwork, so it is
+   widened first and the targets are then sized properly. The action
+   cluster wraps onto its own line rather than being trimmed: at four 44px
+   targets beside the cover the title would be left with a few characters,
+   and the playlist rows above already accept two-line rows. */
+@media (max-width:768px){
+.queue-dropdown{width:min(86vw,320px)!important;right:8px!important;max-height:70dvh}
+.queue-dropdown-container .queue-item{padding:8px;gap:8px;flex-wrap:wrap}
+.queue-item-actions{width:100%;margin-left:0;margin-top:4px;justify-content:flex-end}
+.queue-act{width:44px;height:44px;font-size:14px;border-radius:10px}
+.queue-dropdown-header button{padding:10px 12px;font-size:11px;min-height:36px}
+}
