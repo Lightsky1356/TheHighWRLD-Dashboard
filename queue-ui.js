@@ -634,7 +634,7 @@
       h.insertAdjacentHTML("beforeend",
         '<span class="queue-head-count" hidden></span>' +
         '<button type="button" class="queue-head-btn queue-bin-btn" hidden title="Remove selected"><i class="fas fa-trash"></i></button>' +
-        '<button type="button" class="queue-head-btn queue-cancel-btn" hidden title="Cancel selecting"><i class="fas fa-times"></i></button>' +
+        '<button type="button" class="queue-head-btn queue-cancel-btn" hidden title="Cancel selecting" aria-label="Cancel selecting"><i class="fas fa-arrow-left"></i></button>' +
         '<button type="button" class="queue-head-btn queue-select-btn" title="Select tracks"><i class="fas fa-list-check"></i></button>' +
         '<button type="button" class="queue-head-btn queue-close-btn" title="Close queue" aria-label="Close queue"><i class="fas fa-xmark"></i></button>'
       );
