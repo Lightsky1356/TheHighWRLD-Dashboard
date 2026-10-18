@@ -97,7 +97,7 @@ const PRECACHE = [
   /* --- page scripts --- */
   './user-relations.js?v=thw-v2',
   './user-menu.js?v=thw-v4',
-  './player-settings.js?v=thw-v2',
+  './player-settings.js?v=thw-v3',
   './reports.js?v=thw-v2',
   './player-performance.js?v=thw-v4',
     './queue-ui.js?v=thw-v16',

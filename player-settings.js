@@ -243,7 +243,23 @@
     });
 
     var kbToggle = document.getElementById('ps-keyboard-toggle');
-    if(kbToggle) kbToggle.addEventListener('change', function(){ set('keyboardShortcuts', this.checked); });
+    /* Bound once here for both platforms - the Electron branch below adds its own
+       handler on top of this one, so anything added to this one fires exactly
+       once either way.
+
+       The toast is deliberately one-directional. Turning the shortcuts ON puts
+       the overlay on screen, which is its own confirmation; turning them OFF only
+       makes an overlay disappear, and nothing left visible says the setting just
+       changed - so it reads as the toggle doing nothing rather than as a
+       preference being remembered. */
+    if(kbToggle) kbToggle.addEventListener('change', function(){
+      set('keyboardShortcuts', this.checked);
+      if(!this.checked){
+        try {
+          if(typeof showToastSimple === 'function') showToastSimple('Keyboard shortcuts turned off', { type: 'info' });
+        } catch(e){ /* a missing toast must not break the toggle */ }
+      }
+    });
 
     var drpToggle = document.getElementById('ps-drp-toggle');
     if(drpToggle){
