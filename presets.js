@@ -1,6 +1,20 @@
 /* Player presets — one-tap bundles for existing player settings.
- * Controls only verified-live settings: keyboard shortcuts, shuffle mode,
- * and volume. Stored in localStorage (wrldPreset), applied on boot. */
+ * Controls only verified-live settings: shuffle mode and volume. Stored in
+ * localStorage (wrldPreset), applied on boot.
+ *
+ * Keyboard shortcuts are deliberately NOT part of a preset.
+ *
+ * They used to be, and it was quietly wrong. Focus and Minimal carried
+ * shortcuts:false, apply() wrote that into wrldPlayerSettings, and init() then
+ * re-applied the stored preset on every boot — so a desktop user who ever
+ * clicked either preset came back to a site with shortcuts off, with no prompt,
+ * no indication of why, and no obvious way back other than finding this toggle.
+ * Presets were also the only writer of the setting, which quietly made the
+ * toggle look unreliable.
+ *
+ * Now the toggle in Player Settings is the only thing that changes it, so the
+ * default (on) holds for a fresh visitor, an explicit choice persists, and a
+ * stored preset can no longer override either. */
 (function () {
   "use strict";
   if (window.__presetsMounted) return;
@@ -8,11 +22,11 @@
 
   var KEY = "wrldPreset";
   var PRESETS = [
-    { id: "default", name: "Default", shortcuts: true, shuffle: false, volume: 0.8 },
-    { id: "focus", name: "Focus", shortcuts: false, shuffle: false, volume: 0.7 },
-    { id: "party", name: "Party", shortcuts: true, shuffle: true, volume: 0.9 },
-    { id: "smooth", name: "Smooth", shortcuts: true, shuffle: false, volume: 0.55 },
-    { id: "minimal", name: "Minimal", shortcuts: false, shuffle: false, volume: 0.5 }
+    { id: "default", name: "Default", shuffle: false, volume: 0.8 },
+    { id: "focus", name: "Focus", shuffle: false, volume: 0.7 },
+    { id: "party", name: "Party", shuffle: true, volume: 0.9 },
+    { id: "smooth", name: "Smooth", shuffle: false, volume: 0.55 },
+    { id: "minimal", name: "Minimal", shuffle: false, volume: 0.5 }
   ];
 
   function esc(s) {
@@ -33,11 +47,9 @@
   }
 
   function apply(p, silent) {
-    try {
-      if (window.wrldPlayerSettings) window.wrldPlayerSettings.set("keyboardShortcuts", !!p.shortcuts);
-      var kb = document.getElementById("ps-keyboard-toggle");
-      if (kb) kb.checked = !!p.shortcuts;
-    } catch (e) {}
+    /* No keyboardShortcuts here on purpose - see the note at the top. A preset
+       that set it would overwrite the toggle's value on every boot, which is
+       exactly the bug this was removed to fix. */
     try {
       if (typeof setShuffle === "function" && shuffleOn() !== !!p.shuffle) setShuffle(!!p.shuffle);
     } catch (e) {}

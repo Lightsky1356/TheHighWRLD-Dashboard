@@ -5,6 +5,32 @@
   var storageKey = 'wrldPlayerSettings';
   var settings = {};
   try { settings = JSON.parse(localStorage.getItem(storageKey)) || {}; } catch(e){ settings = {}; }
+
+  /* One-time cleanup of the value presets.js used to write here.
+     Focus and Minimal carried shortcuts:false and apply() persisted it, so a
+     stored keyboardShortcuts:false is far more likely to be something a preset
+     did behind the user's back than something they chose in this panel. There is
+     no way to tell the two apart afterwards, so this drops it once and lets the
+     default (on) take over.
+
+     Guarded by its own flag rather than run unconditionally: after this, an
+     explicit "off" from the toggle must survive reloads, and deleting the key
+     on every load would quietly turn that back into a setting that cannot be
+     kept off - which is the mirror image of the bug being fixed here.
+
+     Only the keyboardShortcuts field is touched; anything else already in
+     wrldPlayerSettings is left exactly as it was. */
+  var migrationKey = storageKey + '.migration.shortcutOwnership.v1';
+  try {
+    if(!localStorage.getItem(migrationKey)){
+      if(settings && 'keyboardShortcuts' in settings){
+        delete settings.keyboardShortcuts;
+        localStorage.setItem(storageKey, JSON.stringify(settings));
+      }
+      localStorage.setItem(migrationKey, '1');
+    }
+  } catch(e){ /* private mode, quota, or storage disabled - defaults still apply */ }
+
   function get(k){ return k in settings ? settings[k] : defaults[k]; }
   function set(k, v){ settings[k] = v; try { localStorage.setItem(storageKey, JSON.stringify(settings)); } catch(e){} }
 
@@ -258,6 +284,17 @@
   }
 
   function init(){
+    /* The markup ships this checkbox with a hardcoded `checked`, so it starts
+       reading "on" no matter what is stored. That happens to agree with the
+       default, but it means the control can disagree with the real setting until
+       the panel is opened - and togglePlayerSettings() is the only other thing
+       that syncs it, which it cannot do while the cog is hidden in the blank
+       state. Setting it here makes the visible control agree with the setting
+       from the first paint, so `checked` in the HTML stops being a second
+       source of truth that has to be kept in step by hand. */
+    var kbSync = document.getElementById('ps-keyboard-toggle');
+    if(kbSync) kbSync.checked = get('keyboardShortcuts');
+
     var cog = document.getElementById('player-settings-cog');
     if(cog) cog.addEventListener('click', function(){ window.togglePlayerSettings(); });
 
