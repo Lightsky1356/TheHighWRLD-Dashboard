@@ -54,6 +54,24 @@
 
   var lastBadge = -1;
   var containers = [];
+  var heads = [];
+
+  /* ------------------------------------------------------------ select mode -- */
+
+  /* A select mode over the queue, so several queued tracks can be binned in one
+     go instead of one tap on x per row.
+
+     The selection is a Set of track indices rather than queue positions.
+     Positions are not stable - binning one row renumbers every row after it -
+     but a track index is, and addToQueue already refuses duplicates, so an
+     index identifies exactly one queue entry. That keeps a selection intact
+     across removals, reorders and the row reconciler.
+
+     Nothing here touches trackList: binning takes tracks out of the queue and
+     nowhere else. No track is removed from the site for anyone. */
+
+  var selectMode = false;
+  var selected = new Set();
 
   /* ---------------------------------------------------------------- state -- */
 
@@ -97,6 +115,7 @@
      what lets a row survive a re-render at all. [hidden] also keeps them out of
      the accessibility tree, so a lone track still exposes no arrows. */
   var ROW_SKELETON =
+    '<button type="button" draggable="false" class="queue-item-check" data-act="select" aria-pressed="false"><i class="fas fa-check"></i></button>' +
     '<div class="queue-item-cover"><img draggable="false" alt="" decoding="async" loading="lazy"></div>' +
     '<div class="queue-item-info"><p class="queue-item-title"></p><p class="queue-item-tag"></p></div>' +
     '<div class="queue-item-actions">' +
@@ -159,15 +178,27 @@
     var pn = el.querySelector('[data-act="playnext"]');
     var rm = el.querySelector('[data-act="remove"]');
 
-    up.hidden = !many;
-    down.hidden = !many;
-    pn.hidden = !many;
+    /* Selecting replaces the row's actions rather than joining them: while
+       choosing, the only thing a row should do is toggle, so the chevrons and
+       Play Next are pulled out of the way instead of competing for the tap. */
+    var actionsOff = selectMode || !many;
+    up.hidden = actionsOff;
+    down.hidden = actionsOff;
+    pn.hidden = actionsOff;
     up.setAttribute("data-qi", qi);
     down.setAttribute("data-qi", qi);
     pn.setAttribute("data-qi", qi);
     rm.setAttribute("data-qi", qi);
     up.disabled = qi === 0;
     down.disabled = qi === last;
+
+    var check = el.querySelector('[data-act="select"]');
+    var isSel = selectMode && selected.has(idx);
+    check.hidden = !selectMode;
+    check.setAttribute("data-qi", qi);
+    check.setAttribute("aria-pressed", isSel ? "true" : "false");
+    check.title = isSel ? "Deselect" : "Select";
+    el.classList.toggle("queue-item-selected", isSel);
 
     var label = t.title;
     up.title = "Move up"; up.setAttribute("aria-label", "Move " + label + " up");
@@ -248,6 +279,11 @@
     renderQueueUI();
     renderQueueDropdown();
     updateQueueBadge();
+    /* Heads are mounted lazily: the queue can render before the dropdown header
+       exists, and syncing here keeps the count and the bin button in step with
+       the rows no matter which path triggered the render. */
+    mountHeads();
+    syncHeads();
   }
 
   function commit() {
@@ -363,6 +399,9 @@
   }
 
   function onDragStart(e) {
+    /* Reordering while selecting would fight the checkboxes for the same tap,
+       and moving a row would invalidate the position the user is looking at. */
+    if (selectMode) { e.preventDefault(); return; }
     var item = e.target.closest && e.target.closest(".queue-item");
     if (!item) return;
     dragFrom = parseInt(item.getAttribute("data-qi"), 10);
@@ -443,12 +482,17 @@
     if (act) {
       e.stopPropagation();
       var kind = act.getAttribute("data-act");
+      if (kind === "select") { toggleSelected(trackQueue[pos]); return; }
       if (kind === "remove") removeAt(pos);
       else if (kind === "up") moveInQueue(pos, pos - 1);
       else if (kind === "down") moveInQueue(pos, pos + 1);
       else if (kind === "playnext") playNextAt(pos);
       return;
     }
+    /* While selecting, a tap anywhere on the row toggles it. Play-to-play is
+       deliberately not offered here: it would pull tracks out of the queue
+       mid-selection and leave the count lying. */
+    if (selectMode) { toggleSelected(trackQueue[pos]); return; }
     playFromQueueAt(pos);
   }
 
@@ -489,6 +533,98 @@
     if (!dropdownLocked) return;
     dropdownLocked = false;
     if (typeof _unlockScroll === "function") _unlockScroll();
+  }
+
+  /* ------------------------------------------------- select mode controls -- */
+
+  /* The controls live in each queue header: the dropdown's, and the one in the
+     "Up Next" panel if that panel is ever shown. Injected rather than added to
+     index.html so both headers stay in step from one place and the markup is not
+     duplicated across two containers. */
+  function queueHeads() {
+    var out = [];
+    var dd = document.querySelector("#queue-dropdown .queue-dropdown-header");
+    if (dd) out.push(dd);
+    var panel = document.getElementById("queue-panel");
+    if (panel && panel.firstElementChild && panel.firstElementChild.tagName === "DIV") out.push(panel.firstElementChild);
+    return out;
+  }
+
+  function mountHeads() {
+    var found = queueHeads();
+    for (var i = 0; i < found.length; i++) {
+      var h = found[i];
+      /* Already mounted: skip it entirely. Pushing it again would grow heads by
+         one per header on every render, and syncHeads then walks an array that
+         only ever gets longer. */
+      if (h.dataset.thwSelectMounted) continue;
+      h.dataset.thwSelectMounted = "1";
+      h.insertAdjacentHTML("beforeend",
+        '<span class="queue-head-count" hidden></span>' +
+        '<button type="button" class="queue-head-btn queue-bin-btn" hidden title="Remove selected"><i class="fas fa-trash"></i></button>' +
+        '<button type="button" class="queue-head-btn queue-cancel-btn" hidden title="Cancel selecting"><i class="fas fa-times"></i></button>' +
+        '<button type="button" class="queue-head-btn queue-select-btn" title="Select tracks"><i class="fas fa-list-check"></i></button>'
+      );
+      h.querySelector(".queue-select-btn").addEventListener("click", function () { setSelectMode(true); });
+      h.querySelector(".queue-bin-btn").addEventListener("click", function () { binSelected(); });
+      h.querySelector(".queue-cancel-btn").addEventListener("click", function () { setSelectMode(false); });
+      heads.push(h);
+    }
+  }
+
+  /* Reflect the current mode on every header. Called after anything that can
+     change it, so the count and the bin button can never disagree with the rows. */
+  function syncHeads() {
+    var n = selected.size;
+    for (var i = 0; i < heads.length; i++) {
+      var h = heads[i];
+      var label = h.firstElementChild;
+      var count = h.querySelector(".queue-head-count");
+      var bin = h.querySelector(".queue-bin-btn");
+      var cancel = h.querySelector(".queue-cancel-btn");
+      var sel = h.querySelector(".queue-select-btn");
+      var clear = h.querySelector("#queue-dropdown-clear") ||
+                  (h.querySelector("button[onclick*='clearQueue']"));
+      if (label && count) {
+        if (selectMode) { label.hidden = true; count.hidden = false; count.textContent = n + " selected"; }
+        else { label.hidden = false; count.hidden = true; }
+      }
+      if (bin) { bin.hidden = !selectMode; bin.disabled = n === 0; }
+      if (cancel) cancel.hidden = !selectMode;
+      /* Select mode and Clear All are two different ways to empty the list, so
+         only one of them is offered at a time. */
+      if (sel) sel.hidden = selectMode;
+      if (clear) clear.hidden = selectMode;
+    }
+  }
+
+  function setSelectMode(on) {
+    if (selectMode === !!on) return;
+    selectMode = !!on;
+    if (!selectMode) selected.clear();
+    renderAll();
+    syncHeads();
+  }
+
+  function toggleSelected(idx) {
+    if (!isValid(idx)) return;
+    if (selected.has(idx)) selected.delete(idx);
+    else selected.add(idx);
+    renderAll();
+    syncHeads();
+  }
+
+  function binSelected() {
+    if (!selected.size) return;
+    var n = selected.size;
+    trackQueue = trackQueue.filter(function (idx) { return !selected.has(idx); });
+    selected.clear();
+    selectMode = false;
+    commit();
+    syncHeads();
+    if (typeof toast === "function") {
+      try { toast(n + (n === 1 ? " track removed from the queue" : " tracks removed from the queue"), "success"); } catch (e) {}
+    }
   }
 
   /* ------------------------------------------------------------------ wire -- */
