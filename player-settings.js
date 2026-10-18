@@ -219,6 +219,35 @@
   window.togglePlayerSettings = togglePlayerSettings;
   window.__togglePS = togglePlayerSettings;
 
+  /* -------------------------------------------------------------------------- */
+
+  /* Called by script.js when a playback key is pressed while the keyboard
+     shortcuts are off.
+
+     That path used to be a bare "return", so the key did nothing at all and
+     nothing on screen explained why. Someone who does not know the shortcuts
+     are switched off just concludes the player is broken - space and the arrow
+     keys are the most obvious playback controls there are.
+
+     Lives here because this file owns the keyboardShortcuts setting, so the
+     message and the toggle can never disagree about wording.
+
+     Throttled, and it ignores auto-repeat. Holding an arrow key fires keydown
+     dozens of times a second; without this the toast would be replaced and
+     re-shown continuously, which reads as a flicker rather than a message.
+     One toast per press, and holding the key does not stack them. */
+  var lastShortcutToast = 0;
+  window.thwShortcutsOffToast = function(){
+    var now = Date.now();
+    if(now - lastShortcutToast < 1500) return;
+    lastShortcutToast = now;
+    try {
+      if(typeof showToastSimple === 'function'){
+        showToastSimple('Keyboard shortcuts are off - enable them in Player Settings', { type: 'info' });
+      }
+    } catch(e){ /* a missing toast must not break the key handler */ }
+  };
+
   function closeSettings(){
     var overlay = document.getElementById('player-settings-overlay');
     if(overlay && !overlay.classList.contains('hidden')){
@@ -247,19 +276,11 @@
        handler on top of this one, so anything added to this one fires exactly
        once either way.
 
-       The toast is deliberately one-directional. Turning the shortcuts ON puts
-       the overlay on screen, which is its own confirmation; turning them OFF only
-       makes an overlay disappear, and nothing left visible says the setting just
-       changed - so it reads as the toggle doing nothing rather than as a
-       preference being remembered. */
-    if(kbToggle) kbToggle.addEventListener('change', function(){
-      set('keyboardShortcuts', this.checked);
-      if(!this.checked){
-        try {
-          if(typeof showToastSimple === 'function') showToastSimple('Keyboard shortcuts turned off', { type: 'info' });
-        } catch(e){ /* a missing toast must not break the toggle */ }
-      }
-    });
+       Switching the toggle itself says nothing: the checkbox is right there and
+       shows the new state. The setting earns its feedback at the other end - see
+       thwShortcutsOffToast below, which is what script.js calls when a playback
+       key is pressed while the shortcuts are off. */
+    if(kbToggle) kbToggle.addEventListener('change', function(){ set('keyboardShortcuts', this.checked); });
 
     var drpToggle = document.getElementById('ps-drp-toggle');
     if(drpToggle){
