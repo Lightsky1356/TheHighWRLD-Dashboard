@@ -15,7 +15,7 @@
 //   offline  - parse-gate, crypto. No server, no network.
 //   browser  - scripts/browser-check.cjs. Needs a dev server AND a local Edge;
 //              run manually, see the comment at the top of that file.
-//   server   - push-api, notifications. Need a dev server on :8788.
+//   server   - push-api, notifications, gallery-publish. Need a dev server on :8788.
 //
 // WHY THIS STARTS ITS OWN SERVER
 // The runner used to skip any group it could not reach and still exit 0, reporting
@@ -45,6 +45,7 @@ const GROUPS = [
   { name: "push-api", file: "./push-api.test.mjs", needsServer: true },
   { name: "notifications", file: "./notifications-optout.test.mjs", needsServer: true },
   { name: "notification-prefs", file: "./notification-prefs.test.mjs", needsServer: true },
+  { name: "gallery-publish", file: "./gallery-publish.test.mjs", needsServer: true },
 ];
 
 const SERVER_BOOT_TIMEOUT_MS = 120_000;

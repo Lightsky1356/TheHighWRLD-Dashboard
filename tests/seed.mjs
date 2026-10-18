@@ -27,12 +27,44 @@ const ACCOUNTS = [
   { uid: "notifon1", token: "notifontoken1", name: "Opted In", notifications: 1 },
   { uid: "notifoff1", token: "notifofftoken1", name: "Opted Out", notifications: 0 },
   { uid: "pushuser1", token: "pushsessiontoken1", name: "Push Tester", notifications: 1 },
+  /* The gallery suite needs the same account twice over: once with a
+     discord_links row and once deliberately without one, because the Discord
+     gate is the whole thing under test. discord is set below. */
+  { uid: "gallinked1", token: "gallinked1token", name: "Gallery Linked", notifications: 1, discord: "linked#0001" },
+  { uid: "galunlinked1", token: "galunlinked1token", name: "Gallery Unlinked", notifications: 1, discord: "" },
 ];
 
 const UIDS = ACCOUNTS.map((a) => `'${a.uid}'`).join(", ");
 const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
 
 const statements = [];
+
+/* gallery_items is NOT in any migration - it exists only in the remote D1, so it
+   was presumably created by hand. That is a real gap: `d1 migrations apply` on a
+   fresh database would never create it and the gallery would break silently.
+   It is NOT patched here, because a production migration would mean inventing
+   column types for a table whose real schema is only known from the queries in
+   functions/api/gallery.js. That is a call for the author, not the seeder.
+
+   Instead the table is created for the LOCAL database only, so the gallery suite
+   can actually run. IF NOT EXISTS throughout, and the columns are exactly the
+   ones the Function reads and writes - id, uid, user_name, avatar, title,
+   caption, mime, size, data, status, created_at. */
+statements.push(`CREATE TABLE IF NOT EXISTS gallery_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  uid TEXT NOT NULL DEFAULT '',
+  user_name TEXT NOT NULL DEFAULT '',
+  avatar TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL DEFAULT '',
+  caption TEXT NOT NULL DEFAULT '',
+  mime TEXT NOT NULL DEFAULT '',
+  size INTEGER NOT NULL DEFAULT 0,
+  data BLOB,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);`);
+statements.push(`CREATE INDEX IF NOT EXISTS idx_gallery_status ON gallery_items (status);`);
+statements.push(`CREATE INDEX IF NOT EXISTS idx_gallery_uid_created ON gallery_items (uid, created_at);`);
 
 /* Children before parents, so nothing is orphaned by a foreign key. */
 statements.push(`DELETE FROM push_subscriptions WHERE uid IN (${UIDS});`);
@@ -47,6 +79,12 @@ statements.push(`DELETE FROM community_notifications WHERE recipient_uid IN (${U
 statements.push(`DELETE FROM follows WHERE follower_uid IN (${UIDS}) OR followed_uid IN (${UIDS});`);
 statements.push(`DELETE FROM sessions WHERE uid IN (${UIDS});`);
 statements.push(`DELETE FROM user_privacy WHERE uid IN (${UIDS});`);
+/* gallery_items is not cleared wholesale - the suite deletes the rows it creates
+   by id, so it never depends on the table being empty. But a leftover row from an
+   interrupted run would still be sitting in the public listing and could be
+   mistaken for the item this run just published. */
+statements.push(`DELETE FROM gallery_items WHERE uid IN (${UIDS});`);
+statements.push(`DELETE FROM discord_links WHERE site_uid IN (${UIDS});`);
 statements.push(`DELETE FROM users WHERE uid IN (${UIDS});`);
 
 for (const a of ACCOUNTS) {
@@ -73,6 +111,17 @@ for (const a of ACCOUNTS) {
       q(a.uid), "1", "1", "1", "1", "1", String(a.notifications), q("2026-01-01T00:00:00.000Z"),
     ].join(", ") + ");"
   );
+  /* discord_links is the table the gallery gate reads, the same one the Wanted
+     Vault reads. Only written for accounts that declare a discord id, so the
+     unlinked account genuinely has no row rather than a row with an empty id. */
+  if (a.discord) {
+    statements.push(
+      "INSERT INTO discord_links (site_uid, discord_id, display_name, linked_at) VALUES (" +
+      [
+        q(a.uid), q(a.discord), q(a.name), q("2026-01-01T00:00:00.000Z"),
+      ].join(", ") + ");"
+    );
+  }
 }
 
 const migrated = runWrangler(["d1", "migrations", "apply", "wanted-vault", "--local"]);

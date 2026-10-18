@@ -114,7 +114,7 @@ const SURFACES = {
   gallery: {
     title: "Gallery",
     targetType: "gallery",
-    intro: "Fan art and community images. Every upload is reviewed by staff before it appears, so nothing is published instantly.",
+    intro: "Fan art and community images. Uploads publish as soon as they are submitted, so everyone sees them straight away. A linked Discord account is required to upload.",
     requirements: [
       "Upload art you made yourself, or credit the original artist in the caption.",
       "Credit is required for fan art of the artist.",
