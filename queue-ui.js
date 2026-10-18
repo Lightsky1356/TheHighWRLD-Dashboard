@@ -387,6 +387,19 @@
     if (typeof trackHistory !== "undefined" && typeof currentTrackIndex === "number") {
       trackHistory.push(currentTrackIndex);
     }
+    /* selectTrackFromList is the player's real entry point for starting a
+       track, and it does considerably more than loadTrack: it removes
+       player-blank and un-hides the controls, the progress bar, the times and
+       the vinyl, which is everything the blank state hides. This used to call
+       loadTrack and playAudio directly - as script.js's own queue handler did,
+       which is why this was broken before the queue was taken over - so the
+       audio started while the panel still read "SELECT A TRACK" over the top of
+       it. The true flag matches queueTracks: no shortcuts toast or mini-player
+       nudge on every queue tap. selectTrackFromList already loads, plays and
+       re-renders the playlist, so none of that is repeated here. */
+    if (typeof selectTrackFromList === "function") {
+      try { selectTrackFromList(idx, true); return; } catch (e) { /* fall through */ }
+    }
     currentTrackIndex = idx;
     loadTrack(currentTrackIndex);
     playAudio();
