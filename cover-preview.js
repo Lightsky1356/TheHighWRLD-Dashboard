@@ -66,6 +66,49 @@
     if (document.body) document.body.classList.add("blur-active");
   }
 
+  /* --------------------------------------------------------------------------
+     BACKDROP TAP TO DISMISS
+
+     The lightbox had no pointer route out at all. Escape and the arrow keys are
+     wired, and the close button works - but on a phone there is no Escape key, the
+     body scroll is locked while the lightbox is open (blur-active sets
+     overflow:hidden), and the close button was a 26x30 target tucked 12px from the
+     top and 14px from the right. So on mobile that one small corner button was the
+     only way out, and both reported routes into this overlay - "View cover" on a
+     track, and tapping a cover in an artist panel - land in the same lightbox and
+     were equally stuck.
+
+     Bound once on the lightbox element rather than per open, so it covers both
+     entry points, and it is delegated because the close and arrow buttons are
+     created per open by showCoverArt().
+
+     Only the backdrop and the caption dismiss. The arrow buttons and the artwork
+     wrapper are left alone deliberately: the markup already stops propagation on
+     .lb-nav and .lb-img-wrap (index.html), so tapping the artwork was never meant
+     to close the lightbox, and this does not quietly reverse that. The artwork is
+     inset on a phone - about 370x470 inside 390x844, leaving wide bands above and
+     below - so the backdrop is a large, easy target rather than a sliver. The
+     selectors are repeated here anyway, so the intent is legible in this file
+     instead of only in the HTML, and survives if the inline handlers change. */
+  function mountDismiss() {
+    var lb = document.getElementById("cover-lightbox");
+    if (!lb || lb.dataset.thwDismissBound) return;
+    lb.dataset.thwDismissBound = "1";
+
+    lb.addEventListener("click", function (e) {
+      var t = e.target;
+      if (t && t.closest && t.closest(".lb-nav, .lb-close, .lb-img-wrap")) return;
+      if (typeof hideCoverArt === "function") {
+        try { hideCoverArt(); return; } catch (err) { /* fall through */ }
+      }
+      /* hideCoverArt is script.js's; if it ever goes away the overlay still has to
+         come down, or the page is stuck scroll-locked behind it. */
+      lb.style.display = "none";
+      if (document.body) document.body.classList.remove("blur-active");
+      if (typeof _unlockScroll === "function") { try { _unlockScroll(); } catch (err2) {} }
+    });
+  }
+
   function mount() {
     /* Under the artwork, but inside the info panel rather than beside the
        player's big vinyl. .info-panel-cover-row is a centred flex column, so the
@@ -86,9 +129,13 @@
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", mount);
+    document.addEventListener("DOMContentLoaded", function () {
+      mount();
+      mountDismiss();
+    });
   } else {
     mount();
+    mountDismiss();
   }
 
   window.openCoverPreview = openPreview;

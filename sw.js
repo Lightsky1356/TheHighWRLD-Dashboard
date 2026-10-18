@@ -43,7 +43,7 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v2',
-  'player-settings.css?v=thw-v46',
+  'player-settings.css?v=thw-v47',
   './style.css?v=thw-v30',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
@@ -133,7 +133,7 @@ const PRECACHE = [
   './social-panel.js?v=thw-v30',
   './push-client.js?v=thw-v13',
   './simple-toast.js?v=thw-v5',
-  './cover-preview.js?v=thw-v5',
+  './cover-preview.js?v=thw-v7',
 
   /* --- misc page assets --- */
   './Juice-WRLD.png?v=2',

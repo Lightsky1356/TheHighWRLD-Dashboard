@@ -1397,3 +1397,26 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
    Scoped to #ap-covers so the player, the playlist rows and the lightbox are
    untouched - in the player a track has already been chosen deliberately.
    ========================================================================== */
+/* ============================================================================
+   COVER LIGHTBOX CLOSE CONTROL ON PHONE SIZES
+   The desktop close button is 28px of glyph in a 36px box. The mobile override
+   shrank it to a 26x30 box 12px from the top and 14px from the right - under both
+   the 44pt iOS and 48dp Material minimum tap targets, in the hardest corner to
+   reach one-handed. With no backdrop tap, no Escape key on a phone and the body
+   scroll locked behind the overlay, that was the only way out of the lightbox.
+
+   Made a real target and moved in for the notch and the home indicator, which
+   env() reports as 0px on a desktop browser and so changes nothing there.
+   ========================================================================== */
+@media (max-width: 768px){
+#cover-lightbox>button[aria-label="Close"]{top:calc(10px + env(safe-area-inset-top,0px))!important;right:calc(10px + env(safe-area-inset-right,0px))!important;width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:26px!important;border-radius:50%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.82)!important}
+#cover-lightbox>button[aria-label="Close"]:active{background:rgba(239,68,68,.28);color:#fff!important}
+#cover-lightbox>button[aria-label="Close"]:focus-visible{outline:2px solid rgba(255,255,255,.7);outline-offset:2px}
+}
+/* The artist panel's own close button is 30x30, and it sits inside a panel that
+   scrolls on a phone, so it is reachable but small. Same reasoning as the lightbox
+   above: give it a real tap target and keep it clear of the notch. */
+@media (max-width: 768px){
+#ap-close{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;font-size:15px!important;margin-top:env(safe-area-inset-top,0px)}
+#ap-close:focus-visible{outline:2px solid rgba(255,255,255,.7);outline-offset:2px}
+}
