@@ -78,8 +78,8 @@
       '<img decoding="async" class="gal-prev" id="gal-prev" alt="">' +
       '<input type="text" id="gal-title" maxlength="80" placeholder="Title">' +
       '<input type="text" id="gal-cap" maxlength="300" placeholder="Caption (optional)">' +
-      '<button type="button" class="gal-btn" id="gal-submit">Submit for review</button>' +
-      '<p class="gal-note" id="gal-note">JPG / PNG / WebP / GIF · auto-resized · max 800KB · reviewed before it goes live.</p></div>' +
+      '<button type="button" class="gal-btn" id="gal-submit">Publish</button>' +
+      '<p class="gal-note" id="gal-note">JPG / PNG / WebP / GIF · auto-resized · max 800KB · published as soon as you submit.</p></div>' +
       '<div id="gal-own-wrap"></div>' +
       '<div id="gal-queue-wrap"></div>' +
       '<div class="gal-sec-t">Fresh from the community</div>' +
@@ -161,7 +161,7 @@
               pendingFile = { mime: mime, dataUrl: url };
               prev.src = url;
               prev.style.display = "block";
-              note.textContent = "Ready — " + Math.round(url.length * 0.75 / 1024) + "KB. Reviewed before it goes live.";
+              note.textContent = "Ready — " + Math.round(url.length * 0.75 / 1024) + "KB. Publishes as soon as you submit.";
             };
             if (gif) {
               if (f.size > 819200) { note.textContent = "GIF is over 800KB."; file.value = ""; return; }
@@ -199,7 +199,7 @@
         .then(function (d) {
           btn.disabled = false;
           if (d && d.ok) {
-            note.textContent = "Submitted — visible after review.";
+            note.textContent = "Published — everyone can see it now.";
             if (d.flagged && window.submissionRules) window.submissionRules.notice('gallery', d.flagged);
             file.value = "";
             prev.style.display = "none";

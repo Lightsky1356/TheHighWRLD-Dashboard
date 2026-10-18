@@ -1,12 +1,16 @@
 // Fan Art / Community Gallery API.
 // Images are client-resized (max 1600px JPEG) and stored as D1 blobs with
 // strict validation: allowlist MIME, magic bytes, 800KB raw cap, rate limit.
-// Moderation: submissions land 'pending'; owners approve/reject with code.
+// Uploads require a linked Discord account and publish immediately - inserted
+// 'approved', not 'pending'. Nothing waits on a human before it is visible.
+// Owners can still reject a live item, and automod can still action a flag;
+// the caption ruleset only records an advisory flag.
 //
-// GET  /api/gallery?page=&limit=        -> approved items (no blobs)
+// GET  /api/gallery?page=&limit=        -> published items (no blobs)
 // GET  /api/gallery?id=<id>             -> raw image bytes (cached)
 // GET  /api/gallery?mine=1              -> own submissions (session)
-// GET  /api/gallery?pending=1&code=...  -> moderation queue (owner)
+// GET  /api/gallery?pending=1&code=...  -> moderation queue (owner; empty unless
+//                                          something was seeded 'pending')
 // POST /api/gallery { action, ... }     -> submit|delete|report|moderate
 
 import { getSessionUser } from "../_lib/auth.js";
@@ -184,13 +188,24 @@ export async function onRequestPost(context) {
       } catch (_) {}
       const ins = await db.prepare(
         "INSERT INTO gallery_items (uid, user_name, avatar, title, caption, mime, size, data, status) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')"
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved')"
       ).bind(me.uid, (me.name || "Guest").slice(0, 40), (me.avatar || "").slice(0, 300),
         title, caption, mime, bytes.length, bytes.buffer).run();
       const itemId = ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0;
-      // Uploads already land in the 'pending' queue for a human to look at. The
-      // caption ruleset adds a reason on the flag so the reviewer knows what the
-      // automated pass caught (handles, promo codes, links). Nothing is auto-rejected.
+      // Uploads publish immediately - 'approved' on insert, so the item is live
+      // for everyone the moment it is stored rather than waiting on a human.
+      //
+      // This was the only surface out of the four that actually held posting
+      // back. Community posts and replies have no status column at all, and
+      // suggestions_v2 / wanted_posts default to 'new' / 'wanted' with their
+      // public reads only filtering by status when a filter is explicitly asked
+      // for - so all three were already publishing straight away. The caption
+      // ruleset and automod only ever record a flag; neither can reject.
+      //
+      // The flag below is therefore advisory, and stays that way: it tells the
+      // author what the automated pass noticed, and gives staff something to
+      // act on, but it no longer decides whether anyone sees the upload. An
+      // owner can still reject a live item, and automod can still action a flag.
       let ruleFlag = null;
       const violations = evaluateSurfaceRules("gallery", { title, caption });
       if (violations.length) {
@@ -199,7 +214,7 @@ export async function onRequestPost(context) {
           try {
             await db.prepare(
               "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'moderation', ?, ?, ?, ?, 'Automated moderation')"
-            ).bind(me.uid, "Your upload was sent to staff review (" + ruleFlag.codes.join(", ") + ")",
+            ).bind(me.uid, "Your upload is live and was flagged for staff review (" + ruleFlag.codes.join(", ") + ")",
               "gallery:" + itemId, String(itemId), ruleFlag.severity).run();
           } catch (_) {}
         }
