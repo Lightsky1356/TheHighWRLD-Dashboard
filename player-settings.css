@@ -1504,13 +1504,15 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
    The header is a flex row that already holds a label and "Clear All", so the
    new controls are appended and the label is swapped for a count while selecting
    rather than anything being restyled around. */
-.queue-head-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-left:6px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:10px;cursor:pointer;transition:background .18s ease,color .18s ease,border-color .18s ease}
-.queue-head-btn:hover:not(:disabled){background:rgba(255,255,255,.12);color:#fff}
-.queue-head-btn:disabled{opacity:.35;cursor:default}
+.queue-dropdown-header button.queue-head-btn,
+#queue-panel button.queue-head-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-left:6px;padding:0;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:10px;cursor:pointer;transition:background .18s ease,color .18s ease,border-color .18s ease}
+
+.queue-dropdown-header button.queue-head-btn:disabled,
+#queue-panel button.queue-head-btn:disabled{opacity:.35;cursor:default}
 .queue-head-btn[hidden]{display:none!important}
-.queue-bin-btn:hover:not(:disabled){background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.4);color:#fca5a5}
-.queue-select-btn[aria-pressed="true"]{background:rgba(34,211,238,.16);border-color:rgba(34,211,238,.4);color:#22d3ee}
-.queue-head-count{color:#22d3ee;font-weight:700}
+
+.queue-dropdown-header button.queue-head-btn.queue-select-btn[aria-pressed="true"],#queue-panel button.queue-head-btn.queue-select-btn[aria-pressed="true"]{background:rgba(34,211,238,.16);border-color:rgba(34,211,238,.4);color:#22d3ee}
+
 
 /* The per-row check. Hidden entirely outside select mode, so the rows look
    exactly as they did before. */
@@ -1521,7 +1523,8 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
 .queue-item-selected:hover{background:rgba(34,211,238,.16)!important}
 
 @media (max-width:768px){
-.queue-head-btn{width:40px;height:40px;font-size:13px;margin-left:4px;border-radius:10px}
+.queue-dropdown-header button.queue-head-btn,
+#queue-panel button.queue-head-btn{width:40px;height:40px;min-height:0;padding:0;font-size:13px;margin-left:4px;border-radius:10px}
 .queue-head-count{font-size:10px}
 .queue-item-check{width:28px;height:28px;flex:0 0 28px;font-size:11px}
 }
@@ -1555,8 +1558,17 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
 
    The close button is deliberately plain - no fill, no border - because it is
    the one control that is always present, and a permanently prominent red-ish
-   target in the corner of a panel reads as destructive. Cancel and Close are
-   also different actions and look different for that reason.
+   target in the corner of a panel reads as destructive.
+
+   Close and Cancel must not look alike. They did: Close uses fa-xmark and
+   Cancel used fa-times, which are the same glyph in Font Awesome - xmark is the
+   FA6 name and times the FA5 alias - so the two rendered as two identical
+   crosses and neither could be told from the other. Cancel is now fa-arrow-left,
+   because it steps back out of select mode rather than dismissing anything, and
+   a cross beside another cross cannot say which is which. Close keeps the ×,
+   which is the conventional mark for a panel's dismiss. The two are also kept
+   apart tonally: Close is borderless and faint until hovered, Cancel is a
+   filled chip like every other action in the header.
 
    The list carries scroll shadows: two gradients painted in the scroll
    coordinate space (the radial pair) with the covering pair in the local space,
@@ -1576,8 +1588,8 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
 }
 .queue-head-count[hidden]{display:none!important}
 .queue-head-count.is-selecting{background:rgba(34,211,238,.16);border-color:rgba(34,211,238,.35);color:#22d3ee}
-.queue-close-btn{background:transparent!important;border-color:transparent!important;color:rgba(255,255,255,.3)!important}
-.queue-close-btn:hover{background:rgba(255,255,255,.08)!important;color:rgba(255,255,255,.85)!important}
+.queue-dropdown-header button.queue-head-btn.queue-close-btn,#queue-panel button.queue-head-btn.queue-close-btn{background:transparent!important;border-color:transparent!important;color:rgba(255,255,255,.28)!important;margin-left:auto!important}
+
 
 .queue-dropdown-container{
   background:
@@ -1587,3 +1599,80 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
 @media (max-width:768px){
 .queue-head-count{min-width:22px;height:20px;font-size:10px}
 }
+/* ---------------------------------------------------------------------------
+   QUEUE HOVER STATES
+
+   Gated on (hover: hover) so a tap on a touch screen cannot leave a control
+   stuck in its hover styling. Each button tints toward the colour of what it
+   does, rather than every one of them brightening identically: select goes
+   cyan, bin goes red because it is the destructive one, close stays neutral so
+   it never reads as an action, and Clear All brightens in place.
+
+   Focus-visible is kept outside that gate, because keyboard focus is not a
+   pointer and has to be visible on any device.
+   ------------------------------------------------------------------------- */.queue-head-btn:focus-visible,
+.queue-act:focus-visible,
+.queue-item-check:focus-visible,
+#queue-dropdown-clear:focus-visible{outline:2px solid rgba(34,211,238,.85);outline-offset:2px;border-radius:8px}
+
+
+.queue-head-btn:focus-visible,
+.queue-act:focus-visible,
+.queue-item-check:focus-visible,
+#queue-dropdown-clear:focus-visible{outline:2px solid rgba(34,211,238,.85);outline-offset:2px;border-radius:8px}
+/* ---------------------------------------------------------------------------
+   QUEUE HOVER STATES
+
+   Gated on (hover: hover) so a tap on a touch screen cannot leave a control
+   stuck showing its hover styling. Each button tints toward the colour of what
+   it does rather than every one brightening identically: select goes cyan, bin
+   goes red because it is the destructive one, close stays neutral so it never
+   reads as an action, and Clear All brightens in place.
+
+   Every selector here is on one line. An earlier version built them from a
+   constant that contained a newline, which put ":hover" on the second
+   comma-separated compound only - and because the broken form began with a
+   bare ".queue-head-btn,", every header button picked up the hover
+   declarations permanently, which is why all of them looked hovered at rest.
+
+   focus-visible is deliberately outside the gate: keyboard focus is not a
+   pointer and has to stay visible on every device.
+   ------------------------------------------------------------------------- */
+
+.queue-head-btn:focus-visible,.queue-act:focus-visible,.queue-item-check:focus-visible,#queue-dropdown-clear:focus-visible{outline:2px solid rgba(34,211,238,.85);outline-offset:2px;border-radius:8px}
+/* ---------------------------------------------------------------------------
+   QUEUE HOVER STATES
+
+   Gated on (hover: hover) so a tap on a touch screen cannot leave a control
+   stuck showing its hover styling. Each button tints toward the colour of what
+   it does rather than every one brightening identically: select goes cyan, bin
+   goes red because it is the destructive one, close stays neutral so it never
+   reads as an action, and Clear All brightens in place.
+
+   Every selector below carries its pseudo-class on BOTH header contexts. Writing
+   them as one joined list and appending ":hover" to the end produces "A, B:hover",
+   which means A matches unconditionally - which is how every header button came
+   to look permanently hovered. The same thing happened with a multi-line
+   constant that put the break in the wrong place.
+
+   focus-visible is deliberately outside the gate: keyboard focus is not a
+   pointer and has to stay visible on every device.
+   ------------------------------------------------------------------------- */
+@media (hover:hover){
+.queue-dropdown-header button.queue-head-btn:hover:not(:disabled),#queue-panel button.queue-head-btn:hover:not(:disabled){background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18);color:#fff}
+.queue-dropdown-header button.queue-head-btn.queue-select-btn:hover:not(:disabled),#queue-panel button.queue-head-btn.queue-select-btn:hover:not(:disabled){background:rgba(34,211,238,.14);border-color:rgba(34,211,238,.34);color:#67e8f9}
+.queue-dropdown-header button.queue-head-btn.queue-bin-btn:hover:not(:disabled),#queue-panel button.queue-head-btn.queue-bin-btn:hover:not(:disabled){background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.42);color:#fca5a5}
+.queue-dropdown-header button.queue-head-btn.queue-cancel-btn:hover:not(:disabled),#queue-panel button.queue-head-btn.queue-cancel-btn:hover:not(:disabled){background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.2);color:#fff}
+.queue-dropdown-header button.queue-head-btn.queue-close-btn:hover,#queue-panel button.queue-head-btn.queue-close-btn:hover{background:rgba(255,255,255,.1)!important;border-color:transparent!important;color:rgba(255,255,255,.9)!important}
+#queue-dropdown-clear:hover{color:rgba(255,255,255,.8)}
+.queue-item-check:hover{border-color:rgba(34,211,238,.6);background:rgba(34,211,238,.1)}
+.queue-item-check[aria-pressed="true"]:hover{background:#22d3ee;border-color:#fff}
+.queue-act:hover:not(:disabled){background:rgba(255,255,255,.12);color:#fff}
+.queue-act[data-act="remove"]:hover:not(:disabled){background:rgba(239,68,68,.16);color:#fca5a5}
+.queue-act[data-act="playnext"]:hover:not(:disabled){background:rgba(34,211,238,.14);color:#67e8f9}
+.queue-act[data-act="up"]:hover:not(:disabled),.queue-act[data-act="down"]:hover:not(:disabled){background:rgba(255,255,255,.14);color:#fff}
+.queue-item:hover{background:rgba(255,255,255,.07)}
+.queue-item-selected:hover{background:rgba(34,211,238,.18)!important}
+}
+
+.queue-head-btn:focus-visible,.queue-act:focus-visible,.queue-item-check:focus-visible,#queue-dropdown-clear:focus-visible{outline:2px solid rgba(34,211,238,.85);outline-offset:2px;border-radius:8px}
