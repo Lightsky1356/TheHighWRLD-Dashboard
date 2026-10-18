@@ -76,6 +76,21 @@ async function publiclyListed(id) {
   return { listed: items.some((i) => Number(i.id) === Number(id)), total: items.length };
 }
 
+/* The strongest version of "the image works": hand the bytes to the same
+   decoder a browser would use. A correct Content-Type over garbage bytes is
+   still a broken image, and only this catches that. */
+async function decodes(bytes, mime) {
+  if (typeof createImageBitmap !== "function" || typeof Blob === "undefined") {
+    return true; // no decoder in this runtime - the magic-byte check still ran
+  }
+  try {
+    const bmp = await createImageBitmap(new Blob([bytes], { type: mime }));
+    return bmp.width > 0 && bmp.height > 0;
+  } catch (_) {
+    return false;
+  }
+}
+
 let ok = true;
 
 // 1. no session
@@ -110,11 +125,39 @@ if (publishedId) {
   const { listed, total } = await publiclyListed(publishedId);
   ok = check("it appears in the PUBLIC listing with no owner code", listed, `id=${publishedId} listingSize=${total}`) && ok;
 
-  const bytes = await get(`/api/gallery?id=${publishedId}`);
+  /* Assert the BYTES, not just the status and the Content-Type header.
+     That distinction is the whole reason this assertion exists: the D1 BLOB was
+     coming back as an Array of byte values, `new Response(array)` stringified it,
+     and the client got "255,216,255,224,..." as a 1.2MB ASCII body served as
+     image/jpeg. Status 200, Content-Type image/jpeg, and a completely
+     undecodable image - so the earlier version of this check, which asserted
+     only the status and the header, passed straight through the bug it was
+     supposed to catch. */
+  const res = await fetch(`${BASE}/api/gallery?id=${publishedId}`, { cache: "no-store" });
+  const buf = new Uint8Array(await res.arrayBuffer());
+  const isPng =
+    buf.length > 8 &&
+    buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+  const looksAscii =
+    buf.length > 8 &&
+    Array.from(buf.slice(0, 8)).every((b) => b >= 0x20 && b < 0x7f);
   ok = check(
-    "its bytes are served publicly too (no owner code)",
-    bytes.status === 200,
-    `status=${bytes.status} contentType=${bytes.res.headers.get("content-type")}`
+    "its bytes are served publicly (no owner code)",
+    res.status === 200,
+    `status=${res.status} contentType=${res.headers.get("content-type")}`
+  ) && ok;
+  ok = check(
+    "  and they are real image bytes, not a stringified array",
+    isPng && !looksAscii,
+    isPng
+      ? `PNG magic ok, ${buf.length} bytes`
+      : `first bytes ${Array.from(buf.slice(0, 8)).map((b) => b.toString(16).padStart(2, "0")).join(" ")}` +
+        (looksAscii ? " LOOKS ASCII - the array was stringified again" : "")
+  ) && ok;
+  ok = check(
+    "  and the browser can actually decode it",
+    await decodes(buf, "image/png"),
+    "createImageBitmap on the served bytes"
   ) && ok;
 }
 
@@ -144,6 +187,45 @@ let flaggedId = null;
     "the 10/day cap is still enforced",
     !!hit429,
     hit429 ? `429 after ${tries} more uploads: "${hit429}"` : `no 429 after ${tries} attempts`
+  ) && ok;
+}
+
+// 7. reporting goes through the shared panel, and the panel accepts GALLERY
+{
+  // The bespoke report action is gone. It wrote target_type 'gallery' in lower
+  // case while every staff-side filter matches upper-case VALID_TYPES, and
+  // recorded no reporter identity, so its rows were invisible in the queue.
+  const r = await post(LINKED.token, {
+    action: "report",
+    id: publishedId || 1,
+    reason: "inappropriate",
+  });
+  ok = check(
+    "the old bespoke report action is gone from /api/gallery",
+    r.status === 400 && /unknown action/i.test(String((r.json && r.json.error) || "")),
+    `status=${r.status} err=${r.json && r.json.error}`
+  ) && ok;
+}
+
+// 8. the shared reports API accepts a GALLERY target
+if (publishedId) {
+  const res = await fetch(BASE + "/api/reports", {
+    method: "POST",
+    headers: { Cookie: `thw_session=${LINKED.token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      target_type: "GALLERY",
+      target_id: publishedId,
+      reason: "Copyright Concern",
+      details: "regression probe for the gallery report target type",
+    }),
+  });
+  let json = null;
+  try { json = await res.json(); } catch (_) {}
+  const err = String((json && json.error) || "");
+  ok = check(
+    "the shared reports API accepts target_type GALLERY",
+    res.status === 200 && !/invalid target type/i.test(err),
+    `status=${res.status} body=${JSON.stringify(json).slice(0, 150)}`
   ) && ok;
 }
 

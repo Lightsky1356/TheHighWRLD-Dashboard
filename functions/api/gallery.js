@@ -11,7 +11,15 @@
 // GET  /api/gallery?mine=1              -> own submissions (session)
 // GET  /api/gallery?pending=1&code=...  -> moderation queue (owner; empty unless
 //                                          something was seeded 'pending')
-// POST /api/gallery { action, ... }     -> submit|delete|report|moderate
+// POST /api/gallery { action, ... }     -> submit|delete|moderate
+//
+// Reporting an upload is NOT one of these actions. It goes through the shared
+// report panel (/api/reports with target_type GALLERY), which is where every
+// other surface files reports too. This endpoint used to accept its own
+// `report` action; it wrote target_type 'gallery' in lower case while every
+// staff-side filter matches the upper-case VALID_TYPES, and recorded no reporter
+// identity at all, so the rows it produced were invisible in the moderation
+// queue. Removed rather than left as a second, quieter way to file a report.
 
 import { getSessionUser } from "../_lib/auth.js";
 import { banRejection } from "../_lib/bans.js";
@@ -80,7 +88,26 @@ export async function onRequestGet(context) {
         "SELECT data, mime FROM gallery_items WHERE id = ?" + (asOwner ? "" : " AND status = 'approved'")
       ).bind(id).first();
       if (!row || !row.data) return new Response("not found", { status: 404 });
-      return new Response(row.data, {
+      /* D1 hands a BLOB back as a plain Array of byte values, not as binary.
+         Handing that array straight to `new Response()` stringifies it, so the
+         client received "255,216,255,224,..." as a ~1.2MB text body served with
+         Content-Type: image/jpeg. The status was 200 and the header looked
+         right, so nothing upstream noticed - but the bytes were ASCII, and no
+         browser can decode them. That is why uploaded art rendered as a broken
+         image on every device while the listing, the caption and the author all
+         looked perfectly fine.
+
+         Normalised here rather than at the call site, and defensively across
+         all three shapes, because which one arrives is a D1 detail rather than
+         something the rest of this file should have to reason about. */
+      const bytes = Array.isArray(row.data)
+        ? new Uint8Array(row.data)
+        : row.data instanceof ArrayBuffer
+          ? new Uint8Array(row.data)
+          : row.data instanceof Uint8Array
+            ? row.data
+            : new Uint8Array(row.data);
+      return new Response(bytes, {
         status: 200,
         headers: {
           "Content-Type": row.mime || "image/jpeg",
@@ -239,21 +266,6 @@ export async function onRequestPost(context) {
         return json({ ok: false, error: "forbidden" }, 403);
       }
       await db.prepare("DELETE FROM gallery_items WHERE id = ?").bind(id).run();
-      return json({ ok: true });
-    }
-
-    if (action === "report") {
-      const me = await getSessionUser(db, context.request);
-      if (!me) return json({ ok: false, error: "not signed in" }, 401);
-      const id = Number(body.id) || 0;
-      const reason = String(body.reason || "").trim().slice(0, 200) || "reported";
-      if (!id) return json({ ok: false, error: "missing id" }, 400);
-      const row = await db.prepare("SELECT title FROM gallery_items WHERE id = ?").bind(id).first();
-      if (!row) return json({ ok: false, error: "not found" }, 404);
-      await db.prepare(
-        "INSERT INTO reports (target_type, target_id, reporter_discord_id, reporter_name, reason, snapshot_title) " +
-        "VALUES ('gallery', ?, ?, ?, ?, ?)"
-      ).bind(String(id), "", (me.name || "").slice(0, 40), reason, String(row.title || "").slice(0, 120)).run();
       return json({ ok: true });
     }
 

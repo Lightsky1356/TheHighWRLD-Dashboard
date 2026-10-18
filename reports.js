@@ -7,7 +7,13 @@
   var REASONS = ['Spam', 'Duplicate', 'Incorrect Information', 'Harassment', 'Impersonation', 'Inappropriate Behavior', 'Inappropriate Content', 'Scamming', 'Malicious Activity', 'Scam / Malicious Content', 'Copyright Concern', 'Other'];
   var USER_REASONS = ['Spam', 'Harassment', 'Impersonation', 'Inappropriate Behavior', 'Scamming', 'Malicious Activity', 'Other'];
   var MESSAGE_REASONS = ['Spam', 'Harassment', 'Impersonation', 'Inappropriate Behavior', 'Scam / Malicious Content', 'Other'];
-  var REASON_SETS = { USER: USER_REASONS, MESSAGE: MESSAGE_REASONS };
+  /* Art gets its own set: the generic list leads with Duplicate and Incorrect
+     Information, which do not apply to a picture, while the two reasons that
+     dominate real reports on artwork - Copyright Concern and Inappropriate
+     Content - sit near the bottom of it. Both are in VALID_REASONS on the
+     server, and Copyright Concern already requires written detail. */
+  var GALLERY_REASONS = ['Copyright Concern', 'Inappropriate Content', 'Impersonation', 'Harassment', 'Spam', 'Other'];
+  var REASON_SETS = { USER: USER_REASONS, MESSAGE: MESSAGE_REASONS, GALLERY: GALLERY_REASONS };
   var NEEDS_DETAILS = { 'Other': true, 'Copyright Concern': true };
   var MAX_DETAILS = 1000;
 
@@ -139,6 +145,7 @@
     if (ty === 'PROFILE') return 'Profile: ';
     if (ty === 'USER') return 'User: ';
     if (ty === 'MESSAGE') return 'Direct message: ';
+    if (ty === 'GALLERY') return 'Gallery upload: ';
     return 'Suggestion: ';
   }
 

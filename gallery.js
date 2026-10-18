@@ -317,12 +317,28 @@
           if (e.target === ov || (e.target.closest && e.target.closest('[data-gal-x]'))) { ov.remove(); return; }
           var rp = e.target.closest ? e.target.closest("[data-gal-rep]") : null;
           if (rp) {
-            var reason = "inappropriate";
-            try { reason = window.prompt("Report reason?", "inappropriate") || "inappropriate"; } catch (err) {}
-            fetch("/api/gallery", {
-              method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
-              body: JSON.stringify({ action: "report", id: Number(rp.getAttribute("data-gal-rep")), reason: reason.slice(0, 200) })
-            }).then(function () { if (window.toast) window.toast("Reported — mods will review", "info"); ov.remove(); }).catch(function () {});
+            /* Reporting goes through the site's own panel - the same one the
+               profile, direct message and suggestion flows already use.
+
+               It used to be a window.prompt() posting to /api/gallery's own
+               report action. That was a third reporting path with its own
+               problems: a native prompt rather than a panel, so no scroll lock
+               and no Discord gate; an uncontrolled free-text reason instead of
+               the shared list; no reporter identity recorded at all
+               (reporter_discord_id was written as an empty string); and rows
+               inserted with target_type 'gallery' in lower case while every
+               staff-side filter matches the upper-case VALID_TYPES - so the
+               reports it created were effectively invisible in the very queue
+               they were meant to reach.
+
+               openReportModal handles the scroll lock, the gate and the reason
+               list, and files the report where staff will see it. The lightbox
+               is removed first so the two overlays never stack. */
+            ov.remove();
+            if (window.openReportModal) {
+              window.openReportModal("GALLERY", rp.getAttribute("data-gal-rep"), (it && it.title) || "Untitled");
+            }
+            return;
           }
         });
         document.body.appendChild(ov);

@@ -20,7 +20,7 @@ function esc(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-const VALID_TYPES = ["WANTED", "SUGGESTION", "REPLY", "NOM", "PROFILE", "TRACK", "USER", "MESSAGE"];
+const VALID_TYPES = ["WANTED", "SUGGESTION", "REPLY", "NOM", "PROFILE", "TRACK", "USER", "MESSAGE", "GALLERY"];
 const VALID_STATUSES = ["OPEN", "REVIEWING", "RESOLVED", "DISMISSED"];
 const VALID_REASONS = [
   "Spam",
@@ -189,6 +189,17 @@ export async function onRequestPost(context) {
       if (!rep) return json({ error: "reported content not found" }, 404);
       snapTitle = "Reply on " + (rep.track_id || "");
       snapBody = ((rep.user_name || "Someone") + ": " + (rep.body || "")).slice(0, MAX_DETAILS);
+    } else if (targetType === "GALLERY") {
+      /* Snapshot the caption, never the image blob - the same reasoning
+         automod.js uses when it resolves a gallery target. A reviewer needs the
+         title and caption to judge the report; pulling a megabyte of image into
+         the reports row would achieve nothing. */
+      const item = await db.prepare(
+        "SELECT title, caption, user_name FROM gallery_items WHERE id = ?"
+      ).bind(Number(targetId) || 0).first();
+      if (!item) return json({ error: "reported content not found" }, 404);
+      snapTitle = (item.title || "Untitled") + " - by " + (item.user_name || "Someone");
+      snapBody = String(item.caption || "").slice(0, MAX_DETAILS);
     } else if (targetType === "MESSAGE") {
       const message = await db.prepare(
         "SELECT m.sender_uid, m.body, m.deleted_at FROM dm_messages m " +
