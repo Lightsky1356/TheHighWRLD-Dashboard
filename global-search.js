@@ -840,18 +840,52 @@ function backdrop() {
   (document.body || document.documentElement).appendChild(b);
   return b;
 }
-function sync(state) {
-  var b = backdrop();
-  b.style.display = state ? 'block' : 'none';
-  b.style.opacity = state ? '1' : '0';
-  var p = panelEl();
-  if (p && state) {
-    /* Panel CSS already fixes it centered at z 10001; re-assert here so
-       the backdrop (z 9998) can never cover it. */
-    p.style.zIndex = "10001";
-    p.style.position = "fixed";
+  /* Freeze the page behind the search while it is open.
+
+     The panel is position:fixed with its own overflow:auto, so it scrolls on its
+     own, but nothing stopped the document underneath it moving: the backdrop that
+     covers the page is pointer-events:none, so it cannot absorb the drag, and a
+     touch swipe meant for the results scrolls the page instead. On a phone that
+     slides the results out from under the thumb mid-search.
+
+     This uses script.js's reference-counted lock rather than a second mechanism of
+     its own - the same html.scroll-locked pair the cover lightbox and the report
+     and confirm modals use, so the page stays locked if another overlay is also
+     open and unlocks once the last one closes.
+
+     sync() is the right hook because every route into the panel ends up here. The
+     toggle, the main open()/close(), and the Ctrl+K and "k" shim all just flip
+     panel.hidden, and a MutationObserver watching hidden/style/class already
+     funnels each of those through refresh() -> sync(isOpen()). Locking inside
+     open()/close() instead would miss the keyboard shim, which can unhide the
+     panel on its own.
+
+     The flag matters: sync() runs on every attribute change, and _lockScroll is a
+     counter, so an extra lock without a matching unlock would leave the page
+     frozen for the rest of the session. */
+  var _scrollLocked = false;
+  function syncScrollLock(state) {
+    if (state === _scrollLocked) return;
+    _scrollLocked = state;
+    try {
+      if (state) { if (typeof _lockScroll === "function") _lockScroll(); }
+      else if (typeof _unlockScroll === "function") { _unlockScroll(); }
+    } catch (e) { /* never let the nicety break the search */ }
   }
-}
+
+  function sync(state) {
+    syncScrollLock(!!state);
+    var b = backdrop();
+    b.style.display = state ? 'block' : 'none';
+    b.style.opacity = state ? '1' : '0';
+    var p = panelEl();
+    if (p && state) {
+      /* Panel CSS already fixes it centered at z 10001; re-assert here so
+         the backdrop (z 9998) can never cover it. */
+      p.style.zIndex = "10001";
+      p.style.position = "fixed";
+    }
+  }
 function isOpen() {
   var p = panelEl();
   if (!p) return false;
