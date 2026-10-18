@@ -1469,3 +1469,29 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
 .queue-act{width:44px;height:44px;font-size:14px;border-radius:10px}
 .queue-dropdown-header button{padding:10px 12px;font-size:11px;min-height:36px}
 }
+/* Mouse drag reorder for the queue rows. Rows only get draggable="true" when
+   the pointer is fine, so none of this applies on a touch device - there the
+   per-row chevrons remain the only way to reorder.
+
+   The insertion line is drawn on the row the item would land in front of (or
+   after the last one), which is the same row dropTarget() resolves against, so
+   the line always shows where the drop will actually go. */
+@media (pointer:fine){
+.queue-item[draggable="true"]{cursor:grab}
+.queue-item[draggable="true"]:active{cursor:grabbing}
+.queue-item-dragging{opacity:.35}
+.queue-item-drop-before{box-shadow:inset 0 2px 0 #22d3ee}
+.queue-item-drop-after{box-shadow:inset 0 -2px 0 #22d3ee}
+}
+/* Stable queue panel size.
+
+   The list area was sized by its content (flex:1 with a max-height), so every
+   track added or removed resized the panel and the whole dropdown jumped. It is
+   now a fixed height that only ever varies with the viewport, so the panel holds
+   still while the queue changes and only genuinely new rows scroll into view.
+
+   max-height:none is deliberate: the earlier rules set max-height:260px, 180px
+   and 60dvh at various breakpoints, and any of those smaller than this height
+   would clip the box instead of letting it scroll. 45vh keeps the panel plus its
+   header inside the dropdown's own max-height on short windows. */
+.queue-dropdown-container{flex:none;height:min(260px,45vh);max-height:none}

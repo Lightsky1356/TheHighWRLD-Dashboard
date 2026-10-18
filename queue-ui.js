@@ -91,54 +91,98 @@
 
   /* ------------------------------------------------------------ rendering -- */
 
-  function esc(s) {
-    return String(s == null ? "" : s)
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  /* One row skeleton, built once and then updated in place. The buttons are
+     always present and hidden with [hidden] rather than omitted, so adding or
+     removing them is a property change instead of a markup change - which is
+     what lets a row survive a re-render at all. [hidden] also keeps them out of
+     the accessibility tree, so a lone track still exposes no arrows. */
+  var ROW_SKELETON =
+    '<div class="queue-item-cover"><img draggable="false" alt="" decoding="async" loading="lazy"></div>' +
+    '<div class="queue-item-info"><p class="queue-item-title"></p><p class="queue-item-tag"></p></div>' +
+    '<div class="queue-item-actions">' +
+      '<button type="button" draggable="false" class="queue-act" data-act="up"><i class="fas fa-chevron-up"></i></button>' +
+      '<button type="button" draggable="false" class="queue-act" data-act="down"><i class="fas fa-chevron-down"></i></button>' +
+      '<button type="button" draggable="false" class="queue-act" data-act="playnext"><i class="fas fa-angle-double-up"></i></button>' +
+      '<button type="button" draggable="false" class="queue-act queue-remove-btn" data-act="remove"><i class="fas fa-times"></i></button>' +
+    '</div>';
+
+  function buildRow() {
+    var el = document.createElement("div");
+    el.className = "queue-item";
+    el.innerHTML = ROW_SKELETON;
+    /* HTML5 drag is a mouse affordance, so it is left off on coarse pointers
+       outright rather than trusting touch browsers to ignore it - that way a
+       long press on a phone can never start one. */
+    if (!coarsePointer()) el.setAttribute("draggable", "true");
+    return el;
   }
 
-  /* script.js injected the cover gradient straight onto the title and tag with
-     data-gradient attributes to match on later; the style is applied inline
-     here instead, which is all those attributes ever did. */
-  function rowHtml(qi) {
+  /* A lone track has nothing to reorder against and is already the next thing
+     up, so every arrow is hidden rather than shown greyed out: on a single row
+     the chevrons and Play Next are all no-ops, and dead controls beside a plain
+     remove read as broken. At the edges of a longer queue the chevrons still
+     disable, because there the row's position is meaningful. */
+  function updateRow(el, qi) {
     var idx = trackQueue[qi];
     var t = trackList[idx];
-    if (!t) return "";
+    if (!t) return false;
+
     var cover = t.cover || "Juice-WRLD.png";
     var grad = getCoverGradientStyle(cover);
     var last = trackQueue.length - 1;
-    var playing = idx === currentTrackIndex;
-
-    /* A lone track has nothing to reorder against and is already the next thing
-       up, so every arrow is left out of the markup rather than rendered greyed
-       out: on a single row the chevrons and Play Next are all no-ops, and dead
-       controls beside a plain remove read as broken. At the edges of a longer
-       queue the chevrons still disable, because there the row's position is
-       meaningful - first row cannot move up, last cannot move down. */
     var many = trackQueue.length > 1;
-    var reorder = many
-      ? '<button type="button" class="queue-act" data-act="up" data-qi="' + qi + '"' + (qi === 0 ? " disabled" : "") +
-          ' title="Move up" aria-label="Move ' + esc(t.title) + ' up"><i class="fas fa-chevron-up"></i></button>' +
-        '<button type="button" class="queue-act" data-act="down" data-qi="' + qi + '"' + (qi === last ? " disabled" : "") +
-          ' title="Move down" aria-label="Move ' + esc(t.title) + ' down"><i class="fas fa-chevron-down"></i></button>'
-      : "";
-    var playNext = many
-      ? '<button type="button" class="queue-act" data-act="playnext" data-qi="' + qi + '"' +
-          ' title="Play next" aria-label="Play ' + esc(t.title) + ' next"><i class="fas fa-angle-double-up"></i></button>'
-      : "";
+    var album = getTrackAlbum(t);
 
-    return '<div class="queue-item' + (playing ? " queue-item-current" : "") + '" data-qi="' + qi +
-      '" data-idx="' + idx + '">' +
-      '<div class="queue-item-cover"><img src="' + esc(cover) + '" alt="" decoding="async" loading="lazy" onerror="this.src=\'Juice-WRLD.png\'"></div>' +
-      '<div class="queue-item-info">' +
-        '<p class="queue-item-title" style="' + grad + '">' + esc(t.title) + '</p>' +
-        '<p class="queue-item-tag" style="' + grad + '">' + esc(getTrackAlbum(t)) + '</p>' +
-      '</div>' +
-      '<div class="queue-item-actions">' + reorder + playNext +
-        '<button type="button" class="queue-act queue-remove-btn" data-act="remove" data-qi="' + qi + '"' +
-          ' title="Remove" aria-label="Remove ' + esc(t.title) + ' from queue"><i class="fas fa-times"></i></button>' +
-      '</div>' +
-    '</div>';
+    el.setAttribute("data-qi", qi);
+    el.setAttribute("data-idx", idx);
+
+    var img = el.querySelector(".queue-item-cover img");
+    /* Only touch src when it really changed: reassigning it restarts the fetch
+       and shows a flash, which on a re-render of an unchanged row is the other
+       half of the "it reloaded" impression. */
+    if (img && img.getAttribute("src") !== cover) {
+      img.setAttribute("src", cover);
+      img.setAttribute("alt", "");
+    }
+
+    var title = el.querySelector(".queue-item-title");
+    var tag = el.querySelector(".queue-item-tag");
+    if (title.textContent !== t.title) title.textContent = t.title;
+    if (tag.textContent !== album) tag.textContent = album;
+    title.setAttribute("style", grad);
+    tag.setAttribute("style", grad);
+
+    el.classList.toggle("queue-item-current", idx === currentTrackIndex);
+
+    var up = el.querySelector('[data-act="up"]');
+    var down = el.querySelector('[data-act="down"]');
+    var pn = el.querySelector('[data-act="playnext"]');
+    var rm = el.querySelector('[data-act="remove"]');
+
+    up.hidden = !many;
+    down.hidden = !many;
+    pn.hidden = !many;
+    up.setAttribute("data-qi", qi);
+    down.setAttribute("data-qi", qi);
+    pn.setAttribute("data-qi", qi);
+    rm.setAttribute("data-qi", qi);
+    up.disabled = qi === 0;
+    down.disabled = qi === last;
+
+    var label = t.title;
+    up.title = "Move up"; up.setAttribute("aria-label", "Move " + label + " up");
+    down.title = "Move down"; down.setAttribute("aria-label", "Move " + label + " down");
+    pn.title = "Play next"; pn.setAttribute("aria-label", "Play " + label + " next");
+    rm.title = "Remove"; rm.setAttribute("aria-label", "Remove " + label + " from queue");
+    return true;
+  }
+
+  /* Only a row that has just been added animates in. Rows that were already on
+     screen keep their .visible class and lose the stagger delay, so a reorder
+     or a removal does not make the whole list flash. */
+  function revealRow(el, qi) {
+    el.style.transitionDelay = 30 * qi + "ms";
+    requestAnimationFrame(function () { el.classList.add("visible"); });
   }
 
   function renderInto(container, emptyHtml) {
@@ -146,12 +190,34 @@
     if (containers.indexOf(container) === -1) {
       containers.push(container);
       container.addEventListener("click", onContainerClick);
+      container.addEventListener("dragstart", onDragStart);
+      container.addEventListener("dragover", onDragOver);
+      container.addEventListener("drop", onDrop);
+      container.addEventListener("dragend", onDragEnd);
     }
-    if (!trackQueue.length) { container.innerHTML = emptyHtml; return; }
-    var html = "";
-    for (var i = 0; i < trackQueue.length; i++) html += rowHtml(i);
-    container.innerHTML = html;
-    if (typeof staggerQueueItems === "function") { try { staggerQueueItems(container); } catch (e) {} }
+
+    if (!trackQueue.length) {
+      /* The only wholesale content swap left, and it is a single frame either
+         way with no rows worth preserving. */
+      if (!container._queueEmpty) { container.innerHTML = emptyHtml; container._queueEmpty = true; }
+      return;
+    }
+    if (container._queueEmpty) { container.innerHTML = ""; container._queueEmpty = false; }
+
+    var needed = trackQueue.length;
+    while (container.children.length > needed) container.removeChild(container.lastElementChild);
+
+    for (var qi = 0; qi < needed; qi++) {
+      var el = container.children[qi];
+      var isNew = !el || !el.classList.contains("queue-item");
+      if (isNew) {
+        el = buildRow();
+        container.appendChild(el);
+      }
+      if (!updateRow(el, qi)) continue;
+      if (isNew) revealRow(el, qi);
+      else { el.style.transitionDelay = ""; el.classList.add("visible"); }
+    }
   }
 
   var EMPTY_PANEL = '<p class="queue-empty">Queue is empty &#x2728; add tracks from the playlist</p>';
@@ -264,6 +330,106 @@
     }
     return false;
   }
+
+  /* --------------------------------------------------- mouse drag reorder -- */
+
+  /* HTML5 drag and drop rather than pointer events: it is built for exactly
+     this - a mouse dragging a list row - and it keeps the pointer-event path
+     free for the tap-to-play handler, which a drag would otherwise have to
+     distinguish from a drag by movement threshold.
+
+     Rows carry draggable="true" only when the pointer is fine (see rowHtml), so
+     none of this can start from a touch. The buttons and the cover are
+     explicitly draggable="false": an image is natively draggable and would
+     otherwise start an image drag instead of a row drag, and Firefox makes
+     buttons inside a draggable ancestor awkward to click.
+
+     The handlers are delegated from the container so they survive a re-render.
+     A plain click still plays the row, because the browser only fires
+     dragstart once the mouse has actually moved. */
+
+  var dragFrom = -1;
+  var dropHint = null;
+
+  function clearHint() {
+    if (dropHint) { dropHint.classList.remove("queue-item-drop-before", "queue-item-drop-after"); dropHint = null; }
+  }
+
+  function endDrag() {
+    dragFrom = -1;
+    clearHint();
+    var live = document.querySelectorAll(".queue-item-dragging");
+    for (var i = 0; i < live.length; i++) live[i].classList.remove("queue-item-dragging");
+  }
+
+  function onDragStart(e) {
+    var item = e.target.closest && e.target.closest(".queue-item");
+    if (!item) return;
+    dragFrom = parseInt(item.getAttribute("data-qi"), 10);
+    if (isNaN(dragFrom)) { dragFrom = -1; return; }
+    item.classList.add("queue-item-dragging");
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+      /* Firefox refuses to begin a drag unless some payload is set. */
+      try { e.dataTransfer.setData("text/plain", String(dragFrom)); } catch (err) { /* older browsers */ }
+    }
+  }
+
+  /* Where the pointer wants the row to land, as an index into the list *with
+     the dragged row taken out*.
+
+     That is exactly the index moveInQueue inserts at, because it splices the
+     row out first and only then splices it back in. Indexing against the other
+     rows rather than the on-screen ones is what keeps this free of an off-by-one
+     when the dragged row sits above or below its target: dropping A on the
+     bottom half of B resolves to 1 among [B,C,D], and moveInQueue(0,1) puts it
+     straight after B. Indexing the visible rows instead would need the target
+     shifted by one whenever the drag moved downwards, which is the usual way
+     this ends up dropping a row in the wrong place. */
+  function dropTarget(e, container) {
+    var rows = container.querySelectorAll(".queue-item");
+    var others = [];
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].classList.contains("queue-item-dragging")) continue;
+      others.push(rows[i]);
+    }
+    if (!others.length) return { at: 0, before: null, after: null };
+    for (var j = 0; j < others.length; j++) {
+      var b = others[j].getBoundingClientRect();
+      if (e.clientY < b.top + b.height / 2) {
+        return { at: j, before: others[j], after: null };
+      }
+    }
+    return { at: others.length, before: null, after: others[others.length - 1] };
+  }
+
+  function onDragOver(e) {
+    if (dragFrom < 0) return;
+    /* Without this the browser refuses the drop and no drop event ever fires. */
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    var h = dropTarget(e, e.currentTarget);
+    if (!h.before && !h.after) return;
+    var hint = h.before || h.after;
+    var cls = h.before ? "queue-item-drop-before" : "queue-item-drop-after";
+    if (dropHint !== hint || !hint.classList.contains(cls)) {
+      clearHint();
+      hint.classList.add(cls);
+      dropHint = hint;
+    }
+  }
+
+  function onDrop(e) {
+    if (dragFrom < 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var from = dragFrom;
+    var h = dropTarget(e, e.currentTarget);
+    endDrag();
+    if (h.at !== from) moveInQueue(from, h.at);
+  }
+
+  function onDragEnd() { endDrag(); }
 
   /* -------------------------------------------------------------- handlers -- */
 
