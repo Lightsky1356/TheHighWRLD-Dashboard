@@ -3223,7 +3223,7 @@ const trackList=[
   },
   {
     title: "Cheat Code (Sessions)",
-    tag: "Cheat Code (Up, Down, Left, Right, A, B, Ho) (Sessions) (DRFL)",
+    tag: "Cheat Code (Jack And Jill) (Sessions) (DRFL)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Cheat%20Code%20(Sessions).mp3",
