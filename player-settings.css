@@ -1547,3 +1547,43 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
    the stylesheets load in. The mobile rule that hides the cog outright is
    unaffected - both say hidden there. */
 #player-settings-cog:has(~ #player-panel.player-blank){display:none}
+/* ============================================================================
+   QUEUE PANEL HEADER AND SCROLL AFFORDANCE
+   The header now carries a count, the select/bin/cancel group and a close
+   button, so it needs to lay out as label-left, controls-right with room to
+   breathe rather than as a bare justify-content:space-between pair.
+
+   The close button is deliberately plain - no fill, no border - because it is
+   the one control that is always present, and a permanently prominent red-ish
+   target in the corner of a panel reads as destructive. Cancel and Close are
+   also different actions and look different for that reason.
+
+   The list carries scroll shadows: two gradients painted in the scroll
+   coordinate space (the radial pair) with the covering pair in the local space,
+   so the shadows only appear on the edge that still has content beyond it.
+   Without them a list that scrolls looks identical to one that does not, which
+   matters now that the height is fixed and the panel no longer grows to show
+   that there is more. */
+.queue-dropdown-header{gap:8px}
+.queue-dropdown-header>span:first-child{white-space:nowrap;letter-spacing:.14em}
+.queue-head-count{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:20px;height:18px;padding:0 6px;margin-left:6px;
+  border-radius:999px;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.55);font-size:9px;font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+.queue-head-count[hidden]{display:none!important}
+.queue-head-count.is-selecting{background:rgba(34,211,238,.16);border-color:rgba(34,211,238,.35);color:#22d3ee}
+.queue-close-btn{background:transparent!important;border-color:transparent!important;color:rgba(255,255,255,.3)!important}
+.queue-close-btn:hover{background:rgba(255,255,255,.08)!important;color:rgba(255,255,255,.85)!important}
+
+.queue-dropdown-container{
+  background:
+    radial-gradient(farthest-side at 50% 0, rgba(0,0,0,.4), rgba(0,0,0,0)) top / 100% 8px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,.4), rgba(0,0,0,0)) bottom / 100% 8px no-repeat scroll;
+}
+@media (max-width:768px){
+.queue-head-count{min-width:22px;height:20px;font-size:10px}
+}

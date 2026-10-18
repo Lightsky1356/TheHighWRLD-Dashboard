@@ -634,13 +634,23 @@
         '<span class="queue-head-count" hidden></span>' +
         '<button type="button" class="queue-head-btn queue-bin-btn" hidden title="Remove selected"><i class="fas fa-trash"></i></button>' +
         '<button type="button" class="queue-head-btn queue-cancel-btn" hidden title="Cancel selecting"><i class="fas fa-times"></i></button>' +
-        '<button type="button" class="queue-head-btn queue-select-btn" title="Select tracks"><i class="fas fa-list-check"></i></button>'
+        '<button type="button" class="queue-head-btn queue-select-btn" title="Select tracks"><i class="fas fa-list-check"></i></button>' +
+        '<button type="button" class="queue-head-btn queue-close-btn" title="Close queue" aria-label="Close queue"><i class="fas fa-xmark"></i></button>'
       );
       h.querySelector(".queue-select-btn").addEventListener("click", function () { setSelectMode(true); });
       h.querySelector(".queue-bin-btn").addEventListener("click", function () { binSelected(); });
       h.querySelector(".queue-cancel-btn").addEventListener("click", function () { setSelectMode(false); });
+      h.querySelector(".queue-close-btn").addEventListener("click", function () { closeQueuePanel(); });
       heads.push(h);
     }
+  }
+
+  /* Escape and the header's close button both come through here, so the scroll
+     lock can never be left held by a panel that is no longer on screen. */
+  function closeQueuePanel() {
+    var dd = document.getElementById("queue-dropdown");
+    if (!dd || dd.classList.contains("hidden")) return;
+    if (typeof toggleQueuePanel === "function") toggleQueuePanel();
   }
 
   /* Reflect the current mode on every header. Called after anything that can
@@ -654,18 +664,33 @@
       var bin = h.querySelector(".queue-bin-btn");
       var cancel = h.querySelector(".queue-cancel-btn");
       var sel = h.querySelector(".queue-select-btn");
+      var closeBtn = h.querySelector(".queue-close-btn");
       var clear = h.querySelector("#queue-dropdown-clear") ||
                   (h.querySelector("button[onclick*='clearQueue']"));
+      /* The count is always worth showing: outside select mode it is how long
+         the queue is, which the badge on the queue button says too but less
+         precisely. Inside select mode the same slot becomes "N selected", so
+         there is one number in one place rather than two competing ones. */
       if (label && count) {
-        if (selectMode) { label.hidden = true; count.hidden = false; count.textContent = n + " selected"; }
-        else { label.hidden = false; count.hidden = true; }
+        if (selectMode) {
+          label.hidden = true; count.hidden = false;
+          count.textContent = n + " selected";
+          count.classList.add("is-selecting");
+        } else {
+          label.hidden = false; count.hidden = trackQueue.length === 0;
+          count.textContent = String(trackQueue.length);
+          count.classList.remove("is-selecting");
+          count.title = trackQueue.length + (trackQueue.length === 1 ? " track queued" : " tracks queued");
+        }
       }
       if (bin) { bin.hidden = !selectMode; bin.disabled = n === 0; }
       if (cancel) cancel.hidden = !selectMode;
       /* Select mode and Clear All are two different ways to empty the list, so
-         only one of them is offered at a time. */
+         only one of them is offered at a time. The close button stays put in
+         both, so there is always a way out that is not a destructive action. */
       if (sel) sel.hidden = selectMode;
       if (clear) clear.hidden = selectMode;
+      if (closeBtn) closeBtn.hidden = false;
     }
   }
 
@@ -729,7 +754,17 @@
   /* Anything that closes the dropdown behind our back - Escape, a page switch,
      the queue button's own toggle - must still release the lock. */
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") releaseDropdownLock();
+    if (e.key !== "Escape") return;
+    var dd = document.getElementById("queue-dropdown");
+    if (!dd || dd.classList.contains("hidden")) { releaseDropdownLock(); return; }
+    /* Close the queue and stop the press there. The global search and the cover
+       lightbox each have their own Escape handling, and without this one press
+       would close every overlay stacked behind the queue. stopPropagation rather
+       than stopImmediatePropagation, so listeners on this same node - the toast
+       module's own Escape - still run. */
+    e.preventDefault();
+    e.stopPropagation();
+    closeQueuePanel();
   }, true);
   document.addEventListener("click", function (e) {
     var dd = document.getElementById("queue-dropdown");
