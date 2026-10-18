@@ -92,6 +92,39 @@
 
   var pendingFile = null;
 
+  /* Gallery uploads require a LINKED Discord account.
+
+     Reuses the two helpers the rest of the site already gates on rather than
+     taking a third opinion:
+
+       isDiscordLinked()  script.js. The same check that gates favourites. It
+                         already reconciles both sources - the Wanted payload
+                         once it has been fetched, and the account fetch's
+                         __plLinked flag before that - and _plHydrate() refreshes
+                         it on DOMContentLoaded, focus and visibilitychange, so
+                         it is current by the time anyone clicks Submit.
+
+       showGateModal()   suggestions.js. The site's gate modal, which already
+                         carries a "Link Discord" button, so this adds no new
+                         wording and no new dialog.
+
+     This is a courtesy gate, not enforcement - someone can call the API
+     directly, which is why functions/api/gallery.js refuses the upload server
+     side against the same discord_links row. All this saves is making someone
+     choose a file, watch it resize on their CPU, and type a caption before
+     finding out they cannot upload it. */
+  function requireLinkedDiscord(action) {
+    var linked = false;
+    try { linked = !!(window.isDiscordLinked && window.isDiscordLinked()); } catch (e) { linked = false; }
+    if (linked) return true;
+    if (window.showGateModal) {
+      window.showGateModal("Discord Required", action + " requires a LINKED Discord Account");
+    } else if (window.toast) {
+      window.toast("Link Discord to " + action.toLowerCase(), "error", 2500);
+    }
+    return false;
+  }
+
   function bindUpload() {
     var file = document.getElementById("gal-file");
     var prev = document.getElementById("gal-prev");
@@ -145,6 +178,7 @@
       rd.readAsDataURL(f);
     });
     btn.addEventListener("click", function () {
+      if (!requireLinkedDiscord("Uploading artwork")) return;
       if (!pendingFile) { note.textContent = "Choose an image first."; return; }
       var title = document.getElementById("gal-title");
       var cap = document.getElementById("gal-cap");
@@ -174,7 +208,10 @@
             if (cap) cap.value = "";
             loadMine();
           } else {
-            note.textContent = "Rejected: " + ((d && d.error) || "sign in first");
+            var err = (d && d.error) || "sign in first";
+            /* The Discord gate is a refusal to accept the upload, not a judgement
+               on the artwork, so it should not arrive wearing "Rejected". */
+            note.textContent = /discord/i.test(err) ? err : "Rejected: " + err;
           }
         });
     });

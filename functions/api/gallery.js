@@ -136,6 +136,28 @@ export async function onRequestPost(context) {
         const rej = await banRejection(db, me.uid);
         if (rej) return rej.response;
       } catch (_) {}
+      /* Uploading requires a LINKED Discord account, not just a session.
+         Checked against the same discord_links row the Wanted Vault reads, so
+         "linked" means the same thing here as it does everywhere else - that
+         table is the only place that answer comes from.
+
+         After the ban check on purpose: a banned user should be told they are
+         banned, not sent off to link an account first.
+
+         This is the enforcement. The client-side gate in gallery.js only avoids
+         making someone pick and resize an image before being turned away, and it
+         is trivially bypassed, so it cannot be the thing that actually holds the
+         line. */
+      try {
+        const link = await db.prepare(
+          "SELECT discord_id FROM discord_links WHERE site_uid = ?"
+        ).bind(me.uid).first();
+        if (!link || !link.discord_id) {
+          return json({ ok: false, error: "link Discord to upload artwork" }, 403);
+        }
+      } catch (err) {
+        return json({ ok: false, error: "could not verify your Discord link" }, 500);
+      }
       const title = String(body.title || "").trim().slice(0, 80) || "Untitled";
       const caption = String(body.caption || "").trim().slice(0, 300);
       const mime = String(body.mime || "");
