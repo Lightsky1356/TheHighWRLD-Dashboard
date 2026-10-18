@@ -109,6 +109,18 @@
     var last = trackQueue.length - 1;
     var playing = idx === currentTrackIndex;
 
+    /* One track has nothing to reorder against, so the chevrons are left out
+       entirely rather than rendered greyed out. At the edges of a longer queue
+       they still disable, because there the row's position is meaningful; with
+       a single row it is not, and two dead controls beside a plain play and
+       remove read as broken. */
+    var reorder = trackQueue.length > 1
+      ? '<button type="button" class="queue-act" data-act="up" data-qi="' + qi + '"' + (qi === 0 ? " disabled" : "") +
+          ' title="Move up" aria-label="Move ' + esc(t.title) + ' up"><i class="fas fa-chevron-up"></i></button>' +
+        '<button type="button" class="queue-act" data-act="down" data-qi="' + qi + '"' + (qi === last ? " disabled" : "") +
+          ' title="Move down" aria-label="Move ' + esc(t.title) + ' down"><i class="fas fa-chevron-down"></i></button>'
+      : "";
+
     return '<div class="queue-item' + (playing ? " queue-item-current" : "") + '" data-qi="' + qi +
       '" data-idx="' + idx + '">' +
       '<div class="queue-item-cover"><img src="' + esc(cover) + '" alt="" decoding="async" loading="lazy" onerror="this.src=\'Juice-WRLD.png\'"></div>' +
@@ -116,11 +128,7 @@
         '<p class="queue-item-title" style="' + grad + '">' + esc(t.title) + '</p>' +
         '<p class="queue-item-tag" style="' + grad + '">' + esc(getTrackAlbum(t)) + '</p>' +
       '</div>' +
-      '<div class="queue-item-actions">' +
-        '<button type="button" class="queue-act" data-act="up" data-qi="' + qi + '"' + (qi === 0 ? " disabled" : "") +
-          ' title="Move up" aria-label="Move ' + esc(t.title) + ' up"><i class="fas fa-chevron-up"></i></button>' +
-        '<button type="button" class="queue-act" data-act="down" data-qi="' + qi + '"' + (qi === last ? " disabled" : "") +
-          ' title="Move down" aria-label="Move ' + esc(t.title) + ' down"><i class="fas fa-chevron-down"></i></button>' +
+      '<div class="queue-item-actions">' + reorder +
         '<button type="button" class="queue-act" data-act="playnext" data-qi="' + qi + '"' +
           ' title="Play next" aria-label="Play ' + esc(t.title) + ' next"><i class="fas fa-angle-double-up"></i></button>' +
         '<button type="button" class="queue-act queue-remove-btn" data-act="remove" data-qi="' + qi + '"' +
