@@ -314,13 +314,26 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
    .page-tab-btn.page-tab-ico already gives them in account.css.
 
    The mobile control has no nav ancestry, so on a phone it is not part of the
-   nav's tab list, active-state handling or keyboard order. It sits below the mini
-   player, which is fixed at top:6px right:52px and at least 180px wide.
+   nav's tab list, active-state handling or keyboard order. It is positioned
+   against the nav's content row rather than placed inside the nav: the nav is
+   1rem of top padding (plus any notch inset) around a 24px control, so its row
+   is centred 28px down, and this pill is 42px tall - 9px more than half its
+   height. top:calc(1rem + env(safe-area-inset-top,0px) - 9px) puts the pill's
+   own centre on exactly the same line as the search control at the left of that
+   row. It used to sit at top:54px, level with the bottom of the 56px nav, which
+   left it hanging 40px below the bar and over the page content, misaligned with
+   the search control beside it.
 
-   z-index 95 on the mobile control puts it above the nav (z-50) and below the mini
-   player (9999). Above the nav is deliberate: the nav box is full-width, so wrapped
-   nav content on a narrow phone can reach the corner, and a control behind it would
-   be both hidden and unclickable. */
+   That 54px was chosen to clear the mini player, and the reason no longer holds:
+   player-settings.css now hides #mini-player with display:none!important at every
+   width, not just on phones, so there is nothing on this breakpoint to sit below.
+   The pill keeps its own fixed positioning and its lack of nav ancestry, so the
+   tab-order reasoning above still holds; only the vertical anchor changed.
+
+   z-index 95 on the mobile control puts it above the nav (z-50) and below the
+   mini player (9999). Above the nav is deliberate: the nav box is full-width, so
+   wrapped nav content on a narrow phone can reach the corner, and a control
+   behind it would be both hidden and unclickable. */
 .mobile-page-links{display:none}
 #page-nav-about,#page-nav-partner{display:none}
 #page-nav-about>i{color:#22d3ee}
@@ -328,7 +341,7 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
 #page-nav-about:hover>i,#page-nav-about.active>i{color:#67e8f9}
 #page-nav-partner:hover>i,#page-nav-partner.active>i{color:#86efac}
 @media (max-width:767px){
-.mobile-page-links{align-items:center;background:rgba(10,8,22,.82);backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);border:1px solid rgba(255,255,255,.1);border-radius:999px;box-shadow:0 6px 22px rgba(0,0,0,.45);display:flex;gap:2px;padding:4px;position:fixed;right:10px;top:54px;z-index:95}
+.mobile-page-links{align-items:center;background:rgba(10,8,22,.82);backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);border:1px solid rgba(255,255,255,.1);border-radius:999px;box-shadow:0 6px 22px rgba(0,0,0,.45);display:flex;gap:2px;padding:4px;position:fixed;right:10px;top:calc(1rem + env(safe-area-inset-top,0px) - 9px);z-index:95}
 .mobile-page-link{align-items:center;background:transparent;border:0;border-radius:999px;color:rgba(203,213,225,.9);cursor:pointer;display:flex;height:32px;justify-content:center;padding:0;transition:background .2s ease,color .2s ease;width:32px}
 .mobile-page-link:active{background:rgba(255,255,255,.1)}
 .mobile-page-link i{font-size:.95rem;line-height:1}
