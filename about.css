@@ -518,92 +518,10 @@ a.abp-social:hover .abp-external {
   }
 }
 
-/* ---------- About page tabs ----------
-   Two tabs: About (everything that was already here) and Info.
-
-   Borrowed language, not invented: the muted-glass bar, and a gold gradient on
-   the selected tab matching the site's existing accent rather than introducing a
-   third treatment.
-
-   The bar scrolls horizontally on narrow phones instead of wrapping - a wrapped
-   row of tabs reads as a mistake, and with only two tabs it is very unlikely to
-   wrap at all. */
-
-.abp-tabs {
-  display: flex;
-  gap: 6px;
-  width: fit-content;
-  margin: 18px 0 16px;
-  padding: 5px;
-  border: 1px solid rgba(255, 255, 255, .07);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, .03);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.abp-tabs::-webkit-scrollbar { display: none; }
-
-.abp-tab {
-  flex: 0 0 auto;
-  padding: 9px 22px;
-  border: 0;
-  border-radius: 10px;
-  background: none;
-  color: rgba(255, 255, 255, .55);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .4px;
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
-  font-family: inherit;
-  transition: color .15s ease, background .15s ease;
-}
-.abp-tab:hover { color: rgba(255, 255, 255, .85); background: rgba(255, 255, 255, .05); }
-.abp-tab:focus-visible { outline: 2px solid rgba(34, 211, 238, .55); outline-offset: -2px; }
-.abp-tab.is-active {
-  color: #0b0f18;
-  background: linear-gradient(135deg, #fcd34d, #f59e0b);
-  box-shadow: 0 4px 14px rgba(245, 158, 11, .22);
-}
-
 .abp-panel[hidden] { display: none; }
 
-/* Info panel figures. Gold, matching the accent already used across the site. */
-.abp-stat {
-  font-size: 22px;
-  font-weight: 800;
-  color: #fcd34d;
-  letter-spacing: -.4px;
-  line-height: 1.2;
-}
-.abp-stat-label {
-  margin-top: 2px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .8px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, .5);
-}
 
-/* Jump-to cards are buttons, so they need the button reset as well as the card. */
-.abp-link {
-  display: block;
-  width: 100%;
-  text-align: left;
-  color: inherit;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background .15s ease;
-}
-.abp-link:hover { background: rgba(255, 255, 255, .07); }
-.abp-link:focus-visible { outline: 2px solid rgba(34, 211, 238, .55); outline-offset: 2px; }
 
-@media (max-width: 767px) {
-  .abp-tabs { margin: 14px 0 12px; }
-  .abp-tab { padding: 8px 18px; font-size: 11px; }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .abp-tab, .abp-link { transition: none; }
-}
+
+

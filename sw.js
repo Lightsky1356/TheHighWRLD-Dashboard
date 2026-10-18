@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v90';
+const VERSION = 'thw-v91';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -49,7 +49,7 @@ const PRECACHE = [
   './tailwind.css?v=thw-v2',
   './themes.css?v=thw-v2',
   './css2.css?v=thw-v2',
-  './about.css?v=thw-v3',
+  './about.css?v=thw-v4',
   './fonts/0-Sora-300.woff2',
   './fonts/1-Sora-300.woff2',
   './fonts/2-Sora-400.woff2',
@@ -103,7 +103,7 @@ const PRECACHE = [
     './queue-ui.js?v=thw-v16',
   './vault-discography.js?v=thw-v4',
   './global-search.js?v=thw-v4',
-  './about-tabs.js?v=thw-v5',
+  './about-tabs.js?v=thw-v6',
   './trending.js?v=thw-v4',
   './owner-search.js?v=thw-v2',
   './owner-announce.js?v=thw-v2',

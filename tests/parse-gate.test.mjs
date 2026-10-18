@@ -185,14 +185,19 @@ if (!curAbout || (baseline.ok && !baseAbout)) {
   console.log(`        ${baseline.error}`);
   console.log("        Checkout with fetch-depth: 0 for this guard to run here.");
 } else {
-  /* The Info tab contributes exactly two sections and four jump links and
-     nothing else matching these patterns. Any other difference means the tab
-     edit ate or duplicated original content. */
+  /* The About block must match the baseline exactly.
+
+     It used not to. The Info tab added two sections and four jump links, and
+     this guard existed to prove that edit had not eaten or duplicated anything
+     else while doing it. The tab is gone, so every delta is zero and the check
+     is now a plain "the About page is unchanged" - a stronger guarantee than the
+     old one, because a future edit that adds or removes any of these patterns
+     has to move the number here rather than quietly reshaping the page. */
   const expectedDelta = [
-    ['<section class="abp-sec"', 2],
+    ['<section class="abp-sec"', 0],
     ['class="abp-social"', 0],
     ['releases/download/v1\\.0\\.1', 0],
-    ['class="abp-card-top abp-link"', 4],
+    ['class="abp-card-top abp-link"', 0],
   ];
   let contentOk = true;
   for (const [pat, delta] of expectedDelta) {
