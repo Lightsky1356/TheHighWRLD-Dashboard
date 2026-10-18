@@ -3220,5 +3220,16 @@ const trackList=[
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Spanglish.png",
     producer: "Take A Daytrip",
     year: "2018"
+  },
+  {
+    title: "Cheat Code (Sessions)",
+    tag: "Cheat Code (Up, Down, Left, Right, A, B, Ho) (Sessions) (DRFL)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Cheat%20Code%20(Sessions).mp3",
+    duration: 742,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Cheat%20Code.png",
+    producer: "Marshmello & Southside",
+    year: "2018"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});

@@ -64,7 +64,7 @@
   // Wit' Me (Sessions) - so one credit for it stands for all four, and whoever drew
   // that artwork is not Lila. Only the panel tile goes: the cover still loads for all
   // four tracks in the player.
-  var CREDITS = [{"name":"AGreatIstone","title":"Heart Racing","cover":"Heart Racing.jpg"},{"name":"Raiden","title":"Right, Left (Sessions)","cover":"Right, Left.png"},{"name":"Davi","title":"Semi Addict (Sessions)","cover":"Semi Addict.png"},{"name":"Skyler","title":"Xmas List","cover":"X-Mas List.png"},{"name":"Felipe","title":"Don't Know What I'm On (Sessions)","cover":"Don't Know What I'm On.png"},{"name":"Bradley","title":"Red Bull (Terrified) (Sessions)","cover":"Red Bull.png"},{"name":"AGreatIstone","title":"Flaws And Sins (Sessions)","cover":"Flaws & Sins.png"},{"name":"Davi","title":"Candles (Sessions)","cover":"Candles.png"}];
+  var CREDITS = [{"name":"AGreatIstone","title":"Heart Racing","cover":"Heart Racing.jpg"},{"name":"Raiden","title":"Right, Left (Sessions)","cover":"Right, Left.png"},{"name":"Davi","title":"Semi Addict (Sessions)","cover":"Semi Addict.png"},{"name":"Skyler","title":"Xmas List","cover":"X-Mas List.png"},{"name":"Felipe","title":"Don't Know What I'm On (Sessions)","cover":"Don't Know What I'm On.png"},{"name":"Bradley","title":"Red Bull (Terrified) (Sessions)","cover":"Red Bull.png"},{"name":"Bradley","title":"Cheat Code (Sessions)","cover":"Cheat Code.png"},{"name":"AGreatIstone","title":"Flaws And Sins (Sessions)","cover":"Flaws & Sins.png"},{"name":"Davi","title":"Candles (Sessions)","cover":"Candles.png"}];
 
   var addedCredits = 0, skipped = 0;
   for (var c = 0; c < CREDITS.length; c++) {
