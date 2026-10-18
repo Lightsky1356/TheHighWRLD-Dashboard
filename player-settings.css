@@ -1525,3 +1525,25 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
 .queue-head-count{font-size:10px}
 .queue-item-check{width:28px;height:28px;flex:0 0 28px;font-size:11px}
 }
+/* ============================================================================
+   PLAYER SETTINGS COG AND THE BLANK STATE
+   The cog is hidden while the player is showing its blank state ("SELECT A
+   TRACK"): with nothing loaded there are no settings worth reaching, and it
+   sits right next to the panel that owns the state.
+
+   Done in CSS rather than by toggling a class from script.js because
+   player-blank already lives on the panel and is the single source of truth for
+   that state - it ships in the markup on #player-panel and is only ever removed,
+   by selectTrackFromList, when a track starts. The cog is the panel's immediate
+   preceding sibling, so :has() with the general sibling combinator lets it react
+   to that class directly, in both directions, with no second piece of state to
+   keep in step.
+
+   Where :has() is unsupported the rule is simply dropped and the cog stays
+   visible, which is the previous behaviour rather than a broken one.
+
+   Specificity is 2 ids and a class against the base .player-settings-cog at one
+   class, so this wins on its own without !important and regardless of the order
+   the stylesheets load in. The mobile rule that hides the cog outright is
+   unaffected - both say hidden there. */
+#player-settings-cog:has(~ #player-panel.player-blank){display:none}
