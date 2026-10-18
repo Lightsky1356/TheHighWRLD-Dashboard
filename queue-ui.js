@@ -27,9 +27,10 @@
       entries. Fixed at the source in script.js rather than patched over here.
 
    3. Tapping a queue row played it AND spliced it out, and pushed nothing onto
-      trackHistory, so Previous could not get you back to where you were. Tapping
-      now plays it and leaves it queued, recording history like every other
-      track change.
+      trackHistory, so Previous could not get you back to where you were. That
+      missing history is fixed; the removal is deliberate and has been kept, so
+      tapping plays the track and passes over whatever else was lined up, and
+      Previous still returns to what was playing before.
 
    4. clearQueue() had the same deferred-splice race, so anything queued during
       its 280ms window was wiped too. It is immediate now.
@@ -406,12 +407,23 @@
     if (typeof renderPlaylistUI === "function") renderPlaylistUI();
   }
 
-  /* Tapping a row plays it now and leaves it in the queue. */
+  /* Tapping a row plays it and takes it out of the queue.
+     Tapping is therefore a way of jumping the queue rather than starting one:
+     whatever was already lined up is passed over, which is the behaviour people
+     expect from tapping something in an Up Next list. History is still
+     recorded, so Previous returns to whatever was playing before - the part of
+     the old behaviour that was genuinely broken was the missing history, not
+     the removal. */
   function playFromQueueAt(pos) {
     var idx = trackQueue[pos];
     if (!isValid(idx)) return false;
+    var title = trackList[idx].title;
+    trackQueue.splice(pos, 1);
     startPlaying(idx);
-    renderAll();
+    commit();
+    /* Not "removed from the queue": the track has not been discarded, it is
+       playing, and saying otherwise would be misleading. */
+    notify("Playing " + title, "info");
     return true;
   }
 
