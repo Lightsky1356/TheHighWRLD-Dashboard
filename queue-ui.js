@@ -417,13 +417,14 @@
   function playFromQueueAt(pos) {
     var idx = trackQueue[pos];
     if (!isValid(idx)) return false;
-    var title = trackList[idx].title;
     trackQueue.splice(pos, 1);
     startPlaying(idx);
     commit();
-    /* Not "removed from the queue": the track has not been discarded, it is
-       playing, and saying otherwise would be misleading. */
-    notify("Playing " + title, "info");
+    /* No toast here. Tapping a row is the ordinary way to play something, and
+       announcing every play says nothing the player does not already show - the
+       title, the artwork and the row all change at the same moment. The queue
+       toasts are for the actions whose effect is not otherwise visible: adding,
+       removing, binning, clearing, and the failures. */
     return true;
   }
 
