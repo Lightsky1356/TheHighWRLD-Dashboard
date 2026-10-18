@@ -294,29 +294,75 @@
 
   /* ------------------------------------------------------------- mutation -- */
 
+  /* Toasts go through simple-toast.js's showToastSimple, which is the newer of
+     the site's two toast systems and carries the type through to an accent
+     stripe, rather than the older player-toast. Falls back to the older global
+     toast if simple-toast.js is ever absent, and never throws: a missing
+     notification must not take the queue operation down with it.
+
+     showToastSimple replaces any toast already on screen rather than stacking,
+     so a burst of operations would leave only the last one visible anyway. That
+     is why addToQueue defers to the bulk hooks below. */
+  function notify(message, type) {
+    try {
+      if (typeof showToastSimple === "function") { showToastSimple(message, { type: type || "info" }); return; }
+      if (typeof toast === "function") toast(message, type || "info");
+    } catch (e) { /* a missing toast is not worth breaking a queue edit over */ }
+  }
+
+  function titleOf(idx) {
+    var t = trackList[idx];
+    return t ? t.title : "that track";
+  }
+
+  /* Set while a caller is adding many tracks at once, so each add stays quiet
+     and the caller can report one summary. playlists-ui.js's "Queue" on a whole
+     playlist loops addToQueue per track; without this it would fire one toast
+     per track and only the last would ever be seen. */
+  var bulk = 0;
+  function bulkStart() { bulk++; }
+  function bulkEnd() { if (bulk > 0) bulk--; }
+
   function addToQueue(idx) {
-    if (!isValid(idx)) return false;
+    if (!isValid(idx)) {
+      if (!bulk) notify("Couldn't add that track", "error");
+      return false;
+    }
     /* One copy of a track is the useful behaviour, and it keeps the row's +Q
        toggle honest: player-performance.js decides queued-or-not with
        indexOf, so duplicates would leave the button claiming to remove something
        that is still there. */
-    if (trackQueue.indexOf(idx) !== -1) return false;
+    if (trackQueue.indexOf(idx) !== -1) {
+      if (!bulk) notify(titleOf(idx) + " is already in the queue", "info");
+      return false;
+    }
     trackQueue.push(idx);
     commit();
+    if (!bulk) notify("Added " + titleOf(idx) + " to the queue", "success");
     return true;
   }
 
   function removeAt(pos) {
-    if (typeof pos !== "number" || pos < 0 || pos >= trackQueue.length) return false;
+    if (typeof pos !== "number" || pos < 0 || pos >= trackQueue.length) {
+      notify("Couldn't remove that track", "error");
+      return false;
+    }
+    var title = titleOf(trackQueue[pos]);
     trackQueue.splice(pos, 1);
     commit();
+    notify("Removed " + title + " from the queue", "info");
     return true;
   }
 
   function clearQueue() {
-    if (!trackQueue.length) return;
+    if (!trackQueue.length) {
+      notify("The queue is already empty", "info");
+      return;
+    }
+    var n = trackQueue.length;
     trackQueue = [];
     commit();
+    notify("Cleared " + n + (n === 1 ? " track" : " tracks") + " from the queue", "success");
   }
 
   function moveInQueue(from, to) {
@@ -622,9 +668,7 @@
     selectMode = false;
     commit();
     syncHeads();
-    if (typeof toast === "function") {
-      try { toast(n + (n === 1 ? " track removed from the queue" : " tracks removed from the queue"), "success"); } catch (e) {}
-    }
+    notify("Binned " + n + (n === 1 ? " track" : " tracks") + " from the queue", "success");
   }
 
   /* ------------------------------------------------------------------ wire -- */
@@ -640,6 +684,8 @@
   window.moveQueueItem = moveInQueue;
   window.playNextInQueue = playNextAt;
   window.renderQueue = renderAll;
+  window.queueBulkStart = bulkStart;
+  window.queueBulkEnd = bulkEnd;
 
   /* player-performance.js calls removeFromQueue(position) with the position it
      got from indexOf, so the signature already matches. */

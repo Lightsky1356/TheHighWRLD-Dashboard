@@ -121,12 +121,18 @@
 
   function queueIndexes(idxs) {
     var n = 0;
+    /* Queueing a whole playlist calls addToQueue once per track, and each call
+       now reports itself. Wrapping the loop in the queue's bulk hooks keeps that
+       to one toast here instead of N, of which only the last would ever be seen:
+       showToastSimple replaces the toast on screen rather than stacking. */
+    if (window.queueBulkStart) window.queueBulkStart();
     try {
       for (var i = 0; i < idxs.length; i++) {
         if (typeof addToQueue === "function") { addToQueue(idxs[i]); n++; }
       }
-    } catch (e) {}
-    if (window.toast) window.toast(n ? ("Queued " + n + " tracks") : "Queue unavailable", n ? "success" : "error");
+    } catch (e) {} finally { if (window.queueBulkEnd) window.queueBulkEnd(); }
+    if (typeof showToastSimple === "function") showToastSimple(n ? ("Queued " + n + (n === 1 ? " track" : " tracks")) : "Queue unavailable", { type: n ? "success" : "error" });
+    else if (window.toast) window.toast(n ? ("Queued " + n + " tracks") : "Queue unavailable", n ? "success" : "error");
   }
 
   function titlesToIdx(tracks) {
