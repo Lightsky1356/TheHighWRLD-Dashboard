@@ -53,6 +53,12 @@
   applyAppearance();
 
   /* ---------- Toasts ---------- */
+  /* Added alongside the mark-all toast: it reports the "nothing was unread"
+     case, and _tt falls back to the literal supplied here, so a visitor whose
+     language has no entry yet still reads English rather than a raw key. */
+  var I18N_FALLBACK_NOTHING_UNREAD = "Nothing left unread";
+  void I18N_FALLBACK_NOTHING_UNREAD;
+
   function toast(msg, type) {
     var box = document.getElementById("toasts");
     if (!box) return;
@@ -797,29 +803,43 @@ function compactProfileViewHtml(d) {
     var markBtn = document.getElementById("navNotifMarkAll");
     if (markBtn) markBtn.addEventListener("click", function (e) {
       e.stopPropagation();
-      /* Announcements first, and locally. Their read state lives in this device's
-         localStorage, not on the server, so this is the part that works for
-         everyone - including a guest, who has no account at all. */
+
+      /* How much was actually unread, counted before anything is changed -
+         otherwise the toast has nothing honest left to say. */
+      var unreadRows = document.querySelectorAll("#navNotifList .nav-notif-item.unread");
+      var hadUnread = unreadRows.length > 0;
+
+      /* Announcements first, and locally: their read state is this device's
+         localStorage, so that part works for everyone including a guest. */
       markAnnSeen(window.__annNotifs || []);
-      var annRows = document.querySelectorAll('#navNotifList [data-ntype="announcement"]');
-      for (var ai = 0; ai < annRows.length; ai++) {
-        annRows[ai].classList.remove("unread");
-        annRows[ai].classList.add("read");
-        var dot = annRows[ai].querySelector(".unread-dot");
+
+      /* Then every row still showing unread, community ones included. This is
+         the part that was missing: commNotifReadAll() only POSTs, so nothing
+         changed on screen until loadAccount() returned and the rows sat there
+         looking unread with the badge still up for several seconds. */
+      var rows = document.querySelectorAll("#navNotifList .nav-notif-item");
+      for (var ri = 0; ri < rows.length; ri++) {
+        rows[ri].classList.remove("unread");
+        rows[ri].classList.add("read");
+        var dot = rows[ri].querySelector(".unread-dot");
         if (dot && dot.parentNode) dot.parentNode.removeChild(dot);
       }
-      /* Then the server side, only if there is a session. Both calls below 401
-         without one, and the guest toast would be claiming something that did
-         not happen. */
-      if (!signedIn()) {
-        applyNotifications();
-        toast(_tt("toastMarkAllRead", "All notifications marked as read"), "success");
-        return;
+
+      /* Server side only with a session - both calls 401 without one. */
+      if (signedIn()) {
+        api({ action: "markAllNotif" }).then(function () { loadAccount(); });
+        commNotifReadAll();
       }
-      api({ action: "markAllNotif" }).then(function () { loadAccount(); });
-      commNotifReadAll();
       applyNotifications();
-      toast(_tt("toastMarkAllRead", "All notifications marked as read"), "success");
+
+      /* Says what it did. For a guest who has already opened the bell, opening
+         it cleared the announcements, so there is genuinely nothing left to
+         read and the button should say so rather than claim a success. */
+      if (hadUnread) {
+        toast(_tt("toastMarkAllRead", "All notifications marked as read"), "success");
+      } else {
+        toast(_tt("toastNothingUnread", "Nothing left unread"), "info");
+      }
     });
     var btn = document.getElementById("navNotifBtn");
     if (btn) btn.addEventListener("click", function () {
