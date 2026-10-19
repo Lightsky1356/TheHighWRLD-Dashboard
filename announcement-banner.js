@@ -52,24 +52,51 @@
     if (document.getElementById("ann-banner-style")) return;
     var st = document.createElement("style");
     st.id = "ann-banner-style";
+    /* Built from the site's own tokens rather than invented colours, so the
+       banner reads as part of this site. The first version was a solid gold
+       gradient with dark text; against a dark purple interface it read as a
+       pasted-in alert bar and fought every screen it appeared on.
+
+       Colours are literals with a var() first so the banner follows a theme
+       switch where a variable exists and still renders correctly where one does
+       not - --ac-text and --ac-muted come from themes.css. */
     st.textContent =
       ".ann-banner{position:fixed;left:0;right:0;top:0;z-index:9998;display:flex;align-items:flex-start;gap:12px;" +
-      "padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;" +
-      "background:linear-gradient(135deg,rgba(251,191,36,.96),rgba(245,158,11,.96));" +
-      "color:#1a1206;border-bottom:1px solid rgba(0,0,0,.18);box-shadow:0 6px 20px rgba(0,0,0,.28)}" +
-      ".ann-banner-ico{flex-shrink:0;margin-top:2px;font-size:15px}" +
+      "padding:calc(12px + env(safe-area-inset-top,0px)) 18px 12px;" +
+      "background:linear-gradient(180deg,rgba(18,10,38,.97),rgba(7,4,15,.94));" +
+      "backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);" +
+      "border-bottom:1px solid rgba(240,171,252,.18);box-shadow:0 14px 38px rgba(0,0,0,.55);" +
+      "color:var(--ac-text,#f2edff);animation:ann-banner-in .34s cubic-bezier(.16,1,.3,1)}" +
+      /* A hairline of the brand gradient along the top edge, so the banner ties
+         into the page rather than sitting on it. */
+      ".ann-banner::before{content:\"\";position:absolute;left:0;right:0;top:0;height:2px;" +
+      "background:linear-gradient(90deg,#f59e0b,#ec4899,#a855f7)}" +
+      "@keyframes ann-banner-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}" +
+      /* Gold chip instead of a bare glyph, so the icon has presence at 12px. */
+      ".ann-banner-ico{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;" +
+      "width:26px;height:26px;border-radius:9px;font-size:12px;color:#1a1206;" +
+      "background:linear-gradient(135deg,#fde68a,#f59e0b);box-shadow:0 4px 14px rgba(245,158,11,.32)}" +
       ".ann-banner-body{flex:1;min-width:0}" +
-      ".ann-banner-title{font-size:12px;font-weight:800;letter-spacing:.04em;margin-bottom:2px}" +
-      ".ann-banner-msg{font-size:12px;line-height:1.5;overflow-wrap:anywhere}" +
-      ".ann-banner-close{flex-shrink:0;background:none;border:1px solid rgba(0,0,0,.22);border-radius:8px;" +
-      "color:#1a1206;font-size:11px;font-weight:800;padding:5px 11px;cursor:pointer}" +
-      ".ann-banner-close:hover{background:rgba(0,0,0,.09)}" +
-      ".ann-banner-close:focus-visible{outline:2px solid #1a1206;outline-offset:2px}" +
+      ".ann-banner-title{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;" +
+      "color:#fbbf24;margin-bottom:3px}" +
+      ".ann-banner-msg{font-size:12.5px;line-height:1.55;color:var(--ac-text,#f2edff);opacity:.88;overflow-wrap:anywhere}" +
+      /* Quiet by default so the banner does not compete with the nav it sits
+         above, and it is the only control up there worth aiming at. */
+      ".ann-banner-close{flex-shrink:0;align-self:center;background:rgba(255,255,255,.05);" +
+      "border:1px solid rgba(255,255,255,.14);border-radius:999px;color:var(--ac-muted,#a295c9);" +
+      "font-size:11px;font-weight:700;padding:6px 14px;cursor:pointer;white-space:nowrap;" +
+      "transition:background .16s ease,color .16s ease,border-color .16s ease}" +
+      ".ann-banner-close:hover{background:rgba(240,171,252,.14);color:#fff;border-color:rgba(240,171,252,.5)}" +
+      ".ann-banner-close:focus-visible{outline:2px solid #f0abfc;outline-offset:2px}" +
       /* The fixed nav is moved out of the way in JS, not here: .nav-home carries
          an inline style="top:0" that no selector can override. See pushNav(). */
-      "@media (max-width:640px){.ann-banner{padding-right:10px;padding-left:10px}" +
-      ".ann-banner-msg{font-size:11px}}" +
-      ".ann-banner-close{padding:5px 9px}";
+      /* Narrow: the icon, text and Dismiss stop fitting on one line, so the
+         Dismiss drops below the message instead of squeezing it to a column of
+         one-word lines. */
+      "@media (max-width:620px){.ann-banner{flex-wrap:wrap;gap:10px;padding-right:12px;padding-left:12px}" +
+      ".ann-banner-msg{font-size:12px}" +
+      ".ann-banner-close{order:3;margin-left:38px;padding:6px 12px}" +
+      ".ann-banner-body{flex:1 1 calc(100% - 38px)}}";
     (document.head || document.documentElement).appendChild(st);
   }
 
@@ -118,9 +145,14 @@
       '<span class="ann-banner-ico"><i class="fas fa-bullhorn"></i></span>' +
       '<div class="ann-banner-body">' +
       (a.title ? '<div class="ann-banner-title">' + esc(a.title) + "</div>" : "") +
-      '<div class="ann-banner-msg">' + esc(a.message) + "</div>" +
+      /* `body`, not `message`. The API keeps `message` as the title folded in for
+         the notification bell, which renders one line and has nowhere to put a
+         heading - so using it here printed the title twice, once bold and once
+         again after an em dash. `body` is the stored text on its own. */
+      '<div class="ann-banner-msg">' + esc(a.body != null ? a.body : a.message) + "</div>" +
       "</div>" +
-      '<button type="button" class="ann-banner-close" aria-label="Dismiss announcement">Dismiss</button>';
+      '<button type="button" class="ann-banner-close" aria-label="Dismiss this announcement">' +
+      '<i class="fas fa-xmark" aria-hidden="true"></i> Dismiss</button>';
 
     bar.querySelector(".ann-banner-close").addEventListener("click", function () {
       remember(a.id);
