@@ -1,0 +1,23 @@
+-- 0043_announcements_rev.sql
+-- Let an owner correct an announcement that has already gone out.
+--
+-- WHY THIS IS A COLUMN AND NOT A NEW ROW
+-- Editing in place keeps the id and created_at, so an edited announcement keeps
+-- its original position in the "latest five" listing. A correction to a typo
+-- should not jump the notice to the top of the site and make it look like
+-- something new.
+--
+-- WHY rev EXISTS AT ALL
+-- Dismissal is remembered per announcement id, so a corrected announcement would
+-- stay hidden forever for anyone who had already dismissed it - which is wrong
+-- precisely when it matters: if the announcement itself was wrong, the people
+-- who dismissed it are the people who most need to see the correction.
+--
+-- So `rev` is a revision counter, bumped only when the owner explicitly asks to
+-- notify again. The banner keys its "already seen" memory on id + rev, so:
+--   - a typo fix leaves rev alone and stays quiet for people who read it
+--   - a substantive correction bumps rev and the banner appears for everyone
+--
+-- DEFAULT 1 rather than 0 so that every existing announcement is already at a
+-- usable revision, and an edit that does not notify simply leaves it there.
+ALTER TABLE announcements ADD COLUMN rev INTEGER NOT NULL DEFAULT 1;

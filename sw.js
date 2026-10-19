@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v99';
+const VERSION = 'thw-v101';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -30,7 +30,7 @@ const PRECACHE = [
   './qrcode.min.js?v=thw-v2',
   './tracks.js?v=thw-v8',
   './browser-id3-writer.js?v=thw-v2',
-  './account.js?v=thw-v6',
+  './account.js?v=thw-v8',
   './i18n.js?v=2',
   './script.js?v=thw-v46',
   './suggestions.js?v=thw-v2',
@@ -104,10 +104,9 @@ const PRECACHE = [
   './vault-discography.js?v=thw-v4',
   './global-search.js?v=thw-v4',
   './about-tabs.js?v=thw-v6',
-  './announcement-banner.js?v=thw-v4',
   './trending.js?v=thw-v4',
   './owner-search.js?v=thw-v2',
-  './owner-announce.js?v=thw-v2',
+  './owner-announce.js?v=thw-v3',
   './bans.js?v=thw-v2',
   './automod-ui.js?v=thw-v2',
   './report-status.js?v=thw-v2',

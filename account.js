@@ -469,6 +469,70 @@ function compactProfileViewHtml(d) {
   }
 
   /* ---------- Notifications (top-nav bell) ---------- */
+
+  /* Which announcements this device has already been shown, newest last.
+     Keyed on seenKey - id plus revision - so an announcement corrected with
+     "notify again" comes back as new, and a plain typo fix does not.
+     Bounded for the same reason the list is: five are ever shown. */
+  var ANN_SEEN_KEY = "thw.ann.seen";
+  function annSeen() {
+    try {
+      var v = JSON.parse(localStorage.getItem(ANN_SEEN_KEY) || "[]");
+      return Array.isArray(v) ? v.map(String) : [];
+    } catch (e) { return []; }
+  }
+  function markAnnSeen(list) {
+    try {
+      var cur = annSeen();
+      (list || []).forEach(function (a) {
+        var k = String(a && (a.seenKey != null ? a.seenKey : a.id));
+        if (k && cur.indexOf(k) < 0) cur.push(k);
+      });
+      localStorage.setItem(ANN_SEEN_KEY, JSON.stringify(cur.slice(-40)));
+    } catch (e) {}
+  }
+  function unseenAnnouncements(ann) {
+    var seen = annSeen();
+    return (ann || []).filter(function (a) {
+      return seen.indexOf(String(a.seenKey != null ? a.seenKey : a.id)) < 0;
+    });
+  }
+
+  /* A toast the first time a given announcement appears on this device. Guarded
+     on a separate key from the seen list on purpose: seen is written when the
+     bell is opened, which can be long after the toast, and the toast must not
+     repeat every poll in between. */
+  var ANN_TOASTED_KEY = "thw.ann.toasted";
+  function toastNewAnnouncements(unseen) {
+    if (!unseen.length) return;
+    var toasted;
+    try { toasted = JSON.parse(localStorage.getItem(ANN_TOASTED_KEY) || "[]"); } catch (e) { toasted = []; }
+    if (!Array.isArray(toasted)) toasted = [];
+    var fresh = [];
+    unseen.forEach(function (a) {
+      var k = String(a.seenKey != null ? a.seenKey : a.id);
+      if (toasted.indexOf(k) < 0) fresh.push(a);
+    });
+    if (!fresh.length) return;
+    fresh.forEach(function (a) {
+      var heading = a.title || _tt("notifAnn", "Announcement");
+      var body = String(a.body != null ? a.body : a.message || "").slice(0, 110);
+      /* The local toast(), not window.toast. window.toast is only ever assigned
+         by profile-enhancements.js, so on any page where that file has not
+         loaded it is undefined and a guard on it silently never fires - which is
+         how several existing `if (window.toast)` calls in other files quietly do
+         nothing. This is inside account.js, where toast() is in scope. Two
+         arguments, matching its signature; a third would be ignored. */
+      try {
+        toast(esc(heading) + (body ? " — " + esc(body) : ""), "info");
+      } catch (e) {}
+    });
+    try {
+      var next = toasted.concat(fresh.map(function (a) { return String(a.seenKey != null ? a.seenKey : a.id); }));
+      localStorage.setItem(ANN_TOASTED_KEY, JSON.stringify(next.slice(-40)));
+    } catch (e) {}
+  }
+
   function setNotifBell(on) {
     var wrap = document.getElementById("nav-notif-wrap");
     if (wrap) wrap.style.display = on ? "" : "none";
@@ -590,8 +654,27 @@ function compactProfileViewHtml(d) {
     var ann = window.__annNotifs || [];
     if (ann.length) rows = ann.concat(rows);
     refreshCommNotifs();
+
+    /* An announcement nobody has seen on this device is unread. Before this the
+       badge ignored announcements entirely, so a notice posted to be seen showed
+       no badge at all and was invisible until the bell happened to be opened.
+       The row's own read flag is left alone: the server has no per-user read
+       state for announcements and inventing one here would be a lie about what
+       is stored. */
+    var unseenAnn = unseenAnnouncements(ann);
+    toastNewAnnouncements(unseenAnn);
+    unread += unseenAnn.length;
+
     var badge = document.getElementById("navNotifBadge");
-    if (badge) { badge.textContent = unread > 99 ? "99+" : String(unread); badge.style.display = unread > 0 ? "" : "none"; }
+    if (badge) {
+      badge.textContent = unread > 99 ? "99+" : String(unread);
+      badge.style.display = unread > 0 ? "" : "none";
+      /* Pulses only while an announcement specifically is waiting. Pulsing for
+         any unread would be a permanent distraction for the ordinary case, and
+         the ordinary case already has a red dot on every row. */
+      var bellBtn = document.getElementById("navNotifBtn");
+      if (bellBtn) bellBtn.classList.toggle("ann-alert", unseenAnn.length > 0);
+    }
     var list = document.getElementById("navNotifList");
     if (!list) return;
     if ((typeof Notification !== "undefined") && Notification.permission === "granted") {
@@ -648,7 +731,15 @@ function compactProfileViewHtml(d) {
       if (!w) return;
       var was = w.classList.contains("open");
       document.querySelectorAll(".nav-notif-wrap.open").forEach(function (o) { o.classList.remove("open"); });
-      if (!was) w.classList.add("open");
+      if (!was) {
+        w.classList.add("open");
+        /* Opening the bell IS reading them. Marked here rather than when the
+           list renders, because the list re-renders every 30s off the poll -
+           marking on render would silently clear the badge moments after it
+           appeared, before anyone had looked at why. */
+        markAnnSeen(window.__annNotifs || []);
+        applyNotifications();
+      }
     });
     document.addEventListener("click", function (e) {
       if (!e.target.closest) return;

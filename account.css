@@ -621,6 +621,15 @@ body[data-accent="amber"] .hero-stat-value{background:linear-gradient(135deg,#f5
 .nav-pill-account{margin-left:8px}
 .nav-notif-btn{width:36px;height:36px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--ac-muted,#a295c9);font-size:15px}
 .nav-notif-btn:hover{background:rgba(255,255,255,.06);color:var(--ac-text,#f2edff);box-shadow:none;transform:none}
+    /* An unread announcement waiting. Pulses the button rather than the badge:
+       the badge is a small red dot that is already easy to miss at a glance,
+       and this is the only notification type on the site that is not about the
+       reader's own activity. Off with prefers-reduced-motion - a repeating
+       animation on a nav control is exactly the kind of thing that setting
+       exists for. */
+    #navNotifBtn.ann-alert{color:#fbbf24;animation:thw-bell-pulse 1.9s ease-in-out infinite}
+    @keyframes thw-bell-pulse{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.45)}50%{box-shadow:0 0 0 7px rgba(251,191,36,0)}}
+    @media (prefers-reduced-motion:reduce){#navNotifBtn.ann-alert{animation:none;box-shadow:0 0 0 4px rgba(251,191,36,.3)}}
 .nav-pill-notif{margin-right:6px}
 
 /* ===== Glassmorphic account panels ===== */
