@@ -541,6 +541,14 @@ function compactProfileViewHtml(d) {
       if (m && m.closest) { var w = m.closest(".nav-notif-wrap"); if (w) w.classList.remove("open"); }
     }
   }
+  /* Whether there is a real session.
+     NOT `uid`: account.js reads that from "wantedUserId", and auth.js assigns an
+     anonymous one to every visitor through newAnonUid(), so it is truthy for a
+     signed-out guest. "wantedAuthUser" is set on sign-in and removed on
+     sign-out, so its absence is what actually means no session. */
+  function signedIn() {
+    try { return !!localStorage.getItem("wantedAuthUser"); } catch (e) { return false; }
+  }
   window.setNotifBell = setNotifBell;
   function gotoNotif(n) {
     if (n.type === "playlist" && n.post_id) {
@@ -638,6 +646,58 @@ function compactProfileViewHtml(d) {
     if (!id) return;
     try { fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ action: "read", id: id }) }).catch(function () {}); } catch (e) {}
   }
+  /* Remove one row from the bell.
+     *
+     * Announcements are the odd one out: their read state is this device's
+     * localStorage, not a row in community_notifications, so there is nothing on
+     * the server to delete - they are dropped from the cached list and marked
+     * seen. A signed-out visitor has announcements and nothing else, so this is
+     * the only path they ever take, which is why the server call below is
+     * conditional rather than the whole helper being gated on a session.
+     *
+     * The row is removed by hand rather than by re-rendering: a re-render rebuilds
+     * from the cached arrays, which still hold the row just dismissed, so it
+     * would come straight back. */
+  function dismissNotifRow(nid, ntype) {
+    var key = String(nid);
+    if (ntype === "announcement") {
+      var anns = window.__annNotifs || [];
+      var keep = [];
+      for (var i = 0; i < anns.length; i++) if (String(anns[i].id) !== key) keep.push(anns[i]);
+      window.__annNotifs = keep;
+      /* Marked seen as well as removed, so the badge does not come back on the
+         next poll for something the reader has just dismissed. */
+      markAnnSeen(anns.filter(function (a) { return String(a.id) === key; }));
+    } else if (signedIn()) {
+      var n = Number(key.replace(/^c/, "")) || 0;
+      if (n > 0) {
+        try {
+          fetch("/api/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ action: "dismiss", id: n }),
+          }).catch(function () {});
+        } catch (e) {}
+      }
+    }
+    /* Off the cached community list too, so the next 30s poll does not bring it
+       back before the server has actually removed it. */
+    if (window.__commNotifs) {
+      var keepC = [];
+      for (var ci = 0; ci < window.__commNotifs.length; ci++) {
+        if (String(window.__commNotifs[ci].id) !== key) keepC.push(window.__commNotifs[ci]);
+      }
+      window.__commNotifs = keepC;
+    }
+    var row = document.querySelector('#navNotifList [data-nid="' + key.replace(/"/g, "") + '"]');
+    if (row && row.parentNode) row.parentNode.removeChild(row);
+    var list = document.getElementById("navNotifList");
+    if (list && !list.querySelector(".nav-notif-item")) {
+      list.innerHTML = '<p class="nav-notif-empty">' + esc(_tt("noNotifs", "No notifications yet.")) + "</p>";
+    }
+  }
+
   function commNotifReadAll() {
     try { fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ action: "readAll" }) }).catch(function () {}); } catch (e) {}
   }
@@ -677,6 +737,15 @@ function compactProfileViewHtml(d) {
     }
     var list = document.getElementById("navNotifList");
     if (!list) return;
+    /* "Mark all read" POSTs to the server, and a guest has no server-side read
+       state - so it would toast a success that changed nothing. It does not
+       touch the per-device announcement read state either, so it would not even
+       clear the announcement badge. Hidden rather than disabled: a control that
+       cannot work is worse than one that is absent. */
+    /* Shown for everyone. It clears the announcement read state locally, which
+       works without a session, so a guest pressing it sees the badge and the
+       list actually change rather than being handed a success toast that did
+       nothing. The server call below is still skipped without a session. */
     if ((typeof Notification !== "undefined") && Notification.permission === "granted") {
       rows.forEach(function (n) {
         var k = "ac_nd_" + n.id;
@@ -694,7 +763,13 @@ function compactProfileViewHtml(d) {
     }
     list.innerHTML = rows.slice(0, 40).map(function (n) {
       var ico = n.type === "reply" ? "fa-comment" : n.type === "mention" ? "fa-at" : n.type === "playlist" ? "fa-list-music" : n.type === "drop" ? "fa-ticket" : n.type === "suggestion" ? "fa-lightbulb" : n.type === "wanted" ? "fa-fire" : n.type === "announcement" ? "fa-bullhorn" : n.type === "appeal" ? "fa-scale-balanced" : n.type === "warning" ? "fa-triangle-exclamation" : n.type === "ban" ? "fa-ban" : n.type === "follow" ? "fa-user-plus" : n.type === "moderation" ? "fa-shield-halved" : n.type === "leak" ? "fa-fire" : n.type === "vote" ? "fa-vote-yea" : "fa-bell";
-      return '<button type="button" class="nav-notif-item' + (n.read ? " read" : " unread") + '" data-nid="' + n.id + '" data-ntype="' + esc(n.type || "") + '" data-actor="' + esc(n.actor_uid || "") + '" data-track="' + esc(n.track_id || "") + '" data-rid="' + (n.reply_id || "") + '" data-post="' + (n.post_id || "") + '"><span class="nni-ico"><i class="fas ' + ico + '"></i></span><span class="nni-main"><span class="nni-txt">' + esc(n.message) + '</span><span class="nni-time">' + esc(relTime(n.ts)) + (n.actor ? " &middot; " + esc(n.actor) : "") + '</span></span>' + (n.read ? "" : '<span class="unread-dot"></span>') + '</button>';
+      return '<button type="button" class="nav-notif-item' + (n.read ? " read" : " unread") + '" data-nid="' + n.id + '" data-ntype="' + esc(n.type || "") + '" data-actor="' + esc(n.actor_uid || "") + '" data-track="' + esc(n.track_id || "") + '" data-rid="' + (n.reply_id || "") + '" data-post="' + (n.post_id || "") + '"><span class="nni-ico"><i class="fas ' + ico + '"></i></span><span class="nni-main"><span class="nni-txt">' + esc(n.message) + '</span><span class="nni-time">' + esc(relTime(n.ts)) + (n.actor ? " &middot; " + esc(n.actor) : "") + '</span></span>' + (n.read ? "" : '<span class="unread-dot"></span>') +
+      /* Close control, inside the row so it travels with it when the list
+         re-renders. A span with role=button rather than a nested <button>: the
+         row itself is already a button and a button cannot contain a button. */
+      '<span class="nni-x" role="button" tabindex="0" aria-label="Dismiss this notification">' +
+      '<i class="fas fa-xmark" aria-hidden="true"></i></span>' +
+      '</button>';
     }).join("");
   }
   function bindNotifications() {
@@ -722,8 +797,29 @@ function compactProfileViewHtml(d) {
     var markBtn = document.getElementById("navNotifMarkAll");
     if (markBtn) markBtn.addEventListener("click", function (e) {
       e.stopPropagation();
-      api({ action: "markAllNotif" }).then(function () { loadAccount(); toast(_tt("toastMarkAllRead", "All notifications marked as read"), "success"); });
+      /* Announcements first, and locally. Their read state lives in this device's
+         localStorage, not on the server, so this is the part that works for
+         everyone - including a guest, who has no account at all. */
+      markAnnSeen(window.__annNotifs || []);
+      var annRows = document.querySelectorAll('#navNotifList [data-ntype="announcement"]');
+      for (var ai = 0; ai < annRows.length; ai++) {
+        annRows[ai].classList.remove("unread");
+        annRows[ai].classList.add("read");
+        var dot = annRows[ai].querySelector(".unread-dot");
+        if (dot && dot.parentNode) dot.parentNode.removeChild(dot);
+      }
+      /* Then the server side, only if there is a session. Both calls below 401
+         without one, and the guest toast would be claiming something that did
+         not happen. */
+      if (!signedIn()) {
+        applyNotifications();
+        toast(_tt("toastMarkAllRead", "All notifications marked as read"), "success");
+        return;
+      }
+      api({ action: "markAllNotif" }).then(function () { loadAccount(); });
       commNotifReadAll();
+      applyNotifications();
+      toast(_tt("toastMarkAllRead", "All notifications marked as read"), "success");
     });
     var btn = document.getElementById("navNotifBtn");
     if (btn) btn.addEventListener("click", function () {
@@ -741,8 +837,34 @@ function compactProfileViewHtml(d) {
         applyNotifications();
       }
     });
+    /* The control carries tabindex and role=button, so it has to answer the
+       keyboard too - otherwise it is focusable and pressing Enter does nothing. */
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      if (!e.target.closest) return;
+      var kx = e.target.closest(".nni-x");
+      if (!kx || !kx.closest(".nav-notif-item")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var krow = kx.closest(".nav-notif-item");
+      dismissNotifRow(krow.getAttribute("data-nid"), krow.getAttribute("data-ntype"));
+      applyNotifications();
+    });
+
     document.addEventListener("click", function (e) {
       if (!e.target.closest) return;
+      /* Checked before anything else: the row is a <button>, so a click on the
+         control also lands on it, and without this the row's own handler would
+         navigate as well as dismissing. */
+      var x = e.target.closest(".nni-x");
+      if (x && x.closest(".nav-notif-item")) {
+        e.stopPropagation();
+        e.preventDefault();
+        var rowEl = x.closest(".nav-notif-item");
+        dismissNotifRow(rowEl.getAttribute("data-nid"), rowEl.getAttribute("data-ntype"));
+        applyNotifications();
+        return;
+      }
       document.querySelectorAll(".nav-notif-wrap.open").forEach(function (o) {
         if (!o.contains(e.target)) o.classList.remove("open");
       });
@@ -2393,7 +2515,15 @@ window.profileSectionShown = function () {
 
   document.addEventListener("DOMContentLoaded", function () {
     try { uid = localStorage.getItem("wantedUserId") || ""; } catch (e) {}
-    setNotifBell(!!uid);
+    /* Always on, signed in or not. A guest cannot have personal notifications,
+       but announcements are public and live in the bell now, so the bell is how
+       a visitor finds one.
+       This also kicks the announcement fetch for guests. applyNotifications() -
+       which pulls /api/announcements in through refreshCommNotifs() - is
+       otherwise only reached from the account-loading path, and that needs a
+       session. Without this, a guest's bell would open onto an empty list. */
+    setNotifBell(true);
+    refreshCommNotifs();
     applyTheme(_cachedTheme);
     try { document.documentElement.lang = _lang; } catch (e) {}
     bindCollapseTabs();

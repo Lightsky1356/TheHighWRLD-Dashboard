@@ -207,7 +207,12 @@
     if (owG) owG.style.display = "none";
     if (owC) owC.style.display = "none";
     if (owP) owP.style.display = "none";
-    if (typeof window.setNotifBell === "function") window.setNotifBell(false);
+    /* The bell stays visible when signed out. Announcements are site-wide and
+     public, and they live in the bell now - hiding it here would hide them from
+     everyone not signed in, which is the opposite of what a notice is for.
+     A guest's bell carries announcements only; their own notifications need a
+     session and are simply absent rather than empty. */
+  if (typeof window.setNotifBell === "function") window.setNotifBell(true);
   }
 
   function newAnonUid() {

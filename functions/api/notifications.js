@@ -1,6 +1,7 @@
 // Community reply notifications for the top-nav bell.
 // GET  /api/notifications          -> { ok, unread, notifications[] } (session user)
 // POST /api/notifications { action: "read", id } | { action: "readAll" }
+//                      | { action: "dismiss", id }   -> deletes that one row
 // Auth: thw_session cookie via _lib/auth.js. Client uid is never trusted.
 
 import { getSessionUser } from "../_lib/auth.js";
@@ -74,6 +75,20 @@ export async function onRequestPost(context) {
     }
 
     const id = Number(body.id) || 0;
+    /* Remove one notification outright. Scoped to recipient_uid exactly like the
+       read action below - a notification belonging to somebody else matches no
+       row, and that is reported as a 404 rather than a success that changed
+       nothing. Marking read was the only option before, so anything dismissed
+       stayed in the list for good. */
+    if (action === "dismiss" && id > 0) {
+      const res = await db.prepare(
+        "DELETE FROM community_notifications WHERE id = ? AND recipient_uid = ?"
+      ).bind(id, user.uid).run();
+      const changed = res && res.meta && typeof res.meta.changes === "number" ? res.meta.changes : 0;
+      if (!changed) return json({ ok: false, error: "not found" }, 404);
+      return json({ ok: true, id });
+    }
+
     if (action === "read" && id > 0) {
       await db.prepare(
         "UPDATE community_notifications SET read = 1 WHERE id = ? AND recipient_uid = ?"
