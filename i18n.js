@@ -2598,12 +2598,19 @@ window.SiteChromeI18N = {
 
 
 /* Apply data-i18n site-chrome translations for the current language.
-   Reads localStorage 'wantedLang' (default 'en'). Sets textContent for
-   [data-i18n] elements and placeholder for [data-i18n-ph] inputs.
+   `lang` wins when supplied; localStorage 'wantedLang' is only the fallback for
+   callers that pass nothing. Sets textContent for [data-i18n] elements and
+   placeholder for [data-i18n-ph] inputs.
    Missing keys are skipped so the default English text remains. */
 window.applySiteI18n = function (lang) {
-  lang = lang || 'en';
-  try { lang = localStorage.getItem('wantedLang') || lang; } catch (e) {}
+  /* Storage must not override an explicit argument. It used to win, and because
+     the language picker writes storage only after asking for a re-render, every
+     data-i18n element was translated with the PREVIOUS language: choosing
+     Spanish out of Arabic set <html lang="es"> while the page went on rendering
+     Arabic. An argument is the caller's intent. */
+  var stored = null;
+  try { stored = localStorage.getItem('wantedLang'); } catch (e) {}
+  lang = lang || stored || 'en';
   var D = window.SiteChromeI18N || {};
   var t = D[lang] || D.en || {};
   var els = document.querySelectorAll('[data-i18n],[data-i18n-ph]');

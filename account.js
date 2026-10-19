@@ -1593,11 +1593,15 @@ function compactProfileViewHtml(d) {
       sel.addEventListener("change", function () {
         _lang = sel.value;
         syncLang(_lang);
-        applyI18n();
-        /* same rule as the theme: signed in saves to the account, a guest
-           changes the device */
+        /* Same rule as the theme: signed in saves to the account, a guest
+           changes the device.
+
+           The guest write happens BEFORE applyI18n. applyI18n is what
+           translates the page, and anything reading storage to work out the
+           current language would otherwise still see the old one. */
         if (isSignedInNow()) api({ action: "saveLanguage", language: _lang }).then(function () { loadAccount(); });
         else try { localStorage.setItem("wantedLang", _lang); } catch (e) {}
+        applyI18n();
         var tt = null;
         if (window.SiteChromeI18N && window.SiteChromeI18N[_lang]) tt = window.SiteChromeI18N[_lang].toastLangSet;
         toast((tt || "Language set to") + " " + (sel.options[sel.selectedIndex].textContent), "success");
@@ -2599,6 +2603,19 @@ window.profileSectionShown = function () {
     refreshCommNotifs();
     applyTheme(_cachedTheme);
     try { document.documentElement.lang = _lang; } catch (e) {}
+    /* Actually translate the page on load.
+
+       This used to happen only inside applyThemeLang(), which is called from
+       renderAll(), and renderAll() only runs when /api/account comes back ok -
+       which it never does for a guest. A guest's chosen language was therefore
+       ignored on every reload: _lang was read from storage correctly and
+       documentElement.lang was set correctly, and then all 110 data-i18n
+       elements were left in English. Setting the attribute without translating
+       is precisely what made it look right and be wrong.
+
+       applySiteI18n only rewrites textContent and placeholder, so it is safe
+       here and does not depend on the account load that follows it. */
+    if (window.applySiteI18n) window.applySiteI18n(_lang);
     bindCollapseTabs();
     bindSectionCollapse();
     buildSidebar();
