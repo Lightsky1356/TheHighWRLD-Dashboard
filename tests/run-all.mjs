@@ -45,6 +45,7 @@ const GROUPS = [
   { name: "push-api", file: "./push-api.test.mjs", needsServer: true },
   { name: "notifications", file: "./notifications-optout.test.mjs", needsServer: true },
   { name: "notification-prefs", file: "./notification-prefs.test.mjs", needsServer: true },
+  { name: "signed-in-paths", file: "./signed-in-paths.test.mjs", needsServer: true },
   { name: "gallery-publish", file: "./gallery-publish.test.mjs", needsServer: true },
 ];
 

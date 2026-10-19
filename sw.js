@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v105';
+const VERSION = 'thw-v107';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -32,7 +32,7 @@ const PRECACHE = [
   './tracks.js?v=thw-v9',
   './browser-id3-writer.js?v=thw-v2',
   './account.js?v=thw-v12',
-  './i18n.js?v=4',
+  './i18n.js?v=5',
   './script.js?v=thw-v46',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
@@ -99,17 +99,17 @@ const PRECACHE = [
   './user-relations.js?v=thw-v2',
   './user-menu.js?v=thw-v4',
   './player-settings.js?v=thw-v6',
-  './reports.js?v=thw-v2',
+  './reports.js?v=thw-v3',
   './player-performance.js?v=thw-v4',
-    './queue-ui.js?v=thw-v16',
+    './queue-ui.js?v=thw-v17',
   './vault-discography.js?v=thw-v4',
   './global-search.js?v=thw-v4',
   './about-tabs.js?v=thw-v6',
   './trending.js?v=thw-v4',
   './owner-search.js?v=thw-v2',
   './owner-announce.js?v=thw-v3',
-  './bans.js?v=thw-v2',
-  './automod-ui.js?v=thw-v2',
+  './bans.js?v=thw-v3',
+  './automod-ui.js?v=thw-v3',
   './report-status.js?v=thw-v2',
   './ban-screen.js?v=thw-v2',
   './wrld-stats.js?v=thw-v8',
@@ -129,7 +129,7 @@ const PRECACHE = [
   './mobile-player.js?v=thw-v4',
   './follows.js?v=thw-v2',
   './privacy.js?v=thw-v2',
-  './playlists-ui.js?v=thw-v4',
+  './playlists-ui.js?v=thw-v5',
   './drops.js?v=thw-v2',
   './legal-info.js?v=thw-v5',
   './social-panel.js?v=thw-v30',

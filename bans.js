@@ -27,15 +27,15 @@
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
+  /* Delegates to the shared toast in toast.js.
+
+     The fallback that used to build a .toast inside #toasts is gone. That
+     container was removed, because its CSS is scoped #account-page #toasts
+     while the element is a direct child of <main> - so the rule never applied
+     and every toast put in it rendered as an unstyled div in normal flow.
+     toast.js renders the .gtoast style instead, which is styled site-wide. */
   function toast(msg, type) {
-    if (window.toast) { try { window.toast(msg, type || "info"); return; } catch (e) {} }
-    var box = document.getElementById("toasts");
-    if (!box) return;
-    var el = document.createElement("div");
-    el.className = "toast " + (type || "info");
-    el.textContent = msg;
-    box.appendChild(el);
-    setTimeout(function () { el.remove(); }, 4000);
+    if (window.toast) { try { window.toast(msg, type || "info"); } catch (e) {} }
   }
 
   function css() {
