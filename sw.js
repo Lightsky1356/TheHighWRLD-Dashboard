@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v95';
+const VERSION = 'thw-v96';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -32,7 +32,7 @@ const PRECACHE = [
   './browser-id3-writer.js?v=thw-v2',
   './account.js?v=thw-v6',
   './i18n.js?v=2',
-  './script.js?v=thw-v45',
+  './script.js?v=thw-v46',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v4',
@@ -104,6 +104,7 @@ const PRECACHE = [
   './vault-discography.js?v=thw-v4',
   './global-search.js?v=thw-v4',
   './about-tabs.js?v=thw-v6',
+  './announcement-banner.js?v=thw-v1',
   './trending.js?v=thw-v4',
   './owner-search.js?v=thw-v2',
   './owner-announce.js?v=thw-v2',
@@ -121,7 +122,7 @@ const PRECACHE = [
   './wrldlog.css?v=thw-v3',
   './wrldlog-data.js?v=thw-v2',
   './wrldlog.js?v=thw-v6',
-  './gallery.js?v=thw-v8',
+  './gallery.js?v=thw-v9',
   './failed-projects-data.js?v=thw-v13',
   './failed-projects.js?v=thw-v13',
   './presets.js?v=thw-v3',

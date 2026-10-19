@@ -42,11 +42,26 @@
       ".gal-item{position:relative;border:1px solid rgba(255,255,255,.09);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.03);cursor:pointer;padding:0;text-align:left;color:#fff}" +
       ".gal-item:hover{border-color:rgba(240,171,252,.45)}" +
       ".gal-item img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#1c1530}" +
+  /* Card cell: a plain div holding two sibling buttons, so the picture and the
+     "open" control are separately focusable and the spoiler blur has something
+     to toggle. A single wrapping button could not do both.
+     The old .gal-item rules stay for "Your submissions", which renders its own
+     compact rows with that class. */
+  ".gal-cell{position:relative;border:1px solid rgba(255,255,255,.09);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.03);color:#fff;transition:border-color .15s ease}" +
+  ".gal-cell:hover{border-color:rgba(240,171,252,.45)}" +
+  ".gal-cell.is-spoiler{border-color:rgba(240,171,252,.28)}" +
+  ".gal-shot{display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;position:relative;line-height:0}" +
+  ".gal-shot img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#1c1530;transition:filter .22s ease,transform .22s ease}" +
+  ".gal-shot:focus-visible{outline:2px solid #f0abfc;outline-offset:-3px}" +
+  ".gal-open{position:absolute;right:7px;bottom:32px;z-index:3;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;border:1px solid rgba(240,171,252,.5);background:rgba(12,6,24,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#f0abfc;font-size:11px;cursor:pointer;opacity:0;transition:opacity .18s ease}" +
+  ".gal-open:focus-visible{opacity:1;outline:2px solid #f0abfc}" +
+  ".gal-cell:hover .gal-open,.gal-open:focus-visible{opacity:1}" +
+  /* Nothing to open full size while the picture is still blurred. */
+  ".gal-cell.is-spoiler:not(.is-revealed) .gal-open{display:none}" +
   /* Spoiler art: blurred until tapped. The badge sits above the blur and stays
      legible, so a spoiler is still visibly a spoiler after it is revealed. */
-  ".gal-item.is-spoiler>img{filter:blur(26px) saturate(.6);transform:scale(1.12)}" +
-  ".gal-item.is-spoiler{outline:1px solid rgba(240,171,252,.35)}" +
-  ".gal-item.is-revealed>img{filter:none;transform:none}" +
+  ".gal-shot.is-spoiler img{filter:blur(26px) saturate(.6);transform:scale(1.12)}" +
+  ".gal-cell.is-revealed .gal-shot img{filter:none;transform:none}" +
   ".gal-flag{position:absolute;left:7px;top:7px;z-index:2;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;border:1px solid rgba(240,171,252,.55);background:rgba(12,6,24,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#f0abfc;pointer-events:none}" +
   ".gal-flag i{font-size:8px}" +
   ".gal-check{display:flex;align-items:center;gap:8px;margin:2px 0 10px;font-size:11px;color:rgba(255,255,255,.65);cursor:pointer;user-select:none}" +
@@ -236,14 +251,24 @@
     });
   }
 
+  /* The card is a cell holding two sibling buttons rather than one button,
+   because re-blurring needs its own control and a button cannot contain a
+   button. `.gal-shot` is the picture: it toggles the blur on a spoiler, and
+   opens the viewer on anything else. `.gal-open` opens the viewer, and only
+   becomes visible once a spoiler has been revealed. */
   function cardHTML(it) {
     var sp = !!(Number(it.spoiler) || 0);
-    return '<button type="button" class="gal-item' + (sp ? " is-spoiler" : "") + '" data-gal="' + it.id + '"' +
-      (sp ? ' aria-label="Spoiler image: ' + esc(it.title || "Untitled") + '. Activate to reveal."' : "") + ">" +
+    var label = esc(it.title || "Untitled");
+    return '<div class="gal-cell' + (sp ? " is-spoiler" : "") + '" data-gal="' + it.id + '">' +
+      '<button type="button" class="gal-shot' + (sp ? " is-spoiler" : "") + '" data-gal-shot="' + it.id + '"' +
+      (sp ? ' aria-pressed="false" aria-label="Spoiler image: ' + label + '. Show or hide this image."' : ' aria-label="Open ' + label + '"') + ">" +
       (sp ? '<span class="gal-flag"><i class="fas fa-eye-slash"></i>Spoiler</span>' : "") +
       '<img decoding="async" src="/api/gallery?id=' + it.id + '" alt="" loading="lazy">' +
-      '<div class="gal-cap">' + esc(it.title || "Untitled") + "</div>" +
-      '<div class="gal-by">by ' + esc(it.user_name || "anon") + "</div></button>";
+      "</button>" +
+      '<div class="gal-cap">' + label + "</div>" +
+      '<div class="gal-by">by ' + esc(it.user_name || "anon") + "</div>" +
+      '<button type="button" class="gal-open" data-gal-open="' + it.id + '" aria-label="Open ' + label + '"><i class="fas fa-expand"></i></button>' +
+      "</div>";
   }
 
   function loadPage(reset) {
@@ -390,20 +415,29 @@
         }).then(function () { loadMine(); loadPage(true); }).catch(function () {});
         return;
       }
-      var card = e.target.closest ? e.target.closest("[data-gal]") : null;
-      if (card) {
-        /* A spoiler reveals on the first tap and opens on the second, rather
-           than opening straight away - otherwise the thumbnail blur would be the
-           only warning and the full image would be on screen before the reader
-           had chosen to see it. The reveal sticks, so it is not re-hidden on
-           every re-render. */
-        if (card.classList.contains("is-spoiler") && !card.classList.contains("is-revealed")) {
-          card.classList.add("is-revealed");
-          card.removeAttribute("aria-label");
+      /* "Open full size" wins over everything else in the cell. */
+      var open = e.target.closest ? e.target.closest("[data-gal-open]") : null;
+      if (open) { lightbox(open.getAttribute("data-gal-open")); return; }
+
+      var shot = e.target.closest ? e.target.closest("[data-gal-shot]") : null;
+      if (shot) {
+        var cell = shot.closest("[data-gal]") || shot;
+        if (cell.classList.contains("is-spoiler")) {
+          /* Toggle, so a spoiler can be hidden again as well as shown. Tapping a
+             blurred spoiler shows it without opening the viewer - otherwise the
+             blur would be the only warning and the full image would be on screen
+             before the reader had chosen to see it. */
+          var revealed = cell.classList.toggle("is-revealed");
+          shot.setAttribute("aria-pressed", revealed ? "true" : "false");
           return;
         }
-        lightbox(card.getAttribute("data-gal"));
+        lightbox(shot.getAttribute("data-gal-shot"));
+        return;
       }
+
+      /* Anything else inside a card (the caption, the author line) opens it. */
+      var card = e.target.closest ? e.target.closest("[data-gal]") : null;
+      if (card) lightbox(card.getAttribute("data-gal"));
     });
     var sec = document.getElementById("page-section-gallery");
     var fired = false;
