@@ -126,7 +126,7 @@ export async function onRequestPatch(context) {
                 type: "moderation",
                 actorName: "Staff",
                 message: msg,
-              });
+              }, context);
             }
           }
         }

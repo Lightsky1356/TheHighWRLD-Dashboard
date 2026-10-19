@@ -96,7 +96,7 @@ export async function onRequestGet(context) {
               type: "drop",
               actorName: "Staff",
               message: msg,
-            });
+            }, context);
           } catch (_) {}
         }
         await db.prepare("UPDATE drops SET notified_live = 1 WHERE id = ?").bind(d.id).run().catch(() => {});

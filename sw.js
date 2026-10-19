@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v107';
+const VERSION = 'thw-v108';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -133,7 +133,7 @@ const PRECACHE = [
   './drops.js?v=thw-v2',
   './legal-info.js?v=thw-v5',
   './social-panel.js?v=thw-v30',
-  './push-client.js?v=thw-v13',
+  './push-client.js?v=thw-v14',
   './simple-toast.js?v=thw-v5',
   './cover-preview.js?v=thw-v7',
 
@@ -316,7 +316,14 @@ const PUSH_TITLE = 'TheHighWRLD';
    server-generated, but the browser can be tricked into relaying one, so the
    destination is validated again here rather than trusted. Anything else falls
    back to the lobby instead of navigating. */
-const PUSH_ROUTES = new Set(['social:conversation', 'social:requests', 'social:friends']);
+const PUSH_ROUTES = new Set([
+  'social:conversation', 'social:requests', 'social:friends',
+  // Page routes, named the same way the nav buttons name them. A notification
+  // about a community reply opens the community page; one about a ban opens
+  // settings. Without these, safeTarget dropped the target and every community
+  // notification just focused the app wherever it happened to be.
+  'community', 'suggestions', 'hub', 'profile', 'account', 'home'
+]);
 
 function safeTarget(raw) {
   return typeof raw === 'string' && PUSH_ROUTES.has(raw) ? raw : null;

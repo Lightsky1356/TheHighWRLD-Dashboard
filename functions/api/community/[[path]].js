@@ -132,7 +132,7 @@ export async function onRequest(context) {
       return listReplies(db, parts[1]);
     }
     if (parts[0] === "posts" && parts[2] === "replies" && parts.length === 3 && method === "POST") {
-      return createReply(request, env, db, parts[1]);
+      return createReply(request, env, db, parts[1], context);
     }
 
     // ----- replies (community) -----
@@ -256,7 +256,7 @@ async function listReplies(db, postIdRaw) {
   return json({ ok: true, replies: (rows.results || []).map(mapReply) });
 }
 
-async function createReply(request, env, db, postIdRaw) {
+async function createReply(request, env, db, postIdRaw, ctx) {
   const body = await request.json().catch(() => ({}));
   const auth = await requireSession(db, env, request);
   if (!auth) return json({ error: "not signed in" }, 401);
@@ -326,7 +326,7 @@ async function createReply(request, env, db, postIdRaw) {
       message: msg,
       postId: pid,
       replyId: rid,
-    });
+    }, ctx);
   }
 
   // @mentions in the reply body: notify mentioned users (max 5, deduped,
@@ -367,7 +367,7 @@ async function createReply(request, env, db, postIdRaw) {
         message: msg,
         postId: pid,
         replyId: rid,
-      });
+      }, ctx);
     }
   } catch (_) {}
 

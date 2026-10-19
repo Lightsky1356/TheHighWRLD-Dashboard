@@ -619,12 +619,29 @@
      __thwPushReady here is therefore the only entry point - adding a second
      message listener in this file would route the same click twice. */
   function handlePushClick(target) {
+    /* A page route is not a social destination, so it does not wait for the
+       social panel. It is handled by the app's own navigation - switchAppPage
+       is the same function the nav buttons use, so this lands on exactly the
+       page the user would have reached by tapping. */
+    if (target && String(target).indexOf("social:") !== 0) {
+      if (typeof window.switchAppPage === "function") {
+        try { window.switchAppPage(target); return; } catch (_) {}
+      }
+      /* switchAppPage may not be defined yet on a cold start. Retry a bounded
+         number of times rather than forever. */
+      if (handlePushClick.retries < 12) {
+        handlePushClick.retries++;
+        window.setTimeout(function () { handlePushClick(target); }, 300);
+      }
+      return;
+    }
     var S = window.THWSocial;
     if (!S) { window.setTimeout(function () { handlePushClick(target); }, 400); return; }
     if (target === "social:requests") S.goRequests();
     else if (target === "social:friends") S.goFriends();
     else S.goMessages();
   }
+  handlePushClick.retries = 0;
 
   window.__thwPushReady = function (target) {
     window.__thwPwaPendingClick = null;

@@ -74,8 +74,8 @@ async function activeStrikeCount(db, uid) {
   return r ? r.n : 0;
 }
 
-async function notifyUser(db, env, uid, type, message) {
-  await createNotification(db, env, uid, { type, actorName: "Staff", message });
+async function notifyUser(db, env, uid, type, message, ctx) {
+  await createNotification(db, env, uid, { type, actorName: "Staff", message }, ctx);
 }
 
 async function audit(db, actorUid, text) {
@@ -87,7 +87,7 @@ async function audit(db, actorUid, text) {
 
 // Runs after every new strike. Exact-threshold match only (no repeats),
 // skips when an active ban already exists (no stacking).
-async function evaluateEscalation(db, env, uid) {
+async function evaluateEscalation(db, env, uid, ctx) {
   const out = { escalated: false };
   try {
     const count = await activeStrikeCount(db, uid);
@@ -201,7 +201,7 @@ export async function onRequestPost(context) {
       ).bind(target, reason, uid, notes, expires).run();
       const id = ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0;
       await audit(db, uid, "strike:issue:" + target + ":" + id);
-      const esc = await evaluateEscalation(db, context.env, target);
+      const esc = await evaluateEscalation(db, context.env, target, context);
       const row = await db.prepare("SELECT * FROM strikes WHERE id = ?").bind(id).first();
       return json({ ok: true, strike: row ? strikeJson(row, true) : { id }, escalation: esc });
     }

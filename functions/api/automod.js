@@ -45,8 +45,8 @@ async function audit(db, actorUid, text) {
   } catch (_) {}
 }
 
-async function notifyUser(db, env, uid, type, message) {
-  await createNotification(db, env, uid, { type, actorName: "Staff", message });
+async function notifyUser(db, env, uid, type, message, ctx) {
+  await createNotification(db, env, uid, { type, actorName: "Staff", message }, ctx);
 }
 
 // Content is loaded live so the reviewer sees what exists now, not a stale copy.

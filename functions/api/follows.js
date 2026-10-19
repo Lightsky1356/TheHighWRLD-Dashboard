@@ -91,7 +91,7 @@ export async function onRequestPost(context) {
             actorUid: me.uid,
             actorName: me.name || "",
             message: msg,
-          });
+          }, context);
         } catch (_) {}
       }
       // Include actor uid for deep-linking (reuse post_id slot is wrong here;

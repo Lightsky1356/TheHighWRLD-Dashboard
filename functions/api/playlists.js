@@ -213,7 +213,7 @@ export async function onRequestPost(context) {
               actorName: user.name || "",
               message: msg,
               postId: id,
-            });
+            }, context);
           }
         } catch (_) {}
       } else {

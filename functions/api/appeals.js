@@ -61,8 +61,8 @@ function publicAppeal(r) {
   };
 }
 
-async function notifyUser(db, env, uid, type, message) {
-  await createNotification(db, env, uid, { type, actorName: "Staff", message });
+async function notifyUser(db, env, uid, type, message, ctx) {
+  await createNotification(db, env, uid, { type, actorName: "Staff", message }, ctx);
 }
 
 export async function onRequestOptions() {
@@ -223,7 +223,7 @@ export async function onRequestPost(context) {
         await db.prepare(
           "INSERT INTO user_action_log (actor_uid, action) VALUES (?, ?)"
         ).bind(uid, "appeal:denied:" + row.user_id + ":" + id).run().catch(() => {});
-        await notifyUser(db, context.env, row.user_id, "appeal", "Your ban appeal was reviewed.");
+        await notifyUser(db, context.env, row.user_id, "appeal", "Your ban appeal was reviewed.", context);
       }
       return json({ ok: true, id, decision });
     }

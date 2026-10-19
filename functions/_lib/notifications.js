@@ -24,6 +24,177 @@
 //     sent, so existing clients that read a subset keep working.
 
 import { hubBroadcast } from "./realtime.js";
+import { sendPushToUser } from "./webpush.js";
+
+/* ------------------------------------------------------------------ push --
+ *
+ * WHY THE DEVICE PUSH LIVES HERE
+ *
+ * A notification has three delivery routes today, and two of them only work
+ * while the app is open:
+ *
+ *   1. the community_notifications row - a badge, seen on next open
+ *   2. the hub broadcast - a WebSocket, and a WebSocket only exists while a
+ *      tab is open
+ *   3. a device push - the push service wakes the service worker, so this is
+ *      the ONLY route that reaches someone who has the app closed
+ *
+ * Route 3 was built (the service worker handler, the VAPID sender, the
+ * subscription API, the opt-in UI) but nothing ever called it except
+ * /api/push-test. A reply to a closed app was therefore invisible until the
+ * user happened to open it.
+ *
+ * Sending it from here rather than from each of the call sites is the same
+ * reasoning as the opt-out check above: one place, so a new notification type
+ * physically cannot forget to push.
+ */
+
+/* Push text is generic ON PURPOSE.
+ *
+ * A push payload is handled by push-service infrastructure and the result is
+ * visible on a lock screen, so the message body must never travel in one. These
+ * summaries name the KIND of event and nothing else - no post title, no reply
+ * text, no display name. The notification opens the app to see the detail. */
+const PUSH_SUMMARY = {
+  reply: { title: "New reply", body: "Someone replied to your post." },
+  wanted_reply: { title: "New reply", body: "Someone replied to your wanted post." },
+  mention: { title: "You were mentioned", body: "Someone mentioned you." },
+  follow: { title: "New follower", body: "Someone started following you." },
+  upvote: { title: "Upvote", body: "Someone upvoted your post." },
+  vote: { title: "Upvote", body: "Someone upvoted your post." },
+  reply_vote: { title: "Reply upvoted", body: "Someone upvoted your reply." },
+  dm_message: { title: "New message", body: "You have a new direct message." },
+  friend_request: { title: "Friend request", body: "Someone sent you a friend request." },
+  friend_accepted: { title: "Friend request accepted", body: "Someone accepted your friend request." },
+  playlist: { title: "Playlist activity", body: "Someone interacted with your playlist." },
+  drop: { title: "Drop alert", body: "A drop you follow is happening." },
+  suggestion: { title: "Suggestion", body: "There is an update on your suggestion." },
+  wanted: { title: "Wanted Vault", body: "Someone replied to your nomination." },
+  announcement: { title: "Announcement", body: "There is a new announcement." },
+  moderation: { title: "Moderation notice", body: "There is a moderation notice for your account." },
+  warning: { title: "Account warning", body: "There is a warning on your account." },
+  ban: { title: "Account action", body: "There is an update on your account status." },
+  appeal: { title: "Appeal update", body: "There is an update on your appeal." },
+};
+const PUSH_DEFAULT = { title: "TheHighWRLD", body: "You have a new notification." };
+
+/* Where the notification should open when tapped.
+ *
+ * The service worker only accepts a target from its own allow-list
+ * (PUSH_ROUTES in sw.js), so these strings have to match that list. A target
+ * that is not on the list is dropped by safeTarget and the notification simply
+ * focuses the app, which is a safe outcome - but a real route is better, and
+ * the page routes here are the same ones the nav buttons use. */
+function pushTargetFor(type) {
+  switch (String(type || "")) {
+    case "reply":
+    case "mention":
+    case "upvote":
+    case "vote":
+    case "reply_vote":
+    case "wanted":
+    case "wanted_reply":
+      return "community";
+    case "suggestion":
+      return "suggestions";
+    case "drop":
+      return "hub";
+    case "playlist":
+      return "profile";
+    case "dm_message":
+      return "social:conversation";
+    case "friend_request":
+      return "social:requests";
+    case "friend_accepted":
+      return "social:friends";
+    case "follow":
+      return "social:friends";
+    case "moderation":
+    case "warning":
+    case "ban":
+    case "appeal":
+      return "account";
+    default:
+      return null;
+  }
+}
+
+/* Build the push payload for a notification.
+ *
+ * Exported so it can be asserted on directly. The property that matters most is
+ * the one that cannot be checked by looking at a delivery: that the payload
+ * carries the KIND of event and nothing else. A payload that leaked a post
+ * title or a reply body would be visible on a lock screen, and the lock screen
+ * is not the same audience as the app.
+ *
+ * `id` is the new notification row's id, for callers that want a tag unique
+ * per notification. */
+export function pushPayloadFor(opts, id) {
+  const o = opts || {};
+  const summary = PUSH_SUMMARY[o.type] || PUSH_DEFAULT;
+  return {
+    title: o.pushTitle || summary.title,
+    body: o.pushBody || summary.body,
+    /* One tag per kind, so repeated notifications of the same kind replace each
+       other on the lock screen instead of stacking up. A caller that wants each
+       one to be its own notification supplies its own tag - the social API does,
+       because two DMs are two different things. It supplies it as a function of
+       the new row's id, which is only known after the insert. */
+    tag:
+      typeof o.pushTag === "function"
+        ? String(o.pushTag(id))
+        : o.pushTag || ("thw-" + String(o.type || "notice")),
+    type: String(o.type || "notice"),
+    url: o.pushUrl || pushTargetFor(o.type),
+  };
+}
+
+/* Send the device push for a notification that has just been created.
+ *
+ * Never throws. A push failure must not be able to fail the action that
+ * caused it - the reply is already stored and the row already exists by the
+ * time this runs. */
+async function dispatchPush(env, db, recipientUid, opts, ctx, id) {
+  try {
+    /* The push toggle is separate from the notification switches. The master
+       switch and the per-category switches decide whether the ROW is created;
+       the push toggle decides whether the device buzzes. Someone who wants
+       notifications in the app but not on their lock screen gets exactly that. */
+    const prefs = await notificationPrefs(db, recipientUid);
+    if (!prefs.push) return;
+
+    /* A caller may override the wording. The social API has always sent its own
+       summary for direct messages and friend requests - including the sender's
+       display name - so that behaviour is preserved rather than quietly
+       downgraded to the generic text. Everything else gets the generic
+       summary, because a post title or a reply body must not travel in a push
+       payload. */
+    const payload = pushPayloadFor(opts, id);
+
+    const sending = sendPushToUser(env, db, recipientUid, payload)
+      .catch(() => ({ sent: 0, failed: 0, pruned: 0 }));
+
+    if (ctx && typeof ctx.waitUntil === "function") {
+      /* The reply that triggered this should not be held up by a round trip to
+         the push service. waitUntil tells the runtime the work outlives the
+         response, and guarantees it is not cancelled when the response is
+         sent. */
+      ctx.waitUntil(sending);
+      return;
+    }
+
+    /* No context to hand the work to, so it is awaited here. A cap keeps a
+       slow push service from holding the request open indefinitely - the
+       notification is already stored, so a push that misses its window is far
+       better than a request that never returns. */
+    await Promise.race([
+      sending,
+      new Promise((resolve) => setTimeout(resolve, 4000)),
+    ]);
+  } catch (_) {
+    /* A push failure must never fail the notification. */
+  }
+}
 
 /**
  * Has this user opted out of notifications?
@@ -124,7 +295,7 @@ export async function categoryEnabled(db, uid, type) {
  * ineffective, because the row could be skipped while the realtime event still
  * fired.
  */
-export async function createNotification(db, env, recipientUid, options) {
+export async function createNotification(db, env, recipientUid, options, ctx) {
   const opts = options || {};
   if (!recipientUid) return null;
 
@@ -187,6 +358,20 @@ export async function createNotification(db, env, recipientUid, options) {
         actor_uid: actorUid,
       },
     });
+
+    /* And the device push, which is the only route that reaches someone who
+       has the app closed. The row above is a badge, and the broadcast above is
+       a WebSocket that only exists while a tab is open - neither of them
+       reaches a closed app.
+
+       Dispatched from inside this function, not from the caller, so it happens
+       for exactly the notifications the row is created for. A second list in
+       the caller would be a second thing to keep in step with this one, and the
+       two would drift.
+
+       Not awaited when there is a context to hand the work to: the reply that
+       triggered this should not wait on a round trip to the push service. */
+    await dispatchPush(env, db, recipientUid, opts, ctx, id);
 
     return { id };
   } catch (_) {

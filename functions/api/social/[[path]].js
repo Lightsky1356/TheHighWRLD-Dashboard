@@ -1,7 +1,9 @@
 import { getSessionUser } from "../../_lib/auth.js";
 import { hubBroadcast, hubStub } from "../../_lib/realtime.js";
 import { banRejection } from "../../_lib/bans.js";
-import { sendPushToUser } from "../../_lib/webpush.js";
+/* The push is sent by _lib/notifications.js now, along with the row and the
+   preference check, so that every notification type is delivered the same way
+   and none of them can be delivered twice. */
 import { createNotification } from "../../_lib/notifications.js";
 
 const CORS = {
@@ -82,54 +84,41 @@ const PUSH_URL_BY_TYPE = {
   friend_accepted: "social:friends",
 };
 
-async function notify(db, env, recipientUid, actor, type, message) {
-  /* The preference check and the INSERT both live in _lib/notifications.js now,
-     so the social API and the other twelve writers cannot drift apart. This
-     function only adds what is social-specific: the push dispatch.
+async function notify(db, env, recipientUid, actor, type, message, ctx) {
+  /* The preference check, the INSERT and the device push all live in
+     _lib/notifications.js now, so the social API and the other twelve writers
+     cannot drift apart.
 
-     createNotification returns null when the recipient opted out (or the write
-     failed), and in that case no push must go out either - the opt-out has to
-     mean "no notification of any kind", not just "no row in the bell feed". */
+     This function used to send its own push here, after the shared helper had
+     created the row. That is now a duplicate: the shared helper sends the push
+     for every notification, so leaving this one in place would have delivered
+     every direct message and friend request TWICE - two lock-screen
+     notifications for one message.
+
+     What this function keeps is the wording. The social API has always sent a
+     summary naming the sender, and the shared helper's default is a generic
+     "you have a new notification", so the summary is passed through as an
+     override rather than being silently downgraded. */
   const created = await createNotification(db, env, recipientUid, {
     type,
     actorUid: actor.uid,
     actorName: actor.name || "Member",
     message,
     private: true,
-  });
+    pushTitle: "TheHighWRLD",
+    pushBody: message,
+    /* One tag per message, so two DMs are two notifications rather than one
+       replacing the other. Supplied as a function because the new row's id is
+       only known once the insert has happened. */
+    pushTag: function (id) { return "thw-" + type + "-" + id; },
+    pushUrl: PUSH_URL_BY_TYPE[type] || null,
+  }, ctx);
   if (!created) return;
-  const id = created.id;
-
-  /* Background delivery for clients that are not currently looking at the
-     panel. Runs after the shared helper has enforced the user's notification
-     preference, and after every block check that ran before this point.
-
-     `message` is the same generic summary the in-app notification uses - it
-     never contains message body text. Notification failures must never fail the
-     originating action (a DM is already stored and delivered by then), so this
-     is wrapped so a push outage cannot break messaging. */
-  const target = PUSH_URL_BY_TYPE[type];
-  if (target && recipientUid !== actor.uid) {
-    try {
-      await sendPushToUser(env, db, recipientUid, {
-        title: "TheHighWRLD",
-        body: message,
-        tag: "thw-" + type + "-" + id,
-        // Identifies the record so a repeat delivery collapses instead of
-        // stacking duplicate notifications on the lock screen.
-        renotify: false,
-        url: target,
-        data: { type, notificationId: id, actorUid: actor.uid },
-      });
-    } catch (err) {
-      console.error("Push dispatch failed:", err && err.message);
-    }
-  }
 }
 
-async function notifyBestEffort(db, env, recipientUid, actor, type, message) {
+async function notifyBestEffort(db, env, recipientUid, actor, type, message, ctx) {
   try {
-    await notify(db, env, recipientUid, actor, type, message);
+    await notify(db, env, recipientUid, actor, type, message, ctx);
   } catch (err) {
     console.error("Social notification could not be created:", err);
   }
@@ -321,7 +310,7 @@ async function sendFriendRequest(context, db, me, body) {
     if (/unique/i.test(String(err && err.message || err))) return json({ error: "request_pending" }, 409);
     throw err;
   }
-  await notifyBestEffort(db, context.env, targetUid, me, "friend_request", (me.name || "Someone") + " sent you a friend request");
+  await notifyBestEffort(db, context.env, targetUid, me, "friend_request", (me.name || "Someone") + " sent you a friend request", context);
   return json({ ok: true, status: "outgoing" }, 201);
 }
 
@@ -344,7 +333,7 @@ async function handleRequestAction(context, db, me, requestId, action) {
   if (action === "accept") {
     const [a, b] = canonicalPair(row.requester_uid, row.recipient_uid);
     await db.prepare("INSERT OR IGNORE INTO social_friends (uid_a, uid_b) VALUES (?, ?)").bind(a, b).run();
-    await notifyBestEffort(db, context.env, row.requester_uid, me, "friend_accepted", (me.name || "Someone") + " accepted your friend request");
+    await notifyBestEffort(db, context.env, row.requester_uid, me, "friend_accepted", (me.name || "Someone") + " accepted your friend request", context);
   } else {
     await signalRefresh(context.env, row.requester_uid);
   }
@@ -438,7 +427,7 @@ async function sendMessage(context, db, me, conversationId, body) {
   await db.prepare(
     "UPDATE dm_conversations SET last_message_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?"
   ).bind(conversationId).run();
-  await notifyBestEffort(db, context.env, otherUid, me, "dm_message", (me.name || "Someone") + " sent you a message");
+  await notifyBestEffort(db, context.env, otherUid, me, "dm_message", (me.name || "Someone") + " sent you a message", context);
   await hubBroadcast(context.env, {
     type: "social:message",
     private: true,
