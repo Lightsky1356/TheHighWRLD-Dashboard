@@ -90,6 +90,21 @@ async function deviceState() {
   };
 }
 
+/* The push is dispatched with ctx.waitUntil where the runtime provides it, so
+   it can still be in flight when the triggering request returns. Reading the
+   state straight away is a race. */
+const settle = () => new Promise((r) => setTimeout(r, 1200));
+
+/* The push path was reached if EITHER the attempt was recorded as a failure OR
+   the dead subscription was pruned. Locally there is no VAPID key, so the send
+   fails before it leaves and the failure counter moves. With a key, the request
+   really goes to the push service, which answers 404 for an endpoint that does
+   not exist - and a 404 prunes the subscription, so there is no counter left to
+   read. Both mean the same thing: the push path was reached. */
+function reached(before, after) {
+  return after.failures > before.failures || after.count < before.count;
+}
+
 /** Make a notification happen: a follow notifies the recipient. */
 async function notifyRecipient() {
   await call(ACTOR.token, "/api/follows", "POST", { action: "unfollow", uid: RECIPIENT.uid });
@@ -126,11 +141,12 @@ async function notifyRecipient() {
   const n = await notifyRecipient();
   check("the notification was created", n.status === 200, `status=${n.status}`);
 
+  await settle();
   const after = await deviceState();
   check(
-    "the push path was reached - a send was attempted and its failure recorded",
-    after.failures > before.failures,
-    `failureCount ${before.failures} -> ${after.failures}`,
+    "the push path was reached - a send was attempted",
+    reached(before, after),
+    `devices ${before.count}->${after.count}, failureCount ${before.failures}->${after.failures}`,
   );
 }
 
@@ -141,9 +157,10 @@ async function notifyRecipient() {
   const before = await deviceState();
 
   await notifyRecipient();
+  await settle();
 
   const after = await deviceState();
-  check("no push was attempted with the push toggle off", after.failures === before.failures, `failureCount ${before.failures} -> ${after.failures}`);
+  check("no push was attempted with the push toggle off", !reached(before, after), `devices ${before.count}->${after.count}, failureCount ${before.failures}->${after.failures}`);
 
   const bell = await call(RECIPIENT.token, "/api/notifications");
   check("the in-app notification is still created with push off", (bell.json?.unread ?? 0) > 0, `unread=${bell.json?.unread}`);
