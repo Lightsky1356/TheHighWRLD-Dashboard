@@ -199,6 +199,17 @@
 
       /* Phone: one column, as before - the shelf just stacks its two columns. */
       "@media(max-width:700px){#profilePageBody .pp-shelf{flex-direction:column}}" +
+
+      /* Held back until the board stops changing.
+         account.js paints the identity card first; playlists-ui.js and
+         wrld-stats.js append Top Plays, Listening Activity and Peak Hours
+         afterwards, each triggering another balance. Without this the page
+         shows three different layouts in three frames: a bare card, then a
+         half-built shelf, then the finished board.
+
+         visibility rather than display, so the board keeps its dimensions and
+         nothing reflows when it is revealed. */
+      "#profilePageBody.pp-booting{visibility:hidden}" +
       /* the header panel carries its own label above the avatar */
       "#profilePageBody .cmp-head-title{margin:0 0 12px!important}" +
       "#profilePageBody .cmp-head .cmp-top{margin-top:0}" +
@@ -391,10 +402,51 @@
   /* Another member's profile gets the same board: their blocks are marked up
      as collapsible panels too. Only the header buttons and the banner cover
      are yours alone. */
+
+  /* Hide the board while it is still being assembled, then reveal it once the
+     appends stop arriving. Only the FIRST build is hidden - after that the board
+     is correct and re-hiding it on every later refresh would make the page
+     blink on ordinary data updates.
+
+     Two independent reveals, deliberately. The quiet one runs when mutations
+     stop; the hard one runs regardless, so a profile whose last block never
+     arrives still becomes visible. A profile that cannot be shown at all is far
+     worse than one that settles a moment late. */
+  var BOOT = "pp-booting";
+  var bootTimer = null;
+  var bootFailsafe = null;
+  var booted = false;
+
+  function revealBoard() {
+    var body = document.getElementById("profilePageBody");
+    if (!body) return;
+    body.classList.remove(BOOT);
+    booted = true;
+  }
+
+  function holdBoard() {
+    if (booted) return;
+    var body = document.getElementById("profilePageBody");
+    if (!body) return;
+    body.classList.add(BOOT);
+
+    /* The quiet reveal restarts on every append - that is its whole job.
+       The failsafe is set ONCE and deliberately not restarted, so it stays a
+       real deadline: if blocks keep arriving forever the board still appears
+       rather than staying hidden indefinitely. */
+    if (!bootFailsafe) bootFailsafe = setTimeout(revealBoard, 1200);
+
+    clearTimeout(bootTimer);
+    /* 120ms observer debounce + a frame for layout, so the last append lands
+       before the reveal. */
+    bootTimer = setTimeout(revealBoard, 220);
+  }
+
   function mount() {
     var body = document.getElementById("profilePageBody");
     if (!body || !isProfilePage()) return;
     css();
+    holdBoard();
     if (isSelfProfile() && state.uid) dressHeader(body);
     panelize(body);
   }
@@ -490,13 +542,13 @@
     if (!root || root.id !== "profilePageBody") return;
 
     var halves = [];
-    var minOrder = Infinity;
+    var maxOrder = 0;
     boardItems(root).forEach(function (el) {
       var cs = getComputedStyle(el);
+      var o = parseInt(cs.order, 10) || 0;
+      if (o > maxOrder) maxOrder = o;
       /* grid-column:1/-1 is how the stylesheet marks a full width row. */
       if (cs.gridColumnStart === "1" && cs.gridColumnEnd === "-1") return;
-      var o = parseInt(cs.order, 10) || 0;
-      if (o < minOrder) minOrder = o;
       halves.push({ el: el, order: o, h: el.offsetHeight });
     });
 
@@ -527,11 +579,27 @@
     if (!shelf) {
       shelf = document.createElement("div");
       shelf.className = SHELF;
-      /* Sit where the panels used to sit. The panels carried these orders in the
-         grid, so taking the lowest one keeps the shelf among its neighbours. */
-      shelf.style.order = String(minOrder);
       root.appendChild(shelf);
     }
+
+    /* The shelf must sort AFTER the profile card, not at the position of the
+       earliest panel.
+
+       It used to take minOrder - the lowest order among the half width panels -
+       on the reasoning that the shelf should sit among its neighbours. That is
+       wrong whenever a panel's order is lower than the card's, because a
+       panel with no matching data-pnl rule has order 0 while the card sits at 1.
+       The shelf then landed above the card and the profile rendered as a shelf
+       of panels with the identity block stranded underneath it.
+
+       maxOrder over every board item, plus one, puts the shelf last among the
+       grid's items, which is what "profile card on top, panels below" means.
+       The card's own order is part of that maximum, so this holds no matter what
+       the individual panels are ordered at.
+
+       Set on every pass, not just creation: a later render can introduce a
+       panel with a higher order than the shelf was built against. */
+    shelf.style.order = String(maxOrder + 1);
     while (shelf.children.length > 2) shelf.removeChild(shelf.lastChild);
     while (shelf.children.length < 2) {
       var side = document.createElement("div");
@@ -1088,6 +1156,9 @@
         queue = setTimeout(function () {
           queue = null;
           if (!isProfilePage()) return;
+          /* More blocks just landed, so the board is still assembling and the
+             reveal timer has to start again. */
+          holdBoard();
           if (isSelfProfile() && state.uid) dressHeader(bodyEl);
           panelize(bodyEl);
         }, 120);
