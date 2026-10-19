@@ -1530,14 +1530,15 @@ function compactProfileViewHtml(d) {
       return String(slug || "");
     }
 
-    /* English gets the exact "Changed theme to "<name>"" phrasing. Every other
-       language keeps its own translated toastThemeApplied with the chosen theme
-       appended, rather than dropping to English - which is what a plain
-       _tt(key, englishFallback) would have done here. */
+    /* Every language has its own template with {name} carried through, so this
+       is one lookup. The literal is a fallback for a language added later
+       without the key - English rather than nothing, which is what the previous
+       two-branch version did by appending the name to the old static
+       "Theme applied" string. That key has since been removed from all 27
+       blocks, and was left out of this comment's wording on purpose so that
+       grepping for it comes back empty. */
     function themeChangedMsg(name) {
-      var tpl = _tt("toastThemeChanged", "");
-      if (tpl) return tpl.replace(/\{name\}/g, name);
-      return _tt("toastThemeApplied", "Theme applied") + ' - "' + name + '"';
+      return _tt("toastThemeChanged", 'Changed theme to "{name}"').replace(/\{name\}/g, name);
     }
 
     function bindThemeSel(sel) {
