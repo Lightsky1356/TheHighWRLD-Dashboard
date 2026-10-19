@@ -8,10 +8,15 @@
 -- seeder had been creating it locally as a stopgap, which meant the tests
 -- exercised a table production did not have.
 --
--- The shape below is reconstructed from the queries in functions/api/gallery.js
--- rather than dumped from production, so the column list is believed complete
--- and the types are inferred. Nothing in the app depends on a type beyond what
--- those queries already assume.
+-- The shape below was originally reconstructed from the queries in
+-- functions/api/gallery.js rather than dumped from production, so the column list
+-- was believed complete and the types were inferred.
+--
+-- VERIFIED 2026-10-18 against production with pragma_table_info: all eleven
+-- columns are present, in this order, with these types and defaults. The guess
+-- was right, which is worth recording - it is the reason this file can now be
+-- treated as the definition rather than a guess. Nothing in the app depends on a
+-- type beyond what those queries already assume.
 --
 -- NOTE: `spoiler` is deliberately NOT in this CREATE TABLE even though the
 -- column exists. It is added by 0039 instead, so that the ALTER is the single
