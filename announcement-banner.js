@@ -65,15 +65,44 @@
       "color:#1a1206;font-size:11px;font-weight:800;padding:5px 11px;cursor:pointer}" +
       ".ann-banner-close:hover{background:rgba(0,0,0,.09)}" +
       ".ann-banner-close:focus-visible{outline:2px solid #1a1206;outline-offset:2px}" +
-      /* The fixed nav sits at the top on every breakpoint, so the banner pushes
-         it down rather than covering it. Without this the nav's own controls
-         would be unreachable while a banner is up. */
-      "body.has-ann-banner .nav-home{top:44px}" +
+      /* The fixed nav is moved out of the way in JS, not here: .nav-home carries
+         an inline style="top:0" that no selector can override. See pushNav(). */
       "@media (max-width:640px){.ann-banner{padding-right:10px;padding-left:10px}" +
       ".ann-banner-msg{font-size:11px}}" +
       ".ann-banner-close{padding:5px 9px}";
     (document.head || document.documentElement).appendChild(st);
   }
+
+  /* The nav sits at the top on every breakpoint and is position:fixed, so a
+     banner over it has to move the nav out of the way. A stylesheet rule cannot
+     do it: .nav-home carries an inline style="top:0", and an inline value beats
+     any selector, so `body.has-ann-banner .nav-home{top:44px}` was silently
+     dead and the banner covered the nav's own controls. The original inline
+     value is stashed and restored on dismiss.
+
+     The offset is measured rather than assumed, because the banner wraps to two
+     or three lines on a narrow window and a fixed 44px would only be right for
+     the shortest one. */
+  var navTopSaved = null;
+  function navEl() { return document.querySelector(".nav-home"); }
+  function pushNav() {
+    var bar = document.getElementById("ann-banner");
+    var nav = navEl();
+    if (!bar || !nav) return;
+    if (navTopSaved === null) navTopSaved = nav.style.top || "";
+    nav.style.top = bar.offsetHeight + "px";
+  }
+  function unpushNav() {
+    var nav = navEl();
+    if (!nav || navTopSaved === null) return;
+    nav.style.top = navTopSaved;
+    navTopSaved = null;
+  }
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(pushNav, 120);
+  });
 
   function paint() {
     var a = latest;
@@ -96,11 +125,19 @@
     bar.querySelector(".ann-banner-close").addEventListener("click", function () {
       remember(a.id);
       bar.remove();
+      unpushNav();
       try { document.body.classList.remove("has-ann-banner"); } catch (e) {}
     });
 
     document.body.insertBefore(bar, document.body.firstChild);
-    try { document.body.classList.add("has-ann-banner"); } catch (e) {}
+    pushNav();
+    /* Web fonts and the Font Awesome icon land after first paint and change the
+       height, so measure again once the document has settled rather than only
+       at insertion. */
+    if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+      document.fonts.ready.then(pushNav).catch(function () {});
+    }
+    setTimeout(pushNav, 250);
   }
 
   function load() {
