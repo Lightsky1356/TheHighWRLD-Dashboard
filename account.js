@@ -1520,19 +1520,71 @@ function compactProfileViewHtml(d) {
     fillSelect(lg, LANGS); fillSelect(flg, LANGS);
     function syncTheme(v) { if (th) th.value = v; if (fth) fth.value = v; }
     function syncLang(v) { if (lg) lg.value = v; if (flg) flg.value = v; }
+
+    /* The slug ("deep-violet" style value) is what gets stored; the name
+       ("Deep Violet") is what a person recognises. An unknown slug falls back
+       to itself rather than to nothing, so a theme added without updating
+       THEMES still reports which one it picked. */
+    function themeName(slug) {
+      for (var i = 0; i < THEMES.length; i++) if (THEMES[i][0] === slug) return THEMES[i][1];
+      return String(slug || "");
+    }
+
+    /* English gets the exact "Changed theme to "<name>"" phrasing. Every other
+       language keeps its own translated toastThemeApplied with the chosen theme
+       appended, rather than dropping to English - which is what a plain
+       _tt(key, englishFallback) would have done here. */
+    function themeChangedMsg(name) {
+      var tpl = _tt("toastThemeChanged", "");
+      if (tpl) return tpl.replace(/\{name\}/g, name);
+      return _tt("toastThemeApplied", "Theme applied") + ' - "' + name + '"';
+    }
+
     function bindThemeSel(sel) {
       if (!sel) return;
       sel.addEventListener("change", function () {
         var v = sel.value;
+        /* Captured before applyTheme, so a failed save has something to go back
+           to. */
+        var prev = _themeTarget.getAttribute("data-theme") || "default";
+        var name = themeName(v);
+        var failMsg = _tt("toastThemeFailed", "Couldn't save theme");
+
         applyTheme(v);
         syncTheme(v);
+
         /* Signed in: this is your account's theme and it lives on the server.
            Only a guest (no account) changes the device theme. */
-        if (isSignedInNow()) api({ action: "saveTheme", theme: v }).then(function () { loadAccount(); });
-        else try { localStorage.setItem("wantedTheme", v); } catch (e) {}
-        var tt = null;
-        if (window.SiteChromeI18N && window.SiteChromeI18N[_lang]) tt = window.SiteChromeI18N[_lang].toastThemeApplied;
-        toast(tt || "Theme applied", "success");
+        if (isSignedInNow()) {
+          /* The theme is already on screen because it is local CSS, but for an
+             account it is not real until the server has it. So the confirmation
+             waits for the save rather than claiming success up front, and a
+             failed save puts the old theme back - otherwise the page and the
+             account disagree and the change silently vanishes on next load.
+
+             api() does not reject on HTTP errors; it hands back the parsed
+             body, so success is read off the payload rather than from a
+             rejection. */
+          api({ action: "saveTheme", theme: v }).then(function (d) {
+            if (d && d.ok) { loadAccount(); toast(themeChangedMsg(name), "success"); return; }
+            applyTheme(prev); syncTheme(prev);
+            toast(failMsg, "error");
+          }).catch(function () {
+            applyTheme(prev); syncTheme(prev);
+            toast(failMsg, "error");
+          });
+          return;
+        }
+
+        try {
+          localStorage.setItem("wantedTheme", v);
+          toast(themeChangedMsg(name), "success");
+        } catch (e) {
+          /* Private mode, storage disabled, quota - the theme is on screen but
+             will not survive a reload, so say so and put it back. */
+          applyTheme(prev); syncTheme(prev);
+          toast(failMsg, "error");
+        }
       });
     }
     function bindLangSel(sel) {
