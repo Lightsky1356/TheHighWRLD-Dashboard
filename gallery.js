@@ -47,17 +47,41 @@
      to toggle. A single wrapping button could not do both.
      The old .gal-item rules stay for "Your submissions", which renders its own
      compact rows with that class. */
-  ".gal-cell{position:relative;border:1px solid rgba(255,255,255,.09);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.03);color:#fff;transition:border-color .15s ease}" +
+  ".gal-cell{position:relative;border:1px solid rgba(255,255,255,.09);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.03);color:#fff;transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease}" +
+  ".gal-cell:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.4)}" +
+  /* The title is the work's name and carries the weight; the artist line is
+     secondary. Two lines of the same weight read as one block of small text. */
+  ".gal-cap{padding:9px 10px 1px;font-size:12px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}" +
+  ".gal-by{padding:1px 10px 10px;font-size:10.5px;opacity:.6;line-height:1.35;overflow-wrap:anywhere}" +
   ".gal-cell:hover{border-color:rgba(240,171,252,.45)}" +
   ".gal-cell.is-spoiler{border-color:rgba(240,171,252,.28)}" +
   ".gal-shot{display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;position:relative;line-height:0}" +
   ".gal-shot img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#1c1530;transition:filter .22s ease,transform .22s ease}" +
   ".gal-shot:focus-visible{outline:2px solid #f0abfc;outline-offset:-3px}" +
-  ".gal-open{position:absolute;right:7px;bottom:32px;z-index:3;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;border:1px solid rgba(240,171,252,.5);background:rgba(12,6,24,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#f0abfc;font-size:11px;cursor:pointer;opacity:0;transition:opacity .18s ease}" +
-  ".gal-open:focus-visible{opacity:1;outline:2px solid #f0abfc}" +
-  ".gal-cell:hover .gal-open,.gal-open:focus-visible{opacity:1}" +
+  ".gal-open{position:absolute;right:7px;bottom:32px;z-index:3;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;border:1px solid rgba(240,171,252,.5);background:rgba(12,6,24,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#f0abfc;font-size:11px;cursor:pointer;transition:opacity .18s ease}" +
+  ".gal-open:focus-visible{outline:2px solid #f0abfc}" +
+  /* Hidden only where hover actually exists. The control was opacity:0 and
+     revealed on :hover, so on a touch screen - where nothing ever hovers - it
+     never appeared and opening an image full size had no visible control.
+     Scoping the hide to (hover: hover) gives touch devices it permanently
+     while desktop keeps the quiet card. */
+  "@media (hover:hover){" +
+  ".gal-open{opacity:0}" +
+  ".gal-cell:hover .gal-open,.gal-open:focus-visible{opacity:1}}" +
   /* Nothing to open full size while the picture is still blurred. */
   ".gal-cell.is-spoiler:not(.is-revealed) .gal-open{display:none}" +
+  /* The closed form reads as an invitation, not a missing panel. */
+  ".gal-upload-toggle{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;" +
+  "border:1px dashed rgba(240,171,252,.34);border-radius:14px;padding:13px 16px;" +
+  "background:rgba(240,171,252,.05);color:#f0abfc;font-size:12px;font-weight:700;" +
+  "letter-spacing:.04em;cursor:pointer;transition:background .16s ease,border-color .16s ease}" +
+  ".gal-upload-toggle:hover{background:rgba(240,171,252,.11);border-color:rgba(240,171,252,.6)}" +
+  ".gal-upload-toggle:focus-visible{outline:2px solid #f0abfc;outline-offset:2px}" +
+  /* The plus turns into an x when open, so it reads as a toggle with no
+     second icon to load. */
+  ".gal-upload-toggle .fa-plus{transition:transform .22s cubic-bezier(.16,1,.3,1)}" +
+  ".gal-upload-toggle[aria-expanded=\"true\"] .fa-plus{transform:rotate(45deg)}" +
+  ".gal-upload{margin-top:12px}" +
   /* Spoiler art: blurred until tapped. The badge sits above the blur and stays
      legible, so a spoiler is still visibly a spoiler after it is revealed. */
   ".gal-shot.is-spoiler img{filter:blur(26px) saturate(.6);transform:scale(1.12)}" +
@@ -96,9 +120,16 @@
     root.id = "gal-root";
     root.className = "gal-wrap";
     root.innerHTML =
-      '<div class="gal-head"><div class="gal-title"><i class="fas fa-images"></i> Fan Art Gallery</div>' +
-      '<p class="gal-sub">Made by the WRLD, for the WRLD.</p></div>' +
-      '<div class="gal-upload"><h4>Submit your art</h4>' +
+      /* No heading of its own: the page hero already says "Fan Art Gallery" and
+         "Made by the WRLD, for the WRLD", and the gallery repeated both
+         verbatim a few hundred pixels lower.
+         The form is collapsed. A real button with aria-expanded rather than a
+         <details>, because the open state has to be scriptable - the form
+         holds a file input and a preview. */
+      '<button type="button" class="gal-upload-toggle" id="gal-upload-toggle"' +
+      ' aria-expanded="false" aria-controls="gal-upload">' +
+      '<i class="fas fa-plus" aria-hidden="true"></i> Submit your art</button>' +
+      '<div class="gal-upload" id="gal-upload" hidden><h4>Submit your art</h4>' +
       '<input type="file" id="gal-file" accept="image/jpeg,image/png,image/webp,image/gif">' +
       '<img decoding="async" class="gal-prev" id="gal-prev" alt="">' +
       '<input type="text" id="gal-title" maxlength="80" placeholder="Title">' +
@@ -159,6 +190,20 @@
   }
 
   function bindUpload() {
+    /* The collapse toggle. Wired here rather than at render time because this
+       is the one place that already owns the form's elements and its lifecycle,
+       and it already guards against double-binding with _bound. */
+    var toggle = document.getElementById("gal-upload-toggle");
+    var panel = document.getElementById("gal-upload");
+    if (toggle && panel && !toggle._bound) {
+      toggle._bound = true;
+      toggle.addEventListener("click", function () {
+        var open = toggle.getAttribute("aria-expanded") === "true";
+        toggle.setAttribute("aria-expanded", open ? "false" : "true");
+        panel.hidden = open;
+      });
+    }
+
     var file = document.getElementById("gal-file");
     var prev = document.getElementById("gal-prev");
     var note = document.getElementById("gal-note");
