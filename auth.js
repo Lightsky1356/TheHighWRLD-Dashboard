@@ -9,15 +9,20 @@
 
   function $(id) { return document.getElementById(id); }
 
+  /* Delegates to the shared toast in toast.js.
+
+     This was the one remaining implementation with no `if (window.toast)` guard
+     ahead of it - it reached straight for #toasts. That container is being
+     removed, because its CSS is scoped `#account-page #toasts` while the element
+     is a direct child of <main>, so the rule never applied and these toasts were
+     rendering as unstyled bare divs. Without this change they would simply have
+     stopped appearing; with it they render properly.
+
+     Also drops the innerHTML interpolation of msg, which parsed any markup in a
+     server-supplied string as HTML. The 3200 is this function's original
+     lifetime, passed explicitly so it does not drift. */
   function toast(msg, type) {
-    var box = document.getElementById("toasts");
-    if (!box) return;
-    var el = document.createElement("div");
-    el.className = "toast " + (type || "info");
-    var ico = type === "success" ? "fa-circle-check" : type === "error" ? "fa-circle-exclamation" : "fa-circle-info";
-    el.innerHTML = '<i class="fas ' + ico + '"></i>' + msg;
-    box.appendChild(el);
-    setTimeout(function () { el.style.opacity = "0"; el.style.transform = "translateX(30px)"; setTimeout(function () { el.remove(); }, 300); }, 3200);
+    if (window.toast) window.toast(msg, type, 3200);
   }
 
   function setErr(el, msg) {
