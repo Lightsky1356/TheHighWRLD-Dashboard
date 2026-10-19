@@ -59,15 +59,15 @@
   var I18N_FALLBACK_NOTHING_UNREAD = "Nothing left unread";
   void I18N_FALLBACK_NOTHING_UNREAD;
 
+  /* Delegates to the shared toast in toast.js rather than reimplementing it.
+     This local copy used to render into #toasts as .toast, but that CSS is
+     scoped to #account-page and the container has no such ancestor, so the rule
+     never applied and these toasts were showing as unstyled bare divs. They now
+     take the same .gtoast path as every other toast on the site, which is a
+     visible change and a fix. The 4000 is this file's original lifetime and is
+     passed explicitly so that does not silently shift. */
   function toast(msg, type) {
-    var box = document.getElementById("toasts");
-    if (!box) return;
-    var el = document.createElement("div");
-    el.className = "toast " + (type || "info");
-    var ico = type === "success" ? "fa-circle-check" : type === "error" ? "fa-circle-exclamation" : "fa-circle-info";
-    el.innerHTML = '<i class="fas ' + ico + '"></i>' + msg;
-    box.appendChild(el);
-    setTimeout(function () { el.style.opacity = "0"; el.style.transform = "translateX(30px)"; setTimeout(function () { el.remove(); }, 300); }, 4000);
+    if (window.toast) window.toast(msg, type, 4000);
   }
 
   /* ---------- Button loading state ---------- */
@@ -523,12 +523,12 @@ function compactProfileViewHtml(d) {
     fresh.forEach(function (a) {
       var heading = a.title || _tt("notifAnn", "Announcement");
       var body = String(a.body != null ? a.body : a.message || "").slice(0, 110);
-      /* The local toast(), not window.toast. window.toast is only ever assigned
-         by profile-enhancements.js, so on any page where that file has not
-         loaded it is undefined and a guard on it silently never fires - which is
-         how several existing `if (window.toast)` calls in other files quietly do
-         nothing. This is inside account.js, where toast() is in scope. Two
-         arguments, matching its signature; a third would be ignored. */
+      /* The local toast(), which now delegates to window.toast from toast.js.
+         The note that used to sit here described window.toast as being assigned
+         only by profile-enhancements.js - it was never assigned at all, by
+         anything, so the `if (window.toast)` guards in other files were all
+         dead. toast.js now defines it once for the whole app. Two arguments,
+         matching this function's signature; a third would be ignored. */
       try {
         toast(esc(heading) + (body ? " — " + esc(body) : ""), "info");
       } catch (e) {}
