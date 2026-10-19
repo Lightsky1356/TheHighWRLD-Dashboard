@@ -135,17 +135,21 @@ export function pushPayloadFor(opts, id) {
   return {
     title: o.pushTitle || summary.title,
     body: o.pushBody || summary.body,
-    /* One tag per kind, so repeated notifications of the same kind replace each
-       other on the lock screen instead of stacking up. A caller that wants each
-       one to be its own notification supplies its own tag - the social API does,
-       because two DMs are two different things. It supplies it as a function of
-       the new row's id, which is only known after the insert. */
+    /* One tag PER NOTIFICATION, not per kind.
+       A shared tag makes each new notification REPLACE the one already on the
+       lock screen, silently. That is not how a phone works - a second reply
+       should be a second banner, and it should make a sound. The social API
+       already asked for a per-notification tag for exactly this reason; this
+       makes it the default for everything. */
     tag:
       typeof o.pushTag === "function"
         ? String(o.pushTag(id))
-        : o.pushTag || ("thw-" + String(o.type || "notice")),
+        : o.pushTag || ("thw-" + String(o.type || "notice") + "-" + (id || "0")),
     type: String(o.type || "notice"),
     url: o.pushUrl || pushTargetFor(o.type),
+    /* Grouped by kind on the lock screen, the way a phone groups a
+       conversation. A device that does not support grouping ignores it. */
+    threadId: "thw-" + String(o.type || "notice"),
   };
 }
 

@@ -133,7 +133,7 @@ const PRECACHE = [
   './drops.js?v=thw-v2',
   './legal-info.js?v=thw-v5',
   './social-panel.js?v=thw-v30',
-  './push-client.js?v=thw-v14',
+  './push-client.js?v=thw-v15',
   './simple-toast.js?v=thw-v5',
   './cover-preview.js?v=thw-v7',
 
@@ -367,7 +367,15 @@ self.addEventListener('push', (event) => {
       // Same-origin only. A push payload must never be able to make the
       // notification load a remote image and leak that the device is online.
       tag: typeof data.tag === 'string' ? data.tag.slice(0, 80) : 'thw-notification',
-      renotify: false,
+      /* Renotify so a notification that REPLACES an earlier one still makes a
+         sound and a buzz, the way a phone does. Without it a second reply
+         arriving while the first is still on screen is silent. */
+      renotify: true,
+      /* Grouped by kind, the way a phone groups a conversation. A notification
+         the device does not support grouping simply ignores this. */
+      threadId: typeof data.threadId === 'string' ? data.threadId.slice(0, 60) : undefined,
+      /* Not a silent push: it must appear on the lock screen with a sound. */
+      silent: false,
       vibrate: [40, 30, 40],
       timestamp: Date.now(),
       data: { target, type: data.type || '' },

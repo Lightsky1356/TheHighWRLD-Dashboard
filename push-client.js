@@ -619,11 +619,24 @@
      __thwPushReady here is therefore the only entry point - adding a second
      message listener in this file would route the same click twice. */
   function handlePushClick(target) {
+    /* No target at all: just open the app. Falling through to the social
+       branch would drop the user into their messages panel, which is not what
+       they tapped. */
+    if (!target) {
+      if (typeof window.switchAppPage === "function") {
+        try { window.switchAppPage("home"); return; } catch (_) {}
+      }
+      if (handlePushClick.retries < 12) {
+        handlePushClick.retries++;
+        window.setTimeout(function () { handlePushClick(target); }, 300);
+      }
+      return;
+    }
     /* A page route is not a social destination, so it does not wait for the
        social panel. It is handled by the app's own navigation - switchAppPage
        is the same function the nav buttons use, so this lands on exactly the
        page the user would have reached by tapping. */
-    if (target && String(target).indexOf("social:") !== 0) {
+    if (String(target).indexOf("social:") !== 0) {
       if (typeof window.switchAppPage === "function") {
         try { window.switchAppPage(target); return; } catch (_) {}
       }
