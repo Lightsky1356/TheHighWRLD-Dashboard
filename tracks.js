@@ -1815,7 +1815,7 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Rockets (Ms. Jackson) (Sessions)",
+    title: "Rockets (Sessions)",
     tag: "Rockets (Ms. Jackson) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",
