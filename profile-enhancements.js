@@ -187,6 +187,18 @@
       "#profilePageBody{grid-template-columns:minmax(0,1fr)}" +
       "#profilePageBody .cmp-fav-grid{grid-template-columns:minmax(0,1fr)}" +
       "}" +
+      /* ---- balanced columns ---- */
+      /* The shelf spans the board and holds two columns that are independent of
+         each other, so a tall panel can no longer hold its neighbour's column
+         open. Both sides are minmax(0,1fr) wide exactly as the grid columns
+         were, so a panel's measured height stays valid when it moves and the
+         cover grids inside do not re-flow. */
+      "#profilePageBody .pp-shelf{grid-column:1/-1;display:flex;gap:12px;align-items:flex-start}" +
+      "#profilePageBody .pp-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:12px}" +
+      "#profilePageBody .pp-col>*{min-width:0;overflow-wrap:break-word}" +
+
+      /* Phone: one column, as before - the shelf just stacks its two columns. */
+      "@media(max-width:700px){#profilePageBody .pp-shelf{flex-direction:column}}" +
       /* the header panel carries its own label above the avatar */
       "#profilePageBody .cmp-head-title{margin:0 0 12px!important}" +
       "#profilePageBody .cmp-head .cmp-top{margin-top:0}" +
@@ -432,6 +444,114 @@
     return (text.replace(new RegExp("[^a-z0-9]+", "g"), "-").replace(new RegExp("(^-+|-+$)", "g"), "") || "panel-" + i);
   }
 
+
+  /* ---- balanced columns ------------------------------------------------
+   * #profilePageBody is a two column grid, but a grid row is as tall as its
+   * tallest cell: the browser has to keep Favorites' row open, which leaves
+   * short panels stacked on the left with empty space under them. CSS grid has
+   * no masonry, so the packing is done here instead - the half width panels
+   * move into a shelf of two independent columns and each goes to whichever
+   * column is currently shorter. Full width rows are left alone: the header,
+   * bio and charts are meant to span the board.
+   *
+   * Which panels are half width is read from the stylesheet rather than listed
+   * here, so a panel added later is handled without touching this file. The
+   * wrappers are display:contents, so the board's real items are found by
+   * descending through them instead of trusting the parent element.
+   *
+   * Panels keep their order within a column, so reading order survives -
+   * only which column one lands in changes. */
+  var SHELF = "pp-shelf";
+  var COL = "pp-col";
+
+  /* The board's real grid items. display:contents wrappers dissolve, so their
+     children take their place; an existing shelf is expanded back out to its
+     panels so they are measured in place and can be re-packed. */
+  function boardItems(root) {
+    var out = [];
+    (function walk(node) {
+      for (var i = 0; i < node.children.length; i++) {
+        var el = node.children[i];
+        if (el.classList && el.classList.contains(SHELF)) {
+          for (var a = 0; a < el.children.length; a++) {
+            var side = el.children[a];
+            for (var b = 0; b < side.children.length; b++) out.push(side.children[b]);
+          }
+          continue;
+        }
+        if (getComputedStyle(el).display === "contents") walk(el);
+        else out.push(el);
+      }
+    })(root);
+    return out;
+  }
+
+  function balanceColumns(root) {
+    if (!root || root.id !== "profilePageBody") return;
+
+    var halves = [];
+    var minOrder = Infinity;
+    boardItems(root).forEach(function (el) {
+      var cs = getComputedStyle(el);
+      /* grid-column:1/-1 is how the stylesheet marks a full width row. */
+      if (cs.gridColumnStart === "1" && cs.gridColumnEnd === "-1") return;
+      var o = parseInt(cs.order, 10) || 0;
+      if (o < minOrder) minOrder = o;
+      halves.push({ el: el, order: o, h: el.offsetHeight });
+    });
+
+    var shelf = root.querySelector("." + SHELF);
+
+    /* Nothing to balance - put everything back where it came from rather than
+       leaving the board stuck in a layout it no longer needs. */
+    if (halves.length < 2) {
+      if (!shelf) return;
+      var host = shelf.parentNode;
+      while (shelf.firstChild) host.insertBefore(shelf.firstChild, shelf);
+      host.removeChild(shelf);
+      return;
+    }
+
+    /* Stable sort on order: halves is already in document order, so ties - and
+       most panels share an order - keep the order they were appended in. */
+    halves.sort(function (a, b) { return a.order - b.order; });
+
+    var cols = [[], []];
+    var h = [0, 0];
+    halves.forEach(function (p) {
+      var i = h[0] <= h[1] ? 0 : 1;
+      cols[i].push(p);
+      h[i] += p.h;
+    });
+
+    if (!shelf) {
+      shelf = document.createElement("div");
+      shelf.className = SHELF;
+      /* Sit where the panels used to sit. The panels carried these orders in the
+         grid, so taking the lowest one keeps the shelf among its neighbours. */
+      shelf.style.order = String(minOrder);
+      root.appendChild(shelf);
+    }
+    while (shelf.children.length > 2) shelf.removeChild(shelf.lastChild);
+    while (shelf.children.length < 2) {
+      var side = document.createElement("div");
+      side.className = COL;
+      shelf.appendChild(side);
+    }
+    /* Carry each panel's order onto the panel as it moves.
+       player-settings.css marks a panel last with #profilePageBody>.pv-block,
+       a direct-child selector that stops matching once the panel is inside a
+       column. Restating that in CSS for the new shape is a trap: the restated
+       selector needs an extra class to match the column and so outranks
+       [data-pnl="top-plays"]{order:2}, silently replacing that panel's order
+       too. Taking the value that was just computed for the panel and setting it
+       inline avoids the whole question - inline beats every selector, so the
+       number is preserved rather than re-guessed, and no stylesheet rule has to
+       agree with another. */
+    cols[0].forEach(function (p) { p.el.style.order = String(p.order); shelf.children[0].appendChild(p.el); });
+    cols[1].forEach(function (p) { p.el.style.order = String(p.order); shelf.children[1].appendChild(p.el); });
+  }
+
   function panelize(root) {
     var state_ = folded();
     /* If anything ever marked the header as a foldable panel, take it back off -
@@ -465,6 +585,10 @@
         head.setAttribute("aria-expanded", panel.classList.contains("collapsed") ? "false" : "true");
       }
     });
+
+    /* After the panel loop above, which is what adds .pnl and .pnl-h - and
+       before the guard, which returns early on every later call. */
+    balanceColumns(root);
 
     if (root.dataset.pePanelsBound) return;
     root.dataset.pePanelsBound = "1";

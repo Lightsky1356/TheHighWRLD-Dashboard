@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v96';
+const VERSION = 'thw-v98';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -115,7 +115,7 @@ const PRECACHE = [
   './wrld-stats.js?v=thw-v8',
   './recent.js?v=thw-v6',
   './trackinfo.js?v=thw-v2',
-  './profile-enhancements.js?v=thw-v32',
+  './profile-enhancements.js?v=thw-v33',
   './roadmap-data.js?v=thw-v26',
   './roadmap.js?v=thw-v26',
   './timeline.js?v=thw-v5',
