@@ -42,6 +42,15 @@
       ".gal-item{position:relative;border:1px solid rgba(255,255,255,.09);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.03);cursor:pointer;padding:0;text-align:left;color:#fff}" +
       ".gal-item:hover{border-color:rgba(240,171,252,.45)}" +
       ".gal-item img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#1c1530}" +
+  /* Spoiler art: blurred until tapped. The badge sits above the blur and stays
+     legible, so a spoiler is still visibly a spoiler after it is revealed. */
+  ".gal-item.is-spoiler>img{filter:blur(26px) saturate(.6);transform:scale(1.12)}" +
+  ".gal-item.is-spoiler{outline:1px solid rgba(240,171,252,.35)}" +
+  ".gal-item.is-revealed>img{filter:none;transform:none}" +
+  ".gal-flag{position:absolute;left:7px;top:7px;z-index:2;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;border:1px solid rgba(240,171,252,.55);background:rgba(12,6,24,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#f0abfc;pointer-events:none}" +
+  ".gal-flag i{font-size:8px}" +
+  ".gal-check{display:flex;align-items:center;gap:8px;margin:2px 0 10px;font-size:11px;color:rgba(255,255,255,.65);cursor:pointer;user-select:none}" +
+  ".gal-check input{width:14px;height:14px;accent-color:#f0abfc;cursor:pointer;flex-shrink:0}" +
       ".gal-cap{padding:7px 9px;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".gal-by{padding:0 9px 8px;font-size:10px;color:rgba(255,255,255,.5)}" +
       ".gal-more{display:block;margin:14px auto 0;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#fff;border-radius:9999px;padding:8px 22px;font-size:12px;cursor:pointer}" +
@@ -58,6 +67,7 @@
       ".gal-box{max-width:min(640px,94vw);max-height:90vh;overflow:auto;background:#14101f;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:16px}" +
       ".gal-box img{width:100%;border-radius:12px;background:#1c1530}" +
       ".gal-box h3{font-size:15px;color:#fff;margin:10px 0 2px}" +
+  ".gal-spoiler-note{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;border:1px solid rgba(240,171,252,.5);background:rgba(240,171,252,.12);font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#f0abfc;vertical-align:middle}" +
       ".gal-box p{font-size:12px;color:rgba(255,255,255,.6);margin:0 0 10px}" +
       ".gal-box .row{display:flex;gap:8px;flex-wrap:wrap}";
     (document.head || document.documentElement).appendChild(st);
@@ -78,6 +88,7 @@
       '<img decoding="async" class="gal-prev" id="gal-prev" alt="">' +
       '<input type="text" id="gal-title" maxlength="80" placeholder="Title">' +
       '<input type="text" id="gal-cap" maxlength="300" placeholder="Caption (optional)">' +
+      '<label class="gal-check"><input type="checkbox" id="gal-spoiler"><span>Mark as spoiler &mdash; blur the thumbnail until it is tapped</span></label>' +
       '<button type="button" class="gal-btn" id="gal-submit">Publish</button>' +
       '<p class="gal-note" id="gal-note">JPG / PNG / WebP / GIF · auto-resized · max 800KB · published as soon as you submit.</p></div>' +
       '<div id="gal-own-wrap"></div>' +
@@ -123,6 +134,13 @@
       window.toast("Link Discord to " + action.toLowerCase(), "error", 2500);
     }
     return false;
+  }
+
+  /* Read at submit time rather than captured, so it reflects the checkbox as it
+     is when Publish is pressed. */
+  function spoilerBox() {
+    var el = document.getElementById("gal-spoiler");
+    return !!(el && el.checked);
   }
 
   function bindUpload() {
@@ -193,7 +211,8 @@
           title: title ? title.value.trim() : "",
           caption: cap ? cap.value.trim() : "",
           mime: pendingFile.mime,
-          data: pendingFile.dataUrl.split(",")[1] || ""
+          data: pendingFile.dataUrl.split(",")[1] || "",
+          spoiler: spoilerBox() ? 1 : 0
         })
       }).then(function (r) { return r.json(); }).catch(function () { return { ok: false }; })
         .then(function (d) {
@@ -218,7 +237,10 @@
   }
 
   function cardHTML(it) {
-    return '<button type="button" class="gal-item" data-gal="' + it.id + '">' +
+    var sp = !!(Number(it.spoiler) || 0);
+    return '<button type="button" class="gal-item' + (sp ? " is-spoiler" : "") + '" data-gal="' + it.id + '"' +
+      (sp ? ' aria-label="Spoiler image: ' + esc(it.title || "Untitled") + '. Activate to reveal."' : "") + ">" +
+      (sp ? '<span class="gal-flag"><i class="fas fa-eye-slash"></i>Spoiler</span>' : "") +
       '<img decoding="async" src="/api/gallery?id=' + it.id + '" alt="" loading="lazy">' +
       '<div class="gal-cap">' + esc(it.title || "Untitled") + "</div>" +
       '<div class="gal-by">by ' + esc(it.user_name || "anon") + "</div></button>";
@@ -308,7 +330,7 @@
         ov.className = "gal-ov";
         ov.id = "gal-ov";
         var inner = it
-          ? '<img decoding="async" src="/api/gallery?id=' + it.id + '" alt=""><h3>' + esc(it.title || "Untitled") + "</h3><p>by " + esc(it.user_name || "anon") + (it.caption ? " — " + esc(it.caption) : "") + "</p>"
+          ? '<img decoding="async" src="/api/gallery?id=' + it.id + '" alt=""><h3>' + esc(it.title || "Untitled") + (Number(it.spoiler) ? ' <span class="gal-spoiler-note">spoiler</span>' : "") + "</h3><p>by " + esc(it.user_name || "anon") + (it.caption ? " — " + esc(it.caption) : "") + "</p>"
           : '<img decoding="async" src="/api/gallery?id=' + esc(String(id)) + '" alt="">';
         ov.innerHTML = '<div class="gal-box">' + inner +
           '<div class="row"><button type="button" class="gal-btn" data-gal-x="1">Close</button>' +
@@ -369,7 +391,19 @@
         return;
       }
       var card = e.target.closest ? e.target.closest("[data-gal]") : null;
-      if (card) lightbox(card.getAttribute("data-gal"));
+      if (card) {
+        /* A spoiler reveals on the first tap and opens on the second, rather
+           than opening straight away - otherwise the thumbnail blur would be the
+           only warning and the full image would be on screen before the reader
+           had chosen to see it. The reveal sticks, so it is not re-hidden on
+           every re-render. */
+        if (card.classList.contains("is-spoiler") && !card.classList.contains("is-revealed")) {
+          card.classList.add("is-revealed");
+          card.removeAttribute("aria-label");
+          return;
+        }
+        lightbox(card.getAttribute("data-gal"));
+      }
     });
     var sec = document.getElementById("page-section-gallery");
     var fired = false;

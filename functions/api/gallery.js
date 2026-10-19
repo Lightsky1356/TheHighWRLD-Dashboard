@@ -121,7 +121,7 @@ export async function onRequestGet(context) {
       const me = await getSessionUser(db, context.request);
       if (!me) return json({ ok: false, error: "not signed in" }, 401);
       const rows = await db.prepare(
-        "SELECT id, user_name, avatar, title, caption, mime, size, status, created_at " +
+        "SELECT id, user_name, avatar, title, caption, mime, size, status, created_at, spoiler " +
         "FROM gallery_items WHERE uid = ? ORDER BY id DESC LIMIT 50"
       ).bind(me.uid).all();
       return json({ ok: true, items: rows.results || [] });
@@ -133,7 +133,7 @@ export async function onRequestGet(context) {
         return json({ ok: false, error: "forbidden" }, 403);
       }
       const rows = await db.prepare(
-        "SELECT id, uid, user_name, avatar, title, caption, mime, size, status, created_at " +
+        "SELECT id, uid, user_name, avatar, title, caption, mime, size, status, created_at, spoiler " +
         "FROM gallery_items WHERE status = 'pending' ORDER BY id ASC LIMIT 50"
       ).all();
       return json({ ok: true, items: rows.results || [] });
@@ -142,7 +142,7 @@ export async function onRequestGet(context) {
     const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
     const limit = Math.max(1, Math.min(PAGE_CAP, Number(url.searchParams.get("limit")) || 12));
     const rows = await db.prepare(
-      "SELECT id, uid, user_name, avatar, title, caption, mime, size, created_at " +
+      "SELECT id, uid, user_name, avatar, title, caption, mime, size, created_at, spoiler " +
       "FROM gallery_items WHERE status = 'approved' ORDER BY id DESC LIMIT ? OFFSET ?"
     ).bind(limit, (page - 1) * limit).all();
     const total = await db.prepare(
@@ -192,6 +192,10 @@ export async function onRequestPost(context) {
       const title = String(body.title || "").trim().slice(0, 80) || "Untitled";
       const caption = String(body.caption || "").trim().slice(0, 300);
       const mime = String(body.mime || "");
+      /* Spoiler flag, stored as an integer to match the rest of the schema.
+         Coerced rather than trusted: anything truthy the client sends becomes 1
+         and everything else 0, so a stray string cannot end up in the column. */
+      const spoiler = body.spoiler ? 1 : 0;
       if (!MIME_OK[mime] && mime !== "image/webp") {
         return json({ ok: false, error: "unsupported image type" }, 400);
       }
@@ -214,10 +218,10 @@ export async function onRequestPost(context) {
         if (recent && recent.n >= 10) return json({ ok: false, error: "daily limit reached" }, 429);
       } catch (_) {}
       const ins = await db.prepare(
-        "INSERT INTO gallery_items (uid, user_name, avatar, title, caption, mime, size, data, status) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved')"
+        "INSERT INTO gallery_items (uid, user_name, avatar, title, caption, mime, size, data, status, spoiler) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)"
       ).bind(me.uid, (me.name || "Guest").slice(0, 40), (me.avatar || "").slice(0, 300),
-        title, caption, mime, bytes.length, bytes.buffer).run();
+        title, caption, mime, bytes.length, bytes.buffer, spoiler).run();
       const itemId = ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0;
       // Uploads publish immediately - 'approved' on insert, so the item is live
       // for everyone the moment it is stored rather than waiting on a human.

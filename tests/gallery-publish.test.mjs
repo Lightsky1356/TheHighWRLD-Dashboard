@@ -174,23 +174,7 @@ let flaggedId = null;
   }
 }
 
-// 6. the daily cap is still there
-{
-  let hit429 = null;
-  let tries = 0;
-  for (let i = 0; i < 15 && !hit429; i++) {
-    tries++;
-    const r = await post(LINKED.token, submit(`Cap Probe ${i}`, "filling the daily allowance"));
-    if (r.status === 429) hit429 = r.json && r.json.error;
-  }
-  ok = check(
-    "the 10/day cap is still enforced",
-    !!hit429,
-    hit429 ? `429 after ${tries} more uploads: "${hit429}"` : `no 429 after ${tries} attempts`
-  ) && ok;
-}
-
-// 7. reporting goes through the shared panel, and the panel accepts GALLERY
+// 6. reporting goes through the shared panel, and the panel accepts GALLERY
 {
   // The bespoke report action is gone. It wrote target_type 'gallery' in lower
   // case while every staff-side filter matches upper-case VALID_TYPES, and
@@ -207,7 +191,7 @@ let flaggedId = null;
   ) && ok;
 }
 
-// 8. the shared reports API accepts a GALLERY target
+// 7. the shared reports API accepts a GALLERY target
 if (publishedId) {
   const res = await fetch(BASE + "/api/reports", {
     method: "POST",
@@ -228,6 +212,52 @@ if (publishedId) {
     `status=${res.status} body=${JSON.stringify(json).slice(0, 150)}`
   ) && ok;
 }
+
+// 8. the spoiler flag round-trips, and does not leak onto other uploads
+{
+  const plain = await post(LINKED.token, { ...submit("Not A Spoiler", "ordinary art"), spoiler: 0 });
+  ok = check("a normal upload is accepted", plain.status === 200 && plain.json.ok === true,
+    `status=${plain.status}`) && ok;
+
+  const sp = await post(LINKED.token, { ...submit("Spoiler Piece", "art with a warning"), spoiler: 1 });
+  ok = check("a spoiler upload is accepted", sp.status === 200 && sp.json.ok === true,
+    `status=${sp.status}`) && ok;
+
+  if (sp.status === 200) {
+    const listing = await (await get("/api/gallery?limit=50")).res.json();
+    const items = listing.items || [];
+    const mine = items.find((i) => Number(i.id) === Number(sp.json.id));
+    const other = items.find((i) => Number(i.id) === Number(plain.json.id));
+
+    ok = check("  the listing reports it as a spoiler", mine && Number(mine.spoiler) === 1,
+      mine ? `spoiler=${mine.spoiler}` : "item missing from the listing") && ok;
+    ok = check("  and a normal upload is still not a spoiler", other && Number(other.spoiler) === 0,
+      other ? `spoiler=${other.spoiler}` : "item missing from the listing") && ok;
+
+    // And the bytes still serve for a spoiler - the flag must not gate the image.
+    const res = await fetch(`${BASE}/api/gallery?id=${sp.json.id}`, { cache: "no-store" });
+    const buf = new Uint8Array(await res.arrayBuffer());
+    ok = check("  a spoiler's bytes still serve normally", res.status === 200 && buf.length > 8,
+      `status=${res.status} bytes=${buf.length}`) && ok;
+  }
+}
+
+// LAST. the daily cap is still there
+{
+  let hit429 = null;
+  let tries = 0;
+  for (let i = 0; i < 15 && !hit429; i++) {
+    tries++;
+    const r = await post(LINKED.token, submit(`Cap Probe ${i}`, "filling the daily allowance"));
+    if (r.status === 429) hit429 = r.json && r.json.error;
+  }
+  ok = check(
+    "the 10/day cap is still enforced",
+    !!hit429,
+    hit429 ? `429 after ${tries} more uploads: "${hit429}"` : `no 429 after ${tries} attempts`
+  ) && ok;
+}
+
 
 console.log(out.join("\n"));
 const failed = out.filter((l) => l.startsWith("FAIL")).length;

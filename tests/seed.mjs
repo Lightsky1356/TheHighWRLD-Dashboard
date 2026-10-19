@@ -39,32 +39,11 @@ const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
 
 const statements = [];
 
-/* gallery_items is NOT in any migration - it exists only in the remote D1, so it
-   was presumably created by hand. That is a real gap: `d1 migrations apply` on a
-   fresh database would never create it and the gallery would break silently.
-   It is NOT patched here, because a production migration would mean inventing
-   column types for a table whose real schema is only known from the queries in
-   functions/api/gallery.js. That is a call for the author, not the seeder.
-
-   Instead the table is created for the LOCAL database only, so the gallery suite
-   can actually run. IF NOT EXISTS throughout, and the columns are exactly the
-   ones the Function reads and writes - id, uid, user_name, avatar, title,
-   caption, mime, size, data, status, created_at. */
-statements.push(`CREATE TABLE IF NOT EXISTS gallery_items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  uid TEXT NOT NULL DEFAULT '',
-  user_name TEXT NOT NULL DEFAULT '',
-  avatar TEXT NOT NULL DEFAULT '',
-  title TEXT NOT NULL DEFAULT '',
-  caption TEXT NOT NULL DEFAULT '',
-  mime TEXT NOT NULL DEFAULT '',
-  size INTEGER NOT NULL DEFAULT 0,
-  data BLOB,
-  status TEXT NOT NULL DEFAULT 'pending',
-  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
-);`);
-statements.push(`CREATE INDEX IF NOT EXISTS idx_gallery_status ON gallery_items (status);`);
-statements.push(`CREATE INDEX IF NOT EXISTS idx_gallery_uid_created ON gallery_items (uid, created_at);`);
+/* gallery_items used to be created here, because it was in no migration and a
+   fresh local D1 had no such table - which meant the gallery suite ran against a
+   table production did not have. 0038_gallery.sql now creates it and
+   0039_gallery_spoiler.sql adds the spoiler column, so migrations own it and the
+   tests exercise the same schema production runs. Nothing to do here. */
 
 /* Children before parents, so nothing is orphaned by a foreign key. */
 statements.push(`DELETE FROM push_subscriptions WHERE uid IN (${UIDS});`);
