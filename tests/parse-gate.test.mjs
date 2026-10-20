@@ -304,6 +304,47 @@ if (drifted.length || uncached.length) {
   structureOk(`${localRefs.length} local assets, tokens match PRECACHE exactly`);
 }
 
+/* ---- 5b. a deployment must not re-download the whole shell ----
+ *
+ * The shell cache used to be named after the worker's VERSION, so every
+ * deployment produced a new empty cache, the old one was deleted, and every
+ * opening of the app after that deployment re-downloaded all 120 shell
+ * assets. Each of those is a request against the plan's daily limit on a
+ * Pages project running in bundled mode, and the site reached that limit and
+ * stopped serving with "Error 1046: the owner has reached their plan limits".
+ *
+ * The assets inside the cache already carry their own ?v= token, and that
+ * token moves when the content moves - which is what the check above proves.
+ * So a stable cache name is correct, and a versioned one is a way of
+ * re-downloading the world after every deploy. Both halves are asserted: the
+ * name must not be derived from VERSION, and the precache must skip what is
+ * already cached. */
+{
+  const shellName = /const\s+SHELL_CACHE\s*=\s*([^;]+);/.exec(swSrc);
+  const runtimeName = /const\s+RUNTIME_CACHE\s*=\s*([^;]+);/.exec(swSrc);
+  const versioned = (decl) => !!decl && /VERSION/.test(decl[1]);
+  if (!shellName) structureFail("the shell cache name is not declared");
+  else if (versioned(shellName)) {
+    structureFail(
+      "the shell cache is named after VERSION, so every deployment re-downloads all " +
+      `${pcEntries.length} shell assets - that is what reached the plan limit`,
+    );
+  } else {
+    structureOk(`the shell cache is stable (${shellName[1].trim()}), so a deploy only fetches what changed`);
+  }
+  if (!runtimeName) structureFail("the runtime cache name is not declared");
+  else if (versioned(runtimeName)) {
+    structureFail("the runtime cache is named after VERSION, so every deployment throws it away");
+  } else {
+    structureOk(`the runtime cache is stable (${runtimeName[1].trim()})`);
+  }
+  if (!/cache\s*\.\s*match\(\s*url\s*\)/.test(swSrc)) {
+    structureFail("the precache does not skip assets that are already cached");
+  } else {
+    structureOk("the precache skips what is already cached");
+  }
+}
+
 /* ---- 6. URL routing is intact, in the one place it lives ----
  *
  * Routing is account.js's NAV_URL, plus a boot hook that resolves the path, plus

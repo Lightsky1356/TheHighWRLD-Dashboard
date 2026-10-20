@@ -14,9 +14,31 @@
  */
 'use strict';
 
-const VERSION = 'thw-v116';
-const SHELL_CACHE = VERSION + '-shell';
-const RUNTIME_CACHE = VERSION + '-runtime';
+const VERSION = 'thw-v118';
+
+/* The shell cache is NOT versioned, and that is deliberate.
+ *
+ * Every asset in it already carries its own ?v= token, and that token moves
+ * when the asset's content moves - which is the entire purpose of the token,
+ * and what check-tokens.mjs enforces. So an asset whose content has not
+ * changed has the same URL, and the copy already sitting in the cache is
+ * still exactly right.
+ *
+ * A versioned cache name meant the opposite. Every deployment produced a new,
+ * empty cache, and the old one was deleted, so every opening of the app after
+ * that deployment re-downloaded all 120 shell assets - 25 fonts, 12 album
+ * photos, 12 icons and every script and stylesheet. On a Pages project
+ * running in bundled mode each of those is a request counted against the
+ * plan's daily limit, and 120 of them per app opening is how a dozen
+ * deployments turn into tens of thousands of requests. The site reached that
+ * limit and went down with "Error 1046: the owner has reached their plan
+ * limits", which is a far worse failure than a stale asset.
+ *
+ * The runtime cache is the same story: it is bounded by size, and its
+ * contents are tokenised URLs, so a deployment has no reason to throw it
+ * away. */
+const SHELL_CACHE = 'thw-shell';
+const RUNTIME_CACHE = 'thw-runtime';
 
 /* Static app-shell assets (no private data, safe to precache). Keep in sync
  * with the <head>/<body> asset references in index.html. */
@@ -39,7 +61,7 @@ const PRECACHE = [
   './auth.js?v=thw-v6',
   './wanted-realtime.js?v=thw-v4',
   './community-realtime.js?v=thw-v4',
-  './presence.js?v=thw-v3',
+  './presence.js?v=thw-v4',
   './pwa.js?v=thw-v3',
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
@@ -221,10 +243,37 @@ function precacheShell() {
     const next = function () {
       if (cursor >= PRECACHE.length) return Promise.resolve();
       const url = PRECACHE[cursor++];
+      /* Only fetch what is not already cached.
+       *
+       * The shell cache is not versioned and every asset in it carries its own
+       * token, so an unchanged asset is already cached and already correct.
+       * Re-fetching all 120 of them on every deployment was 120 requests every
+       * time the app was opened, which on a bundled Pages project is 120
+       * requests against the plan's daily limit - the limit the site reached,
+       * and the reason it stopped serving.
+       *
+       * A changed asset has a new URL, so it misses the cache and is fetched.
+       * A deployment that changes one file now costs one request, not 120. */
       return cache
-        .add(new Request(url, { cache: 'reload' }))
-        .catch(function () {
-          failed.push(url);
+        .match(url)
+        .then(function (hit) {
+          /* An entry WITH a token refreshes itself. The token moves when the
+             content moves - that is what the token is for, and what
+             check-tokens.mjs enforces - so a changed asset has a new URL and
+             misses the cache, while an unchanged one is still correct where it
+             sits.
+           *
+           * An entry WITHOUT a token never changes URL, so it cannot refresh
+           * itself and has to be fetched again. That is 42 artwork, font and
+           * icon files, and they are fetched when the worker activates - which
+           * is only after a deployment, not on every opening of the app.
+           *
+           * Between them, a deployment now costs 42 requests instead of 120,
+           * and nothing can go stale. */
+          if (hit && url.indexOf("?v=") !== -1) return null;
+          return cache.add(new Request(url, { cache: 'reload' })).catch(function () {
+            failed.push(url);
+          });
         })
         .then(next);
     };

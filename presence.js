@@ -92,16 +92,35 @@
     } catch (_) { inFlight = false; }
   }
 
+  /* How often to ask for the online count when the websocket is not carrying
+   * it, and how long to wait after that ask has failed.
+   *
+   * The websocket is the normal path: while it is open there is no polling at
+   * all. The poll is the fallback for when the socket cannot be opened, and
+   * that fallback used to run every 4 seconds, forever, for as long as the tab
+   * was visible.
+   *
+   * 4 seconds is 21,600 requests a day, per tab, and every one of them is a
+   * request against the plan's daily limit on a Pages project running in
+   * bundled mode. The site's request count is what took it down, so the
+   * fallback now asks far less often, and backs off further when the ask is
+   * failing - which is exactly when the socket is broken and the fallback is
+   * the only thing running. */
+  var POLL_MS = 15000;
+  var POLL_FAIL_MS = 60000;
+  var pollFailures = 0;
+
   async function poll(force) {
     if (document.hidden || inFlight || (!force && ws && ws.readyState === WebSocket.OPEN)) return;
     inFlight = true;
     try {
       const res = await fetch('/api/online');
       inFlight = false;
-      if (!res.ok) return;
+      if (!res.ok) { pollFailures++; return; }
       const data = await res.json();
+      pollFailures = 0;
       applyCounts(data);
-    } catch (_) { inFlight = false; }
+    } catch (_) { inFlight = false; pollFailures++; }
   }
 
   function wsSend(obj) {
@@ -109,14 +128,27 @@
   }
 
   function startPolling() {
-    if (!pollTimer && !document.hidden && !(ws && ws.readyState === WebSocket.OPEN)) {
-      pollTimer = setInterval(poll, 4000);
-    }
+    if (pollTimer || document.hidden || (ws && ws.readyState === WebSocket.OPEN)) return;
+    scheduleNextPoll();
+  }
+
+  /* A timeout rather than an interval, so the delay can change when an ask
+   * fails. An interval keeps its original period no matter what happens to the
+   * requests it makes. */
+  function scheduleNextPoll() {
+    if (pollTimer) clearTimeout(pollTimer);
+    pollTimer = setTimeout(function () {
+      pollTimer = null;
+      poll().then(function () {
+        if (document.hidden || (ws && ws.readyState === WebSocket.OPEN)) return;
+        scheduleNextPoll();
+      });
+    }, pollFailures ? POLL_FAIL_MS : POLL_MS);
   }
 
   function stopPolling() {
     if (pollTimer) {
-      clearInterval(pollTimer);
+      clearTimeout(pollTimer);
       pollTimer = null;
     }
   }
@@ -196,7 +228,7 @@
     const unload = function () {
       wsLeave();
       if (heartbeatTimer) clearInterval(heartbeatTimer);
-      if (pollTimer) clearInterval(pollTimer);
+      if (pollTimer) clearTimeout(pollTimer);
       if (wsHbTimer) clearInterval(wsHbTimer);
     };
     window.addEventListener('beforeunload', unload);
