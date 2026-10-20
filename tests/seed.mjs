@@ -56,6 +56,21 @@ statements.push(`DELETE FROM push_subscriptions WHERE uid IN (${UIDS});`);
 statements.push(`DELETE FROM user_notification_prefs WHERE uid IN (${UIDS});`);
 statements.push(`DELETE FROM community_notifications WHERE recipient_uid IN (${UIDS});`);
 statements.push(`DELETE FROM follows WHERE follower_uid IN (${UIDS}) OR followed_uid IN (${UIDS});`);
+/* Reports too, and for the same reason.
+ *
+ * The gallery suite files a report against its own upload, and the reports API
+ * rate-limits a reporter to ten an hour. The seed never cleared the table, so
+ * every run left a row behind and the tenth run inside an hour was refused
+ * with "slow down - too many reports recently" - a failure with no code change
+ * behind it, that looks like the suite broke rather than the seed missing a
+ * line.
+ *
+ * Reports are keyed by the reporter's Discord id rather than by uid, so the
+ * delete is by Discord id. Only the seeded accounts' ids are touched. */
+const SEEDED_DISCORD_IDS = ACCOUNTS.map((a) => a.discord).filter(Boolean).map(q).join(", ");
+if (SEEDED_DISCORD_IDS) {
+  statements.push(`DELETE FROM reports WHERE reporter_discord_id IN (${SEEDED_DISCORD_IDS});`);
+}
 statements.push(`DELETE FROM sessions WHERE uid IN (${UIDS});`);
 statements.push(`DELETE FROM user_privacy WHERE uid IN (${UIDS});`);
 /* gallery_items is not cleared wholesale - the suite deletes the rows it creates
