@@ -23,7 +23,7 @@ const RUNTIME_CACHE = VERSION + '-runtime';
 const PRECACHE = [
   './',
   './index.html',
-  './manifest.webmanifest',
+  './manifest.webmanifest?v=2',
   './security.js?v=thw-v2',
   './api.js',
   './crypto-js.min.js?v=thw-v2',
@@ -31,7 +31,7 @@ const PRECACHE = [
   './toast.js?v=thw-v1',
   './tracks.js?v=thw-v9',
   './browser-id3-writer.js?v=thw-v2',
-  './account.js?v=thw-v12',
+  './account.js?v=thw-v13',
   './i18n.js?v=5',
   './script.js?v=thw-v46',
   './suggestions.js?v=thw-v2',

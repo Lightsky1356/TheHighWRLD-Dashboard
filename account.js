@@ -752,17 +752,20 @@ function compactProfileViewHtml(d) {
        works without a session, so a guest pressing it sees the badge and the
        list actually change rather than being handed a success toast that did
        nothing. The server call below is still skipped without a session. */
-    if ((typeof Notification !== "undefined") && Notification.permission === "granted") {
-      rows.forEach(function (n) {
-        var k = "ac_nd_" + n.id;
-        try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch (e) {}
-        if (n.read) return;
-        try {
-          var nt = new Notification("TheHighWRLD - " + (n.type === "reply" ? _tt("notifReply", "New reply") : n.type === "mention" ? _tt("notifMention", "You were mentioned") : n.type === "suggestion" ? _tt("notifSugg", "Suggestion update") : n.type === "wanted" ? _tt("notifWanted", "Wanted update") : n.type === "announcement" ? _tt("notifAnn", "Announcement") : n.type === "appeal" ? _tt("notifAppeal", "Appeal update") : n.type === "warning" ? _tt("notifWarn", "Moderation warning") : n.type === "ban" ? _tt("notifBan", "Account notice") : n.type === "follow" ? _tt("notifFollow", "New follower") : n.type === "moderation" ? _tt("notifMod", "Moderation update") : n.type === "leak" ? _tt("notifLeak", "New leak") : _tt("notifUpdate", "Update")), { body: String(n.message).slice(0, 140), tag: "acn" + n.id });
-          nt.onclick = function () { window.focus(); if (window.gotoNotif) gotoNotif({ type: n.type || "", actor_uid: n.actor_uid || "", track_id: n.track_id || "", reply_id: n.reply_id ? Number(n.reply_id) : null, post_id: n.post_id || null }); };
-        } catch (e) {}
-      });
-    }
+    /* No system notification is created here.
+       This used to build one with `new Notification(...)` from the rows in the
+       bell, and that is the notification a person was actually seeing - the
+       "TheHighWRLD - New follower" banner, with the in-app message as its
+       body. Two problems with it, and both were the whole point of the push
+       work:
+         - it lives in the PAGE, so it can only ever fire while the app is
+           open. It was standing in for the push and making the feature look
+           app-only.
+         - it put the in-app message on the lock screen, actor name and all,
+           which is exactly what the push payload is designed not to do.
+       The service worker is the only notifier now. It fires whether the app is
+       open, closed, or in the background, and the payload it receives carries
+       a generic summary instead of the message. */
     if (!rows.length) {
       list.innerHTML = '<p class="nav-notif-empty">' + esc(_tt("noNotifs", "No notifications yet.")) + '</p>';
       return;
