@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v109';
+const VERSION = 'thw-v110';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -164,55 +164,94 @@ function isStaticAsset(url) {
   return /\.(js|css|png|jpe?g|gif|webp|svg|woff2?|ttf|eot|ico|webmanifest|json|html)$/i.test(url.pathname);
 }
 
+/* Fill the shell cache.
+ *
+ * This does NOT run during the install. It runs once the worker is already
+ * active and controlling the page.
+ *
+ * The precache is 120 assets - every stylesheet, every script, 25 font files and
+ * 12 album-art photos - and fetching all of them took 112 SECONDS when measured.
+ * That is longer than a browser will keep an install alive, so the worker was
+ * killed before it ever activated, and a worker that is not active does not
+ * receive a push event. That is the whole reason "the server accepted it, this
+ * device did not get it".
+ *
+ * The old code had a second, quieter bug on top of that. It handed .then() an
+ * ARRAY of promises:
+ *
+ *     Array.from({ length: 6 }, next).then(...)
+ *
+ * and .then() on an array resolves immediately, because an array is not a
+ * thenable. So the install finished before a single asset had been cached, and
+ * the precache was still running when the worker was terminated - the shell
+ * cache ended up with nothing in it. The chains are collected and awaited here
+ * instead, so the shell genuinely fills.
+ *
+ * Nothing about the app shell being available offline changes: the same list is
+ * precached, just after the worker is live rather than before it. */
+function precacheShell() {
+  return caches.open(SHELL_CACHE).then((cache) => {
+    /* Added one at a time rather than with cache.addAll(). addAll() is atomic:
+       a single 404 rejects the whole batch, so one bad URL would leave the
+       shell with almost nothing cached and every page would fail offline -
+       which is exactly what a longer PRECACHE list makes more likely. Each
+       entry is independent here, so a failure costs one asset instead of all
+       of them, and the names are logged so the broken URL is visible instead
+       of silent. */
+    const failed = [];
+
+    /* Concurrency is capped at 6 rather than firing every entry at once.
+     *
+     * PRECACHE.map + Promise.all issues all of them in the same tick, so a
+     * page load opens ~113 simultaneous connections. Against a CDN that is
+     * unremarkable. Against `wrangler pages dev` - one node process on one
+     * port - it saturates the server, and the page's OWN asset requests queue
+     * behind them and come back 502.
+     *
+     * The service worker does not invent those errors, it relays them: a cache
+     * miss falls through to fetch() and hands back whatever the server said.
+     * The symptom therefore pointed at the stylesheets, when the cause was
+     * the precache storm happening alongside them. The page rendered with no
+     * CSS at all and nothing in the markup was wrong.
+     *
+     * Batching keeps the install quick while leaving the server room to
+     * answer the page that triggered it. */
+    const CONCURRENCY = 6;
+    let cursor = 0;
+    const next = function () {
+      if (cursor >= PRECACHE.length) return Promise.resolve();
+      const url = PRECACHE[cursor++];
+      return cache
+        .add(new Request(url, { cache: 'reload' }))
+        .catch(function () {
+          failed.push(url);
+        })
+        .then(next);
+    };
+
+    /* Collected and awaited, not handed to .then() as an array. */
+    const chains = [];
+    for (let i = 0; i < Math.min(CONCURRENCY, PRECACHE.length); i++) chains.push(next());
+    return Promise.all(chains).then(() => {
+      if (failed.length) {
+        console.warn('[SW] precache missed ' + failed.length + ':', failed.join(', '));
+      }
+    });
+  });
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) => {
-      /* Added one at a time rather than with cache.addAll(). addAll() is atomic:
-         a single 404 rejects the whole batch, so one bad URL would leave the
-         shell with almost nothing cached and every page would fail offline -
-         which is exactly what a longer PRECACHE list makes more likely. Each
-         entry is independent here, so a failure costs one asset instead of all
-         of them, and the names are logged so the broken URL is visible instead
-         of silent. */
-      const failed = [];
-
-      /* Concurrency is capped at 6 rather than firing every entry at once.
-       *
-       * PRECACHE.map + Promise.all issues all of them in the same tick, so a
-       * page load opens ~113 simultaneous connections. Against a CDN that is
-       * unremarkable. Against `wrangler pages dev` - one node process on one
-       * port - it saturates the server, and the page's OWN asset requests queue
-       * behind them and come back 502.
-       *
-       * The service worker does not invent those errors, it relays them: a cache
-       * miss falls through to fetch() and hands back whatever the server said.
-       * The symptom therefore pointed at the stylesheets, when the cause was
-       * the precache storm happening alongside them. The page rendered with no
-       * CSS at all and nothing in the markup was wrong.
-       *
-       * Batching keeps the install quick while leaving the server room to
-       * answer the page that triggered it. */
-      const CONCURRENCY = 6;
-      let cursor = 0;
-      const next = function () {
-        if (cursor >= PRECACHE.length) return Promise.resolve();
-        const url = PRECACHE[cursor++];
-        return cache
-          .add(new Request(url, { cache: 'reload' }))
-          .catch(function () {
-            failed.push(url);
-          })
-          .then(next);
-      };
-
-      return Array.from({ length: Math.min(CONCURRENCY, PRECACHE.length) }, next)
-        .then(() => {
-          if (failed.length) {
-            console.warn('[SW] precache missed ' + failed.length + ':', failed.join(', '));
-          }
-        });
-    }).then(() => self.skipWaiting())
-  );
+  /* Activate immediately.
+   *
+   * The precache is deliberately NOT awaited here. This install exists to get
+   * the worker live, and a live worker is what receives push events. Waiting on
+   * 120 assets meant the install ran past the point where the browser would
+   * keep it, so the worker never activated at all - and a worker that never
+   * activates can never get a notification, however willing the push service
+   * is.
+   *
+   * The shell is filled in by precacheShell() once the worker is active. */
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
@@ -226,6 +265,10 @@ self.addEventListener('activate', (event) => {
        that ambiguity is exactly what stalled this. A push overwrites the entry
        with kind: 'push'. */
     .then(() => writeTrace({ at: Date.now(), kind: 'ready', version: VERSION, error: null }))
+    /* The shell is filled in AFTER the worker has taken control of the page, so
+       the app is usable - and push-capable - straight away rather than after
+       120 assets have been fetched. */
+    .then(() => precacheShell())
   );
 });
 
