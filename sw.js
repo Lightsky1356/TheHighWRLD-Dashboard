@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v114';
+const VERSION = 'thw-v115';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -133,7 +133,7 @@ const PRECACHE = [
   './drops.js?v=thw-v2',
   './legal-info.js?v=thw-v5',
   './social-panel.js?v=thw-v30',
-  './push-client.js?v=thw-v19',
+  './push-client.js?v=thw-v20',
   './simple-toast.js?v=thw-v5',
   './cover-preview.js?v=thw-v7',
 
@@ -420,8 +420,17 @@ function writeTrace(entry) {
 }
 self.addEventListener('push', (event) => {
   let data = {};
+  /* A payload-less push: the service woke the worker with no data at all.
+     Recorded, because it is the sharpest diagnostic there is - it does not
+     depend on the subscription's keys, so a payload-less push that arrives
+     while an encrypted one does not points straight at the keys. */
+  let bare = false;
   try {
-    data = event.data ? event.data.json() : {};
+    if (event.data) {
+      data = event.data.json();
+    } else {
+      bare = true;
+    }
   } catch (_) {
     try {
       const text = event.data ? event.data.text() : '';
@@ -448,7 +457,7 @@ self.addEventListener('push', (event) => {
    * has landed. If showing it throws, the error is recorded against the same
    * 'push' entry, so the two cases stay distinguishable. */
   event.waitUntil(
-    writeTrace({ at: Date.now(), kind: 'push', title: title, body: body, error: null })
+    writeTrace({ at: Date.now(), kind: 'push', title: title, body: body, error: null, bare: bare })
       .then(function () {
         return self.registration.showNotification(title, {
           body,

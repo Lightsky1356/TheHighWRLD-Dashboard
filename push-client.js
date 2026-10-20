@@ -422,7 +422,9 @@
       if (e.kind === "push") {
         what = e.error
           ? "push arrived, could not be shown - " + e.error
-          : "push arrived and was shown";
+          : (e.bare
+            ? "push arrived with NO payload (the service reached the worker with no ciphertext)"
+            : "push arrived and was shown");
       } else if (e.kind === "ready") {
         what = "worker activated";
       } else {

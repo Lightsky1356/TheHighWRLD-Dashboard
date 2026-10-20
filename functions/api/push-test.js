@@ -86,6 +86,22 @@ export async function onRequest(context) {
     url: TEST_URL,
   });
 
+  /* A second push, with no payload at all. RFC 8030 allows it, and it is the
+   * one request that does not depend on the subscription's key material in any
+   * way - there is no ciphertext for the device to fail to decrypt.
+   *
+   * That makes it a diagnostic rather than a duplicate. A push the device
+   * cannot decrypt is dropped before the worker's push event fires, so:
+   *
+   *   only the encrypted one arrives   the keys are wrong
+   *   only the bare one arrives         the encryption is wrong
+   *   neither arrives                   the subscription itself is dead
+   *
+   * All three look identical from the server, which only ever sees HTTP 201.
+   * The device's own trace is the only place they can be told apart, so the
+   * test sends both and the panel reports which arrived. */
+  const bare = await sendPushToUser(context.env, db, me.uid, null);
+
   /* sent counts HTTP 2xx from the push service. It does NOT mean the device
      showed anything - that is exactly the gap this endpoint makes visible rather
      than hides, so the field name says what it measured. */
@@ -100,5 +116,11 @@ export async function onRequest(context) {
      * down. */
     serviceStatus: result.lastStatus || 0,
     serviceReply: result.lastReply || "",
+    /* The payload-less push, reported separately so the two can be compared.
+     * A "sent" count here means the service accepted a request with no
+     * ciphertext, which is a materially different fact from accepting an
+     * encrypted one. */
+    bareStatus: bare.lastStatus || 0,
+    bareReply: bare.lastReply || "",
   });
 }

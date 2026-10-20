@@ -254,7 +254,19 @@ export async function sendPush(env, subscription, payload) {
     const audience = vapidAudience(endpoint);
     const token = await vapidToken(privateKey, audience, subject);
 
-    const body = await encryptPayload(JSON.stringify(payload), subscription.p256dh, subscription.auth);
+    /* A null payload means a payload-less push: no ciphertext, no content
+     * encoding, no body at all. RFC 8030 allows it, and it is the one request
+     * that does not depend on the subscription's key material in any way.
+     *
+     * That makes it the sharpest diagnostic there is. A push the device cannot
+     * decrypt is dropped before the service worker's push event fires, so an
+     * encrypted push that never arrives and a payload-less push that does
+     * arrive together mean the keys are the problem. If neither arrives, the
+     * subscription itself is dead and no amount of re-encrypting will help. */
+    const bare = payload === null || payload === undefined;
+    const body = bare
+      ? new Uint8Array(0)
+      : await encryptPayload(JSON.stringify(payload), subscription.p256dh, subscription.auth);
 
     /* The headers here match the reference implementation exactly: TTL,
      * Content-Length, Content-Type, Content-Encoding, the VAPID Authorization
@@ -276,8 +288,6 @@ export async function sendPush(env, subscription, payload) {
      * service. "high" asks for immediate delivery, and a one-hour TTL keeps the
      * payload from being held longer than that. */
     const headers = {
-      "Content-Encoding": "aes128gcm",
-      "Content-Type": "application/octet-stream",
       "Content-Length": String(body.length),
       Authorization: "vapid t=" + token + ", k=" + publicB64,
       // Apple maps Urgency onto apns-priority. "normal" becomes 5, which APNs
@@ -293,11 +303,18 @@ export async function sendPush(env, subscription, payload) {
       TTL: "3600",
       Urgency: "high",
     };
+    /* A payload-less push carries no ciphertext, so it declares no encoding
+       either. Declaring one with no body is a request the service cannot
+       interpret. */
+    if (!bare) {
+      headers["Content-Encoding"] = "aes128gcm";
+      headers["Content-Type"] = "application/octet-stream";
+    }
 
     const res = await fetch(endpoint, {
       method: "POST",
       headers,
-      body,
+      body: bare ? undefined : body,
     });
 
     /* The push service's own answer, kept. A 2xx only means the service
