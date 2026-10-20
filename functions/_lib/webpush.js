@@ -127,16 +127,115 @@ async function vapidPublicKeyB64(secret) {
 /* ---------- aes128gcm payload encryption (RFC 8291) ---------- */
 
 /* Single HMAC-SHA256 primitive, so the key/data order can never be ambiguous
-   again. An earlier version modelled HKDF-Extract and HKDF-Expand separately
-   and named the parameters (salt, ikm) in a way that invited them to be passed
-   the wrong way round - the result was a well-formed but undecryptable payload.
-   Every step below now reads as HMAC(key, data), which is what the RFC says. */
+   again. Every step below reads as HMAC(key, data), which is what the RFC
+   says. The HKDF steps are written out longhand, because HKDF's two halves
+   are not interchangeable: Extract takes a salt, Expand takes an info string
+   and appends a counter octet. Getting those the wrong way round produces a
+   perfectly well-formed payload that no conformant device can decrypt, which
+   is exactly what happened here. */
 async function hmacDerive(keyBytes, data, length) {
   const key = await crypto.subtle.importKey(
     "raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
   );
   const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, data));
   return length ? mac.slice(0, length) : mac;
+}
+
+/* The HKDF counter octet. HKDF-Expand appends the block number to the info
+   string before hashing it, and the block number starts at 1. Every expand
+   step below needs it, and leaving it off is what made the old derivation
+   produce a key nobody else could reproduce. */
+const HKDF_BLOCK1 = new Uint8Array([1]);
+
+/**
+ * The content encryption key and nonce, derived exactly as RFC 8291 section
+ * 3.4 specifies.
+ *
+ * The steps, with the RFC's own names:
+ *
+ *   PRK_key = HMAC-SHA-256(auth_secret, ecdh_secret)
+ *   key_info = "WebPush: info" || 0x00 || ua_public || as_public
+ *   IKM = HMAC-SHA-256(PRK_key, key_info || 0x01)
+ *
+ *   PRK = HMAC-SHA-256(salt, IKM)
+ *   cek_info = "Content-Encoding: aes128gcm" || 0x00
+ *   CEK = HMAC-SHA-256(PRK, cek_info || 0x01)[0..15]
+ *   nonce_info = "Content-Encoding: nonce" || 0x00
+ *   NONCE = HMAC-SHA-256(PRK, nonce_info || 0x01)[0..11]
+ *
+ * Two things here are easy to get wrong and were both wrong before:
+ *
+ *   The application server's public key belongs in key_info, NOT in the
+ *   PRK_key input. The RFC's PRK_key is over the ECDH secret alone.
+ *
+ *   The content encryption key is derived from the string "aes128gcm", not
+ *   "auth". "Content-Encoding: auth" is what RFC 8188 says in the abstract;
+ *   RFC 8291 and its test vector both use the content coding's own name.
+ *
+ * Exported so the self-test can check this against the RFC's published test
+ * vector. The previous self-test checked the encryption by decrypting it
+ * with a copy of this same code, so a mistake here was invisible: the
+ * encryptor and the decryptor were wrong in exactly the same way, and agreed
+ * with each other perfectly.
+ */
+export async function deriveContentKeys(ecdhSecret, authSecret, uaPublic, asPublic, salt) {
+  // PRK_key = HMAC-SHA-256(auth_secret, ecdh_secret)
+  const prkKey = await hmacDerive(authSecret, ecdhSecret);
+
+  // key_info = "WebPush: info" || 0x00 || ua_public || as_public
+  const keyInfo = concat(enc.encode("WebPush: info\u0000"), uaPublic, asPublic);
+
+  // IKM = HMAC-SHA-256(PRK_key, key_info || 0x01)
+  const ikm = await hmacDerive(prkKey, concat(keyInfo, HKDF_BLOCK1));
+
+  // PRK = HMAC-SHA-256(salt, IKM)
+  const prk = await hmacDerive(salt, ikm);
+
+  // CEK = HMAC-SHA-256(PRK, "Content-Encoding: aes128gcm" || 0x00 || 0x01)[0..15]
+  const cek = await hmacDerive(
+    prk, concat(enc.encode("Content-Encoding: aes128gcm\u0000"), HKDF_BLOCK1), 16
+  );
+
+  // NONCE = HMAC-SHA-256(PRK, "Content-Encoding: nonce" || 0x00 || 0x01)[0..11]
+  const nonce = await hmacDerive(
+    prk, concat(enc.encode("Content-Encoding: nonce\u0000"), HKDF_BLOCK1), 12
+  );
+
+  return { prkKey, ikm, prk, cek, nonce };
+}
+
+/**
+ * Encrypt a payload with an already-chosen salt, ephemeral key and shared
+ * secret.
+ *
+ * Split out from encryptPayload so the self-test can drive it with the RFC's
+ * published values and compare the result byte for byte, rather than only
+ * checking that this code can read back what it wrote.
+ */
+export async function encryptPayloadFor(plaintext, uaPublic, authSecret, salt, asPublic, ecdhSecret) {
+  const { cek, nonce } = await deriveContentKeys(
+    ecdhSecret, authSecret, uaPublic, asPublic, salt
+  );
+
+  const aesKey = await crypto.subtle.importKey("raw", cek, { name: "AES-GCM" }, false, ["encrypt"]);
+
+  /* RFC 8188 section 2: the plaintext is padded with the delimiter octet 0x02
+   * before it is encrypted. RFC 8291 section 4 is explicit that a receiver
+   * MUST discard a message whose delimiter is not 0x02 - so a message sent
+   * without the octet is not merely undecryptable, it is discarded on
+   * purpose. The old code encrypted the raw bytes and never appended it. */
+  const padded = concat(enc.encode(plaintext), new Uint8Array([0x02]));
+
+  const ciphertext = new Uint8Array(
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, aesKey, padded)
+  );
+
+  // Body layout: salt(16) | rs(4) | idlen(1) | keyid(65) | ciphertext
+  const rs = new Uint8Array(4);
+  new DataView(rs.buffer).setUint32(0, 4096, false);
+  const idlen = new Uint8Array([asPublic.length]);
+
+  return concat(salt, rs, idlen, asPublic, ciphertext);
 }
 
 async function encryptPayload(plaintext, p256dhB64, authB64) {
@@ -153,39 +252,11 @@ async function encryptPayload(plaintext, p256dhB64, authB64) {
   const uaPublicKey = await crypto.subtle.importKey(
     "raw", uaPublic, { name: "ECDH", namedCurve: "P-256" }, false, []
   );
-  const sharedSecret = new Uint8Array(
+  const ecdhSecret = new Uint8Array(
     await crypto.subtle.deriveBits({ name: "ECDH", public: uaPublicKey }, asKeys.privateKey, 256)
   );
 
-  // PRK = HMAC(auth_secret, shared_secret || as_public)
-  const prkInput = new Uint8Array(sharedSecret.length + asPublic.length);
-  prkInput.set(sharedSecret, 0);
-  prkInput.set(asPublic, sharedSecret.length);
-  const prk = await hmacDerive(authSecret, prkInput);
-
-  // PRK_key = HMAC(PRK, "WebPush: info" || 0x00 || ua_public || as_public)
-  const infoLabel = enc.encode("WebPush: info\u0000");
-  const info = new Uint8Array(infoLabel.length + uaPublic.length + asPublic.length);
-  info.set(infoLabel, 0);
-  info.set(uaPublic, infoLabel.length);
-  info.set(asPublic, infoLabel.length + uaPublic.length);
-  const prkKey = await hmacDerive(prk, info, 32);
-
-  // CEK and NONCE are both HMAC(PRK_key, ...), salted with the same salt.
-  const cek = await hmacDerive(prkKey, concat(enc.encode("Content-Encoding: auth\u0000"), salt), 16);
-  const nonce = await hmacDerive(prkKey, concat(enc.encode("Content-Encoding: nonce\u0000"), salt), 12);
-
-  const aesKey = await crypto.subtle.importKey("raw", cek, { name: "AES-GCM" }, false, ["encrypt"]);
-  const ciphertext = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, aesKey, enc.encode(plaintext))
-  );
-
-  // Body layout: salt(16) | rs(4) | idlen(1) | keyid(65) | ciphertext
-  const rs = new Uint8Array(4);
-  new DataView(rs.buffer).setUint32(0, 4096, false);
-  const idlen = new Uint8Array([asPublic.length]);
-
-  return concat(salt, rs, idlen, asPublic, ciphertext);
+  return encryptPayloadFor(plaintext, uaPublic, authSecret, salt, asPublic, ecdhSecret);
 }
 
 function concat(...parts) {
