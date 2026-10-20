@@ -233,34 +233,67 @@ export async function sendPush(env, subscription, payload) {
 
     const body = await encryptPayload(JSON.stringify(payload), subscription.p256dh, subscription.auth);
 
+    /* APNs needs its own headers, and the Web Push ones are not enough.
+     *
+     * Urgency and TTL are the Web Push standard. Apple's push service accepts
+     * them, but a request that reaches APNs without an explicit apns-push-type
+     * is treated as a BACKGROUND push: APNs answers 2xx, and iOS then throttles
+     * it and drops it, because a background push cannot be displayed. The
+     * symptom is precisely "the server accepted it, the device never got it" -
+     * the push reaches Apple and dies there, and the service worker's push
+     * event never fires.
+     *
+     * So for an Apple endpoint the push type and priority are stated
+     * explicitly. Everything else - the encrypted payload, the VAPID token -
+     * is the same as for every other push service. */
+    const isApple = /(^|\.)push\.apple\.com$/i.test(new URL(endpoint).hostname);
+    const headers = {
+      "Content-Encoding": "aes128gcm",
+      "Content-Type": "application/octet-stream",
+      "Content-Length": String(body.length),
+      Authorization: "vapid t=" + token + ", k=" + publicB64,
+      // Apple maps Urgency onto apns-priority. "normal" becomes 5, which APNs
+      // treats as deferrable under power considerations - the payload is queued
+      // for later rather than delivered promptly. Paired with a one-day TTL that
+      // is indistinguishable from "accepted and silently dropped": every send
+      // returns 2xx, nothing appears, and for a day there is no way to tell
+      // "queued" from "lost". That is the exact shape of this bug.
+      //
+      // A friend request or a message wants to arrive now, not eventually, so
+      // this asks for immediate delivery and keeps the payload an hour rather
+      // than a day.
+      TTL: "3600",
+      Urgency: "high",
+    };
+    if (isApple) {
+      /* alert, not background: this has to be shown on the lock screen. */
+      headers["apns-push-type"] = "alert";
+      /* 10 is "deliver immediately". 5 is "when the device is next awake and
+         on power", which is how a background push is deferred. */
+      headers["apns-priority"] = "10";
+      /* When APNs should give up on delivering it. Matches the TTL above, so
+         the payload is not held longer than the request asked for. */
+      headers["apns-expiration"] = String(Math.floor(Date.now() / 1000) + 3600);
+    }
+
     const res = await fetch(endpoint, {
       method: "POST",
-      headers: {
-        // Apple maps Urgency onto apns-priority. "normal" becomes 5, which APNs
-        // treats as deferrable under power considerations - the payload is queued
-        // for later rather than delivered promptly. Paired with a one-day TTL that
-        // is indistinguishable from "accepted and silently dropped": every send
-        // returns 2xx, nothing appears, and for a day there is no way to tell
-        // "queued" from "lost". That is the exact shape of this bug.
-        //
-        // A friend request or a message wants to arrive now, not eventually, so
-        // this asks for immediate delivery and keeps the payload an hour rather
-        // than a day.
-        TTL: "3600",
-        Urgency: "high",
-        "Content-Encoding": "aes128gcm",
-        "Content-Type": "application/octet-stream",
-        "Content-Length": String(body.length),
-        Authorization: "vapid t=" + token + ", k=" + publicB64,
-      },
+      headers,
       body,
     });
 
-    if (res.ok) return { ok: true, status: res.status, gone: false };
+    /* The push service's own answer, kept. A 2xx only means the service
+       accepted the request; on failure the body carries the reason, and that is
+       the only place it appears. Discarding it is what left "accepted but never
+       delivered" with nothing to go on. */
+    let reply = "";
+    try { reply = (await res.text()).slice(0, 200); } catch (_) {}
+
+    if (res.ok) return { ok: true, status: res.status, gone: false, reply };
 
     // 404/410 mean the subscription is permanently invalid and must be removed.
     const gone = res.status === 404 || res.status === 410;
-    return { ok: false, status: res.status, gone, error: "push_http_" + res.status };
+    return { ok: false, status: res.status, gone, error: "push_http_" + res.status, reply };
   } catch (err) {
     /* VAPID configuration problems must be diagnosable by the operator, and
        their identifiers are fixed strings written by this file - they can never
@@ -287,6 +320,12 @@ export async function sendPushToUser(env, db, uid, payload) {
   if (!subs.length) return { sent: 0, failed: 0, pruned: 0 };
 
   let sent = 0, failed = 0, pruned = 0;
+  /* What the push service said, kept so it can be reported. A 2xx only means
+   * the service accepted the request; when the device does not show anything,
+   * the difference between "accepted" and "delivered" is the only thing worth
+   * seeing, and it is in the reply body. */
+  let lastStatus = 0;
+  let lastReply = "";
 
   // Bounded concurrency: a user with many devices must not open an unbounded
   // number of simultaneous outbound requests from a single Worker invocation.
@@ -296,6 +335,8 @@ export async function sendPushToUser(env, db, uid, payload) {
     while (cursor < subs.length) {
       const sub = subs[cursor++];
       const r = await sendPush(env, sub, payload);
+      lastStatus = r.status || lastStatus;
+      lastReply = r.reply || lastReply;
       if (r.gone) {
         pruned++;
         await db.prepare("DELETE FROM push_subscriptions WHERE id = ?").bind(sub.id).run();
@@ -323,7 +364,7 @@ export async function sendPushToUser(env, db, uid, payload) {
   }
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, subs.length) }, worker));
 
-  return { sent, failed, pruned };
+  return { sent, failed, pruned, lastStatus, lastReply };
 }
 
 /** Public VAPID key for the browser. Safe to expose - it is a public key. */

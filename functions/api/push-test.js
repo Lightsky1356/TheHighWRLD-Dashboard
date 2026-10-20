@@ -94,5 +94,11 @@ export async function onRequest(context) {
     sent: result.sent,
     failed: result.failed,
     pruned: result.pruned,
+    /* What the push service actually said. "sent" counts the service accepting
+     * the payload, which is not the same as a device showing it, and when a
+     * device does not show anything this is the only thing that narrows it
+     * down. */
+    serviceStatus: result.lastStatus || 0,
+    serviceReply: result.lastReply || "",
   });
 }
