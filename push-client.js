@@ -268,8 +268,18 @@
     if (!want) return true;
     var list = state.devices || [];
     for (var i = 0; i < list.length; i++) {
-      var got = String((list[i] && list[i].endpointPreview) || "").replace(/\.$/, "");
-      if (got && got === want) return true;
+      /* The server returns a truncated preview: the first 48 characters, with an
+         ellipsis appended. The comparison has to be made against those first 48
+         characters, not against the whole preview - the ellipsis is not part of
+         the endpoint, so comparing the full string could never succeed.
+
+         It did never succeed. The preview ends with a single-character ellipsis
+         and the old code stripped a trailing full stop, which is a different
+         character, so every comparison failed and the resync below ran on every
+         render - re-registering the subscription over and over whether it was
+         needed or not. */
+      var got = String((list[i] && list[i].endpointPreview) || "");
+      if (got && got.slice(0, 48) === want) return true;
     }
     return false;
   }
