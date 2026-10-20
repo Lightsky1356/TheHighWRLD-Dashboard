@@ -406,6 +406,11 @@
     btn.textContent = "Sending…";
     setLive(dot, text, "wait", "Test sent. Waiting for this device…");
 
+    /* When the test was sent. A trace written before this moment belongs to an
+       earlier push, and treating it as proof that THIS one arrived would make
+       the panel say "confirmed" for a push that never landed. */
+    var sentAt = Date.now();
+
     fetch(API.replace(/\/push(\?|$)/, "/push-test$1"), {
       method: "POST",
       cache: "no-store",
@@ -426,9 +431,9 @@
           return null;
         }
         if (!d.sent) {
-          throw new Error("the push service refused it");
+          throw new Error("the push service refused it" + serviceDetail(d));
         }
-        return pollForPush(dot, text, btn);
+        return pollForPush(dot, text, btn, sentAt, d);
       })
       .catch(function (err) {
         setLive(dot, text, "bad", "Test failed: " + ((err && err.message) || "unknown error"));
@@ -437,11 +442,26 @@
       });
   }
 
-  function pollForPush(dot, text, btn) {
+  /* What the push service said about the payload, in words.
+     "sent" counts the service accepting the payload, which is not the same as
+     a device showing it. When a device shows nothing, this is the only thing
+     that narrows the cause down - a refusal and a silent acceptance are very
+     different problems, and the panel should not present them the same way. */
+  function serviceDetail(d) {
+    if (!d) return "";
+    if (d.serviceStatus && d.serviceStatus !== 201) {
+      return " (the push service answered " + d.serviceStatus +
+        (d.serviceReply ? ": " + String(d.serviceReply).slice(0, 120) : ")");
+    }
+    if (d.serviceStatus === 201) return " (the push service accepted it)";
+    return "";
+  }
+
+  function pollForPush(dot, text, btn, sentAt, d) {
     var deadline = Date.now() + TEST_WAIT_MS;
     var tick = function () {
       readPushTrace().then(function (t) {
-        if (t && t.kind === "push" && !t.error) {
+        if (t && t.kind === "push" && !t.error && Number(t.at || 0) >= sentAt - 1000) {
           setLive(dot, text, "good",
             "Delivery confirmed at " + new Date(t.at || Date.now()).toLocaleTimeString() + ".");
           return true;
@@ -450,7 +470,8 @@
       }).then(function (arrived) {
         if (arrived) return;
         if (Date.now() >= deadline) {
-          setLive(dot, text, "warn", "Nothing arrived within 30 seconds. The server accepted it; this device did not get it.");
+          setLive(dot, text, "warn", "Nothing arrived within 30 seconds. " +
+            "The server accepted it" + serviceDetail(d) + "; this device did not get it.");
           btn.disabled = false;
           btn.textContent = "Send a test push";
           return;

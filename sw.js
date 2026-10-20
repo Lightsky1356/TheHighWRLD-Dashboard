@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v110';
+const VERSION = 'thw-v111';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -133,7 +133,7 @@ const PRECACHE = [
   './drops.js?v=thw-v2',
   './legal-info.js?v=thw-v5',
   './social-panel.js?v=thw-v30',
-  './push-client.js?v=thw-v15',
+  './push-client.js?v=thw-v16',
   './simple-toast.js?v=thw-v5',
   './cover-preview.js?v=thw-v7',
 
@@ -399,32 +399,60 @@ self.addEventListener('push', (event) => {
   const body = typeof data.body === 'string' ? data.body.slice(0, 180) : '';
   const target = safeTarget(data.url);
 
-  // Record that the event fired, before anything can fail.
-  writeTrace({ at: Date.now(), kind: 'push', title: title, body: body, error: null });
-
+  /* The trace is the only way the panel can tell "the push never arrived" from
+   * "the push arrived and could not be shown" - the server can only see that
+   * the push service accepted the payload.
+   *
+   * It has to be inside waitUntil to be worth anything. Written on its own it
+   * was a floating promise: the browser is free to terminate the worker the
+   * moment the event handler returns, and the cache write often lost that race.
+   * The trace then kept its earlier "ready" entry, and the panel said no push
+   * had arrived - whether or not one had. A signal that can report the opposite
+   * of the truth is worse than no signal.
+   *
+   * So it is awaited first, and the notification is shown only once the trace
+   * has landed. If showing it throws, the error is recorded against the same
+   * 'push' entry, so the two cases stay distinguishable. */
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon: './icons/icon-192.png',
-      badge: './icons/icon-96.png',
-      // Same-origin only. A push payload must never be able to make the
-      // notification load a remote image and leak that the device is online.
-      tag: typeof data.tag === 'string' ? data.tag.slice(0, 80) : 'thw-notification',
-      /* Renotify so a notification that REPLACES an earlier one still makes a
-         sound and a buzz, the way a phone does. Without it a second reply
-         arriving while the first is still on screen is silent. */
-      renotify: true,
-      /* Grouped by kind, the way a phone groups a conversation. A notification
-         the device does not support grouping simply ignores this. */
-      threadId: typeof data.threadId === 'string' ? data.threadId.slice(0, 60) : undefined,
-      /* Not a silent push: it must appear on the lock screen with a sound. */
-      silent: false,
-      vibrate: [40, 30, 40],
-      timestamp: Date.now(),
-      data: { target, type: data.type || '' },
-    }).catch(function (err) {
-      return writeTrace({ at: Date.now(), error: String((err && err.message) || err) });
-    })
+    writeTrace({ at: Date.now(), kind: 'push', title: title, body: body, error: null })
+      .then(function () {
+        return self.registration.showNotification(title, {
+          body,
+          icon: './icons/icon-192.png',
+          badge: './icons/icon-96.png',
+          // Same-origin only. A push payload must never be able to make the
+          // notification load a remote image and leak that the device is online.
+          //
+          // The tag is never empty. The spec says showNotification throws a
+          // TypeError when renotify is true and the tag is the empty string,
+          // and renotify is on below because a notification that replaces an
+          // earlier one should still buzz. An empty tag from a crafted payload
+          // would therefore take the whole notification down with it, so the
+          // fallback is used for an empty string as well as for a missing one.
+          tag: (typeof data.tag === 'string' && data.tag)
+            ? data.tag.slice(0, 80)
+            : 'thw-notification',
+          /* Renotify so a notification that REPLACES an earlier one still makes a
+             sound and a buzz, the way a phone does. Without it a second reply
+             arriving while the first is still on screen is silent. */
+          renotify: true,
+          /* Grouped by kind, the way a phone groups a conversation. A notification
+             the device does not support grouping simply ignores this. */
+          threadId: typeof data.threadId === 'string' ? data.threadId.slice(0, 60) : undefined,
+          /* Not a silent push: it must appear on the lock screen with a sound. */
+          silent: false,
+          vibrate: [40, 30, 40],
+          timestamp: Date.now(),
+          data: { target, type: data.type || '' },
+        }).catch(function (err) {
+          /* It reached the worker and could not be shown. Record that against
+             the same 'push' entry so the panel can say which it was. */
+          return writeTrace({
+            at: Date.now(), kind: 'push', title: title, body: body,
+            error: String((err && err.message) || err),
+          });
+        });
+      })
   );
 });
 
