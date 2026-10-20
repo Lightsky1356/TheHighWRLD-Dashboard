@@ -136,6 +136,23 @@ console.log("\n  4. sw.js VERSION vs PRECACHE");
 console.log("  " + "-".repeat(70));
 const ver = /VERSION\s*=\s*'([^']+)'/.exec(sw);
 console.log(`  sw.js VERSION = ${ver ? ver[1] : "(not found)"}`);
+
+// The working tree, not just the history. A PRECACHE edit that has not been
+// committed is invisible to a git-log comparison - which is exactly how the
+// last commit shipped a changed PRECACHE with an unchanged VERSION, so the
+// service worker kept serving the old manifest.
+const treeDiff = git(["diff", "HEAD", "--", "sw.js"]);
+const treeTouchesPrecache = /^[+-].*'\.\/[^']+\?v=/m.test(treeDiff);
+const treeTouchesVersion = /^[+-].*const VERSION =/m.test(treeDiff);
+if (treeTouchesPrecache && !treeTouchesVersion) {
+  console.log("  STALE sw.js has uncommitted PRECACHE changes but no VERSION change");
+  console.log("         the service worker would keep serving the old precache");
+  problems++;
+} else if (treeTouchesPrecache) {
+  console.log("  OK    uncommitted sw.js changes include the VERSION");
+} else {
+  console.log("  --    sw.js has no uncommitted PRECACHE change");
+}
 // Both pickaxes here use -G, not -S. -S reports a commit only when the NUMBER
 // of occurrences of a literal string changes, and "const VERSION =" occurs once
 // before a bump and once after it, so -S could never see a VERSION change at
