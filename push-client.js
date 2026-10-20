@@ -414,7 +414,11 @@
         ". Close and reopen the app to update the worker."));
       return box;
     }
-    var rows = h.slice().reverse().slice(0, 6);
+    /* Twelve, not six. A test series sends an encrypted push and a payload-less
+     * one per tick, so six entries covered three ticks - the list ran out
+     * before the series did, and the events being looked for were the ones
+     * dropped. The worker keeps twelve; the list now shows all of them. */
+    var rows = h.slice().reverse().slice(0, 12);
     for (var i = 0; i < rows.length; i++) {
       var e = rows[i];
       var when = new Date(e.at || Date.now()).toLocaleTimeString();
