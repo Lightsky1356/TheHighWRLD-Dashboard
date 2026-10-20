@@ -394,12 +394,27 @@
   }
 
   /* The last few events, so "did any of the three pushes I sent get through?"
-     can be answered on the phone rather than from a server log. */
+     can be answered on the phone rather than from a server log.
+
+     It renders whenever there is a trace at all, including a trace written by
+     an older worker that kept only one entry. An empty box would be
+     indistinguishable from "the list is not there", and those two mean very
+     different things: one is a stale worker, the other is a bug. */
   function historyList(t) {
-    if (!t || !t.history || !t.history.length) return null;
-    var rows = t.history.slice().reverse().slice(0, 6);
+    if (!t) return null;
     var box = el("div", "thw-push-history");
-    box.appendChild(el("p", "thw-push-history-title", "Recent events on this device"));
+    var h = (t.history && t.history.length) ? t.history : [];
+    var v = t.version || (h.length && h[h.length - 1].version) || "unknown";
+    box.appendChild(el("p", "thw-push-history-title",
+      "Recent events on this device (worker " + v + ")"));
+    if (!h.length) {
+      box.appendChild(el("p", "thw-push-history-row",
+        "This worker records only the last event, so there is no history. Last event: " +
+        (t.kind || "unknown") + " at " + new Date(t.at || Date.now()).toLocaleTimeString() +
+        ". Close and reopen the app to update the worker."));
+      return box;
+    }
+    var rows = h.slice().reverse().slice(0, 6);
     for (var i = 0; i < rows.length; i++) {
       var e = rows[i];
       var when = new Date(e.at || Date.now()).toLocaleTimeString();
@@ -423,6 +438,19 @@
     text.textContent = msg;
   }
 
+  /* Which worker is running, and when it last did anything.
+     The version is the thing that settles "is the phone running the build I
+     think it is?", and the panel is the only place that can answer it - the
+     server has no idea what the device's worker is doing. It is shown in every
+     state, because a state that cannot be compared against a build is a state
+     that cannot be acted on. */
+  function workerNote(t) {
+    if (!t) return "";
+    var v = t.version || (t.history && t.history.length && t.history[t.history.length - 1].version) || "";
+    if (!v) return " (worker version unknown)";
+    return " (worker " + v + ")";
+  }
+
   function paintLive(dot, text, t, subscribed) {
     if (!subscribed) {
       setLive(dot, text, "", "Push is off for this device.");
@@ -430,12 +458,12 @@
     }
     var p = lastPush(t);
     if (p && p.error) {
-      setLive(dot, text, "bad", "A push reached the app but failed: " + p.error);
+      setLive(dot, text, "bad", "A push reached the app but failed: " + p.error + workerNote(t));
       return;
     }
     if (p) {
       setLive(dot, text, "good",
-        "Delivery confirmed at " + new Date(p.at || Date.now()).toLocaleTimeString() + ".");
+        "Delivery confirmed at " + new Date(p.at || Date.now()).toLocaleTimeString() + "." + workerNote(t));
       return;
     }
     // A kind:'ready' entry means this worker activated and has not been pushed to
@@ -445,7 +473,7 @@
       setLive(dot, text, "warn", "This device is running an older worker. Reopen the app to update it.");
       return;
     }
-    setLive(dot, text, "warn", "Subscribed, but no push has reached this device yet.");
+    setLive(dot, text, "warn", "Subscribed, but no push has reached this device yet." + workerNote(t));
   }
 
   /* Sends a real push at this account and then watches the worker's trace, so the

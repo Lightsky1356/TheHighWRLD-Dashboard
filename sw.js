@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v113';
+const VERSION = 'thw-v114';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -133,7 +133,7 @@ const PRECACHE = [
   './drops.js?v=thw-v2',
   './legal-info.js?v=thw-v5',
   './social-panel.js?v=thw-v30',
-  './push-client.js?v=thw-v18',
+  './push-client.js?v=thw-v19',
   './simple-toast.js?v=thw-v5',
   './cover-preview.js?v=thw-v7',
 
@@ -391,6 +391,11 @@ const TRACE_URL = '/__thw_push_trace';
 const TRACE_MAX = 12;
 
 function writeTrace(entry) {
+  /* Every entry carries the worker's version, not just the 'ready' one. The
+   * last event is usually a push, and a push entry without a version would
+   * leave the panel unable to say which build produced it - which is the one
+   * thing the panel exists to say. */
+  if (!entry.version) entry.version = VERSION;
   return caches.open(TRACE_CACHE).then(function (c) {
     return c.match(TRACE_URL).then(function (prev) {
       return prev ? prev.json() : null;
