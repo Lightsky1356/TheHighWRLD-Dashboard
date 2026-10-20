@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v112';
+const VERSION = 'thw-v113';
 const SHELL_CACHE = VERSION + '-shell';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -44,7 +44,7 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v3',
-  'player-settings.css?v=thw-v63',
+  'player-settings.css?v=thw-v64',
   './style.css?v=thw-v31',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
@@ -133,7 +133,7 @@ const PRECACHE = [
   './drops.js?v=thw-v2',
   './legal-info.js?v=thw-v5',
   './social-panel.js?v=thw-v30',
-  './push-client.js?v=thw-v17',
+  './push-client.js?v=thw-v18',
   './simple-toast.js?v=thw-v5',
   './cover-preview.js?v=thw-v7',
 
@@ -377,11 +377,40 @@ function safeTarget(raw) {
    data - the payload is this app's own notification content. */
 const TRACE_CACHE = 'thw-push-trace';
 const TRACE_URL = '/__thw_push_trace';
+
+/* How many events to keep.
+ *
+ * One slot is not enough. The entry is overwritten by every event, so it can
+ * only ever describe the most recent one - and a push that arrived while the
+ * app was open is erased by the next 'ready' entry, leaving no trace of it at
+ * all. That is exactly the question being asked here ("did any of the three
+ * pushes I sent get through?"), and a single slot cannot answer it: it can
+ * report the last event and nothing about the ones before it.
+ *
+ * So the trace keeps a short history, newest last, and the panel reads it. */
+const TRACE_MAX = 12;
+
 function writeTrace(entry) {
   return caches.open(TRACE_CACHE).then(function (c) {
-    return c.put(TRACE_URL, new Response(JSON.stringify(entry), {
-      headers: { 'Content-Type': 'application/json' }
-    }));
+    return c.match(TRACE_URL).then(function (prev) {
+      return prev ? prev.json() : null;
+    }).catch(function () { return null; }).then(function (prev) {
+      var history = (prev && prev.history && prev.history.length) ? prev.history : [];
+      history.push(entry);
+      while (history.length > TRACE_MAX) history.shift();
+      var record = {
+        at: entry.at,
+        kind: entry.kind,
+        title: entry.title || '',
+        body: entry.body || '',
+        error: entry.error || null,
+        version: entry.version || '',
+        history: history,
+      };
+      return c.put(TRACE_URL, new Response(JSON.stringify(record), {
+        headers: { 'Content-Type': 'application/json' }
+      }));
+    });
   }).catch(function () {});
 }
 self.addEventListener('push', (event) => {

@@ -376,6 +376,48 @@
      server from a working phone, which is the entire remaining question here: a
      push service can return 201 and iOS still discard it before the worker runs. */
 
+  /* The most recent push that actually reached the worker.
+     The trace's top-level entry is only the newest event of any kind, and a
+     'ready' entry - written when the worker activates - says nothing about
+     whether a push arrived. The history is the only part of the trace that can
+     answer the question, so the history is what gets read. */
+  function lastPush(t) {
+    if (!t) return null;
+    var h = t.history;
+    if (h && h.length) {
+      for (var i = h.length - 1; i >= 0; i--) {
+        if (h[i] && h[i].kind === "push") return h[i];
+      }
+      return null;
+    }
+    return t.kind === "push" ? t : null;
+  }
+
+  /* The last few events, so "did any of the three pushes I sent get through?"
+     can be answered on the phone rather than from a server log. */
+  function historyList(t) {
+    if (!t || !t.history || !t.history.length) return null;
+    var rows = t.history.slice().reverse().slice(0, 6);
+    var box = el("div", "thw-push-history");
+    box.appendChild(el("p", "thw-push-history-title", "Recent events on this device"));
+    for (var i = 0; i < rows.length; i++) {
+      var e = rows[i];
+      var when = new Date(e.at || Date.now()).toLocaleTimeString();
+      var what;
+      if (e.kind === "push") {
+        what = e.error
+          ? "push arrived, could not be shown - " + e.error
+          : "push arrived and was shown";
+      } else if (e.kind === "ready") {
+        what = "worker activated";
+      } else {
+        what = String(e.kind || "event");
+      }
+      box.appendChild(el("p", "thw-push-history-row", when + " - " + what));
+    }
+    return box;
+  }
+
   function setLive(dot, text, tone, msg) {
     dot.className = "thw-push-dot" + (tone ? " thw-push-dot--" + tone : "");
     text.textContent = msg;
@@ -386,13 +428,14 @@
       setLive(dot, text, "", "Push is off for this device.");
       return;
     }
-    if (t && t.error) {
-      setLive(dot, text, "bad", "A push reached the app but failed: " + t.error);
+    var p = lastPush(t);
+    if (p && p.error) {
+      setLive(dot, text, "bad", "A push reached the app but failed: " + p.error);
       return;
     }
-    if (t && t.kind === "push") {
+    if (p) {
       setLive(dot, text, "good",
-        "Delivery confirmed at " + new Date(t.at || Date.now()).toLocaleTimeString() + ".");
+        "Delivery confirmed at " + new Date(p.at || Date.now()).toLocaleTimeString() + ".");
       return;
     }
     // A kind:'ready' entry means this worker activated and has not been pushed to
@@ -471,9 +514,10 @@
     var deadline = Date.now() + TEST_WAIT_MS;
     var tick = function () {
       readPushTrace().then(function (t) {
-        if (t && t.kind === "push" && !t.error && Number(t.at || 0) >= sentAt - 1000) {
+        var p = lastPush(t);
+        if (p && !p.error && Number(p.at || 0) >= sentAt - 1000) {
           setLive(dot, text, "good",
-            "Delivery confirmed at " + new Date(t.at || Date.now()).toLocaleTimeString() + ".");
+            "Delivery confirmed at " + new Date(p.at || Date.now()).toLocaleTimeString() + ".");
           return true;
         }
         return false;
@@ -529,6 +573,8 @@
 
       readPushTrace().then(function (t) {
         paintLive(dot, liveText, t, !!sub);
+        var hist = historyList(t);
+        if (hist) wrap.appendChild(hist);
       });
 
       var row = el("div", "thw-push-actions");
