@@ -14,7 +14,7 @@
 // Exits non-zero if any check fails.
 
 import { webcrypto } from "node:crypto";
-import { encryptPayload, vapidToken, vapidPublicKeyB64 } from "../functions/_lib/webpush.js";
+import { encryptPayload, vapidToken, vapidPublicKeyB64, vapidAudience } from "../functions/_lib/webpush.js";
 
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 
@@ -106,13 +106,28 @@ check("message text absent from ciphertext", !Buffer.from(body).includes(Buffer.
 check("title absent from ciphertext", !Buffer.from(body).includes(Buffer.from(payload.title)));
 
 console.log("\n5. VAPID JWT (ES256)");
-const token = await vapidToken(vapid.privateKey, "https://fcm.googleapis.com/", "mailto:admin@example.com");
+/* The audience comes from the endpoint, not from a literal typed in here.
+   The old test passed "https://fcm.googleapis.com/" by hand and only checked
+   that the token echoed it, so it agreed with the code rather than with the
+   spec - and the code was building the audience with a trailing slash, which
+   is not a valid audience for a push service. */
+check(
+  "the audience is the service origin with no trailing slash",
+  vapidAudience("https://fcm.googleapis.com/fcm/send/abc123") === "https://fcm.googleapis.com",
+  vapidAudience("https://fcm.googleapis.com/fcm/send/abc123"),
+);
+check(
+  "an apple endpoint gives the apple origin with no trailing slash",
+  vapidAudience("https://web.push.apple.com/QNosuNFqC2ph7gU0cAILsQK5d") === "https://web.push.apple.com",
+  vapidAudience("https://web.push.apple.com/QNosuNFqC2ph7gU0cAILsQK5d"),
+);
+const token = await vapidToken(vapid.privateKey, vapidAudience("https://fcm.googleapis.com/fcm/send/abc123"), "mailto:admin@example.com");
 const [h, p, s] = token.split(".");
 const header = JSON.parse(Buffer.from(h, "base64url").toString());
 const claims = JSON.parse(Buffer.from(p, "base64url").toString());
 check("three JWT segments", token.split(".").length === 3);
 check("alg is ES256", header.alg === "ES256", JSON.stringify(header));
-check("aud is the push service origin", claims.aud === "https://fcm.googleapis.com/", claims.aud);
+check("aud is the push service origin", claims.aud === "https://fcm.googleapis.com", claims.aud);
 check("sub is a mailto", /^mailto:/.test(claims.sub), claims.sub);
 check("exp is in the future", claims.exp * 1000 > Date.now(), new Date(claims.exp * 1000).toISOString());
 check("signature is 64 bytes (raw r||s)", Buffer.from(s, "base64url").length === 64, Buffer.from(s, "base64url").length + " bytes");

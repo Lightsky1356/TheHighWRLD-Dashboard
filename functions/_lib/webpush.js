@@ -211,6 +211,25 @@ function isValidEndpoint(endpoint) {
 }
 
 /**
+ * The VAPID audience for a push endpoint: the push service's ORIGIN, with no
+ * trailing slash.
+ *
+ * RFC 8292 says the "aud" claim is the origin of the push service, and every
+ * working implementation builds it as protocol + "//" + host. This was
+ * `origin + "/"`, which gave "https://web.push.apple.com/" where the service
+ * is "https://web.push.apple.com" - a JWT whose audience does not match the
+ * service exactly is not valid for it.
+ *
+ * Exported so the self-test can assert on the construction rather than on a
+ * hand-typed literal. The old test passed the audience in by hand and checked
+ * that the token echoed it, which agreed with the code rather than with the
+ * spec, and so could not catch this.
+ */
+export function vapidAudience(endpoint) {
+  return new URL(endpoint).origin;
+}
+
+/**
  * Send one push message.
  * Returns { ok, status, gone } - `gone` means the subscription is dead and the
  * caller should delete the row. Never throws for a delivery failure; a network
@@ -228,25 +247,34 @@ export async function sendPush(env, subscription, payload) {
     const publicB64 = await vapidPublicKeyB64(privateKeySecret);
     const subject = env.VAPID_SUBJECT || "mailto:admin@thehighwrlddashboard.pages.dev";
 
-    const audience = new URL(endpoint).origin + "/";
+    /* The audience is the push service's ORIGIN, with no trailing slash -
+       see vapidAudience(). A JWT whose audience does not match the service
+       exactly is not valid for it, and every working implementation builds it
+       as protocol + "//" + host. */
+    const audience = vapidAudience(endpoint);
     const token = await vapidToken(privateKey, audience, subject);
 
     const body = await encryptPayload(JSON.stringify(payload), subscription.p256dh, subscription.auth);
 
-    /* APNs needs its own headers, and the Web Push ones are not enough.
+    /* The headers here match the reference implementation exactly: TTL,
+     * Content-Length, Content-Type, Content-Encoding, the VAPID Authorization
+     * and Urgency. Nothing else.
      *
-     * Urgency and TTL are the Web Push standard. Apple's push service accepts
-     * them, but a request that reaches APNs without an explicit apns-push-type
-     * is treated as a BACKGROUND push: APNs answers 2xx, and iOS then throttles
-     * it and drops it, because a background push cannot be displayed. The
-     * symptom is precisely "the server accepted it, the device never got it" -
-     * the push reaches Apple and dies there, and the service worker's push
-     * event never fires.
+     * An earlier version added apns-push-type, apns-priority and
+     * apns-expiration for Apple endpoints, on the theory that a request
+     * reaching APNs without a push type is treated as a background push and
+     * silently dropped. That theory was wrong, and the headers were the problem
+     * rather than the fix: Apple's web push service is not APNs. It is a
+     * separate service that accepts a browser-generated subscription and
+     * handles the topic, the push type and the priority itself - it does not
+     * forward apns-* headers, and the reference implementation, which is what
+     * every working web push deployment uses, sends none of them. Passing them
+     * risks the service routing the request as a bare APNs call with a topic
+     * it does not have.
      *
-     * So for an Apple endpoint the push type and priority are stated
-     * explicitly. Everything else - the encrypted payload, the VAPID token -
-     * is the same as for every other push service. */
-    const isApple = /(^|\.)push\.apple\.com$/i.test(new URL(endpoint).hostname);
+     * Urgency and TTL are the Web Push standard and are understood by every
+     * service. "high" asks for immediate delivery, and a one-hour TTL keeps the
+     * payload from being held longer than that. */
     const headers = {
       "Content-Encoding": "aes128gcm",
       "Content-Type": "application/octet-stream",
@@ -265,16 +293,6 @@ export async function sendPush(env, subscription, payload) {
       TTL: "3600",
       Urgency: "high",
     };
-    if (isApple) {
-      /* alert, not background: this has to be shown on the lock screen. */
-      headers["apns-push-type"] = "alert";
-      /* 10 is "deliver immediately". 5 is "when the device is next awake and
-         on power", which is how a background push is deferred. */
-      headers["apns-priority"] = "10";
-      /* When APNs should give up on delivering it. Matches the TTL above, so
-         the payload is not held longer than the request asked for. */
-      headers["apns-expiration"] = String(Math.floor(Date.now() / 1000) + 3600);
-    }
 
     const res = await fetch(endpoint, {
       method: "POST",
