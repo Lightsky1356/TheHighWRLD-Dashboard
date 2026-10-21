@@ -1641,6 +1641,35 @@ function safeDecode4(v) {
   }
 }
 
+/* ---- a panel asks for the state once, not for ever ----
+ *
+ * The push panel drew itself by asking the server for the state, and asked
+ * again whenever the state had not arrived. The state was only marked as
+ * loaded when it arrived - so for anybody the server would not give it to,
+ * a visitor who is not signed in, or a server without a key, the two asked
+ * each other for ever: the state was asked for, it failed, the panel asked
+ * again, and it failed again.
+ *
+ * That was a request every few milliseconds, for as long as the panel was
+ * open, on every visitor's machine. It is why the daily request limit was
+ * reached so quickly - the site was making thousands of requests an hour
+ * that asked nothing.
+ *
+ * So the attempt is remembered whatever the answer is, and the panel asks
+ * once. */
+{
+  const push = readFileSync(join(ROOT, "push-client.js"), "utf8");
+  const loadState = push.slice(push.indexOf("function loadState("), push.indexOf("function loadState(") + 900);
+
+  if (!/state\.tried = true/.test(loadState)) {
+    structureFail("the push panel does not remember that it has asked for the state");
+  } else if (!/if \(state\.tried\)/.test(push)) {
+    structureFail("the push panel asks for the state again after it has already asked");
+  } else {
+    structureOk("the push panel asks for the state once, whatever the answer is");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

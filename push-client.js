@@ -20,7 +20,7 @@
   window.__thwPush = true;
 
   var API = "/api/push";
-  var state = { mounted: false, publicKey: "", devices: [] };
+  var state = { mounted: false, publicKey: "", devices: [], loaded: false, tried: false };
 
   function $(sel, root) { return (root || document).querySelector(sel); }
   function el(tag, cls, text) {
@@ -92,12 +92,26 @@
   /* ---------------- server sync ---------------- */
 
   function loadState() {
+    /* The attempt is remembered whatever the answer is.
+     *
+     * It used to be remembered only when the answer was good, and the
+     * render asked for the state again whenever it had not been loaded. So
+     * for anybody the server will not give the state to - a visitor who is
+     * not signed in, or a server without a key - the two asked each other
+     * for ever: the state was asked for, it failed, the render asked again,
+     * and it failed again.
+     *
+     * That was a request every few milliseconds, for as long as the panel
+     * was open, on every visitor's machine. It is the single biggest thing
+     * the site did, and it is why the daily request limit was reached so
+     * quickly. */
+    state.tried = true;
     return fetch(API, { cache: "no-store", credentials: "same-origin" })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || d.ok !== true) throw new Error("push_state_unavailable");
         state.publicKey = d.publicKey || "";
-    state.loaded = true;
+        state.loaded = true;
         state.devices = d.devices || [];
         return d;
       });
@@ -581,6 +595,11 @@
       // not been loaded, otherwise an empty list on first paint would look like a
       // mismatch and fire a spurious POST.
       if (!state.loaded) {
+        /* Ask once. If the state could not be had, it is not going to turn
+           up by asking again - and asking again is what turned this into a
+           request every few milliseconds, for as long as the panel was
+           open, on every visitor's machine. */
+        if (state.tried) { state.resyncing = false; return; }
         loadState().then(function () {
           state.resyncing = false;
           return render();
