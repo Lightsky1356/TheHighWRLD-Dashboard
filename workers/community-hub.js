@@ -162,7 +162,7 @@ export class CommunityHub extends DurableObject {
       connectedAt: Date.now(),
     });
     // A fresh connection is itself an active presence signal.
-    if (this.registerPresence({ uid, auth, pkey }, server)) this.syncDurablePresence();
+    if (this.registerPresence({ uid, auth, pkey }, server)) this.syncDurablePresence(this.presenceKeyFor(uid, auth, pkey));
     safeSend(server, {
       type: "connected",
       ts: Date.now(),
@@ -203,7 +203,7 @@ export class CommunityHub extends DurableObject {
       }
       ws.serializeAttachment({ uid, sessionUid: uid, auth: auth ? 1 : 0, pkey, name, conversationId, connectedAt: att.connectedAt || Date.now() });
       safeSend(ws, { type: "hello:ok", uid, name, typing: this.typingSnapshot(conversationId) });
-      if (this.registerPresence({ uid, auth, pkey, name }, ws)) this.syncDurablePresence();
+      if (this.registerPresence({ uid, auth, pkey, name }, ws)) this.syncDurablePresence(this.presenceKeyFor(uid, auth, pkey));
       return;
     }
 
@@ -470,16 +470,26 @@ export class CommunityHub extends DurableObject {
     this.ensureAlarm();
   }
 
-  /** Durable "last seen" only on auth transitions — never per heartbeat. */
-  async syncDurablePresence() {
+  /** Durable "last seen" only on auth transitions — never per heartbeat.
+   *
+   *  Only the member whose presence changed is written. It used to write a row
+   *  for every member who was online, every time anybody came or went - so
+   *  ten people online meant ten writes each time somebody arrived, to record
+   *  something that had not changed for the other nine.
+   *
+   *  A write is a write whether it changed anything or not, and the free tier
+   *  allows a hundred thousand rows written a day. */
+  async syncDurablePresence(onlyKey) {
     if (!this.env.wanted_vault) return;
     try {
-      for (const [key, info] of this.presence) {
-        if (key.startsWith("u:")) {
-          await this.env.wanted_vault
-            .prepare("INSERT INTO presence_state (uid, status, last_seen, updated_at) VALUES (?, 'online', ?, ?) ON CONFLICT(uid) DO UPDATE SET status='online', last_seen=excluded.last_seen, updated_at=excluded.updated_at")
-            .bind(key.slice(2), new Date(info.lastSeen).toISOString(), new Date().toISOString()).run();
-        }
+      const keys = onlyKey ? [onlyKey] : [...this.presence.keys()];
+      for (const key of keys) {
+        if (!key.startsWith("u:")) continue;
+        const info = this.presence.get(key);
+        if (!info) continue;
+        await this.env.wanted_vault
+          .prepare("INSERT INTO presence_state (uid, status, last_seen, updated_at) VALUES (?, 'online', ?, ?) ON CONFLICT(uid) DO UPDATE SET status='online', last_seen=excluded.last_seen, updated_at=excluded.updated_at")
+          .bind(key.slice(2), new Date(info.lastSeen).toISOString(), new Date().toISOString()).run();
       }
     } catch (err) {
       // presence_state may not exist yet on old DBs — ignore, presence is still live.
