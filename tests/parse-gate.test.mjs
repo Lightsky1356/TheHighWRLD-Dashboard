@@ -442,6 +442,42 @@ if (dupes.length) {
   }
 }
 
+/* ---- the presence table is pruned, and counted, in one format ----
+ *
+ * The cutoff was sqlite's datetime(), which is the same digits as the stored
+ * ISO timestamps with a space where the T is. 'T' sorts after a space, so
+ * every row from the current day compared as NEWER than the cutoff and was
+ * never pruned: the table grew to hold every visitor of the day, and every
+ * four-second poll scanned all of them. That is what spent the account's
+ * entire daily row read budget and took the site down.
+ *
+ * So the cutoff has to be in the format the timestamps are actually stored in,
+ * and both the prune and the count have to use the same one. */
+{
+  const online = readFileSync(join(ROOT, "functions/api/online.js"), "utf8");
+  const cutoffs = [...online.matchAll(/strftime\('([^']+)'/g)].map((m) => m[1]);
+  const isoCutoff = cutoffs.filter((c) => c.indexOf("%Y-%m-%dT") === 0);
+  if (!isoCutoff.length) {
+    structureFail("the presence cutoff is not in the format the timestamps are stored in, so same-day rows are never pruned");
+  } else if (isoCutoff.length < 2) {
+    structureFail("the presence prune and the presence count do not share one cutoff");
+  } else if (!/WHERE last_seen >= strftime/.test(online)) {
+    structureFail("the presence count is over the whole table rather than the live window");
+  } else {
+    structureOk("the presence table is pruned and counted over the same live window");
+  }
+  if (!/PRUNE_EVERY_MS/.test(online) || !/lastPruneAt/.test(online)) {
+    structureFail("the presence prune runs on every heartbeat, scanning the table each time");
+  } else {
+    structureOk("the presence prune runs on a timer of its own");
+  }
+  if (/getCounts\(db, true\)/.test(online)) {
+    structureFail("a presence heartbeat forces a fresh scan of the table every time");
+  } else {
+    structureOk("no presence heartbeat forces a fresh scan");
+  }
+}
+
 /* ---- the page's assets resolve from the root, whatever the path is ----
  *
  * A page served at /Profile/@someone resolves "./style.css" against

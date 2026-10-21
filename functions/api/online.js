@@ -107,11 +107,27 @@ async function getCounts(db, refresh) {
     if (now - lastPruneAt > PRUNE_EVERY_MS) {
       lastPruneAt = now;
       await db
-        .prepare("DELETE FROM online_visitors WHERE last_seen < datetime('now', '-90 seconds')")
+        .prepare("DELETE FROM online_visitors WHERE last_seen < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-90 seconds')")
         .run();
     }
+    /* The count is over the same window, not over the whole table.
+     *
+     * It has to be the same window because the cutoff has to be in the same
+     * FORMAT as the stored timestamps, and the stored timestamps are ISO with
+     * a T in them. The old cutoff was sqlite's datetime(), which is the same
+     * digits with a space in place of the T - and 'T' sorts after ' ', so every
+     * row from the current day compared as NEWER than the cutoff and was never
+     * pruned. The table grew to hold every visitor of the day, and every poll
+     * scanned all of them.
+     *
+     * With the index on last_seen both of these are range scans over the live
+     * rows alone, so the cost follows the number of people actually here and
+     * not the number of people who have ever been here. */
     const row = await db
-      .prepare("SELECT COUNT(*) AS total, COALESCE(SUM(authed), 0) AS authed FROM online_visitors")
+      .prepare(
+        "SELECT COUNT(*) AS total, COALESCE(SUM(authed), 0) AS authed FROM online_visitors " +
+        "WHERE last_seen >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-90 seconds')"
+      )
       .first();
     const total = (row && row.total) || 0;
     const online = Math.min(total, (row && row.authed) || 0);
