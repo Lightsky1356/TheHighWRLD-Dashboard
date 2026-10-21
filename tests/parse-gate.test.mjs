@@ -385,6 +385,23 @@ if (dupes.length) {
   }
 }
 
+/* ---- the page's assets resolve from the root, whatever the path is ----
+ *
+ * A page served at /Profile/@someone resolves "./style.css" against
+ * /Profile/, so every stylesheet and script 404s and the site answers with
+ * the app shell instead - which the browser then refuses as a stylesheet
+ * because its MIME type is text/html. A cold load or a refresh of a profile
+ * address was therefore an unstyled page that never finished booting.
+ *
+ * A base of "/" fixes that for every deep path, not just the profile one, and
+ * the only relative links on the page are already absolute paths, so nothing
+ * else moves. */
+if (!/<base href="\/"\s*>/.test(html)) {
+  structureFail("the page has no <base href=\"/\">, so its assets resolve against the current path and a deep link loads nothing");
+} else {
+  structureOk("the page's assets resolve from the root on any path");
+}
+
 /* ---- the profile address has one owner ----
  *
  * A profile is addressed by its Discord username, /Profile/@name. Seven files
