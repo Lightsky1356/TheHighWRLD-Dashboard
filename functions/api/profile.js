@@ -7,6 +7,7 @@ function json(data, status = 200) {
 
 import { getSessionUser } from "../_lib/auth.js";
 import { listeningStats, streakFromDays } from "../_lib/listens-stats.js";
+import { loadPlaylistTracks } from "../_lib/playlist-tracks.js";
 import { banRejection } from "../_lib/bans.js";
 
 function nowIso() { return new Date().toISOString(); }
@@ -213,11 +214,14 @@ export async function onRequestGet(context) {
       db.prepare("SELECT title, created_at FROM favorites WHERE uid = ? ORDER BY created_at DESC LIMIT 50").bind(uid).all(),
     ]);
 
-    const playlists = [];
-    for (const p of plRows.results) {
-      const tr = await db.prepare("SELECT id, title FROM playlist_tracks WHERE playlist_id = ? ORDER BY id ASC").bind(p.id).all();
-      playlists.push({ id: p.id, name: p.name, desc: p.desc, color: p.color, visibility: p.visibility || "private", count: tr.results.length, tracks: tr.results.map(function (t) { return { id: t.id, title: t.title }; }) });
-    }
+    /* The tracks of every playlist are asked for once, rather than one
+       playlist at a time - so looking at a profile with a dozen playlists
+       runs one query rather than a dozen. */
+    const playlistTracks = await loadPlaylistTracks(db, plRows.results);
+    const playlists = plRows.results.map((p) => {
+      const tr = playlistTracks.get(Number(p.id)) || [];
+      return { id: p.id, name: p.name, desc: p.desc, color: p.color, visibility: p.visibility || "private", count: tr.length, tracks: tr };
+    });
 
     // Listening streak for this uid (same math as /api/mystats).
     let streak = 0;

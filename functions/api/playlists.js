@@ -9,6 +9,7 @@
 //                                          reorder|duplicate|favorite|unfavorite|share
 
 import { getSessionUser } from "../_lib/auth.js";
+import { invalidateAccountState } from "../_lib/account-state.js";
 import { banRejection } from "../_lib/bans.js";
 import { createNotification } from "../_lib/notifications.js";
 
@@ -151,6 +152,12 @@ export async function onRequestPost(context) {
     const body = await context.request.json().catch(() => ({}));
     const action = String(body.action || "");
     const id = Number(body.id) || 0;
+
+    /* Everything here changes the account - a playlist made, a track added,
+       a playlist shared. The account page is read from a remembered copy
+       for half a minute, so the copy is dropped now rather than the account
+       page carrying on showing what it looked like before. */
+    invalidateAccountState(user.uid);
 
     // Ban enforcement: every action here mutates (user-scoped backend).
     try {

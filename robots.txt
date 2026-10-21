@@ -1,0 +1,22 @@
+# What a crawler is allowed to fetch.
+#
+# WHY THIS EXISTS
+# The site is a single page with fifty-six scripts and seventeen
+# stylesheets. Every page a crawler fetches costs it seventy-three
+# requests, because that is what a page load is. And the audio is not on
+# the site at all - it comes from another host - so there is nothing here
+# for a crawler to find that it will not find on any other page.
+#
+# The free tier allows a hundred thousand requests a day. The pages below
+# are the ones a crawler has no reason to fetch: the API answers
+# questions about one member's account, and the media path is the one the
+# player uses for the tracks it has been asked for.
+
+User-agent: *
+Allow: /$
+Allow: /index.html
+Disallow: /api/
+Disallow: /media/
+Disallow: /Audio/
+Disallow: /sw.js
+Disallow: /manifest.webmanifest

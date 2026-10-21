@@ -1603,6 +1603,44 @@ function safeDecode4(v) {
   }
 }
 
+/* ---- a playlist's tracks are asked for once, not once per playlist ----
+ *
+ * The account page and the profile used to walk the playlists one at a time
+ * and ask for each one's tracks separately - a dozen playlists, a dozen
+ * queries, every time either page was read. And the account is read on
+ * every load and again after every save.
+ *
+ * So the tracks of all of the playlists are asked for at once.
+ *
+ * And because the account is read from a remembered copy for half a minute,
+ * anything that changes the account has to drop that copy - otherwise the
+ * account page carries on showing the playlists it had before one was
+ * made. */
+{
+  const account = readFileSync(join(ROOT, "functions/api/account/index.js"), "utf8");
+  const profile = readFileSync(join(ROOT, "functions/api/profile.js"), "utf8");
+  const playlists = readFileSync(join(ROOT, "functions/api/playlists.js"), "utf8");
+
+  for (const [name, src] of [["account/index.js", account], ["profile.js", profile]]) {
+    if (/for \(const p of plRows\.results\)[\s\S]{0,400}?FROM playlist_tracks/.test(src)) {
+      structureFail(name + " asks for the tracks of each playlist one at a time");
+    } else if (!/loadPlaylistTracks/.test(src)) {
+      structureFail(name + " does not ask for the tracks of all of the playlists at once");
+    }
+  }
+  if (!/loadPlaylistTracks/.test(account) || !/loadPlaylistTracks/.test(profile)) {
+    structureFail("a page asks for the tracks of each playlist one at a time");
+  } else {
+    structureOk("the tracks of all of the playlists are asked for at once");
+  }
+
+  if (!/invalidateAccountState/.test(playlists)) {
+    structureFail("a playlist can be changed without the account page noticing");
+  } else {
+    structureOk("a playlist change drops the remembered copy of the account");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

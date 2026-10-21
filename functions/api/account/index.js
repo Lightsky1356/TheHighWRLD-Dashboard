@@ -1,6 +1,8 @@
 import { getSessionUser, verifyPassword, hashPassword, emailOk, randomHex } from "../../_lib/auth.js";
 import { banRejection } from "../../_lib/bans.js";
 import { listeningStats, recordPlay, clearPlays } from "../../_lib/listens-stats.js";
+import { loadPlaylistTracks } from "../../_lib/playlist-tracks.js";
+import { stateCacheGet, stateCacheSet, invalidateAccountState } from "../../_lib/account-state.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -100,11 +102,15 @@ async function loadAccountState(env, db, uid, req, session) {
     db.prepare("SELECT id, label, url FROM profile_links WHERE uid = ? ORDER BY sort ASC, id ASC").bind(uid).all(),
     db.prepare("SELECT id, text, status, created_at FROM suggestions WHERE uid = ? ORDER BY id DESC LIMIT 100").bind(uid).all(),
   ]);
-  const playlists = [];
-  for (const p of plRows.results) {
-    const tr = await db.prepare("SELECT id, title FROM playlist_tracks WHERE playlist_id = ? ORDER BY id ASC").bind(p.id).all();
-    playlists.push({ id: p.id, name: p.name, desc: p.desc, color: p.color, created_at: p.created_at, count: tr.results.length, tracks: tr.results, visibility: p.visibility || "private", share_key: p.share_key || "" });
-  }
+  /* The tracks of every playlist are asked for once, rather than one
+     playlist at a time. A member with a dozen playlists was running a dozen
+     queries every time their account was read, and the account is read on
+     every load and again after every save. */
+  const playlistTracks = await loadPlaylistTracks(db, plRows.results);
+  const playlists = plRows.results.map((p) => {
+    const tr = playlistTracks.get(Number(p.id)) || [];
+    return { id: p.id, name: p.name, desc: p.desc, color: p.color, created_at: p.created_at, count: tr.length, tracks: tr, visibility: p.visibility || "private", share_key: p.share_key || "" };
+  });
 
   // weekly + monthly listening analytics
   /* The cutoff is a full timestamp, not a date.
@@ -219,43 +225,6 @@ async function applyPrivacy(db, uid, patch) {
   return next;
 }
 
-/* The account page is read on every load, and again after every save,
- * and it is not cheap: it aggregates the whole listening history and walks
- * every playlist. Two visits in a minute cost exactly as much as one, so the
- * answer is remembered for a moment - and dropped the moment the account
- * changes, so nobody ever sees their own change come back late.
- *
- * The answer is not the same for everybody. The account block - the email,
- * the google link - goes only to the person whose account it is, so the
- * remembered copy is kept per viewer as well as per account. Handing one
- * person's copy to another would leak their email.
- *
- * subject -> viewer -> { at, data }. */
-const STATE_CACHE = new Map();
-const STATE_TTL_MS = 30000;
-const STATE_CACHE_MAX = 64;
-
-function stateCacheGet(subject, viewer) {
-  const byViewer = STATE_CACHE.get(subject);
-  if (!byViewer) return null;
-  const hit = byViewer.get(viewer);
-  if (!hit) return null;
-  if (Date.now() - hit.at >= STATE_TTL_MS) { byViewer.delete(viewer); return null; }
-  return hit.data;
-}
-
-function stateCacheSet(subject, viewer, data) {
-  let byViewer = STATE_CACHE.get(subject);
-  if (!byViewer) { byViewer = new Map(); STATE_CACHE.set(subject, byViewer); }
-  byViewer.set(viewer, { at: Date.now(), data });
-  /* Bounded: the subject is a query parameter, so in principle anybody can
-     ask for a lot of them. */
-  while (STATE_CACHE.size > STATE_CACHE_MAX) {
-    const oldest = STATE_CACHE.keys().next().value;
-    STATE_CACHE.delete(oldest);
-  }
-}
-
 export async function onRequestGet(context) {
   try {
     const url = new URL(context.request.url);
@@ -295,7 +264,7 @@ export async function onRequestPost(context) {
      Dropped before the action runs rather than after it succeeds: a write that
      fails has not changed anything, and re-reading the account once is cheaper
      than serving a stale one. */
-  STATE_CACHE.delete(uid);
+  invalidateAccountState(uid);
   const authed = await (async () => {
     if (session && session.uid) return true;
     try {
