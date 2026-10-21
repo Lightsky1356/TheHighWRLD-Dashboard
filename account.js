@@ -328,7 +328,7 @@ function compactProfileViewHtml(d) {
       if (d.uid && _data && _data.discord && _data.discord.linked) {
         html += '<button type="button" class="cmp-btn report-flag-btn" data-report="profile:u:' + esc(String(d.uid)) + '" data-report-title="' + esc(name) + '" title="Report this profile" style="margin-left:8px"><i class="fas fa-flag"></i> Report</button>';
       }
-      html += '<button type="button" class="cmp-btn user-menu-btn" data-user-menu data-uid="' + esc(String(d.uid)) + '" data-name="' + esc(name) + '" aria-label="More user actions" title="More user actions" style="margin-left:8px"><i class="fas fa-ellipsis"></i></button>';
+      html += '<button type="button" class="cmp-btn user-menu-btn" data-user-menu data-uid="' + esc(String(d.uid)) + '" data-name="' + esc(name) + '" data-username="' + esc(String(d.username || "")) + '" aria-label="More user actions" title="More user actions" style="margin-left:8px"><i class="fas fa-ellipsis"></i></button>';
       html += '</div>';
     }
     html += '</div>';
@@ -2285,6 +2285,9 @@ function compactProfileViewHtml(d) {
     if (!body) return;
     body.innerHTML = compactProfileHtml(true);
     wireCompactHost(body, true);
+    /* Your own profile is addressable by your username too, so the link you
+       copy is one that opens on anybody's phone. */
+    canonicaliseProfileUrl((_data && _data.username) || "");
   }
 
   function renderProfilePageBody() {
@@ -2300,6 +2303,7 @@ function compactProfileViewHtml(d) {
       bindPvFavGrid(fg);
       bindPvPls();
       if (window.userMenu && window.userMenu.profileRendered) window.userMenu.profileRendered(_profilePage.data);
+      canonicaliseProfileUrl(_profilePage.data.username);
       return;
     }
     body.innerHTML = profilePageLoading();
@@ -2317,6 +2321,7 @@ function compactProfileViewHtml(d) {
         bindPvFavGrid(fg);
         bindPvPls();
         if (window.userMenu && window.userMenu.profileRendered) window.userMenu.profileRendered(d);
+        canonicaliseProfileUrl(d.username);
       })
       .catch(function () { body.innerHTML = profilePageError(); });
   }
@@ -2343,26 +2348,82 @@ function compactProfileViewHtml(d) {
       }
     });
   }
+  /* ---------- Profile addresses ----------
+   *
+   * A profile is addressed by its Discord username: /Profile/@lightsky1356.
+   *
+   * It used to be addressed by the internal site uid, which nobody outside the
+   * database can recognise or type, and which changed the moment an account was
+   * replaced. A username is the handle the person already goes by, and it is
+   * what a shared link should carry.
+   *
+   * The address is written in one place and read in one place, because the two
+   * drifting apart is how a shared link stops working. */
+  var PROFILE_PATH_ROOT = "/Profile";
+
+  function profilePathFor(username) {
+    return PROFILE_PATH_ROOT + "/@" + encodeURIComponent(String(username || "").replace(/^@/, ""));
+  }
+
+  /* Read a profile address back. Returns null when the path is not a profile
+   * address, { self: true } for the bare /Profile, and { key: ... } for one
+   * that names somebody. The key may be a uid, a username or a display name -
+   * the API resolves all three - and may carry the leading "@". */
+  function parseProfilePath(pathname) {
+    var p = String(pathname || "").replace(/\/+$/, "");
+    if (!p) return null;
+    if (new RegExp("^" + PROFILE_PATH_ROOT + "$", "i").test(p)) return { self: true };
+    var m = new RegExp("^" + PROFILE_PATH_ROOT + "/(.+)$", "i").exec(p);
+    if (!m) return null;
+    return { key: decodeURIComponent(m[1]) };
+  }
+
+  /* Put the canonical address in the bar once the profile is known, so the link
+   * somebody copies is one that can be typed. replaceState, not pushState:
+   * this is the same page, made addressable. */
+  function canonicaliseProfileUrl(username) {
+    if (!username) return;
+    try {
+      var want = profilePathFor(username);
+      if (location.pathname === want) return;
+      if (history.replaceState) history.replaceState({ profile: username }, "", want);
+    } catch (e) {}
+  }
+
+  /* The address, read from one place, for the files that need to know whether
+   * a profile is being viewed and whose it is. Seven files asked this question
+   * with their own copy of the path pattern, which is how a profile address
+   * change breaks the pages around it one at a time. */
+  window.profilePathKey = function () {
+    var p = parseProfilePath(location.pathname);
+    if (!p || p.self) return "";
+    return String(p.key || "").replace(/^@/, "");
+  };
+  window.isOtherProfilePath = function () {
+    return window.profilePathKey() !== "";
+  };
+
   window.openProfile = function (user, byDiscord) {
     var target = String(user == null ? "" : user).trim().replace(/^@/, "");
     if (!target || String(target) === String(uid)) {
       if (!uid) { if (window.switchAppPage) switchAppPage("account"); toast(_tt("toastSignInProfile", "Sign in to view your profile"), "info"); return; }
       _profilePage.self = true; _profilePage.key = ""; _profilePage.byDiscord = false; _profilePage.data = null;
       if (window.switchAppPage) switchAppPage("profile");
-      try { if (history.pushState) history.pushState({ profile: true }, "", "/profile"); } catch (e) {}
+      try { if (history.pushState) history.pushState({ profile: true }, "", PROFILE_PATH_ROOT); } catch (e) {}
       return;
     }
     _profilePage.self = false; _profilePage.key = target; _profilePage.byDiscord = !!byDiscord; _profilePage.data = null;
     if (window.switchAppPage) switchAppPage("profile");
-    try { if (history.pushState) history.pushState({ profile: target }, "", "/profile/" + encodeURIComponent(target)); } catch (e) {}
+    try { if (history.pushState) history.pushState({ profile: target }, "", PROFILE_PATH_ROOT + "/" + encodeURIComponent(target)); } catch (e) {}
   };
 window.profileSectionShown = function () {
     renderProfilePageBody();
   };
   window.addEventListener("popstate", function () {
-    var p = (location.pathname || "").replace(/\/+$/, "");
-    if (p === "/profile") { if (window.openProfile) window.openProfile(); }
-    else if (p.indexOf("/profile/") === 0) { if (window.openProfile) window.openProfile(decodeURIComponent(p.slice(9))); }
+    var p = parseProfilePath(location.pathname);
+    if (!p) return;
+    if (p.self) { if (window.openProfile) window.openProfile(); }
+    else if (window.openProfile) window.openProfile(p.key);
   });
   (function bindProfilePage() {
     var share = document.getElementById("ppShareBtn");
@@ -2757,8 +2818,9 @@ window.profileSectionShown = function () {
     if (uid) loadAccount();
     wrapSwitchAppPage();
     var ppath = (location.pathname || "").replace(/\/+$/, "") || "/";
-    if (ppath === "/profile") { if (window.openProfile) window.openProfile(); }
-    else if (ppath.indexOf("/profile/") === 0) { if (window.openProfile) window.openProfile(decodeURIComponent(ppath.slice(9))); }
+    var profilePath = parseProfilePath(ppath);
+    if (profilePath && profilePath.self) { if (window.openProfile) window.openProfile(); }
+    else if (profilePath) { if (window.openProfile) window.openProfile(profilePath.key); }
     else {
       var bootPage = NAV_URL_REV[ppath];
       /* An unrecognised path used to fall through and leave whatever the boot
@@ -2846,7 +2908,7 @@ var NAV_URL = { home: "/", player: "/player", hub: "/vault", wanted: "/wanted", 
   }
   window.addEventListener("popstate", function () {
     var p = (location.pathname || "").replace(/\/+$/, "") || "/";
-    if (p === "/profile" || p.indexOf("/profile/") === 0) return;
+    if (parseProfilePath(p)) return;
     var page = NAV_URL_REV[p];
     if (page && window.switchAppPage) window.switchAppPage(page);
   });

@@ -43,8 +43,7 @@
   /* "" = own profile; otherwise the /profile/<key> slug being viewed. */
   function profileKey() {
     try {
-      var m = (location.pathname || "").match(/^\/profile\/(.+)/);
-      if (m) return decodeURIComponent(m[1]);
+      return (typeof window.profilePathKey === "function") ? window.profilePathKey() : "";
     } catch (e) {}
     return "";
   }

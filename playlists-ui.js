@@ -56,7 +56,7 @@
 
   function isSelfProfile() {
     try {
-      if (/^\/profile\/.+/.test(location.pathname || "")) return false;
+      if (typeof window.isOtherProfilePath === "function" ? window.isOtherProfilePath() : false) return false;
       return !!document.getElementById("profilePageBody");
     } catch (e) { return false; }
   }
@@ -209,7 +209,7 @@
     try {
       var body = document.getElementById("profilePageBody");
       if (!body) return;
-      if (/^\/profile\/.+/.test(location.pathname || "")) return;
+      if (typeof window.isOtherProfilePath === "function" ? window.isOtherProfilePath() : false) return;
       var grid = body.querySelector(".cmp-pl-grid");
       if (!grid) return;
       var card = grid.closest ? grid.closest(".cmp-sec-card") : null;
@@ -497,7 +497,7 @@
           var body = document.getElementById("profilePageBody");
           if (!body) return;
           try {
-            if (/^\/profile\/.+/.test(location.pathname || "")) return;
+            if (typeof window.isOtherProfilePath === "function" ? window.isOtherProfilePath() : false) return;
           } catch (e2) {}
           if (!document.getElementById(WID)) mountManager();
           else refreshManager();
@@ -508,7 +508,7 @@
     if (profileSection && window.MutationObserver) {
       var playlistObserver = new MutationObserver(function () {
         try {
-          if (/^\/profile\/.+/.test(location.pathname || "")) return;
+          if (typeof window.isOtherProfilePath === "function" ? window.isOtherProfilePath() : false) return;
           if (profileSection.classList.contains("active")) {
             syncNative();
             if (!document.getElementById(WID)) {

@@ -173,7 +173,7 @@
     if (act === 'mute') { muteFlow(uidv, name); return; }
     if (act === 'unmute') { unmuteFlow(uidv, name); return; }
     if (act === 'report') { reportFlow(uidv, name); return; }
-    if (act === 'copy') { copyLink(uidv); }
+    if (act === 'copy') { copyLink(uidv, btn && btn.getAttribute('data-username')); }
   }
 
   function confirmModal(title, msg, okLabel, okClass, onOk, dismissLabel) {
@@ -322,8 +322,15 @@
     }
   }
 
-  function copyLink(uidv) {
-    var url = location.origin + '/profile/' + encodeURIComponent(uidv);
+  function copyLink(uidv, username) {
+    /* A profile is addressed by its Discord username, so that is what a
+       copied link carries. The uid still works as an address - the API
+       resolves it - but it is not something a person can recognise in a
+       browser bar, and it is what the link used to carry. */
+    var who = String(username || "").replace(/^@/, "");
+    var url = location.origin + (who
+      ? "/Profile/@" + encodeURIComponent(who)
+      : "/profile/" + encodeURIComponent(uidv));
     var done = function () { toast('Profile link copied', 'success'); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(done, function () { fallbackCopy(url, done); });

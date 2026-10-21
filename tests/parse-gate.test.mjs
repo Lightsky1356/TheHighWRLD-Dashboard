@@ -343,6 +343,106 @@ if (dupes.length) {
   else structureOk("every notification string on the page is used by the page");
 }
 
+/* ---- every theme ends up with the gradients the site uses ----
+ *
+ * A theme that leaves a gradient variable undefined does not merely lose a
+ * colour: the rule that uses it keeps every other declaration, including
+ * color:#201000, which is near-black. The Owner Dashboard's Unlock button was
+ * therefore near-black text with no background on a near-black panel, on
+ * twenty-eight of the thirty-two themes - a button that looked like a hole in
+ * the page, and was reported as a passcode that would not work.
+ *
+ * The fallback rule has to stay, and it has to be zero-specificity so a theme
+ * that does define its own gradient keeps it. */
+{
+  const themesCss = readFileSync(join(ROOT, "themes.css"), "utf8");
+  const themeBlocks = [...themesCss.matchAll(/html\[data-theme=([a-z0-9-]+)\]\s*\{([\s\S]*?)\}/g)];
+
+  const gradUsed = new Set();
+  for (const f of ["account.css", "style.css", "player-settings.css", "themes.css", "social.css"]) {
+    const src = readFileSync(join(ROOT, f), "utf8");
+    for (const m of src.matchAll(/var\((--ac-grad-[a-z]+)/g)) gradUsed.add(m[1]);
+  }
+
+  const fallbackM = /html:where\(\[data-theme\]\)\s*\{([\s\S]*?)\}/.exec(themesCss);
+  if (!fallbackM) {
+    structureFail("themes.css has no zero-specificity fallback for the gradient variables");
+  } else {
+    const fallback = fallbackM[1];
+    const stillMissing = [];
+    for (const [, name, body] of themeBlocks) {
+      for (const v of gradUsed) {
+        const defined = new RegExp(v.replace(/-/g, "\\-") + "\\s*:").test(body);
+        const covered = new RegExp(v.replace(/-/g, "\\-") + "\\s*:").test(fallback);
+        if (!defined && !covered) stillMissing.push(name + ":" + v);
+      }
+    }
+    if (stillMissing.length) {
+      structureFail(`${stillMissing.length} themes would end up with no gradient at all: ${stillMissing.slice(0, 6).join(", ")}`);
+    } else {
+      structureOk(`every one of the ${themeBlocks.length} themes ends up with all ${gradUsed.size} gradients`);
+    }
+  }
+}
+
+/* ---- the profile address has one owner ----
+ *
+ * A profile is addressed by its Discord username, /Profile/@name. Seven files
+ * used to carry their own copy of the path pattern, so changing the address
+ * would break them one at a time and none of them would say which: the page
+ * quietly falls back to showing your own profile, or shows the wrong
+ * statistics. */
+{
+  const accountSrc = readFileSync(join(ROOT, "account.js"), "utf8");
+  if (!/function parseProfilePath\(/.test(accountSrc)) {
+    structureFail("account.js has no parseProfilePath - the profile address has no single owner");
+  } else if (!/window\.profilePathKey\s*=/.test(accountSrc) || !/window\.isOtherProfilePath\s*=/.test(accountSrc)) {
+    structureFail("account.js does not publish profilePathKey and isOtherProfilePath");
+  } else {
+    structureOk("the profile address is read from one place");
+  }
+
+  const strays = [];
+  for (const f of ["follows.js", "recent.js", "playlists-ui.js", "privacy.js", "profile-enhancements.js", "wrld-stats.js"]) {
+    const src = readFileSync(join(ROOT, f), "utf8");
+    if (/\/\\\/profile\\\//.test(src) || /["']\/profile\//.test(src)) strays.push(f);
+  }
+  if (strays.length) {
+    structureFail(`files still matching the profile path themselves: ${strays.join(", ")}`);
+  } else {
+    structureOk("no file matches the profile path on its own any more");
+  }
+}
+
+/* ---- a favourite row can be narrower than its content ----
+ *
+ * The producer pill is one long unbreakable line, and a flex item's automatic
+ * minimum size is its min-content width - so without this the row was as wide
+ * as the longest pill, the list was as wide as the longest row, and the page
+ * scrolled sideways on a phone. The pill is what ellipsises, so the row has to
+ * be the thing that gives way. */
+{
+  const ps = readFileSync(join(ROOT, "player-settings.css"), "utf8");
+  const cardM = /\.cmp-profile-host \.fav-card\{([^}]*)\}/.exec(ps);
+  const infoM = /\.cmp-profile-host \.fav-info\{([^}]*)\}/.exec(ps);
+  if (!cardM) {
+    structureFail("the favourite row has no min-width:0, so the longest pill widens the page");
+  } else if (!/min-width:\s*0/.test(cardM[1])) {
+    structureFail("the favourite row has no min-width:0, so the longest pill widens the page");
+  } else if (!infoM || !/min-width:\s*0/.test(infoM[1])) {
+    structureFail("the favourite row's text column has no min-width:0");
+  } else {
+    structureOk("a favourite row can be narrower than the pill in it");
+  }
+
+  const pe = readFileSync(join(ROOT, "profile-enhancements.js"), "utf8");
+  if (!/pp-shelf\{flex-direction:column;align-items:stretch\}/.test(pe)) {
+    structureFail("the profile shelf's stacked columns are still sized by their content, so they can exceed the phone");
+  } else {
+    structureOk("the profile shelf's columns take the width of the shelf");
+  }
+}
+
 /* Depth of every page section. home, gallery, failed and player sit one level
    down inside the always-visible <main> wrapper; they have always been that way
    and all four render, so they are the baseline rather than a defect. Anything

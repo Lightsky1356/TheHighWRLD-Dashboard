@@ -330,7 +330,15 @@ footer .hub-panel select{border-color:var(--th-border2)}
 .cmp-toggle:hover{color:#22d3ee;border-color:rgba(34,211,238,.4)}
 .cmp-profile-host.cmp-list .cmp-fav-grid{grid-template-columns:1fr}
 .cmp-profile-host.cmp-list .fav-card{display:flex;align-items:center;gap:12px}
-.cmp-profile-host.cmp-list .fav-art{aspect-ratio:auto;width:62px;height:62px;border-radius:12px;flex-shrink:0}
+/* A favourite row must be able to be narrower than its content.
+   The producer pill is one long unbreakable line, and a flex item's automatic
+   minimum size is its min-content width - so without this the row is as wide
+   as the longest pill, the list is as wide as the longest row, and the whole
+   page scrolls sideways on a phone. The pill is what ellipsises, so it is the
+   row that has to give way, not the text. */
+.cmp-profile-host .fav-card{min-width:0}
+.cmp-profile-host .fav-info{min-width:0}
+.cmp-profile-host .fav-art{aspect-ratio:auto;width:62px;height:62px;border-radius:12px;flex-shrink:0}
 .cmp-profile-host.cmp-list .fav-zoom{display:none}
 .cmp-profile-host.cmp-list .fav-info{flex:1;min-width:0;padding:8px 12px 8px 0}
 .cmp-profile-host.cmp-list .fav-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cmp-profile-host .pl-card{padding:16px;display:flex;gap:14px;align-items:center;background:var(--ac-glass);border:1px solid var(--ac-border);border-radius:var(--ac-radius);transition:border-color .2s,transform .2s}

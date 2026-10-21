@@ -64,7 +64,7 @@
   }
 
   function isOtherProfile() {
-    try { return /^\/profile\/.+/.test(location.pathname || ""); } catch (e) { return false; }
+    try { return (typeof window.isOtherProfilePath === "function") ? window.isOtherProfilePath() : false; } catch (e) { return false; }
   }
 
   function css() {

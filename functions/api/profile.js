@@ -106,7 +106,10 @@ function formatTimeAgo(iso) {
 export async function onRequestGet(context) {
   try {
     const url = new URL(context.request.url);
-    const user = (url.searchParams.get("user") || "").slice(0, 40);
+    /* A profile is addressed by its Discord username - /Profile/@lightsky1356 -
+       so a leading "@" is part of the address, not part of the name. It is
+       stripped here so the name can be looked up. */
+    const user = (url.searchParams.get("user") || "").replace(/^@/, "").slice(0, 40);
     const discord = (url.searchParams.get("discord") || "").slice(0, 40);
     const activityOnly = url.searchParams.get("activity") === "1";
     const db = context.env.wanted_vault;
@@ -146,6 +149,18 @@ export async function onRequestGet(context) {
       "SELECT discord_id, display_name, avatar, bio FROM discord_links WHERE site_uid = ?"
     ).bind(uid).first();
     let prof = await db.prepare("SELECT * FROM user_profiles WHERE site_uid = ?").bind(uid).first();
+    if (!prof) {
+      /* The site's username IS the Discord username, and it is what a profile
+       * address carries: /Profile/@lightsky1356. It is looked up before the
+       * display names below, because a display name can be changed by its
+       * owner and can collide, while the username is the handle a person
+       * actually gives out. */
+      const byUsername = await db.prepare("SELECT uid FROM users WHERE LOWER(name) = LOWER(?) LIMIT 1").bind(uid).first();
+      if (byUsername && byUsername.uid) {
+        uid = byUsername.uid;
+        prof = await db.prepare("SELECT * FROM user_profiles WHERE site_uid = ?").bind(uid).first();
+      }
+    }
     if (!prof) {
       const byName = await db.prepare("SELECT site_uid FROM user_profiles WHERE LOWER(name) = LOWER(?) LIMIT 1").bind(uid).first();
       if (byName && byName.site_uid) {

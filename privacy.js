@@ -16,7 +16,7 @@
 
   function isSelfProfile() {
     try {
-      if (/^\/profile\/.+/.test(location.pathname || "")) return false;
+      if (typeof window.isOtherProfilePath === "function" ? window.isOtherProfilePath() : false) return false;
       var body = document.getElementById("profilePageBody");
       return !!(body && body.textContent);
     } catch (e) { return false; }

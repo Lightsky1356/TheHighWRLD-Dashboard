@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v119';
+const VERSION = 'thw-v120';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -53,9 +53,9 @@ const PRECACHE = [
   './toast.js?v=thw-v1',
   './tracks.js?v=thw-v9',
   './browser-id3-writer.js?v=thw-v2',
-  './account.js?v=thw-v14',
+  './account.js?v=thw-v15',
   './i18n.js?v=6',
-  './script.js?v=thw-v46',
+  './script.js?v=thw-v47',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v6',
@@ -66,11 +66,11 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v4',
-  'player-settings.css?v=thw-v64',
+  'player-settings.css?v=thw-v65',
   './style.css?v=thw-v31',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
-  './themes.css?v=thw-v2',
+  './themes.css?v=thw-v3',
   './css2.css?v=thw-v2',
   './about.css?v=thw-v4',
   './fonts/0-Sora-300.woff2',
@@ -119,7 +119,7 @@ const PRECACHE = [
 
   /* --- page scripts --- */
   './user-relations.js?v=thw-v2',
-  './user-menu.js?v=thw-v4',
+  './user-menu.js?v=thw-v5',
   './player-settings.js?v=thw-v6',
   './reports.js?v=thw-v3',
   './player-performance.js?v=thw-v4',
@@ -134,10 +134,10 @@ const PRECACHE = [
   './automod-ui.js?v=thw-v3',
   './report-status.js?v=thw-v2',
   './ban-screen.js?v=thw-v2',
-  './wrld-stats.js?v=thw-v8',
-  './recent.js?v=thw-v6',
+  './wrld-stats.js?v=thw-v9',
+  './recent.js?v=thw-v7',
   './trackinfo.js?v=thw-v2',
-  './profile-enhancements.js?v=thw-v35',
+  './profile-enhancements.js?v=thw-v36',
   './roadmap-data.js?v=thw-v26',
   './roadmap.js?v=thw-v26',
   './timeline.js?v=thw-v5',
@@ -149,9 +149,9 @@ const PRECACHE = [
   './failed-projects.js?v=thw-v13',
   './presets.js?v=thw-v3',
   './mobile-player.js?v=thw-v4',
-  './follows.js?v=thw-v2',
-  './privacy.js?v=thw-v2',
-  './playlists-ui.js?v=thw-v5',
+  './follows.js?v=thw-v3',
+  './privacy.js?v=thw-v3',
+  './playlists-ui.js?v=thw-v6',
   './drops.js?v=thw-v2',
   './legal-info.js?v=thw-v5',
   './social-panel.js?v=thw-v30',

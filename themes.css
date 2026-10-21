@@ -303,3 +303,29 @@ html[data-theme=default]{
   --th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(34,211,238,.20),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(56,189,248,.16),transparent 55%),radial-gradient(800px 600px at 50% 110%,rgba(14,165,233,.10),transparent 55%),linear-gradient(180deg,#02060d,#061430 45%,#031020 100%);
   --th-accent:#22d3ee;--th-accent2:#38bdf8;--th-glow:rgba(34,211,238,.18);--th-glow2:rgba(56,189,248,.10);
 }
+
+/* ============================================================================
+   The gradients every theme must have
+   ---------------------------------------------------------------------------
+   Three gradient variables are used across the site: --ac-grad-brand,
+   --ac-grad-purple and --ac-grad-gold. Only four of the thirty-two themes
+   defined all three, and --ac-grad-gold was missing from twenty-eight of
+   them.
+
+   A missing gradient is not a cosmetic gap. A rule that says
+   background:var(--ac-grad-gold) with the variable undefined keeps every other
+   declaration in the rule - including color:#201000, which is near-black. So
+   the Owner Dashboard's Unlock button became near-black text with no
+   background on a near-black panel: a button that looked like a hole in the
+   page. It was reported as "won't let me enter the Owner Dashboard", and the
+   passcode was right.
+
+   The fallbacks below are built from each theme's own palette, so the button
+   is the theme's colour rather than one fixed shade for everybody. :where()
+   gives this rule zero specificity, so a theme that does define its own
+   gradient still wins - these are only ever the fallback. */
+html:where([data-theme]){
+  --ac-grad-brand:linear-gradient(120deg,var(--ac-purple),var(--ac-pink),var(--ac-orange),var(--ac-pink));
+  --ac-grad-purple:linear-gradient(135deg,var(--ac-purple),var(--ac-pink));
+  --ac-grad-gold:linear-gradient(135deg,var(--ac-orange),var(--ac-gold));
+}

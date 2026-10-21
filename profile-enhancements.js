@@ -97,7 +97,7 @@
 
   function isSelfProfile() {
     try {
-      if (/^\/profile\/.+/.test(location.pathname || "")) return false;   /* someone else's */
+      if (typeof window.isOtherProfilePath === "function" ? window.isOtherProfilePath() : false) return false;   /* someone else's */
       return isProfilePage();
     } catch (e) { return false; }
   }
@@ -198,7 +198,17 @@
       "#profilePageBody .pp-col>*{min-width:0;overflow-wrap:break-word}" +
 
       /* Phone: one column, as before - the shelf just stacks its two columns. */
-      "@media(max-width:700px){#profilePageBody .pp-shelf{flex-direction:column}}" +
+      "@media(max-width:700px){" +
+      /* ...and the stacked columns take the shelf's width rather than their own.
+         align-items was flex-start, which in a COLUMN flex container sizes the
+         items by their content: a column holding the favourites list was as
+         wide as the widest favourite row, and the widest row was as wide as
+         the longest producer pill, so the page grew wider than the phone and
+         scrolled sideways. Stretching puts the width back where the layout
+         intended it - the shelf's. */
+      "#profilePageBody .pp-shelf{flex-direction:column;align-items:stretch}" +
+      "#profilePageBody .pp-col{max-width:100%}" +
+      "}" +
 
       /* Held back until the board stops changing.
          account.js paints the identity card first; playlists-ui.js and
