@@ -17,6 +17,7 @@
   let ws = null;
   let wsAttempts = 0;
   let wsHbTimer = null;
+  let wsWasOpen = false;
   let wsReconnectTimer = null;
 
   const state = { online: 0, guests: 0 };
@@ -155,7 +156,18 @@
 
   function wsScheduleReconnect() {
     if (wsReconnectTimer) return;
-    const delay = Math.min(1000 * Math.pow(2, wsAttempts), 20000);
+    /* The backoff goes to a minute, and to a quarter of an hour once it has
+       tried a lot.
+     *
+       * It gave up after twenty seconds, so a socket that could not be
+       * opened was tried three times a minute, for as long as the tab was
+       * open. Each attempt is a request, and the socket is opened on every
+       * page - so a server refusing them turns into a steady trickle of
+       * requests from every tab that is open.
+     *
+       * A socket that has failed fifteen times is not going to work on the
+       * next one, and a tab left open overnight should not be asking. */
+    const delay = Math.min(1000 * Math.pow(2, wsAttempts), wsAttempts > 4 ? 900000 : 60000);
     wsAttempts++;
     wsReconnectTimer = setTimeout(function () { wsReconnectTimer = null; wsConnect(); }, delay);
   }
@@ -171,6 +183,7 @@
       ws = new WebSocket(proto + location.host + '/api/realtime?uid=' + encodeURIComponent(id) + '&pkey=' + encodeURIComponent(id));
     } catch (_) { wsScheduleReconnect(); return; }
     ws.onopen = function () {
+      wsWasOpen = true;
       wsAttempts = 0;
       stopPolling();
       if (wsHbTimer) clearInterval(wsHbTimer);
@@ -198,8 +211,14 @@
     ws.onclose = function () {
       if (wsHbTimer) { clearInterval(wsHbTimer); wsHbTimer = null; }
       /* The socket has gone, so the counts come from the database again -
-         and the table has to be kept current for that to work. */
-      heartbeat();
+         and the table has to be kept current for that to work.
+         *
+         * But only if it was ever open. A connection attempt that failed
+         * closes the socket too, and sending a heartbeat for every one of
+         * those means a socket that cannot be opened costs a request as
+         * well as the attempt. */
+      if (wsWasOpen) heartbeat();
+      wsWasOpen = false;
       startPolling();
       wsScheduleReconnect();
     };

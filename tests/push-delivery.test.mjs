@@ -53,8 +53,13 @@ async function call(token, path, method = "GET", body) {
     headers: { Cookie: `thw_session=${token}`, "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
+  /* The body is read in full every time. A response left half read
+     leaves the connection open, and Node on Windows asserts about that when
+     the process ends - which fails the whole group even when every check in
+     it passed. */
+  const text = await res.text();
   let json = null;
-  try { json = await res.json(); } catch (_) {}
+  try { json = JSON.parse(text); } catch (_) {}
   return { status: res.status, json };
 }
 
@@ -183,4 +188,6 @@ async function notifyRecipient() {
 console.log(out.join("\n"));
 const failed = out.filter((l) => l.startsWith("FAIL")).length;
 console.log(`\n${out.length - failed} passed, ${failed} failed`);
+/* A moment, so the connections close before the process ends. */
+await new Promise((r) => setTimeout(r, 300));
 process.exit(failed ? 1 : 0);

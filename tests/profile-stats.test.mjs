@@ -143,4 +143,6 @@ const failed = out.filter((l) => l.startsWith("FAIL")).length;
 console.log(`\n${out.length - failed} passed, ${failed} failed`);
 /* A moment, so the connections close before the process ends. */
 await new Promise((r) => setTimeout(r, 300));
+/* A moment, so the connections close before the process ends. */
+await new Promise((r) => setTimeout(r, 300));
 process.exit(failed ? 1 : 0);

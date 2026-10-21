@@ -514,7 +514,11 @@
     /* No reconnect while the community is off screen: the socket is closed
        instead, and reopened when the page comes back. */
     if (!communityVisible()) return;
-    const delay = Math.min(1000 * Math.pow(2, STATE.attempts), 20000);
+    /* The backoff goes to a minute, and to a quarter of an hour once it
+       has tried a lot. It gave up after twenty seconds, so a socket that
+       could not be opened was tried three times a minute, for as long as the
+       community was on screen - and each attempt is a request. */
+    const delay = Math.min(1000 * Math.pow(2, STATE.attempts), STATE.attempts > 4 ? 900000 : 60000);
     STATE.attempts++;
     STATE.reconnectTimer = setTimeout(() => { STATE.reconnectTimer = null; connect(); }, delay);
   }
