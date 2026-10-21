@@ -23,16 +23,70 @@
 
 /* Whether the tables are there. Asked once per isolate: a table that is not
    there will not appear while the isolate is alive. */
-const AVAILABILITY = { known: null };
+/* The tables the summaries are kept in.
+ *
+ * They are created here as well as by the migration, so that the summaries
+ * do not depend on the migration having been applied. A database that has
+ * never seen them gets them the first time they are needed - and if they
+ * cannot be created either, everything falls back to the history exactly as
+ * it did before.
+ *
+ * Creating a table reads no rows, so it works even when the daily read
+ * limit has been reached. */
+const SCHEMA = [
+  "CREATE TABLE IF NOT EXISTS listens_daily (uid TEXT NOT NULL DEFAULT '', day TEXT NOT NULL DEFAULT '', plays INTEGER NOT NULL DEFAULT 0, seconds INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (uid, day))",
+  "CREATE TABLE IF NOT EXISTS listens_track (uid TEXT NOT NULL DEFAULT '', track_id TEXT NOT NULL DEFAULT '', plays INTEGER NOT NULL DEFAULT 0, seconds INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (uid, track_id))",
+  "CREATE TABLE IF NOT EXISTS listens_hour (uid TEXT NOT NULL DEFAULT '', hour INTEGER NOT NULL DEFAULT 0, plays INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (uid, hour))",
+  "CREATE TABLE IF NOT EXISTS listens_day (day TEXT NOT NULL PRIMARY KEY, plays INTEGER NOT NULL DEFAULT 0)",
+];
+
+/* Whether the tables are there.
+ *
+ * Asked once per isolate, because a table that is there stays there. But a
+ * "no" is only remembered for a minute: an isolate that started while the
+ * daily read limit was reached would otherwise carry on reading the whole
+ * history for as long as it lived, which is exactly the thing being fixed. */
+const AVAILABILITY = { known: null, at: 0 };
+const AVAILABILITY_RETRY_MS = 60000;
+
+async function tablesAreThere(db) {
+  /* All of them, not just one: a database can have one and not the others,
+     and a half-built set would fall back to the history for ever. */
+  await db.prepare("SELECT day FROM listens_daily WHERE uid = ? LIMIT 1").bind("").first();
+  await db.prepare("SELECT track_id FROM listens_track WHERE uid = ? LIMIT 1").bind("").first();
+  await db.prepare("SELECT hour FROM listens_hour WHERE uid = ? LIMIT 1").bind("").first();
+  return true;
+}
+
+async function createTables(db) {
+  for (const statement of SCHEMA) {
+    try {
+      await db.prepare(statement).run();
+    } catch (_) {
+      /* Cannot make them here. The migration will. */
+    }
+  }
+  try {
+    await tablesAreThere(db);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 
 export async function rollupAvailable(db) {
-  if (AVAILABILITY.known !== null) return AVAILABILITY.known;
+  if (AVAILABILITY.known === true) return true;
+  if (AVAILABILITY.known === false && Date.now() - AVAILABILITY.at < AVAILABILITY_RETRY_MS) {
+    return false;
+  }
   try {
-    await db.prepare("SELECT day FROM listens_daily WHERE uid = ? LIMIT 1").bind("").first();
+    await tablesAreThere(db);
     AVAILABILITY.known = true;
   } catch (_) {
-    AVAILABILITY.known = false;
+    /* They may simply not have been made yet. */
+    AVAILABILITY.known = await createTables(db);
   }
+  AVAILABILITY.at = Date.now();
   return AVAILABILITY.known;
 }
 
@@ -125,14 +179,20 @@ export async function totalPlays(db) {
   try {
     const row = await db.prepare("SELECT COALESCE(SUM(plays),0) AS total FROM listens_day").first();
     if (row && row.total) return row.total;
-    if (row) {
-      /* The table is there but empty: the history has not been counted yet,
-         so count it the old way rather than say there have been no plays. */
-      const old = await db.prepare("SELECT COUNT(*) AS total FROM listens").first();
-      return old ? old.total || 0 : 0;
+    /* The table is there but empty, so the history has not been counted into
+       it yet. Count it in, once - the same count the migration makes. */
+    try {
+      await db.prepare(
+        "INSERT OR REPLACE INTO listens_day (day, plays) SELECT substr(ts,1,10) AS day, COUNT(*) AS plays FROM listens GROUP BY substr(ts,1,10)"
+      ).run();
+      const again = await db.prepare("SELECT COALESCE(SUM(plays),0) AS total FROM listens_day").first();
+      if (again && again.total) return again.total;
+    } catch (_) {
+      /* Could not count them in. Count the history the old way. */
     }
   } catch (_) {
     /* The table is not there. */
+    try { await createTables(db); } catch (_) {}
   }
   const old = await db.prepare("SELECT COUNT(*) AS total FROM listens").first();
   return old ? old.total || 0 : 0;

@@ -1571,6 +1571,38 @@ function safeDecode4(v) {
   }
 }
 
+/* ---- the summaries do not wait for a migration ----
+ *
+ * The tables the summaries are kept in are created by the code as well as
+ * by the migration, so that the fix does not depend on the migration having
+ * been applied. A database that has never seen them gets them the first
+ * time they are needed - and creating a table reads no rows, so it works
+ * even when the daily read limit has been reached.
+ *
+ * The site was down for hours with the daily limits reached, and the fix
+ * was sitting in the code waiting for a migration that could not be applied
+ * for the same reason. */
+{
+  const listening = readFileSync(join(ROOT, "functions/_lib/listens-stats.js"), "utf8");
+  if (!/const SCHEMA = \[/.test(listening)) {
+    structureFail("the tables the summaries are kept in are not written down in the code");
+  } else if (!/CREATE TABLE IF NOT EXISTS listens_daily/.test(listening)) {
+    structureFail("the code does not make the table the summaries are kept in");
+  } else if (!/createTables/.test(listening)) {
+    structureFail("the code never makes the tables it needs");
+  } else {
+    structureOk("the code makes the tables the summaries are kept in");
+  }
+
+  /* And a "no" is remembered for a minute, not for ever: an isolate that
+     started while the limit was reached has to recover. */
+  if (!/AVAILABILITY_RETRY_MS/.test(listening)) {
+    structureFail("an isolate that started while the limit was reached never recovers");
+  } else {
+    structureOk("an isolate that started while the limit was reached recovers");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

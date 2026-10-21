@@ -33,9 +33,13 @@ function same(a, b) {
 
 /* A small stand-in for the database, with the shape the code expects:
    prepare(sql).bind(...).first() / .all() / .run(), and batch(). */
-function shim(db) {
+function shim(db, opts) {
+  const refuseToCreate = opts && opts.refuseToCreate;
   return {
     prepare(sql) {
+      if (refuseToCreate && /^CREATE TABLE/i.test(sql)) {
+        throw new Error("CREATE TABLE is not allowed here");
+      }
       const stmt = db.prepare(sql);
       return {
         bind(...args) {
@@ -162,8 +166,11 @@ ok(gone.plays === 0, "nothing is left behind");
 
 /* ------------------------------------------------------------------ */
 console.log("");
-console.log("Without the tables, everything falls back to the history");
+console.log("A database with no tables at all");
 
+/* The tables are made by the code, so the fix does not wait for a
+   migration: a database that has never seen them gets them the first time
+   they are needed. */
 const bare = new DatabaseSync(":memory:");
 bare.exec(`CREATE TABLE listens (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -176,16 +183,42 @@ seed(bare);
 const bareDb = shim(bare);
 const bareMod = await import(modUrl + "?t=bare" + Date.now());
 
-const fallback = await bareMod.listeningStats(bareDb, "tester", { topLimit: 10 });
+const made = await bareMod.listeningStats(bareDb, "tester", { topLimit: 10 });
+ok(made.plays === seeded, "the answers are right when the tables were made on the spot", String(made.plays));
+ok(made.top.length === 4, "the most played tracks are listed when the tables were made on the spot");
+ok(made.days.length === 34, "the days are listed when the tables were made on the spot");
+ok(made.hours.some((h) => h > 0), "the hours are shown when the tables were made on the spot");
+
+/* A play is recorded and counted, whichever way the answer is reached. */
+await bareMod.recordPlay(bareDb, "tester", "Theta", 30);
+const bareAfter = await bareMod.listeningStats(bareDb, "tester", { topLimit: 10 });
+ok(bareAfter.plays === seeded + 1, "a play is recorded", String(bareAfter.plays));
+
+/* And when the tables cannot be made - because the migration has not run
+   and the database will not let it - everything falls back to the history. */
+const refused = new DatabaseSync(":memory:");
+refused.exec(`CREATE TABLE listens (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  uid TEXT NOT NULL DEFAULT 'anon',
+  track_id TEXT NOT NULL DEFAULT '',
+  seconds INTEGER NOT NULL DEFAULT 0,
+  ts TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);`);
+seed(refused);
+const refusedDb = shim(refused, { refuseToCreate: true });
+const refusedMod = await import(modUrl + "?t=refused" + Date.now());
+
+const fallback = await refusedMod.listeningStats(refusedDb, "tester", { topLimit: 10 });
 ok(fallback.plays === seeded, "the fallback counts every play", String(fallback.plays));
 ok(fallback.top.length === 4, "the fallback lists the most played tracks");
 ok(fallback.days.length === 34, "the fallback lists the days");
 ok(fallback.hours.some((h) => h > 0), "the fallback shows the hours");
 
-/* A play still works without the tables - the history is never lost. */
-await bareMod.recordPlay(bareDb, "tester", "Theta", 30);
-const bareAfter = await bareMod.listeningStats(bareDb, "tester", { topLimit: 10 });
-ok(bareAfter.plays === seeded + 1, "a play is recorded even without the tables", String(bareAfter.plays));
+/* A play is still recorded even when the tables cannot be made - the
+   history is never lost. */
+await refusedMod.recordPlay(refusedDb, "tester", "Theta", 30);
+const refusedAfter = await refusedMod.listeningStats(refusedDb, "tester", { topLimit: 10 });
+ok(refusedAfter.plays === seeded + 1, "a play is recorded even without the tables", String(refusedAfter.plays));
 
 /* ------------------------------------------------------------------ */
 console.log("");
