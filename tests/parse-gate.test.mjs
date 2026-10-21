@@ -478,6 +478,69 @@ if (dupes.length) {
   }
 }
 
+/* ---- the recurring calls ask for what is on screen, and no more often ----
+ *
+ * The free tier allows 100,000 requests a day. The site was spending them on
+ * polling that mostly produced nothing: the recently played list was asked for
+ * every minute on every page and thrown away unless the profile was open, the
+ * community socket was held open per tab for a page most tabs never show, and
+ * the owner statistics were fetched every three seconds.
+ *
+ * So: a poll that is not on screen does not run, a tab in the background does
+ * not ask, and nothing that can be asked once a minute is asked four times a
+ * minute. */
+{
+  const presence = readFileSync(join(ROOT, "presence.js"), "utf8");
+  const pollM = /var POLL_MS = (\d+);/.exec(presence);
+  const hbM = /heartbeatTimer = setInterval\(heartbeat, (\d+)\)/.exec(presence);
+  const wsHbM = /wsHbTimer = setInterval\(function \(\) \{ wsSend\(\{ type: 'heartbeat' \}\); \}, (\d+)\)/.exec(presence);
+  if (!pollM || Number(pollM[1]) < 60000) {
+    structureFail("the presence poll runs more often than once a minute");
+  } else if (!hbM || Number(hbM[1]) < 60000) {
+    structureFail("the presence heartbeat runs more often than once a minute");
+  } else if (!wsHbM || Number(wsHbM[1]) < 60000) {
+    structureFail("the presence socket heartbeats more often than once a minute");
+  } else {
+    structureOk("the presence poll and both heartbeats are a minute apart");
+  }
+
+  const recent = readFileSync(join(ROOT, "recent.js"), "utf8");
+  if (!/function worthPolling\(\)/.test(recent)) {
+    structureFail("the recently played list is polled whether or not it is on screen");
+  } else if (!/setInterval\(function \(\) \{ if \(worthPolling\(\)\) load\(\); \}/.test(recent)) {
+    structureFail("the recently played list's timer does not check whether it is on screen");
+  } else {
+    structureOk("the recently played list is only asked for when it is on screen");
+  }
+
+  const comm = readFileSync(join(ROOT, "community-realtime.js"), "utf8");
+  if (!/function communityVisible\(\)/.test(comm)) {
+    structureFail("the community socket is opened whether or not the community is on screen");
+  } else if (!/if \(!communityVisible\(\)\) return;/.test(comm)) {
+    structureFail("the community socket connects without checking the page is open");
+  } else if (!/STATE\.heartbeat = setInterval\(\(\) => sendWs\(\{ type: 'heartbeat' \}\), (\d+)\)/.test(comm) ||
+             Number(/STATE\.heartbeat = setInterval\(\(\) => sendWs\(\{ type: 'heartbeat' \}\), (\d+)\)/.exec(comm)[1]) < 60000) {
+    structureFail("the community socket heartbeats more often than once a minute");
+  } else {
+    structureOk("the community socket follows the page, and heartbeats once a minute");
+  }
+
+  const visit = readFileSync(join(ROOT, "functions/api/visit.js"), "utf8");
+  if (!/linkedCache/.test(visit)) {
+    structureFail("every visit reads the linked-Discord row from the database");
+  } else {
+    structureOk("the linked-Discord lookup is read once per uid, not once per visit");
+  }
+
+  const script = readFileSync(join(ROOT, "script.js"), "utf8");
+  const visitM = /if\(now-lp<(\d+)\)return;/.exec(script);
+  if (!visitM || Number(visitM[1]) < 30000) {
+    structureFail("a visit is recorded more often than once every thirty seconds");
+  } else {
+    structureOk("a visit is recorded once every thirty seconds");
+  }
+}
+
 /* ---- the page's assets resolve from the root, whatever the path is ----
  *
  * A page served at /Profile/@someone resolves "./style.css" against

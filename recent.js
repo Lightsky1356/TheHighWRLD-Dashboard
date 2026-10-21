@@ -120,6 +120,29 @@
     else body.appendChild(div);
   }
 
+  /* Whether asking for the list is worth anything.
+     *
+   * It used to be asked for every sixty seconds on every page, and the answer
+   * was thrown away by renderProfile unless the profile was the page on
+   * screen. A tab left open on the Lobby was asking for the recently played
+   * list once a minute, forever, and using none of it - and a guest paid for
+   * it too, on an endpoint that is session-authed and can only ever answer
+   * 401.
+   *
+   * So the timer only asks when the block it fills is actually on screen, and
+   * only for somebody who is signed in. load() itself still fetches whenever
+   * it is called directly, because that is how the profile page asks for it
+   * when it opens. */
+  function worthPolling() {
+    try {
+      if (document.hidden) return false;
+      if (!localStorage.getItem("wantedAuthUser")) return false;
+      if (isOtherProfile()) return false;
+      var page = document.getElementById("page-section-profile");
+      return !!(page && page.classList.contains("active"));
+    } catch (e) { return false; }
+  }
+
   function load() {
     fetch("/api/recent?limit=20", { cache: "no-store", credentials: "same-origin" })
       .then(function (r) { return r.json(); })
@@ -153,7 +176,7 @@
        re-rendered every time the WRLD Player opened is gone, and the profile
        block refreshes through profileSectionShown and the 60s poll. */
     load();
-    setInterval(load, 60000);
+    setInterval(function () { if (worthPolling()) load(); }, 60000);
     window.refreshRecent = load;
   }
 

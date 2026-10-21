@@ -459,7 +459,35 @@
     return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/api/realtime' + (STATE.uid ? '?uid=' + encodeURIComponent(STATE.uid) : '');
   }
 
+  /* The community socket is a long-lived worker, and it is only worth holding
+     while the community is actually on screen.
+
+     It used to be opened by every tab on load and held for the whole
+     session, whether or not anybody was looking at the community - a worker
+     held open per tab, on a page most tabs never show. The free tier allows
+     a hundred thousand requests a day and a limited number of concurrent
+     workers, so a socket nobody is reading is one somebody else cannot have.
+
+     So the socket follows the page: it opens when the community is on screen
+     and closes when it is not, and it does not reopen for a tab that is in
+     the background. */
+  function communityVisible() {
+    try {
+      if (document.hidden) return false;
+      var el = $id('page-section-community');
+      return !!(el && el.classList.contains('active'));
+    } catch (_) { return false; }
+  }
+
+  function disconnect() {
+    if (STATE.reconnectTimer) { clearTimeout(STATE.reconnectTimer); STATE.reconnectTimer = null; }
+    stopHb();
+    try { if (STATE.ws) { STATE.ws.onclose = null; STATE.ws.close(); } } catch (_) {}
+    STATE.ws = null;
+  }
+
   function connect() {
+    if (!communityVisible()) return;
     if (STATE.ws && (STATE.ws.readyState === WebSocket.CONNECTING || STATE.ws.readyState === WebSocket.OPEN)) return;
     try { STATE.ws = new WebSocket(hubUrl()); } catch (_) { scheduleReconnect(); return; }
 
@@ -469,7 +497,9 @@
       $id('commLive') && $id('commLive').classList.remove('hidden');
       sendWs({ type: 'hello', uid: STATE.uid, conversationId: STATE.typingConversation || 'community' });
       if (STATE.heartbeat) clearInterval(STATE.heartbeat);
-      STATE.heartbeat = setInterval(() => sendWs({ type: 'heartbeat' }), 25000);
+      /* A minute between heartbeats. The socket is a long-lived worker, and this is a
+       request every twenty-five seconds for as long as the tab is open. */
+    STATE.heartbeat = setInterval(() => sendWs({ type: 'heartbeat' }), 60000);
     };
 
     STATE.ws.onmessage = (ev) => { try { handleMsg(JSON.parse(ev.data)); } catch (_) {} };
@@ -481,6 +511,9 @@
 
   function scheduleReconnect() {
     if (STATE.reconnectTimer) return;
+    /* No reconnect while the community is off screen: the socket is closed
+       instead, and reopened when the page comes back. */
+    if (!communityVisible()) return;
     const delay = Math.min(1000 * Math.pow(2, STATE.attempts), 20000);
     STATE.attempts++;
     STATE.reconnectTimer = setTimeout(() => { STATE.reconnectTimer = null; connect(); }, delay);
@@ -599,9 +632,23 @@
     bootRender();
     connect();
 
+    /* The socket follows the community page, and follows the tab's
+       visibility. It opens when the community is on screen and closes when it
+       is not - a long-lived worker per tab, for a page most tabs never show,
+       is a worker somebody else cannot have. */
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') connect();
+      else disconnect();
     });
+    try {
+      var el = $id('page-section-community');
+      if (el && window.MutationObserver) {
+        new MutationObserver(function () {
+          if (communityVisible()) connect();
+          else disconnect();
+        }).observe(el, { attributes: true, attributeFilter: ['class'] });
+      }
+    } catch (_) {}
     window.addEventListener('beforeunload', () => { try { STATE.ws && STATE.ws.close(); } catch (_) {} stopHb(); });
   }
 

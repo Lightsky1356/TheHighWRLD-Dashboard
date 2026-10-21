@@ -78,6 +78,9 @@
     if (cache && !document.getElementById(SEC)) render(box, cache);
   }
 
-  setInterval(tick, 3000);
+  /* Thirty seconds, not three. It is a statistics page: nobody is watching the
+       numbers change, and it was a request every three seconds for as long as the
+       owner panel was open. */
+    setInterval(tick, 30000);
   tick();
 })();

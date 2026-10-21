@@ -106,8 +106,8 @@
    * fallback now asks far less often, and backs off further when the ask is
    * failing - which is exactly when the socket is broken and the fallback is
    * the only thing running. */
-  var POLL_MS = 15000;
-  var POLL_FAIL_MS = 60000;
+  var POLL_MS = 60000;
+  var POLL_FAIL_MS = 120000;
   var pollFailures = 0;
 
   async function poll(force) {
@@ -174,7 +174,11 @@
       wsAttempts = 0;
       stopPolling();
       if (wsHbTimer) clearInterval(wsHbTimer);
-      wsHbTimer = setInterval(function () { wsSend({ type: 'heartbeat' }); }, 25000);
+      /* A minute between heartbeats. The socket is a long-lived worker, and a
+         heartbeat is a request every time it fires, for as long as the tab is
+         open. A minute is still well inside the ninety-second window the
+         presence table counts over. */
+      wsHbTimer = setInterval(function () { wsSend({ type: 'heartbeat' }); }, 60000);
     };
     ws.onmessage = function (ev) {
       let msg = null;
@@ -215,7 +219,8 @@
     heartbeat();
     poll();
     wsConnect();
-    heartbeatTimer = setInterval(heartbeat, 30000);
+    /* A minute between heartbeats, matching the socket's. */
+    heartbeatTimer = setInterval(heartbeat, 60000);
     startPolling();
 
     document.addEventListener('visibilitychange', function () {

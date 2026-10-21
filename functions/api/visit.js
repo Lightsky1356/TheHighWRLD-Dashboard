@@ -31,10 +31,20 @@ export async function onRequestPost(context) {
       const session = await getSessionUser(env.wanted_vault, context.request);
       if (session && session.uid) authed = true;
       else {
-        const link = await env.wanted_vault.prepare(
-          "SELECT display_name FROM discord_links WHERE site_uid = ?"
-        ).bind(uid).first();
-        if (link && link.display_name) authed = true;
+        /* Whether this uid belongs to a linked Discord account does not change
+           between visits, and the answer was read from the database on every
+           single one of them. It is remembered per uid for the life of the
+           isolate instead: one read the first time a uid is seen, none after
+           that. */
+        let linked = linkedCache.get(uid);
+        if (linked === undefined) {
+          const link = await env.wanted_vault.prepare(
+            "SELECT display_name FROM discord_links WHERE site_uid = ?"
+          ).bind(uid).first();
+          linked = !!(link && link.display_name);
+          linkedCache.set(uid, linked);
+        }
+        if (linked) authed = true;
       }
     } catch (_) {}
     if (!authed) return json({ ok: true, tracked: false });
