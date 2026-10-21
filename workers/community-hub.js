@@ -44,7 +44,14 @@ function parseJson(raw) {
   }
 }
 
-const PRESENCE_TTL_MS = 45000;      // mark offline if no heartbeat within this window
+/* How long somebody counts as still here without a heartbeat.
+   *
+   * It has to be comfortably longer than the heartbeat the clients send,
+   * which is every sixty seconds - a window shorter than the heartbeat
+   * marks people offline and then online again, over and over, for as long
+   * as they stay. The clients heartbeat every sixty seconds and the window
+   * is ninety, which is also the window the counts are read over. */
+const PRESENCE_TTL_MS = 90000;
 const PRESENCE_ALARM_MS = 20000;    // how often we sweep for stale presence
 
 function sessionToken(request) {

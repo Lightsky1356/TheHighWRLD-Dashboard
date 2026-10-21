@@ -51,6 +51,7 @@ const GROUPS = [
   { name: "profile-stats", file: "./profile-stats.test.mjs", needsServer: true },
   { name: "owner-stats", file: "./owner-stats.test.mjs", needsServer: true },
   { name: "community-list", file: "./community-list.test.mjs", needsServer: true },
+  { name: "wanted-vault", file: "./wanted-vault.test.mjs", needsServer: true },
   { name: "playlists", file: "./playlists.test.mjs", needsServer: true },
   { name: "gallery-publish", file: "./gallery-publish.test.mjs", needsServer: true },
 ];

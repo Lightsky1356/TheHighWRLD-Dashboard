@@ -63,6 +63,22 @@ function rankLead(col) {
   return "(CASE WHEN LOWER(" + col + ") = ? THEN 0 WHEN LOWER(" + col + ") LIKE ? ESCAPE '\\' THEN 1 ELSE 2 END)";
 }
 
+/* The search log is pruned on a timer of its own, so that a prune is not a
+   cost on every search. */
+let lastSearchPruneAt = 0;
+const SEARCH_PRUNE_EVERY_MS = 10 * 60 * 1000;
+
+function pruneSearchLog(db) {
+  const now = Date.now();
+  if (now - lastSearchPruneAt < SEARCH_PRUNE_EVERY_MS) return;
+  lastSearchPruneAt = now;
+  try {
+    db.prepare("DELETE FROM search_logs WHERE ts < ?")
+      .bind(new Date(now - 30 * 86400000).toISOString())
+      .run();
+  } catch (_) {}
+}
+
 export async function onRequestGet(context) {
   try {
     const url = new URL(context.request.url);
@@ -340,6 +356,10 @@ export async function onRequestGet(context) {
       const logP = db.prepare(
         "INSERT INTO search_logs (q, results) VALUES (?, ?)"
       ).bind(qraw.slice(0, MAX_Q), totalHits).run();
+      /* The log is pruned here rather than by whoever reads it: it is written
+         on every search and it grew for ever, and the dashboard only ever
+         shows the last thirty days. */
+      pruneSearchLog(db);
       if (context.waitUntil) context.waitUntil(logP);
       else await logP;
     } catch (_) {}

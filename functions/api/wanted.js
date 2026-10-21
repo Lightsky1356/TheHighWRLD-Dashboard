@@ -19,7 +19,33 @@ function json(data, status = 200) {
   });
 }
 
-async function loadState(env, user) {
+/* The part of the vault that is the same for everybody is remembered for a
+ * minute.
+ *
+ * It is the expensive part: every reply that has ever been written, every
+ * vote, and every reply's votes - thousands of rows, read on every load of
+ * the page and growing for ever. None of it changes unless somebody votes or
+ * replies, so it is remembered rather than read again and again.
+ *
+ * The part that IS about the visitor - their own votes, their own name, the
+ * owner flag - is read fresh every time, because it is different for each of
+ * them and it has to be right.
+ *
+ * The remembered copy is dropped as soon as anything is written, so a vote is
+ * never shown as if it had not happened. */
+let sharedCache = null;
+let sharedAt = 0;
+const SHARED_TTL_MS = 60000;
+
+function invalidateShared() {
+  sharedCache = null;
+  sharedAt = 0;
+}
+
+async function loadShared(env) {
+  const now = Date.now();
+  if (sharedCache && now - sharedAt < SHARED_TTL_MS) return sharedCache;
+
   const tracks = await env.wanted_vault.prepare("SELECT title, note FROM tracks").all();
   const votes = await env.wanted_vault.prepare(
     "SELECT track_id, SUM(value) as n FROM votes GROUP BY track_id"
@@ -54,10 +80,22 @@ async function loadState(env, user) {
     });
   }
 
-  const state = {
+  sharedCache = {
     tracks: tracks.results.map((t) => ({ t: t.title, n: t.note })),
     votes: voteMap,
     replies: replyMap,
+  };
+  sharedAt = now;
+  return sharedCache;
+}
+
+async function loadState(env, user) {
+  const shared = await loadShared(env);
+
+  const state = {
+    tracks: shared.tracks,
+    votes: shared.votes,
+    replies: shared.replies,
   };
 
   if (user) {
@@ -137,6 +175,11 @@ export async function onRequestPost(context) {
         if (rej) return rej.response;
       } catch (_) {}
     }
+    /* Anything written here changes the vault, so the remembered copy of it
+       is now wrong. Dropped before the write, so nobody is shown a vault that
+       has already moved on. */
+    invalidateShared();
+
     switch (body.action) {
       case "vote": {
         const { track, user } = body;

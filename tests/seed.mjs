@@ -49,6 +49,22 @@ const statements = [];
    0039_gallery_spoiler.sql adds the spoiler column, so migrations own it and the
    tests exercise the same schema production runs. Nothing to do here. */
 
+/* The Wanted vault's tracks, and a reply on one of them.
+ *
+   The vault is the most expensive read on the site - every track, every
+   reply and every vote - and it is read on every load of the page. A fresh
+   local database has no tracks in it at all, so the vault could not be
+   tested: there was nothing in it to read.
+ *
+   Two tracks and a reply are enough for the suite to be about the read and
+   not about the data. */
+statements.push(`DELETE FROM reply_votes WHERE site_uid IN (${UIDS});`);
+statements.push(`DELETE FROM votes WHERE user_id IN (${UIDS});`);
+statements.push(`DELETE FROM replies WHERE author_uid IN (${UIDS});`);
+statements.push(`DELETE FROM tracks WHERE title IN ('Seed Track One', 'Seed Track Two');`);
+statements.push(`INSERT INTO tracks (title, note) VALUES ('Seed Track One', 'a track for the tests'), ('Seed Track Two', 'another one for the tests');`);
+statements.push(`INSERT INTO replies (track_id, user_name, avatar, discord_id, body, parent_id, reply_to, author_uid) SELECT 'Seed Track One', 'Gallery Linked', '', 'linked#0001', 'A reply for the tests.', NULL, '', 'gallinked1' WHERE EXISTS (SELECT 1 FROM tracks WHERE title = 'Seed Track One');`);
+
 /* Children before parents, so nothing is orphaned by a foreign key. */
 statements.push(`DELETE FROM push_subscriptions WHERE uid IN (${UIDS});`);
 /* Per-category prefs too. The notification-prefs suite deliberately writes

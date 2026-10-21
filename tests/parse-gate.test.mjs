@@ -1670,6 +1670,68 @@ function safeDecode4(v) {
   }
 }
 
+/* ---- the vault, the visits and the presence window ----
+ *
+ * Three more things that cost more every day than the day before.
+ *
+ * The Wanted vault is the most expensive read on the site - every track,
+ * every reply and every vote, thousands of rows - and it is read on every
+ * load of the page, and it grows for ever. The part of it that is the same
+ * for everybody is remembered for a minute; the part that is about the
+ * visitor is read fresh.
+ *
+ * The visits table and the search log are the same story: a row for every
+ * visit and every search, kept for ever, read by a dashboard that only ever
+ * shows the last few months. They are pruned as they are written to.
+ *
+ * And the presence window has to be wider than the heartbeat, or people are
+ * marked offline and then online again, for as long as they stay. */
+{
+  const wanted = readFileSync(join(ROOT, "functions/api/wanted.js"), "utf8");
+  const visit = readFileSync(join(ROOT, "functions/api/visit.js"), "utf8");
+  const search = readFileSync(join(ROOT, "functions/api/search.js"), "utf8");
+  const owner = readFileSync(join(ROOT, "functions/api/owner.js"), "utf8");
+  const hub = readFileSync(join(ROOT, "workers/community-hub.js"), "utf8");
+
+  if (!/loadShared/.test(wanted) || !/SHARED_TTL_MS/.test(wanted)) {
+    structureFail("the Wanted vault is read from the history on every load");
+  } else if (!/invalidateShared/.test(wanted)) {
+    structureFail("the Wanted vault is remembered but never dropped when it changes");
+  } else {
+    structureOk("the part of the Wanted vault that is the same for everybody is remembered");
+  }
+
+  if (!/DELETE FROM analytics_visits WHERE ts < \?/.test(visit)) {
+    structureFail("the visits table is never pruned, so it grows for ever");
+  } else {
+    structureOk("the visits table is pruned as it is written to");
+  }
+
+  if (!/DELETE FROM search_logs WHERE ts < \?/.test(search)) {
+    structureFail("the search log is never pruned, so it grows for ever");
+  } else {
+    structureOk("the search log is pruned as it is written to");
+  }
+
+  if (!/OWNER_CACHE/.test(owner)) {
+    structureFail("the owner's dashboard is read again for every poll of it");
+  } else {
+    structureOk("the owner's dashboard is remembered");
+  }
+
+  /* The presence window has to be wider than the heartbeat the clients
+     send, or people flicker offline while they are sitting there. */
+  const ttl = /PRESENCE_TTL_MS = (\d+)/.exec(hub);
+  const hb = /wsHbTimer = setInterval\(function \(\) \{ wsSend\(\{ type: 'heartbeat' \}\); \}, (\d+)\)/.exec(readFileSync(join(ROOT, "presence.js"), "utf8"));
+  if (!ttl || !hb) {
+    structureFail("the presence window and the heartbeat cannot be compared");
+  } else if (Number(ttl[1]) <= Number(hb[1])) {
+    structureFail("the presence window (" + ttl[1] + "ms) is not wider than the heartbeat (" + hb[1] + "ms), so people flicker offline");
+  } else {
+    structureOk("the presence window is wider than the heartbeat");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);
