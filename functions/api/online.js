@@ -23,7 +23,14 @@ export async function onRequestOptions() {
 // share a single D1 scan instead of each triggering their own.
 let cachedCounts = null;
 let cachedAt = 0;
-const COUNTS_TTL_MS = 3000;
+/* Ten seconds, not three. The badge does not need to be exact, and a shorter
+   window means every four-second poll lands on a fresh scan of the table. */
+const COUNTS_TTL_MS = 10000;
+/* How often the stale rows are cleared. The prune is a scan of the table, so
+   it does not belong on every heartbeat - and the heartbeat is every thirty
+   seconds per client. */
+const PRUNE_EVERY_MS = 60000;
+let lastPruneAt = 0;
 
 export async function onRequestPost(context) {
   const { env, request } = context;
@@ -54,7 +61,7 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: String(e.message || e) }, 500);
   }
 
-  const counts = await getCounts(db, true);
+  const counts = await getCounts(db, false);
   return json({ ok: true, online: counts.online, guests: counts.guests });
 }
 
@@ -82,10 +89,27 @@ async function isSignedIn(db, request) {
 async function getCounts(db, refresh) {
   try {
     if (!refresh && cachedCounts && Date.now() - cachedAt < COUNTS_TTL_MS) return cachedCounts;
-    // Prune stale entries (>90s old) so the counts stay accurate
-    await db
-      .prepare("DELETE FROM online_visitors WHERE last_seen < datetime('now', '-90 seconds')")
-      .run();
+    /* Prune stale entries (>90s old) so the counts stay accurate - but only
+       occasionally.
+       
+       The prune is a scan of the table, and it was running on EVERY call:
+       every heartbeat, from every open tab, every thirty seconds. With the
+       count query beside it that is two full scans of the table per heartbeat
+       per visitor, which is where the account's whole daily row read budget
+       went - the site stopped serving, and the free tier's limit resets only
+       at midnight UTC.
+
+       So the prune runs on a timer of its own, and the counts are served from
+       the cache for as long as the badge can stand it. Neither the prune nor
+       the count is precise to the second, and neither needs to be: a guest
+       count that is ten seconds old is a guest count. */
+    const now = Date.now();
+    if (now - lastPruneAt > PRUNE_EVERY_MS) {
+      lastPruneAt = now;
+      await db
+        .prepare("DELETE FROM online_visitors WHERE last_seen < datetime('now', '-90 seconds')")
+        .run();
+    }
     const row = await db
       .prepare("SELECT COUNT(*) AS total, COALESCE(SUM(authed), 0) AS authed FROM online_visitors")
       .first();
