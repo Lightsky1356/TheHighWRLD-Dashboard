@@ -279,6 +279,36 @@ if (dupes.length) {
   if (!/\/api\/notification-settings/.test(accountJs)) structureFail("the panel never talks to the settings endpoint");
   if (!/id="notifPrefsResult"/.test(html)) structureFail("the panel has no result line");
 
+  /* A read that fails must not leave the switches in a state that would
+   * silently mute everything.
+   *
+   * The server's default for every category is ON, so the page must ship them
+   * on: the read then corrects them to whatever is actually stored. Shipping
+   * them off means a failed read - or a save pressed before the read lands -
+   * turns nine categories off and says so with a cheerful "Settings saved". */
+  const notifLib = readFileSync(join(ROOT, "functions/_lib/notifications.js"), "utf8");
+  const defaultsM = /const defaults = \{([\s\S]*?)\};/.exec(notifLib);
+  const serverDefaults = defaultsM
+    ? Object.fromEntries([...defaultsM[1].matchAll(/([a-z_]+):\s*([01])/g)].map((x) => [x[1], Number(x[2])]))
+    : {};
+  const offByDefault = Object.entries(serverDefaults)
+    .filter(([, v]) => v === 0)
+    .map(([k]) => k);
+  if (offByDefault.length) {
+    structureFail(`the server defaults these categories off, so the page must not ship them on: ${offByDefault.join(", ")}`);
+  } else if (defaultsM) {
+    const unchecked = [];
+    for (const id of pageIds) {
+      const m = new RegExp('id="' + id + '"[^>]*').exec(html);
+      if (!m || !/ checked/.test(m[0])) unchecked.push(id);
+    }
+    if (unchecked.length) {
+      structureFail(`switches that ship off, although the server's default is on: ${unchecked.join(", ")}`);
+    } else {
+      structureOk("every switch ships on, which is the server's default");
+    }
+  }
+
   const NEW_KEYS = [
     "notifPrefsSub", "notifGroupEvents", "notifGroupDelivery",
     "notifReplies", "notifRepliesSub", "notifWantedReplies", "notifWantedRepliesSub",
