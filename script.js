@@ -288,8 +288,27 @@ window.MATURE_COVERS = [
      * So the artwork's own width is what is measured, and the parent is only the
      * fallback for an image that is not laid out yet. */
     var box = img.getBoundingClientRect();
-    var w = box.width || parent.getBoundingClientRect().width;
+    var parBox = parent.getBoundingClientRect();
+    var w = box.width || parBox.width;
     if (w > 0) badge.style.setProperty("--cov-w", w + "px");
+    /* The badge is absolutely positioned and fills its parent, which is the
+     * cover box in the places it was written for. Where it is not - the Top
+     * Plays and Recently Played panels put the artwork straight inside the
+     * row - the parent is the whole row, and the badge was drawn over the
+     * track's title.
+     *
+     * So the badge is placed over the artwork itself, not over the parent:
+     * its box is the artwork's box, wherever the artwork happens to sit. The
+     * icon and the label are already sized from the artwork's width; this puts
+     * the box in the same place. */
+    if (box.width > 0) {
+      badge.style.left = (box.left - parBox.left) + "px";
+      badge.style.top = (box.top - parBox.top) + "px";
+      badge.style.width = box.width + "px";
+      badge.style.height = box.height + "px";
+      badge.style.right = "auto";
+      badge.style.bottom = "auto";
+    }
     if (w > 0 && w < 44) badge.classList.add("is-tiny");
     else badge.classList.remove("is-tiny");
     /* The reveal hint needs real room for a second line of words. */

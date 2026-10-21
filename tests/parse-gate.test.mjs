@@ -431,10 +431,14 @@ if (dupes.length) {
   const sizeM = /function sizeBadge\([\s\S]{0,2400}?\r?\n {2}\}/.exec(sc);
   if (!sizeM) {
     structureFail("sizeBadge could not be found");
-  } else if (!/img\.getBoundingClientRect\(\)/.test(sizeM[0]) || !/\|\|\s*parent\.getBoundingClientRect\(\)/.test(sizeM[0])) {
+  } else if (!/img\.getBoundingClientRect\(\)/.test(sizeM[0]) ||
+             !/(parBox\.width|parent\.getBoundingClientRect\(\)\.width)/.test(sizeM[0])) {
     structureFail("the NSFW badge is not sized from the artwork's own width");
+  } else if (!/badge\.style\.width\s*=\s*box\.width/.test(sizeM[0]) ||
+             !/badge\.style\.left\s*=\s*\(box\.left/.test(sizeM[0])) {
+    structureFail("the NSFW badge is not placed over the artwork");
   } else {
-    structureOk("the NSFW badge is sized from the artwork it sits on");
+    structureOk("the NSFW badge is sized from, and placed over, the artwork");
   }
 }
 
