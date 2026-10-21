@@ -1257,6 +1257,96 @@ function compactProfileViewHtml(d) {
     });
   }
 
+  /* ---------- Notification preferences ---------- */
+  /* The nine switches are the nine the server keeps in user_notification_prefs
+   * and the nine /api/notification-settings reads and writes. The panel is a view
+   * of that record and nothing else - the server stays the only place that
+   * decides what a notification means.
+   *
+   * The account page sits behind a sign-in gate, so there is no signed-out
+   * case here beyond a read that fails, which leaves the switches showing the
+   * defaults rather than somebody else's stored answer. */
+  var NOTIF_PREF_FIELDS = [
+    ["replies", "notifPrefReplies"],
+    ["wanted_replies", "notifPrefWantedReplies"],
+    ["mentions", "notifPrefMentions"],
+    ["upvotes", "notifPrefUpvotes"],
+    ["direct_messages", "notifPrefDirectMessages"],
+    ["friend_requests", "notifPrefFriendRequests"],
+    ["in_site", "notifPrefInSite"],
+    ["push", "notifPrefPush"],
+    ["message_previews", "notifPrefPreviews"],
+  ];
+
+  function bindNotificationPrefs() {
+    var saveBtn = document.getElementById("notifPrefsSaveBtn");
+    var result = document.getElementById("notifPrefsResult");
+    if (!saveBtn) return;
+
+    function setResult(msg, ok) {
+      if (!result) return;
+      result.textContent = msg || "";
+      result.style.display = msg ? "" : "none";
+      result.className = "set-result" + (ok ? " ok" : "");
+    }
+    function paint(prefs) {
+      if (!prefs) return;
+      NOTIF_PREF_FIELDS.forEach(function (f) {
+        var el = document.getElementById(f[1]);
+        if (el) el.checked = prefs[f[0]] !== 0;
+      });
+    }
+
+    /* Show what is stored. Until this comes back the switches sit at the
+     * server's default - every category on - which is the same answer a
+     * missing row gives, so a failed read cannot make it look like everything
+     * has been turned off. */
+    fetch("/api/notification-settings", { cache: "no-store" })
+      .then(function (r) { return r.json().catch(function () { return null; }); })
+      .then(function (d) {
+        if (d && d.ok) paint(d.prefs);
+      })
+      .catch(function () {});
+
+    saveBtn.addEventListener("click", function () {
+      var prefs = {};
+      NOTIF_PREF_FIELDS.forEach(function (f) {
+        var el = document.getElementById(f[1]);
+        prefs[f[0]] = el ? !!el.checked : 1;
+      });
+      btnBusy(saveBtn, true);
+      setResult("");
+      fetch("/api/notification-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prefs: prefs }),
+      })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (d) {
+          btnBusy(saveBtn, false);
+          if (d && d.ok) {
+            var ok = _tt("toastSettingsSaved", "Settings saved");
+            setResult(ok, true);
+            toast(ok, "success");
+            /* Put the switches back to what the server actually stored, so a
+             * value it refused to keep is not left on screen looking like it
+             * was saved. */
+            paint(d.prefs);
+            return;
+          }
+          var msg = _tt("notifPrefsFailed", "Couldn't save notification preferences");
+          setResult(msg, false);
+          toast(msg, "error");
+        })
+        .catch(function () {
+          btnBusy(saveBtn, false);
+          var msg = _tt("notifPrefsFailed", "Couldn't save notification preferences");
+          setResult(msg, false);
+          toast(msg, "error");
+        });
+    });
+  }
+
   /* ---------- Settings actions ---------- */
   function bindAccountActions() {
     function setResult(id, msg, ok) {
@@ -2512,6 +2602,7 @@ window.profileSectionShown = function () {
   bindDanger();
   bindThemeLang();
   bindSettingsPanels();
+  bindNotificationPrefs();
   bindAccountActions();
   bindNotifications();
   bindListenTracking();

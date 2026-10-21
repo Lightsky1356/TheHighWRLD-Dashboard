@@ -889,6 +889,17 @@ body[data-accent="amber"] .hero-stat-value{background:linear-gradient(135deg,#f5
 #account-page .toggle-label{font-size:.8rem;font-weight:600;color:rgba(255,255,255,.86)}
 #account-page .toggle-sub{font-size:.68rem;color:rgba(255,255,255,.34);margin-top:2px}
 
+/* --- Notification preferences ---
+   The panel is two groups: the events you hear about, and the ways they
+   reach you. The headings are what make that split readable at a glance -
+   without them, "Push to this device" sits next to "Replies" as though they
+   were the same kind of thing, and they are not. */
+#account-page .notif-pref-group{margin-bottom:6px}
+#account-page .notif-pref-group+.notif-pref-group{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07)}
+#account-page .notif-pref-head{font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.34);margin:2px 0 4px}
+#account-page .notif-pref-group .toggle-row{align-items:center;gap:14px;cursor:pointer}
+#account-page .notif-pref-group .switch{margin-left:auto}
+
 /* --- Responsive --- */
 @media (max-width:900px){
   #account-page .ac-settings-grid{grid-template-columns:minmax(0,1fr)}

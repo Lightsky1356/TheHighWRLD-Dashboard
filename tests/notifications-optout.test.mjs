@@ -55,6 +55,24 @@ async function latestFollowId(who) {
   return rows.reduce((max, n) => Math.max(max, Number(n.id) || 0), 0);
 }
 
+/* The message of the newest follow notification.
+ *
+   A follow notification reads "Test Actor started following you" - the actor's
+   name is in the text, which is exactly what the message-preview setting is
+   about. With previews off it must read "Someone started following you."
+   instead, with no name in it. */
+async function latestFollowMessage(who) {
+  const res = await fetch(BASE + "/api/notifications", {
+    headers: { Cookie: `thw_session=${who.token}` },
+  });
+  const j = await res.json();
+  const rows = (j.notifications || []).filter((n) => n.type === "follow");
+  if (!rows.length) return "";
+  let newest = rows[0];
+  for (const n of rows) if (Number(n.id) > Number(newest.id)) newest = n;
+  return String(newest.message || "");
+}
+
 async function main() {
   // Sanity: both recipients must be signed in. If this fails, run
   // `node tests/seed.mjs` - the suite needs three accounts that do not exist in a
@@ -122,6 +140,66 @@ async function main() {
     "the follow relationship itself was still recorded",
     rel.json && rel.json.am_following === true,
     JSON.stringify(rel.json)
+  );
+
+  /* ---- message previews ----
+   *
+   * The setting was stored by the API and read by nothing. It is a privacy
+   * setting: a follow notification reads "Test Actor started following you",
+   * so the actor's name is in the text. With previews off the notification must
+   * name the kind of event and nothing else.
+   *
+   * The default is ON, so an account that has never touched the setting keeps
+   * seeing the text it saw before. */
+  const withPreview = await latestFollowMessage(ON);
+  check(
+    "a follow notification names who followed",
+    /started following you/i.test(withPreview) && /Test Actor/.test(withPreview),
+    withPreview
+  );
+
+  r = await call(ON.token, "/api/notification-settings", "POST", {
+    prefs: { message_previews: 0 },
+  });
+  check(
+    "message previews can be turned off",
+    r.status === 200 && r.json && r.json.ok === true && r.json.prefs.message_previews === 0,
+    JSON.stringify(r.json && r.json.prefs && r.json.prefs.message_previews)
+  );
+
+  // A fresh notification, so the one just made is not the one being read.
+  await call(ACTOR.token, "/api/follows", "POST", { action: "unfollow", uid: ON.uid });
+  await call(ACTOR.token, "/api/follows", "POST", { action: "follow", uid: ON.uid });
+  const withoutPreview = await latestFollowMessage(ON);
+  check(
+    "with previews off the notification names no one",
+    /started following you/i.test(withoutPreview) && !/Test Actor/.test(withoutPreview),
+    withoutPreview
+  );
+  check(
+    "with previews off it still says what happened",
+    withoutPreview !== "",
+    withoutPreview
+  );
+
+  // And the notification was still created - this is a preview setting, not an
+  // opt-out.
+  const afterPreviewOff = await latestFollowId(ON);
+  check(
+    "previews off still delivers the notification",
+    afterPreviewOff > afterOn,
+    `${afterOn} -> ${afterPreviewOff}`
+  );
+
+  // Put it back, so the next run of this suite starts from the default.
+  await call(ON.token, "/api/notification-settings", "POST", {
+    prefs: { message_previews: 1 },
+  });
+  const restored = await call(ON.token, "/api/notification-settings");
+  check(
+    "the setting is restored for the next run",
+    restored.json && restored.json.prefs && restored.json.prefs.message_previews === 1,
+    JSON.stringify(restored.json && restored.json.prefs && restored.json.prefs.message_previews)
   );
 
   console.log(out.join("\n"));

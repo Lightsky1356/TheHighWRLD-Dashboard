@@ -225,6 +225,94 @@ if (dupes.length) {
   structureOk(`${idCounts.size} ids, all unique`);
 }
 
+/* ---- the notification preferences panel is wired to the server it talks to ----
+ *
+ * The panel, the account page's list of switches and the server's allowlist all
+ * name the same nine categories. Any of them drifting apart is a switch that
+ * saves nothing, or a setting that is stored and never shown - and neither
+ * shows up as an error. The page just quietly does the wrong thing.
+ *
+ * The strings are checked too, because a new key that only exists in English
+ * is a new key that reads in English for two thirds of the people who use the
+ * site. */
+{
+  const accountJs = readFileSync(join(ROOT, "account.js"), "utf8");
+  const settingsApi = readFileSync(join(ROOT, "functions/api/notification-settings.js"), "utf8");
+  const i18nSrc = readFileSync(join(ROOT, "i18n.js"), "utf8");
+
+  const fieldsM = /var NOTIF_PREF_FIELDS = \[([\s\S]*?)\];/.exec(accountJs);
+  const pairs = fieldsM
+    ? [...fieldsM[1].matchAll(/\["([a-z_]+)",\s*"([A-Za-z0-9_]+)"\]/g)].map((x) => ({ key: x[1], id: x[2] }))
+    : [];
+  const colsM = /const COLUMNS = \[([\s\S]*?)\];/.exec(settingsApi);
+  const apiKeys = colsM ? [...colsM[1].matchAll(/"([a-z_]+)"/g)].map((x) => x[1]) : [];
+  const jsKeys = pairs.map((p) => p.key);
+
+  // The switch ids in the page, minus the save button and the result line,
+  // which share the prefix but are not switches.
+  const pageIds = [...html.matchAll(/id="(notifPref[A-Za-z]+)"/g)]
+    .map((x) => x[1])
+    .filter((id) => !/^notifPrefs(SaveBtn|Result)$/.test(id));
+  const jsIds = pairs.map((p) => p.id);
+
+  if (!fieldsM) structureFail("the account page has no NOTIF_PREF_FIELDS list");
+  else if (!colsM) structureFail("the notification settings API has no COLUMNS allowlist");
+  else {
+    if (jsKeys.length !== 9) structureFail(`the account page lists ${jsKeys.length} categories, expected 9`);
+    else structureOk("the account page lists nine notification categories");
+    if (apiKeys.length !== jsKeys.length) {
+      structureFail(`the server allows ${apiKeys.length} categories and the page shows ${jsKeys.length}`);
+    } else {
+      const drift = jsKeys.filter((k) => !apiKeys.includes(k)).concat(apiKeys.filter((k) => !jsKeys.includes(k)));
+      if (drift.length) structureFail(`the page and the server name different categories: ${drift.join(", ")}`);
+      else structureOk("the page and the server name the same nine categories");
+    }
+    const missingIds = jsIds.filter((id) => !pageIds.includes(id));
+    const strayIds = pageIds.filter((id) => !jsIds.includes(id));
+    if (missingIds.length) structureFail(`switches with no id in the page: ${missingIds.join(", ")}`);
+    if (strayIds.length) structureFail(`switches in the page that nothing is wired to: ${strayIds.join(", ")}`);
+    if (!missingIds.length && !strayIds.length) structureOk("every switch in the page is wired to a category");
+  }
+
+  if (!/id="notifPrefsSaveBtn"/.test(html)) structureFail("the panel has no save button");
+  if (!/getElementById\("notifPrefsSaveBtn"\)/.test(accountJs)) structureFail("the save button is never bound");
+  if (!/\/api\/notification-settings/.test(accountJs)) structureFail("the panel never talks to the settings endpoint");
+  if (!/id="notifPrefsResult"/.test(html)) structureFail("the panel has no result line");
+
+  const NEW_KEYS = [
+    "notifPrefsSub", "notifGroupEvents", "notifGroupDelivery",
+    "notifReplies", "notifRepliesSub", "notifWantedReplies", "notifWantedRepliesSub",
+    "notifMentions", "notifMentionsSub", "notifUpvotes", "notifUpvotesSub",
+    "notifDirectMessages", "notifDirectMessagesSub", "notifFriendRequests",
+    "notifFriendRequestsSub", "notifInSite", "notifInSiteSub", "notifPush",
+    "notifPushSub", "notifPreviews", "notifPreviewsSub", "notifPrefsFailed",
+  ];
+  const langBlocks = [];
+  const langStarts = [...i18nSrc.matchAll(/^ {2}([a-z]{2}(?:-[a-z]{2})?): \{/gm)];
+  for (let i = 0; i < langStarts.length; i++) {
+    const from = i18nSrc.indexOf("{", langStarts[i].index);
+    let depth = 0, end = from;
+    for (let j = from; j < i18nSrc.length; j++) {
+      if (i18nSrc[j] === "{") depth++;
+      else if (i18nSrc[j] === "}") { depth--; if (depth === 0) { end = j; break; } }
+    }
+    langBlocks.push(i18nSrc.slice(langStarts[i].index, end));
+  }
+  const gaps = [];
+  for (const b of langBlocks) {
+    for (const k of NEW_KEYS) {
+      if (!new RegExp("(?:^|[\\s{,])" + k + ":").test(b)) gaps.push(k);
+    }
+  }
+  if (gaps.length) structureFail(`${gaps.length} notification strings are missing from some languages`);
+  else structureOk(`all ${NEW_KEYS.length} notification strings are in all ${langBlocks.length} languages`);
+
+  const used = new Set([...html.matchAll(/data-i18n="(notif[A-Za-z]+)"/g)].map((x) => x[1]));
+  const unused = NEW_KEYS.filter((k) => !used.has(k) && k !== "notifPrefsFailed");
+  if (unused.length) structureFail(`notification strings nothing on the page uses: ${unused.join(", ")}`);
+  else structureOk("every notification string on the page is used by the page");
+}
+
 /* Depth of every page section. home, gallery, failed and player sit one level
    down inside the always-visible <main> wrapper; they have always been that way
    and all four render, so they are the baseline rather than a defect. Anything

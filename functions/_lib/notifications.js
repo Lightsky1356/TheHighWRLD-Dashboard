@@ -158,22 +158,32 @@ export function pushPayloadFor(opts, id) {
  * Never throws. A push failure must not be able to fail the action that
  * caused it - the reply is already stored and the row already exists by the
  * time this runs. */
-async function dispatchPush(env, db, recipientUid, opts, ctx, id) {
+async function dispatchPush(env, db, recipientUid, opts, ctx, id, prefs) {
   try {
     /* The push toggle is separate from the notification switches. The master
        switch and the per-category switches decide whether the ROW is created;
        the push toggle decides whether the device buzzes. Someone who wants
        notifications in the app but not on their lock screen gets exactly that. */
-    const prefs = await notificationPrefs(db, recipientUid);
-    if (!prefs.push) return;
+    const p = prefs || (await notificationPrefs(db, recipientUid));
+    if (!p.push) return;
 
     /* A caller may override the wording. The social API has always sent its own
        summary for direct messages and friend requests - including the sender's
        display name - so that behaviour is preserved rather than quietly
        downgraded to the generic text. Everything else gets the generic
        summary, because a post title or a reply body must not travel in a push
-       payload. */
-    const payload = pushPayloadFor(opts, id);
+       payload.
+     *
+     * Unless previews are off, in which case the caller's body is dropped and
+       the generic summary is used instead. The body is the message text - the
+       social API puts the whole message there - so it is exactly the thing
+       this setting is about. The title is not: it is the app name, and it
+       leaks nothing. */
+    const previewOff = p.message_previews === 0;
+    const pushOpts = previewOff
+      ? Object.assign({}, opts, { pushBody: undefined })
+      : opts;
+    const payload = pushPayloadFor(pushOpts, id);
 
     const sending = sendPushToUser(env, db, recipientUid, payload)
       .catch(() => ({ sent: 0, failed: 0, pruned: 0 }));
@@ -198,6 +208,35 @@ async function dispatchPush(env, db, recipientUid, opts, ctx, id) {
   } catch (_) {
     /* A push failure must never fail the notification. */
   }
+}
+
+/**
+ * May this user be notified about this event type, given their preferences?
+ *
+ * The same rule as categoryEnabled(), but with the preferences already read, so
+ * a caller that needs them for something else does not read them twice. Every
+ * notification already needs the preferences, because the message preview
+ * setting lives in the same row.
+ */
+export function categoryAllowedByPrefs(prefs, type) {
+  if (!prefs) return true;
+  /* The master in-site switch. Off means no row is created at all. */
+  if (prefs.in_site === 0) return false;
+  const category = TYPE_CATEGORY[String(type || "")];
+  if (category && prefs[category] === 0) return false;
+  return true;
+}
+
+/**
+ * The text to show when previews are off: the kind of event and nothing else.
+ *
+ * The same wording the push summary uses, so a notification with previews off
+ * reads the same wherever it is seen. There is no "and here is what was
+ * actually said" fallback - that is the whole point of the setting.
+ */
+function genericMessage(type) {
+  const summary = PUSH_SUMMARY[String(type || "")] || PUSH_DEFAULT;
+  return summary.body;
 }
 
 /**
@@ -284,10 +323,8 @@ export async function notificationPrefs(db, uid) {
 export async function categoryEnabled(db, uid, type) {
   const master = await notificationsEnabled(db, uid);
   if (!master) return false;
-  const category = TYPE_CATEGORY[String(type || "")];
-  if (!category) return true;
   const prefs = await notificationPrefs(db, uid);
-  return prefs.in_site !== 0 && prefs[category] !== 0;
+  return categoryAllowedByPrefs(prefs, type);
 }
 
 /**
@@ -307,9 +344,18 @@ export async function createNotification(db, env, recipientUid, options, ctx) {
   /* Narrower opt-outs sit under the master switch, checked here rather than at
      each of the thirteen call sites for the same reason the master switch is:
      a new feature must not be able to skip the preference by forgetting it. */
-  if (!(await categoryEnabled(db, recipientUid, opts.type))) return null;
+  const prefs = await notificationPrefs(db, recipientUid);
+  if (!categoryAllowedByPrefs(prefs, opts.type)) return null;
 
   const type = String(opts.type || "notice");
+  /* With previews off, the notification carries the kind of event instead of
+   * the content. The text is what shows in the bell and on a lock screen, and a
+   * message excerpt is exactly the thing somebody might not want read over
+   * their shoulder. The setting has always been stored; until now nothing
+   * read it, which made it a preference that looked like it worked and did
+   * not. */
+  const previewOff = prefs.message_previews === 0;
+  const previewMessage = previewOff ? genericMessage(type) : String(opts.message || "");
   const postId = opts.postId == null ? null : opts.postId;
   const replyId = opts.replyId == null ? null : opts.replyId;
   const actorUid = String(opts.actorUid || "");
@@ -331,7 +377,7 @@ export async function createNotification(db, env, recipientUid, options, ctx) {
         type,
         actorUid,
         String(opts.actorName || "Member"),
-        String(opts.message || ""),
+        previewMessage,
         postId,
         replyId
       )
@@ -355,7 +401,7 @@ export async function createNotification(db, env, recipientUid, options, ctx) {
       notification: {
         id,
         type,
-        message: String(opts.message || ""),
+        message: previewMessage,
         post_id: postId,
         reply_id: replyId,
         actor: String(opts.actorName || "Member"),
@@ -375,7 +421,7 @@ export async function createNotification(db, env, recipientUid, options, ctx) {
 
        Not awaited when there is a context to hand the work to: the reply that
        triggered this should not wait on a round trip to the push service. */
-    await dispatchPush(env, db, recipientUid, opts, ctx, id);
+    await dispatchPush(env, db, recipientUid, opts, ctx, id, prefs);
 
     return { id };
   } catch (_) {
