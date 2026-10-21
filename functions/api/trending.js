@@ -2,6 +2,8 @@
 // Top played tracks aggregated from the listens table (track_id holds the title).
 // Public, read-only. Cached client-side; cheap GROUP BY scan.
 
+import { totalPlays } from "../_lib/listens-stats.js";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -33,9 +35,9 @@ export async function onRequestGet(context) {
       "FROM listens " + where + " GROUP BY track_id ORDER BY plays DESC LIMIT ?"
     ).bind(...bindArgs).all();
 
-    const allTime = await db.prepare(
-      "SELECT COUNT(*) AS total FROM listens"
-    ).first();
+    /* The number of plays, counted day by day. Asking the history meant
+       counting every row of it, for one line of text. */
+    const allTime = { total: await totalPlays(db) };
 
     return json({
       ok: true,

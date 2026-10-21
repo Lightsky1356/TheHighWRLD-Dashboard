@@ -48,14 +48,18 @@ const TITLES = [
 // ---- before --------------------------------------------------------------
 const profileBefore = await call(MEMBER.token, "/api/profile?user=" + encodeURIComponent(MEMBER.uid));
 const accountBefore = await call(MEMBER.token, "/api/account?user=" + encodeURIComponent(MEMBER.uid));
+const trendingBefore = await call(MEMBER.token, "/api/trending?days=7&limit=10");
 
 check("the profile reads", profileBefore.status === 200 && profileBefore.json?.ok === true,
   `status ${profileBefore.status}`);
 check("the account reads", accountBefore.status === 200 && accountBefore.json?.ok === true,
   `status ${accountBefore.status}`);
+check("the trending page reads", trendingBefore.status === 200 && trendingBefore.json?.ok === true,
+  `status ${trendingBefore.status}`);
 
 const playsBefore = Number(profileBefore.json?.stats?.plays ?? profileBefore.json?.plays ?? 0);
 const acctPlaysBefore = Number(accountBefore.json?.stats?.plays ?? 0);
+const totalBefore = Number(trendingBefore.json?.total_listens ?? 0);
 
 // ---- the plays ------------------------------------------------------------
 for (const title of TITLES) {
@@ -117,6 +121,17 @@ const playsAgain = Number(profileAgain.json?.stats?.plays ?? profileAgain.json?.
 check("reading the profile again gives the same number of plays",
   playsAgain === playsAfter,
   `${playsAgain} against ${playsAfter}`);
+
+/* The trending page keeps its own count of the plays - the number of them
+   in total, which used to mean counting every row of the history. */
+const trendingAfter = await call(MEMBER.token, "/api/trending?days=7&limit=10");
+const totalAfter = Number(trendingAfter.json?.total_listens ?? 0);
+check("the trending page counts the plays that were made",
+  totalAfter === totalBefore + TITLES.length,
+  `${totalAfter} against ${totalBefore} before`);
+check("the trending page still lists tracks",
+  Array.isArray(trendingAfter.json?.trending),
+  String(trendingAfter.json?.trending?.length));
 
 console.log(out.join("\n"));
 const failed = out.filter((l) => l.startsWith("FAIL")).length;

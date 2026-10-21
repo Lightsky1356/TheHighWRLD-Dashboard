@@ -1467,6 +1467,50 @@ function safeDecode4(v) {
   }
 }
 
+/* ---- the trending page reads the days it asks for ----
+ *
+ * The trending page asked two questions of the listening history: which
+ * tracks were played most in the last seven days, and how many plays there
+ * have been in total. Both read the whole of it - the filter was on the
+ * timestamp alone, and the only indexes on the table lead with the member,
+ * so the index could not be used and every play ever recorded was read to
+ * throw most of them away.
+ *
+ * So the days it asks for are read from an index that leads with the
+ * timestamp, and the total is counted day by day. */
+{
+  const trending = readFileSync(join(ROOT, "functions/api/trending.js"), "utf8");
+  if (/COUNT\(\*\) AS total FROM listens/.test(trending)) {
+    structureFail("the trending page counts the whole listening history for one number");
+  } else if (!/totalPlays/.test(trending)) {
+    structureFail("the trending page does not ask for the number of plays through the day count");
+  } else {
+    structureOk("the trending page reads the number of plays from the days, not from the history");
+  }
+
+  const migrations = join(ROOT, "migrations");
+  const files = readdirSync(migrations).filter((f) => f.endsWith(".sql"));
+  const indexed = files.some((f) =>
+    /CREATE INDEX IF NOT EXISTS idx_listens_ts_track/.test(readFileSync(join(migrations, f), "utf8"))
+  );
+  if (!indexed) {
+    structureFail("no index lets the trending page read only the days it asks for");
+  } else {
+    structureOk("an index lets the trending page read only the days it asks for");
+  }
+
+  /* And the plays have to be counted as they happen, or the number drifts
+     from the truth. */
+  const listening = readFileSync(join(ROOT, "functions/_lib/listens-stats.js"), "utf8");
+  if (!/countPlay/.test(listening)) {
+    structureFail("a play is not counted in the day it happened");
+  } else if (!/uncountPlays/.test(listening)) {
+    structureFail("clearing a member's plays does not take them out of the count");
+  } else {
+    structureOk("the plays are counted as they happen, and taken back out when they are cleared");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

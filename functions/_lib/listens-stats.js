@@ -112,6 +112,61 @@ export async function ensureRollup(db, uid) {
   return true;
 }
 
+/* The number of plays in total, kept day by day.
+   *
+   * The trending page asks how many plays there have been, and asking the
+   * history meant counting every row of it. The days are counted instead -
+   * one row per day, for everybody - so the answer is a few hundred rows.
+   *
+   * Before the table exists there is nowhere to count a play, and the
+   * migration that creates it counts the plays that came before it. Between
+   * them every play is counted exactly once. */
+export async function totalPlays(db) {
+  try {
+    const row = await db.prepare("SELECT COALESCE(SUM(plays),0) AS total FROM listens_day").first();
+    if (row && row.total) return row.total;
+    if (row) {
+      /* The table is there but empty: the history has not been counted yet,
+         so count it the old way rather than say there have been no plays. */
+      const old = await db.prepare("SELECT COUNT(*) AS total FROM listens").first();
+      return old ? old.total || 0 : 0;
+    }
+  } catch (_) {
+    /* The table is not there. */
+  }
+  const old = await db.prepare("SELECT COUNT(*) AS total FROM listens").first();
+  return old ? old.total || 0 : 0;
+}
+
+/* Count a play in the day it happened. */
+async function countPlay(db, day) {
+  try {
+    await db.prepare(
+      "INSERT INTO listens_day (day, plays) VALUES (?, 1) ON CONFLICT(day) DO UPDATE SET plays = listens_day.plays + 1"
+    ).bind(day).run();
+  } catch (_) {
+    /* The table is not there yet. The migration that creates it counts the
+       plays that came before it, so nothing is lost. */
+  }
+}
+
+/* Take a member's plays back out of the count. */
+async function uncountPlays(db, plays) {
+  if (!plays) return;
+  try {
+    const rows = await db.prepare(
+      "SELECT day, plays FROM listens_day"
+    ).all();
+    for (const r of rows.results || []) {
+      if (!r.plays) continue;
+      const take = Math.min(r.plays, plays);
+      await db.prepare("UPDATE listens_day SET plays = plays - ? WHERE day = ?").bind(take, r.day).run();
+      plays -= take;
+      if (plays <= 0) break;
+    }
+  } catch (_) {}
+}
+
 /* Record a play, and keep the summaries with it.
    The play itself is written first and is never lost: if the summaries
    cannot be kept, the play is still there and the summaries are built again
@@ -146,6 +201,7 @@ export async function recordPlay(db, uid, trackId, seconds) {
         "INSERT INTO listens_hour (uid, hour, plays) VALUES (?,?,1) ON CONFLICT(uid, hour) DO UPDATE SET plays = listens_hour.plays + 1"
       ).bind(uid, hour),
     ]);
+    await countPlay(db, day);
   } catch (_) {
     /* The summaries could not be kept. The play is recorded, and they are
        built again from the history when they are next needed. */
@@ -155,6 +211,12 @@ export async function recordPlay(db, uid, trackId, seconds) {
 
 /* Forget a member's plays, and their summaries with them. */
 export async function clearPlays(db, uid) {
+  /* How many plays are being taken out of the count. */
+  let plays = 0;
+  try {
+    const row = await db.prepare("SELECT COUNT(*) AS n FROM listens WHERE uid = ?").bind(uid).first();
+    plays = row ? row.n || 0 : 0;
+  } catch (_) {}
   await db.prepare("DELETE FROM listens WHERE uid = ?").bind(uid).run();
   try {
     await db.batch([
@@ -163,6 +225,7 @@ export async function clearPlays(db, uid) {
       db.prepare("DELETE FROM listens_hour WHERE uid = ?").bind(uid),
     ]);
   } catch (_) {}
+  await uncountPlays(db, plays);
 }
 
 /* Move a member's plays to another member - used when an account is
