@@ -179,16 +179,37 @@ async function recentPostCount(db, uid) {
 
 async function listPosts(db, url) {
   const only = url.searchParams.get("pinned");
-  let q = `SELECT cp.*,
-    (SELECT COUNT(*) FROM community_replies cr WHERE cr.post_id = cp.id) AS reply_count
-    FROM community_posts cp`;
+  let q = `SELECT cp.* FROM community_posts cp`;
   const binds = [];
   if (only === "1") {
     q += ` WHERE cp.pinned = 1`;
   }
   q += ` ORDER BY cp.pinned DESC, cp.created_at DESC LIMIT 200`;
   const rows = await db.prepare(q).bind(...binds).all();
-  return json({ ok: true, posts: (rows.results || []).map((p) => mapPost(p, p.reply_count)) });
+  const posts = rows.results || [];
+
+  /* The reply counts are asked for once, for all of the posts at once.
+     They used to be counted by a subquery for each post, so one request for
+     the list ran two hundred queries - and two hundred queries is more than
+     the ten milliseconds a request is allowed to take. */
+  const counts = new Map();
+  const ids = posts.map((p) => Number(p.id)).filter((n) => Number.isFinite(n));
+  for (let i = 0; i < ids.length; i += 90) {
+    const chunk = ids.slice(i, i + 90);
+    if (!chunk.length) continue;
+    const marks = chunk.map(() => "?").join(",");
+    let counted;
+    try {
+      counted = await db.prepare(
+        `SELECT post_id, COUNT(*) AS c FROM community_replies WHERE post_id IN (${marks}) GROUP BY post_id`
+      ).bind(...chunk).all();
+    } catch (_) {
+      counted = { results: [] };
+    }
+    for (const r of counted.results || []) counts.set(Number(r.post_id), Number(r.c) || 0);
+  }
+
+  return json({ ok: true, posts: posts.map((p) => mapPost(p, counts.get(Number(p.id)) || 0)) });
 }
 
 async function getPost(db, idRaw) {

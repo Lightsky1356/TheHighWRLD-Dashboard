@@ -1549,6 +1549,28 @@ function safeDecode4(v) {
   }
 }
 
+/* ---- the community list counts its replies once ----
+ *
+ * The reply count for each post was counted by a subquery for each post, so
+ * one request for the list ran two hundred queries - and two hundred
+ * queries is more than the ten milliseconds a request is allowed to take.
+ *
+ * So the counts are asked for once, for all of the posts at once. */
+{
+  const community = readFileSync(join(ROOT, "functions/api/community/[[path]].js"), "utf8");
+  const i = community.indexOf("async function listPosts");
+  const block = i === -1 ? "" : community.slice(i, community.indexOf("async function getPost", i));
+  if (i === -1) {
+    structureFail("the community list cannot be found");
+  } else if (/SELECT COUNT\(\*\) FROM community_replies cr WHERE cr\.post_id = cp\.id/.test(block)) {
+    structureFail("the community list counts the replies of each post with a query of its own");
+  } else if (!/GROUP BY post_id/.test(block)) {
+    structureFail("the community list does not count the replies of all of the posts at once");
+  } else {
+    structureOk("the community list counts the replies of all of the posts at once");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);
