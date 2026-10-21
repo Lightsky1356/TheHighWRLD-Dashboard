@@ -276,7 +276,19 @@ window.MATURE_COVERS = [
   function sizeBadge(img, badge) {
     var parent = badge.parentElement;
     if (!parent) return;
-    var w = parent.getBoundingClientRect().width;
+    /* The badge is sized from the artwork it sits on.
+     *
+     * It used to measure the image's PARENT, which is the cover box in the
+     * places the badge was written for: the mini player, the lightbox, a
+     * playlist row. It is not the cover box everywhere. The Top Plays and
+     * Recently Played panels put the artwork straight inside the row - the row
+     * IS the button - so the row's width was published as --cov-w and the badge
+     * was drawn three hundred pixels wide across the track's title.
+     *
+     * So the artwork's own width is what is measured, and the parent is only the
+     * fallback for an image that is not laid out yet. */
+    var box = img.getBoundingClientRect();
+    var w = box.width || parent.getBoundingClientRect().width;
     if (w > 0) badge.style.setProperty("--cov-w", w + "px");
     if (w > 0 && w < 44) badge.classList.add("is-tiny");
     else badge.classList.remove("is-tiny");
@@ -303,6 +315,11 @@ window.MATURE_COVERS = [
         if (badge && badge.classList.contains("on")) sizeBadge(img, badge);
       });
       ro.observe(parent);
+      /* The artwork too. The parent is the right thing to watch when it is the
+         cover box, but where the artwork sits straight inside a row the row's
+         size says nothing about the artwork's, and the badge would keep the
+         size it was first given. */
+      ro.observe(img);
     } catch (e) { /* observer unavailable: the initial measurement still stands */ }
   }
   /* The badge is a real element rather than a ::after on the <img decoding="async">: an <img decoding="async"> is

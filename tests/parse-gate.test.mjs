@@ -385,6 +385,59 @@ if (dupes.length) {
   }
 }
 
+/* ---- the recent activity list lives on the account page ----
+ *
+ * It was on the profile page, where it sat next to a stranger's name and read
+ * as though it were their history. The account page already had a function to
+ * fill it - applyActivity() - but there was no container for it in the markup,
+ * so it did nothing and the list existed in exactly one place: the profile.
+ *
+ * The profile must not carry it, and the account page must have a container
+ * for the function that was already there. */
+{
+  const acct = readFileSync(join(ROOT, "account.js"), "utf8");
+  if (/data-pnl="recent-activity"/.test(acct)) {
+    structureFail("the profile page still carries the Recent Activity panel");
+  } else {
+    structureOk("the profile page carries no Recent Activity panel");
+  }
+  if (!/id="activityList"/.test(html)) {
+    structureFail("the account page has no #activityList for applyActivity() to fill");
+  } else {
+    structureOk("the account page has a container for the activity list");
+  }
+  if (!/getElementById\("activityList"\)/.test(acct)) {
+    structureFail("applyActivity() does not look for #activityList");
+  } else {
+    structureOk("applyActivity() fills the account page's list");
+  }
+  const applyCount = (acct.match(/function applyActivity\s*\(/g) || []).length;
+  if (applyCount !== 1) {
+    structureFail(`there are ${applyCount} functions called applyActivity - the second one shadows the first`);
+  } else {
+    structureOk("one applyActivity, and renderAll already calls it");
+  }
+}
+
+/* ---- the NSFW badge is sized from the artwork ----
+ *
+ * The badge used to measure the artwork's PARENT. That is the cover box in the
+ * places it was written for - the mini player, the lightbox, a playlist row.
+ * It is not the cover box everywhere: the Top Plays and Recently Played panels
+ * put the artwork straight inside the row, so the row's width was published as
+ * --cov-w and the badge was drawn across the track's title. */
+{
+  const sc = readFileSync(join(ROOT, "script.js"), "utf8");
+  const sizeM = /function sizeBadge\([\s\S]{0,2400}?\r?\n {2}\}/.exec(sc);
+  if (!sizeM) {
+    structureFail("sizeBadge could not be found");
+  } else if (!/img\.getBoundingClientRect\(\)/.test(sizeM[0]) || !/\|\|\s*parent\.getBoundingClientRect\(\)/.test(sizeM[0])) {
+    structureFail("the NSFW badge is not sized from the artwork's own width");
+  } else {
+    structureOk("the NSFW badge is sized from the artwork it sits on");
+  }
+}
+
 /* ---- the page's assets resolve from the root, whatever the path is ----
  *
  * A page served at /Profile/@someone resolves "./style.css" against

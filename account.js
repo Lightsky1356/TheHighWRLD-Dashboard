@@ -289,10 +289,6 @@ function compactProfileViewHtml(d) {
       return '<div class="pv-pl" data-openpl="' + p.id + '" role="button" tabindex="0" title="' + esc(_tt("openTitle", "Open")) + '" style="background:linear-gradient(135deg,' + (p.color ? esc(p.color) : "#a855f7") + ',rgba(20,12,40,.9))"><i class="fas fa-play pv-pl-play" data-playpl="' + p.id + '"></i><div class="pv-pl-info"><b>' + esc(p.name) + '</b><span>' + (p.count || 0) + ' tracks</span></div></div>';
     }).join("") || '<p class="pv-none">No playlists</p>';
     var favs = (d.favorites || []);
-    var acts = (d.activity || []).map(function (a) {
-      var aico = ACT_ICON[a.type] || "fa-bolt";
-      return '<div class="tl-item"><div class="tl-time">' + esc(relTime(a.ts)) + '</div><div class="tl-txt"><i class="fas ' + aico + ' tl-ico"></i>' + esc(a.label) + '</div></div>';
-    }).join("") || '<p class="pv-none">No recent activity</p>';
 
     /* The same board as your own profile: one full width header card, then the
        cards below it in two columns. Every block carries data-pnl so the CSS
@@ -338,9 +334,6 @@ function compactProfileViewHtml(d) {
     html += (favs.length ? '<div class="cmp-fav-grid" id="pvFavGrid"></div>' : '<p class="pv-none">No favorites yet</p>');
     html += '</div>';
     html += '<div class="cmp-sec-card" data-pnl="playlists"><div class="cmp-sec-title"><span><i class="fas fa-list-music"></i> ' + esc(_tt("cmpPanelPlaylists", "Playlists")) + '</span><span class="cmp-count">' + (d.playlists || []).length + '</span></div><div class="pv-pls">' + pls + '</div></div>';
-    if (!d.visibility || d.visibility.activity !== false) {
-      html += '<div class="cmp-sec-card" data-pnl="recent-activity"><div class="cmp-sec-title"><span><i class="fas fa-bolt"></i> ' + esc(_tt("cmpPanelActivity", "Recent activity")) + '</span></div><div class="pv-act">' + acts + '</div></div>';
-    }
     html += '</div>';
     html += '</div>';
     return html;
@@ -1090,6 +1083,7 @@ function compactProfileViewHtml(d) {
       renderAnalytics(tab.getAttribute("data-an"));
     });
   }
+
 
   /* ---------- Downloads ---------- */
   function applyDownloads() {
