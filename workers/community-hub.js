@@ -297,9 +297,30 @@ export class CommunityHub extends DurableObject {
       this.presence.delete(key);
       this.onPresenceChanged();
     }
-    const needsAlarm = this.typing.size > 0 || this.presence.size > 0;
-    if (needsAlarm) {
-      await this.ctx.storage.setAlarm(Date.now() + TYPING_ALARM_MS);
+    /* Wake for whichever thing is due to expire next - and not at all when
+       there is nothing to expire.
+       *
+       * It used to wake every two seconds for as long as anybody was
+       * connected, because it was re-armed at the typing interval whenever
+       * there was any presence at all. A typing indicator expires after three
+       * seconds and a presence after ninety, so the two clocks are nothing
+       * like each other, and the presence sweep did not need waking for
+       * every two seconds at all.
+       *
+       * An alarm is a request every time it fires, and it also keeps the
+       * object awake, which is billed by the second. Two seconds, for as
+       * long as the site has somebody on it, is forty-three thousand of the
+       * hundred thousand requests the day allows - spent on waking up to
+       * find that nothing had expired.
+       *
+       * So the wake is set for the moment the next thing actually expires:
+       * when a typing indicator stops, and when somebody stops being here.
+       * With people heartbeating every sixty seconds and a presence lasting
+       * ninety, that is about one wake a minute and a half, rather than
+       * thirty a minute. */
+    const nextWake = this.nextWakeDelay(now);
+    if (nextWake !== null) {
+      await this.ctx.storage.setAlarm(now + nextWake + 50);
     }
   }
 
@@ -477,10 +498,30 @@ export class CommunityHub extends DurableObject {
     }
   }
 
+  /* When the next thing expires - the same answer the alarm gives itself
+     when it fires, so the first wake after a change is not wasted either. */
+  nextWakeDelay(now) {
+    let soonest = null;
+    for (const [, info] of this.typing) {
+      const due = info.until - now;
+      if (due < 0) continue;
+      if (soonest === null || due < soonest) soonest = due;
+    }
+    for (const [, info] of this.presence) {
+      const due = info.lastSeen + PRESENCE_TTL_MS - now;
+      if (due < 0) continue;
+      if (soonest === null || due < soonest) soonest = due;
+    }
+    return soonest;
+  }
+
   async ensureAlarm() {
     try {
       const existing = await this.ctx.storage.getAlarm();
-      if (existing == null) await this.ctx.storage.setAlarm(Date.now() + TYPING_ALARM_MS);
+      if (existing == null) {
+        const soonest = this.nextWakeDelay(Date.now());
+        await this.ctx.storage.setAlarm(Date.now() + (soonest === null ? PRESENCE_ALARM_MS : soonest + 50));
+      }
     } catch (_) {}
   }
 

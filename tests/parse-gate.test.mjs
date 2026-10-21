@@ -1732,6 +1732,41 @@ function safeDecode4(v) {
   }
 }
 
+/* ---- the alarm wakes when something expires, and the account is read once ----
+ *
+ * An alarm that fires every two seconds is a request every two seconds, for
+ * as long as the site has somebody on it: forty-three thousand of the
+ * hundred thousand requests the day allows, spent on waking up to find that
+ * nothing had expired. A typing indicator expires after three seconds and a
+ * presence after ninety, so the wake is set for the moment the next thing
+ * actually expires.
+ *
+ * And the account was read several times over before it had shown anything:
+ * on the page opening, on every change of tab, and on every save, with
+ * each read a request of its own. */
+{
+  const hub = readFileSync(join(ROOT, "workers/community-hub.js"), "utf8");
+  const account = readFileSync(join(ROOT, "account.js"), "utf8");
+
+  if (!/nextWakeDelay/.test(hub)) {
+    structureFail("the alarm does not work out when the next thing expires");
+  } else if (/setAlarm(Date.now() + TYPING_ALARM_MS)/.test(hub)) {
+    structureFail("the alarm is still armed at the typing interval for everything, so it wakes every two seconds");
+  } else {
+    structureOk("the alarm wakes for the moment the next thing expires");
+  }
+
+  if (!/_accountLoading/.test(account)) {
+    structureFail("the account is read again while a read of it is already under way");
+  } else if (!/ACCOUNT_FRESH_MS/.test(account)) {
+    structureFail("the account is read again straight after it has just been read");
+  } else if (!/loadAccountNow/.test(account)) {
+    structureFail("a change that has just been made is not shown at once");
+  } else {
+    structureOk("the account is read once, and a change is shown at once");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

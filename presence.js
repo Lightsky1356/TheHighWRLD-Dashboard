@@ -197,6 +197,9 @@
     };
     ws.onclose = function () {
       if (wsHbTimer) { clearInterval(wsHbTimer); wsHbTimer = null; }
+      /* The socket has gone, so the counts come from the database again -
+         and the table has to be kept current for that to work. */
+      heartbeat();
       startPolling();
       wsScheduleReconnect();
     };

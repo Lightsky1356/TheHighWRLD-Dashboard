@@ -86,19 +86,51 @@
       body: JSON.stringify(body),
     }).then(function (r) { return r.json().catch(function () { return null; }); });
   }
-  function loadAccount() {
+  /* The account is read from one place, and the reads are not repeated.
+   *
+   * It used to be read on every page that opened the account, on every
+   * change of tab, on every save, and every forty-five seconds while the
+   * account was on screen - so opening the account cost several requests
+   * before it had shown anything, and every request is one of the hundred
+   * thousand the day allows.
+   *
+   * So a read that is already under way is not started again, and a read
+   * that has just happened is not repeated. What is left is the poll, which
+   * is what keeps the activity list and the unread count fresh, and it runs
+   * only while the account is actually on screen. */
+  var _accountLoading = null;
+  var _accountLoadedAt = 0;
+  var ACCOUNT_FRESH_MS = 20000;
+
+  function loadAccount(force) {
     if (!uid) return Promise.resolve(null);
-    return fetch("/api/account?user=" + encodeURIComponent(uid), { cache: "no-store" })
+    var now = Date.now();
+    /* One read at a time. */
+    if (_accountLoading) return _accountLoading;
+    /* And not again straight away - unless something has just changed it. */
+    if (!force && _data && now - _accountLoadedAt < ACCOUNT_FRESH_MS) {
+      return Promise.resolve(_data);
+    }
+    _accountLoading = fetch("/api/account?user=" + encodeURIComponent(uid), { cache: "no-store" })
       .then(function (r) { return r.json(); })
-      .then(function (d) { if (d && d.ok) { _data = d; renderAll(); } })
-      .catch(function () {});
+      .then(function (d) {
+        _accountLoadedAt = Date.now();
+        if (d && d.ok) { _data = d; renderAll(); }
+        return d;
+      })
+      .catch(function () {})
+      .then(function (d) { _accountLoading = null; return d; });
+    return _accountLoading;
   }
+  /* A change that has just been made has to be shown at once, not after the
+     freshness window. */
+  function loadAccountNow() { return loadAccount(true); }
   function plLiveSync() {
     if (window._plHydrate) { try { window._plHydrate(true); } catch (e) {} }
     if (window.renderSidebarPlaylists) { try { window.renderSidebarPlaylists(); } catch (e) {} }
     if (window.renderHubPlaylists) { try { window.renderHubPlaylists(); } catch (e) {} }
   }
-  window._plRefreshAccount = function () { loadAccount(); };
+  window._plRefreshAccount = function () { loadAccountNow(); };
 
   /* ---------- Small helpers ---------- */
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -823,7 +855,7 @@ function compactProfileViewHtml(d) {
 
       /* Server side only with a session - both calls 401 without one. */
       if (signedIn()) {
-        api({ action: "markAllNotif" }).then(function () { loadAccount(); });
+        api({ action: "markAllNotif" }).then(function () { loadAccountNow(); });
         commNotifReadAll();
       }
       applyNotifications();
@@ -1138,7 +1170,7 @@ function compactProfileViewHtml(d) {
   var logoutBtn = document.getElementById("logoutOthersBtn");
   if (logoutBtn) logoutBtn.addEventListener("click", function () {
     btnBusy(logoutBtn, true);
-    api({ action: "clearLogins" }).then(function () { btnBusy(logoutBtn, false); loadAccount(); toast(_tt("toastDevicesOut", "Other devices logged out"), "success"); }).catch(function () { btnBusy(logoutBtn, false); });
+    api({ action: "clearLogins" }).then(function () { btnBusy(logoutBtn, false); loadAccountNow(); toast(_tt("toastDevicesOut", "Other devices logged out"), "success"); }).catch(function () { btnBusy(logoutBtn, false); });
   });
 
   /* ---------- Discord ---------- */
@@ -1419,7 +1451,7 @@ function compactProfileViewHtml(d) {
       btnBusy(unD, true);
       api({ action: "unlinkDiscord" }).then(function (d) {
         btnBusy(unD, false);
-        if (d && d.ok) { toast(_tt("toastDiscordUnlinked", "Discord unlinked"), "success"); loadAccount(); }
+        if (d && d.ok) { toast(_tt("toastDiscordUnlinked", "Discord unlinked"), "success"); loadAccountNow(); }
         else toast((d && d.error) || _tt("couldNotUnlinkDiscord", "Could not unlink Discord"), "error");
       }).catch(function () { btnBusy(unD, false); toast(_tt("couldNotUnlinkDiscord", "Could not unlink Discord"), "error"); });
     });
@@ -1428,7 +1460,7 @@ function compactProfileViewHtml(d) {
       btnBusy(unG, true);
       api({ action: "unlinkGoogle" }).then(function (d) {
         btnBusy(unG, false);
-        if (d && d.ok) { toast(_tt("toastGoogleUnlinked", "Google unlinked"), "success"); loadAccount(); }
+        if (d && d.ok) { toast(_tt("toastGoogleUnlinked", "Google unlinked"), "success"); loadAccountNow(); }
         else toast((d && d.error) || _tt("couldNotUnlinkGoogle", "Could not unlink Google"), "error");
       }).catch(function () { btnBusy(unG, false); toast(_tt("couldNotUnlinkGoogle", "Could not unlink Google"), "error"); });
     });
@@ -1587,7 +1619,7 @@ function compactProfileViewHtml(d) {
          guest (no account) changes the device mode - the same split the theme
          uses, so signing out returns to the mode this device last chose. */
       if (isSignedInNow()) {
-        api({ action: "saveMode", mode: v }).then(function () { loadAccount(); });
+        api({ action: "saveMode", mode: v }).then(function () { loadAccountNow(); });
       } else {
         try { localStorage.setItem("wantedMode", v); } catch (e) {}
       }
@@ -1654,7 +1686,7 @@ function compactProfileViewHtml(d) {
              body, so success is read off the payload rather than from a
              rejection. */
           api({ action: "saveTheme", theme: v }).then(function (d) {
-            if (d && d.ok) { loadAccount(); toast(themeChangedMsg(name), "success"); return; }
+            if (d && d.ok) { loadAccountNow(); toast(themeChangedMsg(name), "success"); return; }
             applyTheme(prev); syncTheme(prev);
             toast(failMsg, "error");
           }).catch(function () {
@@ -1686,7 +1718,7 @@ function compactProfileViewHtml(d) {
            The guest write happens BEFORE applyI18n. applyI18n is what
            translates the page, and anything reading storage to work out the
            current language would otherwise still see the old one. */
-        if (isSignedInNow()) api({ action: "saveLanguage", language: _lang }).then(function () { loadAccount(); });
+        if (isSignedInNow()) api({ action: "saveLanguage", language: _lang }).then(function () { loadAccountNow(); });
         else try { localStorage.setItem("wantedLang", _lang); } catch (e) {}
         applyI18n();
         var tt = null;
@@ -1856,7 +1888,7 @@ function compactProfileViewHtml(d) {
     if (saveBtn) saveBtn.onclick = function () {
       var links = collectLinks(box).slice(0, 12);
       api({ action: "saveLinks", links: links }).then(function (d) {
-        if (d && d.ok) { toast(_tt("toastLinksSaved", "Links saved"), "success"); loadAccount(); }
+        if (d && d.ok) { toast(_tt("toastLinksSaved", "Links saved"), "success"); loadAccountNow(); }
         else { toast((d && d.error) || _tt("couldNotSaveLinks", "Could not save links"), "error"); }
       }).catch(function () { toast(_tt("couldNotSaveLinks", "Could not save links"), "error"); });
     };
@@ -2609,16 +2641,19 @@ window.profileSectionShown = function () {
       sessionStorage.setItem(key, "1");
     } catch (e) {}
     api({ action: "logLogin", method: "session" }).then(function () {
-      loadAccount();
+      loadAccountNow();
     });
   }
 
   /* ---------- Real-time polling ---------- */
   function startPolling() {
     stopPolling();
+    /* Every two minutes rather than every forty-five seconds. It is
+       there to keep the activity list and the unread count fresh, and
+       neither of those changes by the second. */
     _pollTimer = setInterval(function () {
       if (_visible && uid && !document.hidden) loadAccount();
-    }, 45000);
+    }, 120000);
   }
   function stopPolling() { if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; } }
 
