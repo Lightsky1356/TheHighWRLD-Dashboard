@@ -6,6 +6,7 @@ function json(data, status = 200) {
 }
 
 import { getSessionUser } from "../_lib/auth.js";
+import { listeningStats, streakFromDays } from "../_lib/listens-stats.js";
 import { banRejection } from "../_lib/bans.js";
 
 function nowIso() { return new Date().toISOString(); }
@@ -189,8 +190,14 @@ export async function onRequestGet(context) {
       joined: (prof && prof.created_at) || (link && link.linked_at) || "",
     };
 
-    const [listens, favorites, bookmarks, downloads, votes, replies] = await Promise.all([
-      db.prepare("SELECT COUNT(*) as n, COALESCE(SUM(seconds),0) as s FROM listens WHERE uid = ?").bind(uid).first(),
+    /* The listening summaries. They used to be asked for one by one, and
+       each one read the whole history - so a profile view read it four
+       times over. They are kept now, and this is the one place they are
+       read from. */
+    const stats = await listeningStats(db, uid, { topLimit: 5, unique: false, months: false, firstLast: false });
+    const listens = { n: stats.plays, s: stats.seconds, u: stats.uniqueTracks };
+
+    const [favorites, bookmarks, downloads, votes, replies] = await Promise.all([
       db.prepare("SELECT COUNT(*) as n FROM favorites WHERE uid = ?").bind(uid).first(),
       db.prepare("SELECT COUNT(*) as n FROM bookmarks WHERE uid = ?").bind(uid).first(),
       db.prepare("SELECT COUNT(*) as n FROM downloads WHERE uid = ?").bind(uid).first(),
@@ -201,7 +208,7 @@ export async function onRequestGet(context) {
     const [plRows, links, topPlays, recentAct, favRows] = await Promise.all([
       db.prepare("SELECT id, name, desc, color, visibility, created_at FROM playlists WHERE uid = ? ORDER BY id DESC LIMIT 12").bind(uid).all(),
       db.prepare("SELECT label, url FROM profile_links WHERE uid = ? ORDER BY sort ASC, id ASC").bind(uid).all(),
-      db.prepare("SELECT track_id, COUNT(*) as n FROM listens WHERE uid = ? GROUP BY track_id ORDER BY n DESC LIMIT 5").bind(uid).all(),
+      Promise.resolve({ results: stats.top.map((t) => ({ track_id: t.track_id, n: t.n })) }),
       db.prepare("SELECT type, label, ts FROM activity WHERE uid = ? ORDER BY id DESC LIMIT 8").bind(uid).all(),
       db.prepare("SELECT title, created_at FROM favorites WHERE uid = ? ORDER BY created_at DESC LIMIT 50").bind(uid).all(),
     ]);
@@ -214,34 +221,10 @@ export async function onRequestGet(context) {
 
     // Listening streak for this uid (same math as /api/mystats).
     let streak = 0;
-    try {
-      const dayRows = await db.prepare(
-        "SELECT DISTINCT substr(ts,1,10) AS day FROM listens WHERE uid = ? ORDER BY day DESC LIMIT 400"
-      ).bind(uid).all();
-      const set = new Set((dayRows.results || []).map((r) => r.day));
-      const dt = new Date();
-      const iso = (x) => x.toISOString().slice(0, 10);
-      if (!set.has(iso(dt))) dt.setUTCDate(dt.getUTCDate() - 1);
-      while (set.has(iso(dt))) { streak++; dt.setUTCDate(dt.getUTCDate() - 1); }
-    } catch (_) {}
+    try { streak = streakFromDays(stats.days); } catch (_) {}
 
     // 30-day daily activity + 24h listening-hour histogram for profile panels.
-    let activity30 = [], hours = new Array(24).fill(0);
-    try {
-      const act = await db.prepare(
-        "SELECT substr(ts,1,10) AS day, COUNT(*) AS n FROM listens WHERE uid = ? AND ts >= datetime('now', '-30 days') GROUP BY day ORDER BY day ASC"
-      ).bind(uid).all();
-      activity30 = (act.results || []).map((r) => ({ day: r.day, n: r.n || 0 }));
-    } catch (_) {}
-    try {
-      const hh = await db.prepare(
-        "SELECT CAST(strftime('%H', ts) AS INTEGER) AS h, COUNT(*) AS n FROM listens WHERE uid = ? GROUP BY h"
-      ).bind(uid).all();
-      for (const r of (hh.results || [])) {
-        const h = Number(r.h);
-        if (h >= 0 && h < 24) hours[h] = r.n || 0;
-      }
-    } catch (_) {}
+    let activity30 = stats.activity30 || [], hours = stats.hours || new Array(24).fill(0);
 
     // Privacy: viewers other than the owner only see flagged-visible sections.
     // Missing privacy row = all visible (legacy default). Non-owners additionally

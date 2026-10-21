@@ -17,7 +17,7 @@
 // no network. A file that does not parse fails the build here rather than on a
 // user's phone.
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1379,6 +1379,94 @@ function safeDecode4(v) {
 
 /* The same check against what the browser actually parsed, which is the only
    place the nesting above was ever going to show up. */
+/* ---- the listening history is summarised, not scanned ----
+ *
+ * The listens table holds one row per play. The profile of a member needs
+ * several summaries of that history, and each one used to read the whole
+ * of it - so a profile view read it four times over, and the free tier
+ * counts rows read rather than queries. A member with forty thousand plays
+ * cost a hundred and sixty thousand row reads for one profile view.
+ *
+ * The summaries are kept now, in three small tables, and read in one
+ * place. The history itself is only read when a play is recorded, or when
+ * the summaries are built for the first time.
+ *
+ * So no endpoint may go back to scanning the history, and every place that
+ * changes the history has to change the summaries with it. */
+{
+  const listening = readFileSync(join(ROOT, "functions/_lib/listens-stats.js"), "utf8");
+  const profile = readFileSync(join(ROOT, "functions/api/profile.js"), "utf8");
+  const mystats = readFileSync(join(ROOT, "functions/api/mystats.js"), "utf8");
+  const account = readFileSync(join(ROOT, "functions/api/account/index.js"), "utf8");
+  const merge = readFileSync(join(ROOT, "functions/api/discord/callback.js"), "utf8");
+
+  if (!/listeningStats/.test(profile) || !/listeningStats/.test(mystats) || !/listeningStats/.test(account)) {
+    structureFail("an endpoint reads the listening history directly instead of the summaries");
+  } else {
+    structureOk("the summaries are read in one place, by every endpoint that needs them");
+  }
+
+  /* A scan of the whole history, with nothing to narrow it down.
+     A limit on the groups is not a limit on the rows: every row is still
+     read to make the groups. And a filter that puts a function on the
+     column cannot use the index, so the whole history is read and the
+     filter is applied afterwards - which is not cheap either. The only
+     cheap reads are the ones that bound the rows themselves. */
+  const scans = [];
+  for (const [name, src] of [["profile.js", profile], ["mystats.js", mystats], ["account/index.js", account]]) {
+    for (const m of src.matchAll(/FROM listens WHERE uid = \?[^"]*"/g)) {
+      const q = m[0];
+      const grouped = q.indexOf("GROUP BY");
+      const limited = q.indexOf("LIMIT");
+      const cheap = limited !== -1 && (grouped === -1 || limited < grouped);
+      if (!cheap) scans.push(name + ": " + q);
+    }
+  }
+  if (scans.length) {
+    structureFail("an endpoint scans the whole listening history again - " + scans.join(" | "));
+  } else {
+    structureOk("no endpoint scans the whole listening history");
+  }
+
+  /* The history may only be written through the helper that keeps the
+     summaries in step with it. */
+  if (/INSERT INTO listens/.test(account)) {
+    structureFail("a play is written without keeping the summaries in step");
+  } else if (!/recordPlay\(db, uid, title, seconds\)/.test(account)) {
+    structureFail("a play is not recorded through the helper that keeps the summaries in step");
+  } else {
+    structureOk("a play is recorded through the helper that keeps the summaries in step");
+  }
+
+  if (/DELETE FROM listens WHERE uid = \?/.test(account)) {
+    structureFail("the history is cleared without clearing the summaries");
+  } else if (!/clearPlays\(db, uid\)/.test(account)) {
+    structureFail("the history is not cleared through the helper that clears the summaries");
+  } else if (!/movePlays\(db, fromUid, toUid\)/.test(merge)) {
+    structureFail("moving a member's plays does not move their summaries");
+  } else {
+    structureOk("clearing the history and moving it clear the summaries too");
+  }
+
+  /* The tables have to be created by a migration. */
+  const migrations = join(ROOT, "migrations");
+  const files = readdirSync(migrations).filter((f) => f.endsWith(".sql"));
+  const makes = files.some((f) => /CREATE TABLE IF NOT EXISTS listens_daily/.test(readFileSync(join(migrations, f), "utf8")));
+  if (!makes) {
+    structureFail("no migration creates the tables the summaries are kept in");
+  } else {
+    structureOk("a migration creates the tables the summaries are kept in");
+  }
+
+  /* And the helper has to be able to do without them, because the migration
+     may not have run yet. */
+  if (!/rollupAvailable/.test(listening) || !/rawStats/.test(listening)) {
+    structureFail("the summaries have no fallback to the history");
+  } else {
+    structureOk("the summaries fall back to the history when the tables are not there");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

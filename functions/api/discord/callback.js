@@ -1,4 +1,5 @@
 import { json, nowIso, newUid, getCookie, createSession, setSessionCookie } from "../../_lib/auth.js";
+import { movePlays } from "../../_lib/listens-stats.js";
 
 function discordAvatar(me) {
   if (!me || !me.id) return "";
@@ -25,7 +26,7 @@ async function mergeAccountData(db, fromUid, toUid) {
     "INSERT OR IGNORE INTO reply_votes (site_uid, reply_id, value) SELECT ?, reply_id, value FROM reply_votes WHERE site_uid = ?"
   ).bind(toUid, fromUid).run();
   await db.prepare("DELETE FROM reply_votes WHERE site_uid = ?").bind(fromUid).run();
-  await db.prepare("UPDATE listens SET uid = ? WHERE uid = ?").bind(toUid, fromUid).run();
+  await movePlays(db, fromUid, toUid);
   await db.prepare("UPDATE playlists SET uid = ? WHERE uid = ?").bind(toUid, fromUid).run();
   await db.prepare("UPDATE profile_links SET uid = ? WHERE uid = ?").bind(toUid, fromUid).run();
   await db.prepare("UPDATE activity SET uid = ? WHERE uid = ?").bind(toUid, fromUid).run();

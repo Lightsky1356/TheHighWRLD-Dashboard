@@ -1,5 +1,6 @@
 import { getSessionUser, verifyPassword, hashPassword, emailOk, randomHex } from "../../_lib/auth.js";
 import { banRejection } from "../../_lib/bans.js";
+import { listeningStats, recordPlay, clearPlays } from "../../_lib/listens-stats.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -46,7 +47,7 @@ function parseUA(ua) {
 }
 
 /* ---------- Profile merge ---------- */
-async function loadAccountState(env, db, uid, req) {
+async function loadAccountState(env, db, uid, req, session) {
   const link = await getDiscordLink(db, uid);
   const discordId = link ? link.discord_id : "";
   const ownerDiscordId = env.OWNER_DISCORD_ID || OWNER_DISCORD_ID_DEFAULT;
@@ -54,8 +55,8 @@ async function loadAccountState(env, db, uid, req) {
 
   const prof = await db.prepare("SELECT * FROM user_profiles WHERE site_uid = ?").bind(uid).first();
   const userRow = await db.prepare("SELECT email, name, provider, google_id, verified, password_hash FROM users WHERE uid = ?").bind(uid).first();
-  const session = await getSessionUser(db, req);
-  const isSessionOwner = !!(session && session.uid === uid);
+  const who = session === undefined ? await getSessionUser(db, req) : session;
+  const isSessionOwner = !!(who && who.uid === uid);
 
   const profile = {
     name: (prof && prof.name) || (link && link.display_name) || (userRow && userRow.name) || ("999_" + String(uid).slice(-4).toUpperCase()),
@@ -68,8 +69,13 @@ async function loadAccountState(env, db, uid, req) {
     joined: (prof && prof.created_at) || (link && link.linked_at) || (userRow && userRow.created_at) || new Date().toISOString(),
   };
 
-  const [listens, favorites, bookmarks, downloads, votes, replies] = await Promise.all([
-    db.prepare("SELECT COUNT(*) as n, COUNT(DISTINCT track_id) as u, COALESCE(SUM(seconds),0) as s FROM listens WHERE uid = ?").bind(uid).first(),
+  /* The listening summaries. The totals, the most played tracks, and the
+     day by day figures were each asked for separately, and each one read
+     the whole listening history. They are kept now. */
+  const stats = await listeningStats(db, uid, { topLimit: 8, days: false, hours: false, months: false, firstLast: false });
+  const listens = { n: stats.plays, u: stats.uniqueTracks, s: stats.seconds };
+
+  const [favorites, bookmarks, downloads, votes, replies] = await Promise.all([
     db.prepare("SELECT COUNT(*) as n FROM favorites WHERE uid = ?").bind(uid).first(),
     db.prepare("SELECT COUNT(*) as n FROM bookmarks WHERE uid = ?").bind(uid).first(),
     db.prepare("SELECT COUNT(*) as n FROM downloads WHERE uid = ?").bind(uid).first(),
@@ -84,7 +90,7 @@ async function loadAccountState(env, db, uid, req) {
     db.prepare("SELECT id, kind, label, sub, created_at FROM bookmarks WHERE uid = ? ORDER BY id DESC LIMIT 40").bind(uid).all(),
     db.prepare("SELECT id, title, size, ts FROM downloads WHERE uid = ? ORDER BY id DESC LIMIT 15").bind(uid).all(),
     db.prepare("SELECT ip, ua, country, method, ts FROM logins WHERE uid = ? ORDER BY id DESC LIMIT 10").bind(uid).all(),
-    db.prepare("SELECT track_id, COUNT(*) as n FROM listens WHERE uid = ? GROUP BY track_id ORDER BY n DESC LIMIT 8").bind(uid).all(),
+    Promise.resolve({ results: stats.top.map((t) => ({ track_id: t.track_id, n: t.n })) }),
   ]);
 
   const unread = notifs.results.reduce((a, x) => a + (x.read ? 0 : 1), 0);
@@ -101,15 +107,22 @@ async function loadAccountState(env, db, uid, req) {
   }
 
   // weekly + monthly listening analytics
-  const weekFrom = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
-  const weekly = await db.prepare(
-    "SELECT substr(ts,1,10) as day, COUNT(*) as n, COALESCE(SUM(seconds),0) as s FROM listens WHERE uid = ? AND substr(ts,1,10) >= ? GROUP BY day"
-  ).bind(uid, weekFrom).all();
+  /* The cutoff is a full timestamp, not a date.
 
-  const monthFrom = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
-  const monthly = await db.prepare(
-    "SELECT substr(ts,1,10) as day, COUNT(*) as n, COALESCE(SUM(seconds),0) as s FROM listens WHERE uid = ? AND substr(ts,1,10) >= ? GROUP BY day"
-  ).bind(uid, monthFrom).all();
+     The filter used to be substr(ts,1,10) >= ?, which asks the database to
+     apply a FUNCTION to every row before it can compare it - so the index on
+     (uid, ts) cannot be used, and the whole listening history was read to
+     throw most of it away. Comparing the column directly lets the index walk
+     only the days that are wanted.
+
+     The stored format is the column's default, strftime('%Y-%m-%dT%H:%M:%fZ',
+     'now'), so an ISO timestamp compares correctly against it. */
+    /* The day by day figures, for the week and the month. These used to be
+     read from the history with a filter the index could not use, so the
+     whole of it was read to throw most of it away. */
+  const weekFrom = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+  const monthly = { results: stats.daily || [] };
+  const weekly = { results: (stats.daily || []).filter((r) => r.day >= weekFrom) };
 
   const [priv] = await Promise.all([
     db.prepare("SELECT show_playlists, show_stats, show_activity, show_favorites, activity_enabled, notifications_enabled FROM user_privacy WHERE uid = ?").bind(uid).first().catch(() => null),
@@ -206,12 +219,60 @@ async function applyPrivacy(db, uid, patch) {
   return next;
 }
 
+/* The account page is read on every load, and again after every save,
+ * and it is not cheap: it aggregates the whole listening history and walks
+ * every playlist. Two visits in a minute cost exactly as much as one, so the
+ * answer is remembered for a moment - and dropped the moment the account
+ * changes, so nobody ever sees their own change come back late.
+ *
+ * The answer is not the same for everybody. The account block - the email,
+ * the google link - goes only to the person whose account it is, so the
+ * remembered copy is kept per viewer as well as per account. Handing one
+ * person's copy to another would leak their email.
+ *
+ * subject -> viewer -> { at, data }. */
+const STATE_CACHE = new Map();
+const STATE_TTL_MS = 30000;
+const STATE_CACHE_MAX = 64;
+
+function stateCacheGet(subject, viewer) {
+  const byViewer = STATE_CACHE.get(subject);
+  if (!byViewer) return null;
+  const hit = byViewer.get(viewer);
+  if (!hit) return null;
+  if (Date.now() - hit.at >= STATE_TTL_MS) { byViewer.delete(viewer); return null; }
+  return hit.data;
+}
+
+function stateCacheSet(subject, viewer, data) {
+  let byViewer = STATE_CACHE.get(subject);
+  if (!byViewer) { byViewer = new Map(); STATE_CACHE.set(subject, byViewer); }
+  byViewer.set(viewer, { at: Date.now(), data });
+  /* Bounded: the subject is a query parameter, so in principle anybody can
+     ask for a lot of them. */
+  while (STATE_CACHE.size > STATE_CACHE_MAX) {
+    const oldest = STATE_CACHE.keys().next().value;
+    STATE_CACHE.delete(oldest);
+  }
+}
+
 export async function onRequestGet(context) {
   try {
     const url = new URL(context.request.url);
     const user = (url.searchParams.get("user") || "").slice(0, 40);
     if (!user) return json({ error: "missing user" }, 400);
-    return json(await loadAccountState(context.env, context.env.wanted_vault, user, context.request));
+    /* Who is asking. One read, and the same answer would otherwise cost
+       hundreds - and the answer differs by viewer, so it has to be known
+       before the remembered copy can be used. */
+    let session = null;
+    try { session = await getSessionUser(context.env.wanted_vault, context.request); } catch (_) {}
+    const viewer = (session && session.uid) || "anon";
+    /* Served from the remembered copy while it is fresh. */
+    const cached = stateCacheGet(user, viewer);
+    if (cached) return json(cached);
+    const data = await loadAccountState(context.env, context.env.wanted_vault, user, context.request, session);
+    stateCacheSet(user, viewer, data);
+    return json(data);
   } catch (err) {
     return json({ error: String(err && err.message || err) }, 500);
   }
@@ -224,16 +285,19 @@ export async function onRequestPost(context) {
   let uid = String(body.user || "").slice(0, 40);
   // IDOR hardening: a valid session always pins identity to itself; the
   // browser-supplied uid is only honored for signed-out linked devices.
+  let session = null;
   try {
-    const session = await getSessionUser(db, context.request);
+    session = await getSessionUser(db, context.request);
     if (session && session.uid) uid = session.uid;
   } catch (_) {}
   if (!uid) return json({ error: "missing user" }, 400);
+  /* The account is about to change, so the remembered copy of it is now wrong.
+     Dropped before the action runs rather than after it succeeds: a write that
+     fails has not changed anything, and re-reading the account once is cheaper
+     than serving a stale one. */
+  STATE_CACHE.delete(uid);
   const authed = await (async () => {
-    try {
-      const session = await getSessionUser(db, context.request);
-      if (session && session.uid) return true;
-    } catch (_) {}
+    if (session && session.uid) return true;
     try {
       const link = await getDiscordLink(db, uid);
       if (link && link.display_name) return true;
@@ -402,7 +466,7 @@ export async function onRequestPost(context) {
           "SELECT ts FROM listens WHERE uid = ? AND track_id = ? ORDER BY id DESC LIMIT 1"
         ).bind(uid, title).first();
         if (!recent || !recent.ts || recent.ts < new Date(Date.now() - 90000).toISOString()) {
-          await db.prepare("INSERT INTO listens (uid, track_id, seconds) VALUES (?, ?, ?)").bind(uid, title, seconds).run();
+          await recordPlay(db, uid, title, seconds);
           try {
             const lastPlay = await db.prepare(
               "SELECT ts FROM activity WHERE uid = ? AND type = 'listen' ORDER BY id DESC LIMIT 1"
@@ -544,13 +608,18 @@ export async function onRequestPost(context) {
         return json({ ok: true, history: rows.results });
       }
       case "clearHistory": {
-        await db.prepare("DELETE FROM listens WHERE uid = ?").bind(uid).run();
+        await clearPlays(db, uid);
         break;
       }
       default:
         return json({ error: "unknown action: " + body.action }, 400);
     }
-    return json(await loadAccountState(context.env, db, uid, context.request));
+    const data = await loadAccountState(context.env, db, uid, context.request, session);
+    /* The client asks for the account again after every save, and the answer
+       it wants is the one this write has just produced. Remembering it here
+       means that read costs nothing instead of the whole account again. */
+    stateCacheSet(uid, (session && session.uid) || "anon", data);
+    return json(data);
   } catch (err) {
     return json({ error: String(err && err.message || err) }, 500);
   }

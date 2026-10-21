@@ -42,11 +42,13 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const GROUPS = [
   { name: "parse-gate", file: "./parse-gate.test.mjs", needsServer: false },
   { name: "crypto", file: "./crypto-selftest.mjs", needsServer: false },
+  { name: "listens-rollup", file: "./listens-rollup.test.mjs", needsServer: false },
   { name: "push-api", file: "./push-api.test.mjs", needsServer: true },
   { name: "notifications", file: "./notifications-optout.test.mjs", needsServer: true },
   { name: "notification-prefs", file: "./notification-prefs.test.mjs", needsServer: true },
   { name: "push-delivery", file: "./push-delivery.test.mjs", needsServer: true },
   { name: "signed-in-paths", file: "./signed-in-paths.test.mjs", needsServer: true },
+  { name: "profile-stats", file: "./profile-stats.test.mjs", needsServer: true },
   { name: "gallery-publish", file: "./gallery-publish.test.mjs", needsServer: true },
 ];
 
