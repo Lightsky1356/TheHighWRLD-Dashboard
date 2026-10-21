@@ -322,15 +322,17 @@
     }
   }
 
-  function copyLink(uidv, username) {
-    /* A profile is addressed by its Discord username, so that is what a
-       copied link carries. The uid still works as an address - the API
-       resolves it - but it is not something a person can recognise in a
-       browser bar, and it is what the link used to carry. */
-    var who = String(username || "").replace(/^@/, "");
+  function copyLink(uidv, handle) {
+    /* A profile is addressed by its handle, so that is what a copied link
+       carries. The handle is the member's Discord username, and the site uid
+       when they have not got one - so every member has an address that
+       resolves. The uid still works as an address - the API resolves it - but
+       it is not something a person can recognise in a browser bar, and it is
+       what the link used to carry. */
+    var who = String(handle || "").replace(/^@/, "");
     var url = location.origin + (who
-      ? "/Profile/@" + encodeURIComponent(who)
-      : "/profile/" + encodeURIComponent(uidv));
+      ? "/Profile/" + encodeURIComponent(who)
+      : "/Profile/" + encodeURIComponent(uidv));
     var done = function () { toast('Profile link copied', 'success'); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(done, function () { fallbackCopy(url, done); });

@@ -429,6 +429,37 @@ if (!/<base href="\/"\s*>/.test(html)) {
   } else {
     structureOk("no file matches the profile path on its own any more");
   }
+
+  /* The address carries the handle and no "@", and it is built from the field
+   * the API actually returns. The API answers with the handle at the top
+   * level - there is no top-level "username" - so reading the wrong one leaves
+   * the address without a handle and quietly unfixed.
+   *
+   * And every member has to be routable: the API's handle falls back to the
+   * site uid for anybody who has no Discord username, so a member without one
+   * is still reachable rather than having no address at all. */
+  if (!/PROFILE_PATH_ROOT\s*\+\s*"\/"\s*\+/.test(accountSrc)) {
+    structureFail("the profile address is not built from the handle");
+  } else {
+    structureOk("the profile address is built from the handle");
+  }
+  if (!/canonicaliseProfileUrl\(\s*d\.handle/.test(accountSrc)) {
+    structureFail("the address is not canonicalised from the API's handle field");
+  } else {
+    structureOk("the address is canonicalised from the field the API returns");
+  }
+  if (/\/Profile\/" \+ "@"|"\\\/@"/.test(accountSrc)) {
+    structureFail("the profile address still carries an @");
+  } else {
+    structureOk("the profile address carries no @");
+  }
+
+  const profileApi = readFileSync(join(ROOT, "functions/api/profile.js"), "utf8");
+  if (!/handle:\s*\(userRow\s*&&\s*userRow\.name\)\s*\|\|\s*String\(uid/.test(profileApi)) {
+    structureFail("the API's handle does not fall back to the uid, so a member with no username has no address");
+  } else {
+    structureOk("every member has a handle, the uid standing in when there is no username");
+  }
 }
 
 /* ---- a favourite row can be narrower than its content ----

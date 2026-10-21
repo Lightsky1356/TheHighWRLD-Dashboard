@@ -328,7 +328,7 @@ function compactProfileViewHtml(d) {
       if (d.uid && _data && _data.discord && _data.discord.linked) {
         html += '<button type="button" class="cmp-btn report-flag-btn" data-report="profile:u:' + esc(String(d.uid)) + '" data-report-title="' + esc(name) + '" title="Report this profile" style="margin-left:8px"><i class="fas fa-flag"></i> Report</button>';
       }
-      html += '<button type="button" class="cmp-btn user-menu-btn" data-user-menu data-uid="' + esc(String(d.uid)) + '" data-name="' + esc(name) + '" data-username="' + esc(String(d.username || "")) + '" aria-label="More user actions" title="More user actions" style="margin-left:8px"><i class="fas fa-ellipsis"></i></button>';
+      html += '<button type="button" class="cmp-btn user-menu-btn" data-user-menu data-uid="' + esc(String(d.uid)) + '" data-name="' + esc(name) + '" data-username="' + esc(String(d.handle || "")) + '" aria-label="More user actions" title="More user actions" style="margin-left:8px"><i class="fas fa-ellipsis"></i></button>';
       html += '</div>';
     }
     html += '</div>';
@@ -2303,7 +2303,7 @@ function compactProfileViewHtml(d) {
       bindPvFavGrid(fg);
       bindPvPls();
       if (window.userMenu && window.userMenu.profileRendered) window.userMenu.profileRendered(_profilePage.data);
-      canonicaliseProfileUrl(_profilePage.data.username);
+      canonicaliseProfileUrl(_profilePage.data.handle || (_profilePage.data.profile && _profilePage.data.profile.username) || "");
       return;
     }
     body.innerHTML = profilePageLoading();
@@ -2321,7 +2321,7 @@ function compactProfileViewHtml(d) {
         bindPvFavGrid(fg);
         bindPvPls();
         if (window.userMenu && window.userMenu.profileRendered) window.userMenu.profileRendered(d);
-        canonicaliseProfileUrl(d.username);
+        canonicaliseProfileUrl(d.handle || (d.profile && d.profile.username) || "");
       })
       .catch(function () { body.innerHTML = profilePageError(); });
   }
@@ -2350,25 +2350,33 @@ function compactProfileViewHtml(d) {
   }
   /* ---------- Profile addresses ----------
    *
-   * A profile is addressed by its Discord username: /Profile/@lightsky1356.
+   * A profile is addressed by its handle: /Profile/lightsky1356.
    *
-   * It used to be addressed by the internal site uid, which nobody outside the
-   * database can recognise or type, and which changed the moment an account was
+   * The handle is the member's Discord username, and the site uid when they have
+   * not got one - so every member has an address that resolves, rather than
+   * some of them being unroutable because a name field is empty.
+   *
+   * It used to be the site uid on its own, which nobody outside the database
+   * can recognise or type, and which changed the moment an account was
    * replaced. A username is the handle the person already goes by, and it is
    * what a shared link should carry.
    *
-   * The address is written in one place and read in one place, because the two
-   * drifting apart is how a shared link stops working. */
+   * There is no "@" in the address. It is how Discord writes a handle, not how
+   * a path is spelled, and the API resolves the name either way - so a link
+   * with one still works, and a link without one is what gets shared.
+   *
+   * The address is written in one place and read in one place, because the
+   * two drifting apart is how a shared link stops working. */
   var PROFILE_PATH_ROOT = "/Profile";
 
-  function profilePathFor(username) {
-    return PROFILE_PATH_ROOT + "/@" + encodeURIComponent(String(username || "").replace(/^@/, ""));
+  function profilePathFor(handle) {
+    return PROFILE_PATH_ROOT + "/" + encodeURIComponent(String(handle || "").replace(/^@/, ""));
   }
 
   /* Read a profile address back. Returns null when the path is not a profile
    * address, { self: true } for the bare /Profile, and { key: ... } for one
    * that names somebody. The key may be a uid, a username or a display name -
-   * the API resolves all three - and may carry the leading "@". */
+   * the API resolves all three - and may carry a leading "@". */
   function parseProfilePath(pathname) {
     var p = String(pathname || "").replace(/\/+$/, "");
     if (!p) return null;
