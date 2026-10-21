@@ -5,6 +5,17 @@ function json(data, status = 200) {
   });
 }
 
+/* The statistics are asked for again every thirty seconds while the owner's
+ * panel is on screen, and they are the same numbers each time - a visit has
+ * to have happened for them to change. So they are remembered for a few
+ * minutes, and the table is pruned at the same time rather than on every
+ * request.
+ *
+ * Only the owner ever gets here, and there is only one of them, so there is
+ * one remembered copy. */
+const STATS_CACHE = { at: 0, data: null };
+const STATS_TTL_MS = 300000;
+
 export async function onRequestGet(context) {
   try {
     const url = new URL(context.request.url);
@@ -24,29 +35,69 @@ export async function onRequestGet(context) {
       return json({ error: "forbidden" }, 403);
     }
 
+    /* Served from the remembered copy while it is fresh. */
+    if (STATS_CACHE.data && Date.now() - STATS_CACHE.at < STATS_TTL_MS) {
+      return json(STATS_CACHE.data);
+    }
+
     const env = context.env;
     const db = env.wanted_vault;
 
-    // Bound table growth so owner stats scans stay cheap: keep 90 days.
-    try {
-      await db.prepare("DELETE FROM analytics_visits WHERE ts < datetime('now', '-90 days')").run();
-    } catch (_) {}
+    /* The visits are read once, and the four summaries are made from what
+       comes back.
+     
+       They used to be asked for one at a time - the totals, the days, the
+       pages and the countries - and each one was a scan of the whole table,
+       so one request for the statistics read the table four times over. The
+       free tier counts rows read rather than queries, and this panel is
+       open on the owner's screen, so it is asked for over and over again. */
+    const since = new Date(Date.now() - 90 * 86400000).toISOString();
+    const rows = await db.prepare(
+      "SELECT ts, page, country, uid FROM analytics_visits WHERE ts >= ?"
+    ).bind(since).all();
+    const visits = rows.results || [];
 
-    const totals = await db.prepare(
-      "SELECT COUNT(*) as visits, COUNT(DISTINCT uid) as uniques FROM analytics_visits"
-    ).first();
+    const seenVisitors = new Set();
+    const days = new Map();
+    const pages = new Map();
+    const countries = new Map();
 
-    const perDay = await db.prepare(
-      "SELECT substr(ts,1,10) as day, COUNT(*) as visits, COUNT(DISTINCT uid) as uniques FROM analytics_visits GROUP BY day ORDER BY day DESC LIMIT 14"
-    ).all();
+    for (const r of visits) {
+      seenVisitors.add(r.uid);
 
-    const perPage = await db.prepare(
-      "SELECT page, COUNT(*) as visits, COUNT(DISTINCT uid) as uniques FROM analytics_visits GROUP BY page ORDER BY visits DESC"
-    ).all();
+      const day = String(r.ts || "").slice(0, 10);
+      let d = days.get(day);
+      if (!d) { d = { day, visits: 0, uniques: new Set() }; days.set(day, d); }
+      d.visits++; d.uniques.add(r.uid);
 
-    const perCountry = await db.prepare(
-      "SELECT country, COUNT(*) as visits FROM analytics_visits GROUP BY country ORDER BY visits DESC"
-    ).all();
+      const page = r.page || "";
+      let p = pages.get(page);
+      if (!p) { p = { page, visits: 0, uniques: new Set() }; pages.set(page, p); }
+      p.visits++; p.uniques.add(r.uid);
+
+      const country = r.country || "";
+      let c = countries.get(country);
+      if (!c) { c = { country, visits: 0 }; countries.set(country, c); }
+      c.visits++;
+    }
+
+    const totals = { visits: visits.length, uniques: seenVisitors.size };
+    const perDay = {
+      results: [...days.values()]
+        .sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0))
+        .slice(0, 14)
+        .map((d) => ({ day: d.day, visits: d.visits, uniques: d.uniques.size })),
+    };
+    const perPage = {
+      results: [...pages.values()]
+        .sort((a, b) => b.visits - a.visits)
+        .map((p) => ({ page: p.page, visits: p.visits, uniques: p.uniques.size })),
+    };
+    const perCountry = {
+      results: [...countries.values()]
+        .sort((a, b) => b.visits - a.visits)
+        .map((c) => ({ country: c.country, visits: c.visits })),
+    };
 
     const topTracks = await db.prepare(
       "SELECT track_id, COUNT(*) as n FROM votes GROUP BY track_id ORDER BY n DESC LIMIT 10"
@@ -83,7 +134,7 @@ export async function onRequestGet(context) {
       };
     } catch (_) {}
 
-    return json({
+    const data = {
       totals: totals,
       perDay: perDay.results,
       perPage: perPage.results,
@@ -93,7 +144,10 @@ export async function onRequestGet(context) {
       discordLinks: linked.results,
       wanted: wantedCounts,
       search: searchStats,
-    });
+    };
+    STATS_CACHE.data = data;
+    STATS_CACHE.at = Date.now();
+    return json(data);
   } catch (err) {
     return json({ error: String(err && err.message || err) }, 500);
   }

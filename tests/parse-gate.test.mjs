@@ -1511,6 +1511,44 @@ function safeDecode4(v) {
   }
 }
 
+/* ---- the visits are read once, not four times over ----
+ *
+ * The statistics were asked for four times over - the totals, the days, the
+ * pages and the countries - and each one was a scan of the whole visits
+ * table, so one request for the owner's panel read the table four times
+ * over. The free tier counts rows read rather than queries, and the panel
+ * asks again every thirty seconds.
+ *
+ * So the visits are read once and the summaries are made from what comes
+ * back. */
+{
+  const stats = readFileSync(join(ROOT, "functions/api/stats.js"), "utf8");
+  const owner = readFileSync(join(ROOT, "functions/api/owner.js"), "utf8");
+
+  for (const [name, src] of [["stats.js", stats], ["owner.js", owner]]) {
+    const reads = (src.match(/FROM analytics_visits/g) || []).length;
+    if (reads > 1) {
+      structureFail(name + " reads the visits table " + reads + " times for one set of statistics");
+    } else if (reads === 0) {
+      structureFail(name + " does not read the visits table at all");
+    }
+  }
+  if (!/COUNT\(\*\) AS cnt FROM analytics_visits/.test(owner) &&
+      !/COUNT\(\*\) as visits, COUNT\(DISTINCT uid\) as uniques FROM analytics_visits/.test(stats)) {
+    structureOk("the visits are read once, and the summaries are made from them");
+  } else {
+    structureFail("the statistics still ask for the visits one summary at a time");
+  }
+
+  /* And the statistics are remembered, because the panel asks again and
+     again and the numbers are the same each time. */
+  if (!/STATS_CACHE/.test(stats)) {
+    structureFail("the owner's statistics are read again for every request, though they have not changed");
+  } else {
+    structureOk("the owner's statistics are remembered for a few minutes");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

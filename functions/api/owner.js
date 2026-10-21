@@ -62,26 +62,45 @@ export async function onRequestGet(context) {
 
     const db = env.wanted_vault;
 
-    // Get visit counts
-    const visitCount = await db
-      .prepare("SELECT COUNT(*) AS cnt FROM analytics_visits")
-      .first();
-
-    // Get unique visitors
-    const uniqueVisitors = await db
-      .prepare("SELECT COUNT(DISTINCT uid) AS cnt FROM analytics_visits")
-      .first();
-
-    // Get per-day stats (last 14 days)
-    const perDay = await db
-      .prepare(
-        "SELECT substr(ts,1,10) as day, COUNT(*) as visits, COUNT(DISTINCT uid) as uniques FROM analytics_visits GROUP BY day ORDER BY day DESC LIMIT 14"
-      ).all();
-
-    // Get per-country stats
-    const perCountry = await db
-      .prepare("SELECT country, COUNT(*) as visits FROM analytics_visits GROUP BY country ORDER BY visits DESC")
+    /* The visits are read once, and the summaries are made from what comes
+       back. They used to be asked for one at a time, and each one was a scan
+       of the whole table - so one request for the dashboard read the table
+       four times over, and the free tier counts rows read. */
+    const rows = await db
+      .prepare("SELECT ts, country, uid FROM analytics_visits")
       .all();
+    const visits = rows.results || [];
+
+    const seenVisitors = new Set();
+    const days = new Map();
+    const countries = new Map();
+    for (const r of visits) {
+      seenVisitors.add(r.uid);
+
+      const day = String(r.ts || "").slice(0, 10);
+      let d = days.get(day);
+      if (!d) { d = { day, visits: 0, uniques: new Set() }; days.set(day, d); }
+      d.visits++; d.uniques.add(r.uid);
+
+      const country = r.country || "";
+      let c = countries.get(country);
+      if (!c) { c = { country, visits: 0 }; countries.set(country, c); }
+      c.visits++;
+    }
+
+    const visitCount = { cnt: visits.length };
+    const uniqueVisitors = { cnt: seenVisitors.size };
+    const perDay = {
+      results: [...days.values()]
+        .sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0))
+        .slice(0, 14)
+        .map((d) => ({ day: d.day, visits: d.visits, uniques: d.uniques.size })),
+    };
+    const perCountry = {
+      results: [...countries.values()]
+        .sort((a, b) => b.visits - a.visits)
+        .map((c) => ({ country: c.country, visits: c.visits })),
+    };
 
     // Get top tracks from votes
     const topTracks = await db

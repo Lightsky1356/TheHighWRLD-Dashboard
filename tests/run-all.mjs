@@ -49,6 +49,7 @@ const GROUPS = [
   { name: "push-delivery", file: "./push-delivery.test.mjs", needsServer: true },
   { name: "signed-in-paths", file: "./signed-in-paths.test.mjs", needsServer: true },
   { name: "profile-stats", file: "./profile-stats.test.mjs", needsServer: true },
+  { name: "owner-stats", file: "./owner-stats.test.mjs", needsServer: true },
   { name: "gallery-publish", file: "./gallery-publish.test.mjs", needsServer: true },
 ];
 

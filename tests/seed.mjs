@@ -32,6 +32,10 @@ const ACCOUNTS = [
      gate is the whole thing under test. discord is set below. */
   { uid: "gallinked1", token: "gallinked1token", name: "Gallery Linked", notifications: 1, discord: "linked#0001" },
   { uid: "galunlinked1", token: "galunlinked1token", name: "Gallery Unlinked", notifications: 1, discord: "" },
+  /* The owner, so the statistics can be tested. The owner's Discord id is
+     the one the endpoints fall back to when the environment does not name
+     one, so this account is the only one that can read them. */
+  { uid: "owner1", token: "owner1token", name: "Owner", notifications: 1, discord: "1016529053659967629" },
 ];
 
 const UIDS = ACCOUNTS.map((a) => `'${a.uid}'`).join(", ");
