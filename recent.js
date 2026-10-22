@@ -144,13 +144,21 @@
   }
 
   function load() {
-    fetch("/api/recent?limit=20", { cache: "no-store", credentials: "same-origin" })
-      .then(function (r) { return r.json(); })
-      .catch(function () { return { ok: false }; })
-      .then(function (d) {
-        if (!d || d.ok !== true) return;
-        renderProfile(d.recent || []);
-      });
+    /* The recent plays come with the bootstrap, when it has been fetched.
+       The profile is opened rarely and the list is short, so it is worth
+       having it ride along with the other answers. */
+    var take = window.THWBootstrap && window.THWBootstrap.take;
+    var ask = function () {
+      return fetch("/api/recent?limit=20", { cache: "no-store", credentials: "same-origin" })
+        .then(function (r) { return r.json(); })
+        .catch(function () { return { ok: false }; })
+        .then(function (d) { return d && d.ok ? d : null; });
+    };
+    (take ? take("recent", ask) : ask()).then(function (d) {
+      if (!d) return;
+      var rows = Array.isArray(d) ? d : (d.recent || []);
+      renderProfile(rows);
+    });
   }
 
   function boot() {

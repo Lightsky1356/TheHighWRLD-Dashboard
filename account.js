@@ -662,7 +662,7 @@ function compactProfileViewHtml(d) {
     };
     (take ? take("notifications", ask) : ask()).then(function (d) {
       window.__commNotifsLoading = false;
-      var boot = d && d.notifications ? d.notifications : [];
+      var boot = d && d.notifications ? d.notifications : (Array.isArray(d) ? d : []);
       window.__commNotifs = (boot || []).map(function (n) {
         return { id: "c" + n.id, type: n.type || "reply", message: n.message, actor: n.actor, ts: n.ts, post_id: n.post_id, reply_id: n.reply_id, read: !!n.read, comm: true };
       });
@@ -1330,12 +1330,17 @@ function compactProfileViewHtml(d) {
      * server's default - every category on - which is the same answer a
      * missing row gives, so a failed read cannot make it look like everything
      * has been turned off. */
-    fetch("/api/notification-settings", { cache: "no-store" })
-      .then(function (r) { return r.json().catch(function () { return null; }); })
-      .then(function (d) {
-        if (d && d.ok) paint(d.prefs);
-      })
-      .catch(function () {});
+    /* The settings come with the bootstrap, when it has been fetched. The
+       panel is opened rarely, and the answer is the same one every time. */
+    var take = window.THWBootstrap && window.THWBootstrap.take;
+    var ask = function () {
+      return fetch("/api/notification-settings", { cache: "no-store" })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (d) { return d && d.ok ? d : null; });
+    };
+    (take ? take("notificationSettings", ask) : ask()).then(function (d) {
+      if (d && d.prefs) paint(d.prefs);
+    });
 
     saveBtn.addEventListener("click", function () {
       var prefs = {};

@@ -130,21 +130,25 @@ async function visitorParts(env, request) {
       "SELECT id, type, actor_uid, actor_name, message, post_id, reply_id, read, created_at " +
       "FROM community_notifications WHERE recipient_uid = ? ORDER BY id DESC LIMIT 40"
     ).bind(session.uid).all();
-    out.notifications = rows.results || [];
+    /* The same shape the notifications endpoint answers in. */
+    out.notifications = { ok: true, notifications: rows.results || [] };
   } catch (_) {}
 
   try {
     const rows = await db.prepare(
-      "SELECT id, track_id, seconds, ts FROM listens WHERE uid = ? ORDER BY id DESC LIMIT 200"
+      "SELECT id, track_id AS title, seconds, ts FROM listens WHERE uid = ? ORDER BY id DESC LIMIT 200"
     ).bind(session.uid).all();
-    out.recent = rows.results || [];
+    /* The same shape the recent endpoint answers in. */
+    out.recent = { ok: true, recent: rows.results || [] };
   } catch (_) {}
 
   try {
     const row = await db.prepare(
       "SELECT * FROM user_notification_prefs WHERE uid = ?"
     ).bind(session.uid).first();
-    out.notificationSettings = row || null;
+    /* The same shape the settings endpoint answers in, so the panel can
+       read either without knowing where it came from. */
+    out.notificationSettings = { ok: true, prefs: row || {} };
   } catch (_) {}
 
   return out;

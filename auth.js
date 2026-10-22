@@ -347,7 +347,13 @@
       if (typeof window.switchAppPage === "function") window.switchAppPage("account");
     });
 
-    fetchJson("/api/auth/config").then(function (d) {
+    /* The sign-in configuration comes with the bootstrap. It is asked for
+       on every page load, and it is the same answer for everybody. */
+    var bootAuth = function () {
+      var b = window.THWBootstrap && window.THWBootstrap.data();
+      return b && b.auth ? b.auth : fetchJson("/api/auth/config");
+    };
+    bootAuth().then(function (d) {
       if (!d || typeof d !== "object") return;
       cfg.google = !!d.google;
       cfg.discord = !!d.discord;
@@ -363,7 +369,13 @@
       }
     });
 
-    fetchJson("/api/auth/session").then(function (d) {
+    /* The session comes with the bootstrap too. */
+    var bootSession = function () {
+      var b = window.THWBootstrap && window.THWBootstrap.data();
+      if (b && b.user) return Promise.resolve({ user: b.user });
+      return fetchJson("/api/auth/session");
+    };
+    bootSession().then(function (d) {
       if (d && d.user && d.user.uid) {
         applyLoggedIn(d.user);
       } else {
