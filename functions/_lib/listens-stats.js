@@ -38,6 +38,10 @@ const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS listens_track (uid TEXT NOT NULL DEFAULT '', track_id TEXT NOT NULL DEFAULT '', plays INTEGER NOT NULL DEFAULT 0, seconds INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (uid, track_id))",
   "CREATE TABLE IF NOT EXISTS listens_hour (uid TEXT NOT NULL DEFAULT '', hour INTEGER NOT NULL DEFAULT 0, plays INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (uid, hour))",
   "CREATE TABLE IF NOT EXISTS listens_day (day TEXT NOT NULL PRIMARY KEY, plays INTEGER NOT NULL DEFAULT 0)",
+  /* The index the trending page reads its seven days from. A query that
+   * names an index that is not there is an error rather than a slow
+   * query, so it is made here as well as by the migration. */
+  "CREATE INDEX IF NOT EXISTS idx_listens_ts_track ON listens(ts, track_id, uid)",
 ];
 
 /* Whether the tables are there.

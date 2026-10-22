@@ -30,9 +30,14 @@ export async function onRequestGet(context) {
 
     const where = days > 0 ? "WHERE ts >= datetime('now', '-' || ? || ' days')" : "";
     const bindArgs = days > 0 ? [days, limit] : [limit];
+    /* The index is named outright, because the planner would not choose
+       it on its own - it prefers the index on the track, because that is
+       the order it has to group by, and then reads every play ever
+       recorded to find the last seven days' worth. On the production
+       database that is 2,921 rows read instead of 545. */
     const rows = await db.prepare(
       "SELECT track_id AS title, COUNT(*) AS plays, COUNT(DISTINCT uid) AS listeners, MAX(ts) AS last_play " +
-      "FROM listens " + where + " GROUP BY track_id ORDER BY plays DESC LIMIT ?"
+      "FROM listens INDEXED BY idx_listens_ts_track " + where + " GROUP BY track_id ORDER BY plays DESC LIMIT ?"
     ).bind(...bindArgs).all();
 
     /* The number of plays, counted day by day. Asking the history meant

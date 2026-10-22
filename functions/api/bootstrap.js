@@ -92,7 +92,8 @@ async function sharedParts(env) {
   let totalListens = 0;
   try {
     const rows = await db.prepare(
-      "SELECT track_id AS title, COUNT(*) AS plays FROM listens " +
+      /* The index is named outright - see the trending endpoint for why. */
+      "SELECT track_id AS title, COUNT(*) AS plays FROM listens INDEXED BY idx_listens_ts_track " +
       "WHERE ts >= datetime('now', '-7 days') GROUP BY track_id ORDER BY plays DESC LIMIT 10"
     ).all();
     trending = rows.results || [];
