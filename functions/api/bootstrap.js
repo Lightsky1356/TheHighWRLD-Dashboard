@@ -30,7 +30,6 @@
  */
 import { getSessionUser } from "../_lib/auth.js";
 import { publicRuleSet } from "../_lib/submissionRules.js";
-import { listeningStats } from "../_lib/listens-stats.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -99,9 +98,15 @@ async function sharedParts(env) {
     trending = rows.results || [];
   } catch (_) {}
   try {
-    const stats = await listeningStats(db, "", { topLimit: 0 });
-    totalListens = stats.plays || 0;
-  } catch (_) {}
+    /* The number of plays, counted day by day. Asking the history meant
+       counting every row of it, for one line of text - and asking the
+       summaries for a member's own number would be the wrong question
+       anyway, since this is everybody's plays. */
+    const row = await db.prepare("SELECT COALESCE(SUM(plays),0) AS total FROM listens_day").first();
+    totalListens = row ? row.total || 0 : 0;
+  } catch (_) {
+    /* The table is not there yet - the trending page has its own count. */
+  }
 
   shared = { announcements, drops, trending, totalListens };
   sharedAt = now;
