@@ -164,6 +164,16 @@
 
   function boot() {
     shell();
+    /* The trending tracks come with the bootstrap, when it has been
+       * fetched - one request carrying several answers rather than one
+       * request each. */
+    try {
+      var boot = window.THWBootstrap && window.THWBootstrap.from("trending");
+      if (boot) {
+        fill(boot, 7, (window.THWBootstrap.data() || {}).totalListens || 0);
+        return;
+      }
+    } catch (e) {}
     fetch("/api/trending?days=7&limit=" + LIMIT, { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .catch(function () { return { ok: false }; })

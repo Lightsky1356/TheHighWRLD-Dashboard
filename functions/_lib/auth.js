@@ -109,9 +109,31 @@ async function createSession(db, uid, request) {
   return token;
 }
 
+/* The expired sessions are removed as they are noticed.
+ *
+ * The sign-in removes them, but only when somebody signs in - so a quiet
+ * site kept every session it ever had, for ever. The sessions are only good
+ * for thirty days anyway, so anything older is dead weight, and the table
+ * has to stop growing for the database to last.
+ *
+ * It runs on a timer of its own, so it is not a cost on every request. */
+let lastSessionPruneAt = 0;
+const SESSION_PRUNE_EVERY_MS = 10 * 60 * 1000;
+
+function pruneSessions(db) {
+  const now = Date.now();
+  if (now - lastSessionPruneAt < SESSION_PRUNE_EVERY_MS) return;
+  lastSessionPruneAt = now;
+  try {
+    db.prepare("DELETE FROM sessions WHERE expires_at < ?").bind(nowIso()).run();
+  } catch (_) {}
+}
+
 async function getSessionUser(db, request) {
   const token = getCookie(request, SESSION_COOKIE);
   if (!token) return null;
+  /* The expired ones go as they are noticed. */
+  pruneSessions(db);
   const row = await db.prepare(
     "SELECT s.uid, s.expires_at, u.email, u.name, u.avatar, u.provider FROM sessions s JOIN users u ON u.uid = s.uid WHERE s.token = ?"
   ).bind(token).first();

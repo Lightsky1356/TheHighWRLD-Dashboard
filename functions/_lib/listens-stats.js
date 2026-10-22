@@ -266,7 +266,36 @@ export async function recordPlay(db, uid, trackId, seconds) {
     /* The summaries could not be kept. The play is recorded, and they are
        built again from the history when they are next needed. */
   }
+  await pruneHistory(db);
   return ts;
+}
+
+/* The history itself, kept for as long as anything reads it.
+ *
+ * The summaries are kept in the tables that were made for them, so the rows
+ * only have to last as long as the recent history and the check that a
+ * track has not just been played. A hundred days is far more than either of
+ * those needs, and it is what the account page shows.
+ *
+ * Without this the table grows for ever, and the free tier's database has a
+ * size limit of five hundred megabytes - so a site meant to last five years
+ * needs the history to stop growing at some point.
+ *
+ * It runs on a timer of its own, so it is not a cost on every play, and the
+ * timestamp is compared directly so the index can be used. */
+let lastPruneAt = 0;
+const PRUNE_EVERY_MS = 10 * 60 * 1000;
+const KEEP_DAYS = 100;
+
+async function pruneHistory(db) {
+  const now = Date.now();
+  if (now - lastPruneAt < PRUNE_EVERY_MS) return;
+  lastPruneAt = now;
+  try {
+    await db.prepare("DELETE FROM listens WHERE ts < ?")
+      .bind(new Date(now - KEEP_DAYS * 86400000).toISOString())
+      .run();
+  } catch (_) {}
 }
 
 /* Forget a member's plays, and their summaries with them. */

@@ -219,6 +219,17 @@
   }
 
   function boot(refresh) {
+    /* The drops come with the bootstrap, when it has been fetched - one
+       request carrying several answers rather than one request each. */
+    try {
+      var boot = window.THWBootstrap && window.THWBootstrap.from("drops");
+      if (boot && (boot.live || boot.upcoming || boot.past)) {
+        var sec = mount(boot);
+        if (refresh) fill(sec, boot);
+        ownerForm();
+        return;
+      }
+    } catch (e) {}
     fetch("/api/drops", { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .catch(function () { return { ok: false }; })

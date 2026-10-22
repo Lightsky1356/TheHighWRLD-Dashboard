@@ -25,7 +25,12 @@ export async function onRequestGet(context) {
     if (!title) return json({ ok: false, error: "missing title" }, 400);
     const db = context.env.wanted_vault;
     const [plays, favs] = await Promise.all([
-      db.prepare("SELECT COUNT(*) AS n FROM listens WHERE track_id = ?").bind(title).first(),
+      db.prepare(
+          /* The count of plays comes from the summary, which keeps it in one
+             row. Counting the history for it meant reading every play of
+             the track, for one number on a track's information panel. */
+          "SELECT COALESCE(SUM(plays),0) AS n FROM listens_track WHERE track_id = ?"
+        ).bind(title).first(),
       db.prepare("SELECT COUNT(*) AS n FROM favorites WHERE title = ?").bind(title).first(),
     ]);
     return json({

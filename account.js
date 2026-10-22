@@ -649,6 +649,20 @@ function compactProfileViewHtml(d) {
     if (window.__commNotifsTs && now - window.__commNotifsTs < 30000) return;
     window.__commNotifsTs = now;
     window.__commNotifsLoading = true;
+    /* The notifications come with the bootstrap, when it has been fetched.
+       The bell is asked for on every page load, so it is worth having it
+       ride along with the other answers. */
+    var boot = window.THWBootstrap && window.THWBootstrap.from("notifications");
+    if (boot) {
+      window.__commNotifsLoading = false;
+      window.__commNotifs = (boot || []).map(function (n) {
+        return { id: "c" + n.id, type: n.type || "reply", message: n.message, actor: n.actor, ts: n.ts, post_id: n.post_id, reply_id: n.reply_id, read: !!n.read, comm: true };
+      });
+      var annBoot = window.THWBootstrap && window.THWBootstrap.from("announcements");
+      if (annBoot) window.__annNotifs = annBoot;
+      applyNotifications();
+      return;
+    }
     fetch("/api/notifications", { cache: "no-store", credentials: "same-origin" })
       .then(function (r) { return r.json(); })
       .catch(function () { return { ok: false }; })
@@ -658,6 +672,12 @@ function compactProfileViewHtml(d) {
           window.__commNotifs = (d.notifications || []).map(function (n) {
             return { id: "c" + n.id, type: n.type || "reply", message: n.message, actor: n.actor, ts: n.ts, post_id: n.post_id, reply_id: n.reply_id, read: !!n.read, comm: true };
           });
+        }
+        var annBoot = window.THWBootstrap && window.THWBootstrap.from("announcements");
+        if (annBoot) {
+          window.__annNotifs = annBoot;
+          applyNotifications();
+          return;
         }
         fetch("/api/announcements", { cache: "no-store" })
           .then(function (r) { return r.json(); })
