@@ -45,6 +45,34 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
+/* The table, in the same shape the migration makes it.
+ *
+ * A deploy and a migration do not happen at the same moment, and the code
+ * is live the moment it is pushed. So the code makes the table it needs if
+ * the table is not there - which reads no rows, and so works even when the
+ * daily read limit has been reached. The migration does it too; whichever
+ * gets there first, the other one finds it already there. */
+const SCHEMA = [
+  "CREATE TABLE IF NOT EXISTS friend_activity (" +
+    "id TEXT PRIMARY KEY, uid TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'listening', " +
+    "track_id TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', artist TEXT NOT NULL DEFAULT '', " +
+    "artwork TEXT NOT NULL DEFAULT '', label TEXT NOT NULL DEFAULT '', detail TEXT NOT NULL DEFAULT '', " +
+    "link TEXT NOT NULL DEFAULT '', expires_at TEXT, " +
+    "created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))",
+  "CREATE INDEX IF NOT EXISTS idx_friend_activity_uid ON friend_activity(uid, created_at DESC)",
+  "CREATE INDEX IF NOT EXISTS idx_friend_activity_created ON friend_activity(created_at DESC)",
+];
+
+async function ensureSchema(db) {
+  for (const statement of SCHEMA) {
+    try {
+      await db.prepare(statement).run();
+    } catch (_) {
+      /* Cannot make it here. The migration will. */
+    }
+  }
+}
+
 const MAX_ROWS = 40;
 const PAGE_SIZE = 20;
 const LISTENING_TTL_MS = 5 * 60 * 1000;
@@ -319,6 +347,7 @@ export async function onRequest(context) {
 
     const url = new URL(request.url);
     const db = env.wanted_vault;
+    await ensureSchema(db);
     await sweepExpired(db);
 
     if (method === "GET") return await feed(context, me, url);

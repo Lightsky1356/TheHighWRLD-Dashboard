@@ -608,18 +608,35 @@ async function settingsRequest(context, db, me, method, body) {
     if (!values.includes(value)) return json({ error: "invalid_setting", field: key }, 400);
     next[key] = value;
   }
-  await db.prepare(
-    "INSERT INTO user_social_settings (uid, friend_requests, direct_messages, online_status, activity_status, " +
-    "activity_listening, activity_playlists, activity_community) " +
-    "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET friend_requests=excluded.friend_requests, " +
-    "direct_messages=excluded.direct_messages, online_status=excluded.online_status, " +
-    "activity_status=excluded.activity_status, activity_listening=excluded.activity_listening, " +
-    "activity_playlists=excluded.activity_playlists, activity_community=excluded.activity_community, " +
-    "updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')"
-  ).bind(
-    me.uid, next.friend_requests, next.direct_messages, next.online_status, next.activity_status,
-    next.activity_listening, next.activity_playlists, next.activity_community
-  ).run();
+  /* The three sharing settings live in columns the newest migration adds.
+     *
+     * A deploy and a migration do not happen at the same moment, so the write
+     * falls back to the columns that are certainly there if the new ones are
+     * not. The other privacy settings still save - which is the difference
+     * between a person changing who can message them and the whole panel
+     * failing with a server error. */
+  try {
+    await db.prepare(
+      "INSERT INTO user_social_settings (uid, friend_requests, direct_messages, online_status, activity_status, " +
+      "activity_listening, activity_playlists, activity_community) " +
+      "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET friend_requests=excluded.friend_requests, " +
+      "direct_messages=excluded.direct_messages, online_status=excluded.online_status, " +
+      "activity_status=excluded.activity_status, activity_listening=excluded.activity_listening, " +
+      "activity_playlists=excluded.activity_playlists, activity_community=excluded.activity_community, " +
+      "updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')"
+    ).bind(
+      me.uid, next.friend_requests, next.direct_messages, next.online_status, next.activity_status,
+      next.activity_listening, next.activity_playlists, next.activity_community
+    ).run();
+  } catch (_) {
+    await db.prepare(
+      "INSERT INTO user_social_settings (uid, friend_requests, direct_messages, online_status, activity_status) " +
+      "VALUES (?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET friend_requests=excluded.friend_requests, " +
+      "direct_messages=excluded.direct_messages, online_status=excluded.online_status, " +
+      "activity_status=excluded.activity_status, " +
+      "updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')"
+    ).bind(me.uid, next.friend_requests, next.direct_messages, next.online_status, next.activity_status).run();
+  }
   const friends = await db.prepare(
     "SELECT CASE WHEN uid_a = ? THEN uid_b ELSE uid_a END AS uid " +
     "FROM social_friends WHERE uid_a = ? OR uid_b = ?"

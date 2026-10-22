@@ -81,7 +81,10 @@ function startServer() {
   if (!entry) return null;
   // stdio is ignored: wrangler writes a banner and progress lines that would
   // interleave with the suite output, and nothing it prints is actionable here.
-  return spawn(process.execPath, [entry, "pages", "dev", ".", "--port", String(PORT)], {
+  /* The address is named outright: without it wrangler listens on
+     "localhost", which can resolve to the IPv6 address, and the suite -
+     which asks for 127.0.0.1 - cannot reach a server that is up. */
+  return spawn(process.execPath, [entry, "pages", "dev", ".", "--port", String(PORT), "--ip", "127.0.0.1"], {
     cwd: ROOT,
     stdio: "ignore",
     windowsHide: true,
