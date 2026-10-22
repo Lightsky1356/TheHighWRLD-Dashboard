@@ -5,6 +5,7 @@ import { banRejection } from "../../_lib/bans.js";
    preference check, so that every notification type is delivered the same way
    and none of them can be delivered twice. */
 import { createNotification } from "../../_lib/notifications.js";
+import { rateLimit } from "../../_lib/rate-limit.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -65,13 +66,19 @@ async function areFriends(db, a, b) {
 
 async function privacy(db, uid) {
   return (await db.prepare(
-    "SELECT friend_requests, direct_messages, online_status, activity_status " +
+    "SELECT friend_requests, direct_messages, online_status, activity_status, " +
+    "activity_listening, activity_playlists, activity_community " +
     "FROM user_social_settings WHERE uid = ?"
   ).bind(uid).first()) || {
     friend_requests: "everyone",
     direct_messages: "friends",
     online_status: "friends",
     activity_status: "friends",
+    /* The three sharing settings for the friend activity feed. Off until
+       the person says otherwise. */
+    activity_listening: "nobody",
+    activity_playlists: "nobody",
+    activity_community: "nobody",
   };
 }
 
@@ -132,15 +139,6 @@ async function signalRefresh(env, recipientUid) {
   });
 }
 
-async function rateLimit(db, uid, action, max, windowMs) {
-  const since = new Date(Date.now() - windowMs).toISOString();
-  const result = await db.prepare(
-    "INSERT INTO user_action_log (actor_uid, action) " +
-    "SELECT ?, ? WHERE (SELECT COUNT(*) FROM user_action_log " +
-    "WHERE actor_uid = ? AND action = ? AND created_at >= ?) < ?"
-  ).bind(uid, action, uid, action, since, max).run();
-  return Number(result.meta && result.meta.changes) > 0;
-}
 
 async function memberPair(db, conversationId, uid) {
   const row = await db.prepare(
@@ -202,6 +200,7 @@ async function bootstrap(db, env, me) {
       "SELECT c.id, other.uid AS uid, " +
       "COALESCE(NULLIF(p.name,''), NULLIF(d.display_name,''), u.name, 'Member') AS name, " +
       "COALESCE(NULLIF(p.avatar,''), NULLIF(d.avatar,''), u.avatar, '') AS avatar, " +
+      "ps.last_seen, COALESCE(ss.online_status, 'friends') AS online_status, " +
       "c.last_message_at, m.body AS last_message, m.sender_uid AS last_sender_uid, " +
       "(SELECT COUNT(*) FROM dm_messages unread " +
       " WHERE unread.conversation_id = c.id AND unread.sender_uid <> ? " +
@@ -210,6 +209,7 @@ async function bootstrap(db, env, me) {
       "JOIN dm_conversations c ON c.id = mine.conversation_id " +
       "JOIN dm_conversation_members other ON other.conversation_id = c.id AND other.uid <> mine.uid " +
       "JOIN users u ON u.uid = other.uid LEFT JOIN user_profiles p ON p.site_uid = u.uid LEFT JOIN discord_links d ON d.site_uid = u.uid " +
+      "LEFT JOIN presence_state ps ON ps.uid = u.uid LEFT JOIN user_social_settings ss ON ss.uid = u.uid " +
       "LEFT JOIN dm_messages m ON m.id = (SELECT MAX(m2.id) FROM dm_messages m2 WHERE m2.conversation_id = c.id) " +
       "WHERE mine.uid = ? ORDER BY c.last_message_at DESC LIMIT 60"
     ).bind(me.uid, me.uid).all(),
@@ -247,6 +247,11 @@ async function bootstrap(db, env, me) {
     id: r.id, uid: r.uid, name: r.name, avatar: r.avatar,
     lastMessage: r.last_message || "", lastSenderUid: r.last_sender_uid || "",
     lastMessageAt: r.last_message_at, unread: Number(r.unread) || 0,
+    /* The presence, the same way the friends list has it: whether they are
+       here now, and when they were last here. Without this the thread
+       header said "Offline" to everybody, always. */
+    online: friendIds.includes(r.uid) && r.online_status !== "nobody",
+    lastActive: r.online_status === "nobody" ? "" : (r.last_seen || ""),
   }));
   const unreadMessages = conversations.reduce((n, c) => n + c.unread, 0);
   return {
@@ -255,6 +260,10 @@ async function bootstrap(db, env, me) {
     friends, requests, conversations,
     counts: { requests: requests.filter((r) => r.direction === "incoming").length, messages: unreadMessages },
     presenceAvailable: presence.available,
+    /* The member's own settings, so the client knows what it is sharing
+       without asking for them separately. It is the member's own row, and
+       the reader is the member. */
+    settings: await privacy(db, me.uid),
   };
 }
 
@@ -559,6 +568,12 @@ async function settingsRequest(context, db, me, method, body) {
     direct_messages: ["everyone", "friends", "nobody"],
     online_status: ["everyone", "friends", "nobody"],
     activity_status: ["everyone", "friends", "nobody"],
+    /* The three sharing settings for the friend activity feed. There are
+       only two states: off, or shared with friends. The feed is a feed of
+       what your friends are up to, so there is no "everybody" to offer. */
+    activity_listening: ["nobody", "friends"],
+    activity_playlists: ["nobody", "friends"],
+    activity_community: ["nobody", "friends"],
   };
   const current = await privacy(db, me.uid);
   const next = {};
@@ -568,11 +583,17 @@ async function settingsRequest(context, db, me, method, body) {
     next[key] = value;
   }
   await db.prepare(
-    "INSERT INTO user_social_settings (uid, friend_requests, direct_messages, online_status, activity_status) " +
-    "VALUES (?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET friend_requests=excluded.friend_requests, " +
+    "INSERT INTO user_social_settings (uid, friend_requests, direct_messages, online_status, activity_status, " +
+    "activity_listening, activity_playlists, activity_community) " +
+    "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET friend_requests=excluded.friend_requests, " +
     "direct_messages=excluded.direct_messages, online_status=excluded.online_status, " +
-    "activity_status=excluded.activity_status, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')"
-  ).bind(me.uid, next.friend_requests, next.direct_messages, next.online_status, next.activity_status).run();
+    "activity_status=excluded.activity_status, activity_listening=excluded.activity_listening, " +
+    "activity_playlists=excluded.activity_playlists, activity_community=excluded.activity_community, " +
+    "updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')"
+  ).bind(
+    me.uid, next.friend_requests, next.direct_messages, next.online_status, next.activity_status,
+    next.activity_listening, next.activity_playlists, next.activity_community
+  ).run();
   const friends = await db.prepare(
     "SELECT CASE WHEN uid_a = ? THEN uid_b ELSE uid_a END AS uid " +
     "FROM social_friends WHERE uid_a = ? OR uid_b = ?"

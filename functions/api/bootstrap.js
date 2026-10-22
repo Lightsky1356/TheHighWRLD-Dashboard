@@ -118,7 +118,7 @@ async function sharedParts(env) {
  * It is read for them every time, and never handed to anybody else. */
 async function visitorParts(env, request) {
   const db = env.wanted_vault;
-  const out = { user: null, account: null, notifications: [], recent: [], notificationSettings: null, push: null, privacy: null };
+  const out = { user: null, account: null, notifications: [], recent: [], notificationSettings: null, push: null, privacy: null, activitySettings: null };
 
   let session = null;
   try { session = await getSessionUser(db, request); } catch (_) {}
@@ -174,6 +174,23 @@ async function visitorParts(env, request) {
 
   try {
     const row = await db.prepare(
+      "SELECT activity_listening, activity_playlists, activity_community " +
+      "FROM user_social_settings WHERE uid = ?"
+    ).bind(session.uid).first();
+    /* Off unless the member says otherwise - which is what the servers
+       default is, and what a missing row means. */
+    out.activitySettings = {
+      ok: true,
+      settings: {
+        activity_listening: (row && row.activity_listening) || "nobody",
+        activity_playlists: (row && row.activity_playlists) || "nobody",
+        activity_community: (row && row.activity_community) || "nobody",
+      },
+    };
+  } catch (_) {}
+
+  try {
+    const row = await db.prepare(
       "SELECT show_playlists, show_stats, show_activity, show_favorites FROM user_privacy WHERE uid = ?"
     ).bind(session.uid).first();
     /* The same shape the privacy endpoint answers in, with the flags
@@ -215,6 +232,7 @@ export async function onRequestGet(context) {
       notifications: visitor.notifications,
       recent: visitor.recent,
       notificationSettings: visitor.notificationSettings,
+      activitySettings: visitor.activitySettings,
     });
   } catch (err) {
     return json({ error: String((err && err.message) || err) }, 500);

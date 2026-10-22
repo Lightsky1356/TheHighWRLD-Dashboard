@@ -377,3 +377,69 @@ html.thw-social-scrolllock body {
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
 }
+/* ---------------------------------------------------------------------------
+   The friend activity feed
+
+   The same dark glass and cyan as the rest of the panel, and the same
+   spacing rhythm, so a card in here looks like a row in the friends list
+   rather than a widget that arrived from somewhere else.
+
+   The skeletons are drawn with two tones and a slow pulse, so a slow
+   connection still reads as "loading" rather than as "empty" - an empty
+   feed and a feed that has not arrived yet are different things, and the
+   person should be able to tell which one they are looking at. */
+--------------------------------------------------------------------------- */
+.thw-activity-mount{display:flex;flex-direction:column;gap:10px;padding:12px 13px 16px;min-height:0;overflow-y:auto}
+.thw-activity-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.thw-activity-title{margin:0;font:800 13px/1.2 "Sora",system-ui,sans-serif;color:#e2e8f0;letter-spacing:.01em}
+.thw-activity-refresh{border:1px solid rgba(103,232,249,.28);border-radius:9px;background:rgba(34,211,238,.08);color:#baf7ff;font:600 10.5px/1 system-ui,sans-serif;padding:7px 11px;cursor:pointer;transition:background .16s ease,border-color .16s ease}
+.thw-activity-refresh:hover{background:rgba(34,211,238,.16);border-color:rgba(103,232,249,.5)}
+.thw-activity-refresh:focus-visible{outline:2px solid rgba(103,232,249,.7);outline-offset:2px}
+.thw-activity-filters{display:flex;gap:6px;flex-wrap:wrap}
+.thw-activity-filter{border:1px solid rgba(148,163,184,.18);border-radius:999px;background:rgba(148,163,184,.06);color:#94a3b8;font:600 10.5px/1 system-ui,sans-serif;padding:7px 11px;cursor:pointer;transition:background .16s ease,color .16s ease,border-color .16s ease}
+.thw-activity-filter:hover{color:#cbd5e1;border-color:rgba(148,163,184,.34)}
+.thw-activity-filter.active{background:rgba(34,211,238,.14);border-color:rgba(103,232,249,.45);color:#baf7ff}
+.thw-activity-filter:focus-visible{outline:2px solid rgba(103,232,249,.7);outline-offset:2px}
+.thw-activity-count{color:#64748b;font:500 10px/1.4 system-ui,sans-serif;min-height:14px}
+.thw-activity-list{display:flex;flex-direction:column;gap:8px}
+.thw-activity-card{display:flex;gap:10px;align-items:flex-start;padding:11px;border-radius:14px;border:1px solid rgba(148,163,184,.14);background:rgba(148,163,184,.05);transition:border-color .16s ease,background .16s ease}
+.thw-activity-card:hover{border-color:rgba(103,232,249,.28);background:rgba(34,211,238,.05)}
+.thw-activity-card-body{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
+.thw-activity-avatar{position:relative;display:grid;place-items:center;flex:0 0 auto;width:38px;height:38px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,rgba(34,211,238,.18),rgba(168,85,247,.18));border:1px solid rgba(148,163,184,.2);color:#baf7ff;font:700 13px/1 system-ui,sans-serif}
+.thw-activity-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.thw-activity-initial{text-transform:uppercase}
+.thw-activity-card-head{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;min-width:0}
+.thw-activity-name{border:0;background:none;padding:0;color:#e2e8f0;font:700 11.5px/1.3 "Sora",system-ui,sans-serif;cursor:pointer;text-align:left}
+.thw-activity-name:hover{color:#67e8f9;text-decoration:underline}
+.thw-activity-kind{color:#64748b;font:500 10.5px/1.3 system-ui,sans-serif}
+.thw-activity-track{display:flex;gap:9px;align-items:center;padding:8px;border-radius:11px;background:rgba(2,6,23,.5);border:1px solid rgba(148,163,184,.1)}
+.thw-activity-art{width:38px;height:38px;flex:0 0 auto;border-radius:9px;object-fit:cover;display:block;border:1px solid rgba(148,163,184,.16)}
+.thw-activity-track-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.thw-activity-track-title{color:#f1f5f9;font:600 11.5px/1.35 "Sora",system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thw-activity-track-artist{color:#64748b;font:500 10px/1.3 system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thw-activity-label{color:#cbd5e1;font:600 11.5px/1.4 "Sora",system-ui,sans-serif;word-break:break-word}
+.thw-activity-detail{color:#94a3b8;font:500 10.5px/1.5 system-ui,sans-serif;word-break:break-word}
+.thw-activity-link{display:inline-flex;align-items:center;align-self:flex-start;margin-top:2px;color:#67e8f9;font:600 10.5px/1 system-ui,sans-serif;text-decoration:none;border-bottom:1px solid rgba(103,232,249,.35);padding-bottom:2px}
+.thw-activity-link:hover{color:#baf7ff}
+.thw-activity-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:34px 20px 30px;text-align:center;min-height:150px}
+.thw-activity-empty-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:rgba(148,163,184,.08);border:1px solid rgba(148,163,184,.14);color:#94a3b8;font-size:17px}
+.thw-activity-empty-title{font:700 12px/1.3 "Sora",system-ui,sans-serif;color:#cbd5e1}
+.thw-activity-empty-text{max-width:250px;font:500 10.5px/1.65 "Sora",system-ui,sans-serif;color:#64748b}
+.thw-activity-empty--error .thw-activity-empty-icon{background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.26);color:#fb7185}
+.thw-activity-retry{margin-top:4px;border:1px solid rgba(103,232,249,.3);border-radius:9px;background:rgba(34,211,238,.08);color:#baf7ff;font:600 10.5px/1 system-ui,sans-serif;padding:8px 13px;cursor:pointer}
+.thw-activity-retry:hover{background:rgba(34,211,238,.16)}
+.thw-activity-more{align-self:center;border:1px solid rgba(148,163,184,.18);border-radius:9px;background:rgba(148,163,184,.06);color:#94a3b8;font:600 10.5px/1 system-ui,sans-serif;padding:8px 14px;cursor:pointer}
+.thw-activity-more:hover{color:#cbd5e1;border-color:rgba(148,163,184,.32)}
+.thw-activity-more[hidden]{display:none!important}
+/* The skeletons. */
+.thw-activity-card--skeleton{align-items:center;pointer-events:none}
+.thw-activity-skel{border-radius:8px;background:linear-gradient(90deg,rgba(148,163,184,.08),rgba(148,163,184,.16),rgba(148,163,184,.08));background-size:220% 100%;animation:thw-activity-shimmer 1.5s ease-in-out infinite}
+.thw-activity-skel--avatar{width:38px;height:38px;flex:0 0 auto;border-radius:12px}
+.thw-activity-skel--line{height:9px;width:100%}
+.thw-activity-skel--short{width:42%}
+.thw-activity-skel--mid{width:70%}
+@keyframes thw-activity-shimmer{0%{background-position:120% 0}100%{background-position:-20% 0}}
+@media (prefers-reduced-motion:reduce){.thw-activity-skel{animation:none}}
+/* The setting for the feed lives in the panel's settings card, so it gets
+   the same note styling as the rest of that card. */
+.thw-social-settings-note{margin:0 0 8px;color:#64748b;font:500 10.5px/1.6 "Sora",system-ui,sans-serif}

@@ -150,7 +150,7 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v25";
+    css.href = "/social.css?v=thw-v26";
     document.head.appendChild(css);
 
     var root = el("div");
@@ -171,6 +171,11 @@
             '<button class="thw-social-tab" type="button" role="tab" data-tab="friends" aria-selected="true">Friends</button>' +
             '<button class="thw-social-tab" type="button" role="tab" data-tab="messages" aria-selected="false">Messages <span class="thw-social-tab-count" id="thw-social-message-count"></span></button>' +
             '<button class="thw-social-tab" type="button" role="tab" data-tab="requests" aria-selected="false">Requests <span class="thw-social-tab-count" id="thw-social-request-count"></span></button>' +
+            /* The friend activity feed. It is a tab of this panel rather than a
+               page of its own, and it is a tab rather than a fifth item in the
+               mobile bottom navigation - that navigation is five items and
+               crowding it would push the others out. */
+            '<button class="thw-social-tab" type="button" role="tab" data-tab="activity" aria-selected="false">Activity</button>' +
           '</nav>' +
           '<div class="thw-social-status" id="thw-social-status" role="status" aria-live="polite"></div>' +
           '<div class="thw-social-freshness" id="thw-social-freshness" aria-live="off"></div>' +
@@ -191,6 +196,7 @@
               '</div></div>' +
           '</section>' +
           '<section class="thw-social-view" data-view="requests" role="tabpanel"><div class="thw-social-list" id="thw-social-requests"></div></section>' +
+          '<section class="thw-social-view" data-view="activity" role="tabpanel"><div class="thw-activity-mount" id="thw-activity-mount"></div></section>' +
           '<section class="thw-social-view" data-view="settings" id="thw-social-settings-view" role="tabpanel"><div id="thw-social-settings-mount"></div></section>' +
         '</section>' +
       '</div>' +
@@ -404,6 +410,34 @@
        reason to ask on every panel open. Re-asking on each visit keeps the
        selects honest if they were changed in another tab. */
     if (tab === "settings") loadPrivacySettings();
+    /* The activity feed is drawn when its tab is opened, not when the panel
+       is - a feed nobody is looking at is a request that bought nothing. */
+    if (tab === "activity") mountActivityFeed();
+  }
+
+  /* The friend activity feed.
+   *
+   * It lives in its own module (friend-activity.js) so this panel is not
+   * carrying the drawing of it. The module keeps what it has already
+   * fetched, so coming back to the tab does not ask again unless the person
+   * pressed Refresh. */
+  function mountActivityFeed() {
+    var mount = document.getElementById("thw-activity-mount");
+    if (!mount) return;
+    if (!window.THWActivity) {
+      mount.innerHTML = '<div class="thw-activity-empty"><strong class="thw-activity-empty-title">The activity feed is not available</strong></div>';
+      return;
+    }
+    window.THWActivity.mount(mount, {
+      onOpenProfile: function (uid) {
+        /* The site opens profiles itself - it resolves a uid, a name or a
+           handle, and it owns the history and the address bar. */
+        if (typeof window.openProfile === "function") {
+          try { window.openProfile(uid); return; } catch (e) {}
+        }
+        window.location.href = "/Profile/" + encodeURIComponent(uid);
+      },
+    });
   }
 
   /* Settings sits beside Rules as a header button rather than a fourth tab.
@@ -1446,6 +1480,16 @@
              notifications off" to anyone who never loaded their real value. */
           '<input type="checkbox" name="notifications_enabled" class="thw-social-switch" role="switch" checked>' +
         '</label>' +
+        /* The three sharing settings for the friend activity feed. All three
+           are off to begin with - nothing is published until it is turned on,
+           and turning it off takes down what was published. */
+        '<h4 class="thw-social-settings-group">Friend activity feed</h4>' +
+        '<p class="thw-social-settings-note">What your friends see in their activity feed. All of it is off until you turn it on. "Friends only" means only the people you have added can see it - never anybody else.</p>' +
+        '<div class="thw-social-settings-grid">' +
+          '<label>Listening activity<select name="activity_listening"><option value="nobody">Off</option><option value="friends">Friends only</option></select></label>' +
+          '<label>Playlist activity<select name="activity_playlists"><option value="nobody">Off</option><option value="friends">Friends only</option></select></label>' +
+          '<label>Community activity<select name="activity_community"><option value="nobody">Off</option><option value="friends">Friends only</option></select></label>' +
+        '</div>' +
         '<button class="thw-social-settings-save" type="button">Save settings</button><span class="thw-social-settings-message" role="status"></span>';
     mount.appendChild(card);
     card.querySelector(".thw-social-settings-save").addEventListener("click", savePrivacySettings);
@@ -1526,6 +1570,12 @@
     ]).then(function () {
       if (!socialErr && !notifyErr) {
         message.textContent = "Settings saved.";
+        /* Turning a sharing setting off has to take down what was published.
+           The server hides the rows the moment the setting changes, so the
+           feed is honest either way - but leaving them there would mean the
+           feed of somebody who turned sharing off still had their old rows
+           in it if the setting were ever turned on again. */
+        takeDownWhatWasShared();
       } else if (socialErr && notifyErr) {
         message.textContent = socialErr.status === 401
             ? "Sign in to change these settings."
@@ -1536,6 +1586,23 @@
         message.textContent = "Privacy options saved, but notifications were not.";
         }
       }).finally(function () { save.disabled = false; });
+  }
+
+  /* Take down what was published for any kind of thing that is now off.
+   *
+   * The settings are read from the form, which has just been saved, so this
+   * knows what the new state is without asking for it again. */
+  function takeDownWhatWasShared() {
+    if (!window.THWActivity) return;
+    var card = document.getElementById("thw-social-settings");
+    if (!card) return;
+    [["activity_listening", "listening"], ["activity_playlists", "playlist"], ["activity_community", "community"]]
+      .forEach(function (pair) {
+        var select = card.querySelector('select[name="' + pair[0] + '"]');
+        if (select && select.value === "nobody") {
+          window.THWActivity.clear(pair[1]);
+        }
+      });
   }
 
   function wrapAccountSection() {
@@ -1568,6 +1635,12 @@
         goRequests: function () { this.open(); try { setTab("requests"); } catch (e) {} },
         goFriends: function () { this.open(); try { setTab("friends"); } catch (e) {} },
         goMessages: function () { this.open(); try { setTab("messages"); } catch (e) {} },
+        /* The friend activity feed. */
+        goActivity: function () { this.open(); try { setTab("activity"); } catch (e) {} },
+        /* The panel's own bootstrap, so another module can read what the
+           panel has already been told - the settings, in particular - rather
+           than asking for them a second time. */
+        getBoot: function () { return state.boot; },
         /* The push payload carries a conversation id. Look it up in the
            already-loaded bootstrap so nothing is refetched or guessed; if it
            is not there yet, fall back to the Messages list rather than

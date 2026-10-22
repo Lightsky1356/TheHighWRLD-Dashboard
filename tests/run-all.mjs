@@ -43,6 +43,7 @@ const GROUPS = [
   { name: "parse-gate", file: "./parse-gate.test.mjs", needsServer: false },
   { name: "crypto", file: "./crypto-selftest.mjs", needsServer: false },
   { name: "listens-rollup", file: "./listens-rollup.test.mjs", needsServer: false },
+  { name: "friend-activity", file: "./friend-activity.test.mjs", needsServer: false },
   { name: "push-api", file: "./push-api.test.mjs", needsServer: true },
   { name: "notifications", file: "./notifications-optout.test.mjs", needsServer: true },
   { name: "notification-prefs", file: "./notification-prefs.test.mjs", needsServer: true },
