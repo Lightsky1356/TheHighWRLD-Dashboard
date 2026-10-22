@@ -167,24 +167,22 @@
     /* The trending tracks come with the bootstrap, when it has been
        * fetched - one request carrying several answers rather than one
        * request each. */
-    try {
-      var boot = window.THWBootstrap && window.THWBootstrap.from("trending");
-      if (boot) {
-        fill(boot, 7, (window.THWBootstrap.data() || {}).totalListens || 0);
+    /* The trending tracks come with the bootstrap - one request carrying
+       several answers rather than one request each. */
+    var take = window.THWBootstrap && window.THWBootstrap.take;
+    var ask = function () {
+      return fetch("/api/trending?days=7&limit=" + LIMIT, { cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { return d && d.ok ? d : null; });
+    };
+    (take ? take("trending", ask) : ask()).then(function (d) {
+      if (!d || d.ok !== true) {
+        var sec = document.getElementById("trending-sec");
+        if (sec) sec.remove();
         return;
       }
-    } catch (e) {}
-    fetch("/api/trending?days=7&limit=" + LIMIT, { cache: "no-store" })
-      .then(function (r) { return r.json(); })
-      .catch(function () { return { ok: false }; })
-      .then(function (d) {
-        if (!d || d.ok !== true) {
-          var sec = document.getElementById("trending-sec");
-          if (sec) sec.remove();
-          return;
-        }
-        fill(d.trending || [], d.days || 7, d.total_listens || 0);
-      });
+      fill(d.trending || [], d.days || 7, d.total_listens || 0);
+    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

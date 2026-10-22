@@ -221,23 +221,19 @@
   function boot(refresh) {
     /* The drops come with the bootstrap, when it has been fetched - one
        request carrying several answers rather than one request each. */
-    try {
-      var boot = window.THWBootstrap && window.THWBootstrap.from("drops");
-      if (boot && (boot.live || boot.upcoming || boot.past)) {
-        var sec = mount(boot);
-        if (refresh) fill(sec, boot);
-        ownerForm();
-        return;
-      }
-    } catch (e) {}
-    fetch("/api/drops", { cache: "no-store" })
-      .then(function (r) { return r.json(); })
-      .catch(function () { return { ok: false }; })
-      .then(function (d) {
-        if (!d || d.ok !== true) return;
-        var sec = mount(d);
-        if (refresh) fill(sec, d);
-      });
+    /* The drops come with the bootstrap - one request carrying several
+       answers rather than one request each. */
+    var take = window.THWBootstrap && window.THWBootstrap.take;
+    var ask = function () {
+      return fetch("/api/drops", { cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { return d && d.ok ? d : null; });
+    };
+    (take ? take("drops", ask) : ask()).then(function (d) {
+      if (!d || d.ok !== true) return;
+      var sec = mount(d);
+      if (refresh) fill(sec, d);
+    });
     ownerForm();
   }
 

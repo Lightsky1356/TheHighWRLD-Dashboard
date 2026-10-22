@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v128';
+const VERSION = 'thw-v129';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -53,8 +53,8 @@ const PRECACHE = [
   './toast.js?v=thw-v1',
   './tracks.js?v=thw-v9',
   './browser-id3-writer.js?v=thw-v2',
-  './bootstrap-client.js?v=thw-v2',
-  './account.js?v=thw-v19',
+  './bootstrap-client.js?v=thw-v3',
+  './account.js?v=thw-v20',
   './i18n.js?v=7',
   './script.js?v=thw-v50',
   './suggestions.js?v=thw-v2',
@@ -128,7 +128,7 @@ const PRECACHE = [
   './vault-discography.js?v=thw-v4',
   './global-search.js?v=thw-v4',
   './about-tabs.js?v=thw-v6',
-  './trending.js?v=thw-v4',
+  './trending.js?v=thw-v5',
   './owner-search.js?v=thw-v3',
   './owner-announce.js?v=thw-v3',
   './bans.js?v=thw-v3',
@@ -153,7 +153,7 @@ const PRECACHE = [
   './follows.js?v=thw-v3',
   './privacy.js?v=thw-v3',
   './playlists-ui.js?v=thw-v6',
-  './drops.js?v=thw-v2',
+  './drops.js?v=thw-v3',
   './legal-info.js?v=thw-v5',
   './social-panel.js?v=thw-v30',
   './push-client.js?v=thw-v22',
