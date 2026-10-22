@@ -349,11 +349,9 @@
 
     /* The sign-in configuration comes with the bootstrap. It is asked for
        on every page load, and it is the same answer for everybody. */
-    var bootAuth = function () {
-      var b = window.THWBootstrap && window.THWBootstrap.data();
-      return b && b.auth ? b.auth : fetchJson("/api/auth/config");
-    };
-    bootAuth().then(function (d) {
+    var bootTake = window.THWBootstrap && window.THWBootstrap.take;
+    var askConfig = function () { return fetchJson("/api/auth/config"); };
+    (bootTake ? bootTake("auth", askConfig) : askConfig()).then(function (d) {
       if (!d || typeof d !== "object") return;
       cfg.google = !!d.google;
       cfg.discord = !!d.discord;
@@ -369,15 +367,17 @@
       }
     });
 
-    /* The session comes with the bootstrap too. */
-    var bootSession = function () {
-      var b = window.THWBootstrap && window.THWBootstrap.data();
-      if (b && b.user) return Promise.resolve({ user: b.user });
-      return fetchJson("/api/auth/session");
+    /* The session comes with the bootstrap too. It is the user itself,
+       where the session endpoint answers with { user } - so both are
+       turned into the same thing here. */
+    var askSession = function () {
+      return fetchJson("/api/auth/session").then(function (d) {
+        return d && d.user ? d.user : null;
+      });
     };
-    bootSession().then(function (d) {
-      if (d && d.user && d.user.uid) {
-        applyLoggedIn(d.user);
+    (bootTake ? bootTake("user", askSession) : askSession()).then(function (u) {
+      if (u && u.uid) {
+        applyLoggedIn(u);
       } else {
         applyLoggedOut();
       }

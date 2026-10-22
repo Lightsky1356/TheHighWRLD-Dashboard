@@ -118,7 +118,7 @@ async function sharedParts(env) {
  * It is read for them every time, and never handed to anybody else. */
 async function visitorParts(env, request) {
   const db = env.wanted_vault;
-  const out = { user: null, account: null, notifications: [], recent: [], notificationSettings: null, push: null };
+  const out = { user: null, account: null, notifications: [], recent: [], notificationSettings: null, push: null, privacy: null };
 
   let session = null;
   try { session = await getSessionUser(db, request); } catch (_) {}
@@ -143,12 +143,46 @@ async function visitorParts(env, request) {
   } catch (_) {}
 
   try {
+    /* The push state: the public key and the devices registered against
+       this account. It is asked for when the settings are opened. */
+    const devices = await db.prepare(
+      "SELECT id, endpoint, user_agent, created_at, failure_count FROM push_subscriptions " +
+      "WHERE uid = ? ORDER BY id DESC"
+    ).bind(session.uid).all();
+    out.push = {
+      ok: true,
+      publicKey: env.VAPID_PUBLIC_KEY || "",
+      supported: typeof env.VAPID_PUBLIC_KEY === "string" && !!env.VAPID_PUBLIC_KEY,
+      devices: (devices.results || []).map((d) => ({
+        id: d.id,
+        endpoint: d.endpoint,
+        userAgent: d.user_agent,
+        createdAt: d.created_at,
+        failureCount: d.failure_count,
+      })),
+    };
+  } catch (_) {}
+
+  try {
     const row = await db.prepare(
       "SELECT * FROM user_notification_prefs WHERE uid = ?"
     ).bind(session.uid).first();
     /* The same shape the settings endpoint answers in, so the panel can
        read either without knowing where it came from. */
     out.notificationSettings = { ok: true, prefs: row || {} };
+  } catch (_) {}
+
+  try {
+    const row = await db.prepare(
+      "SELECT show_playlists, show_stats, show_activity, show_favorites FROM user_privacy WHERE uid = ?"
+    ).bind(session.uid).first();
+    /* The same shape the privacy endpoint answers in, with the flags
+       normalised to numbers the same way. */
+    const flags = {};
+    for (const k of ["show_playlists", "show_stats", "show_activity", "show_favorites"]) {
+      flags[k] = row && row[k] != null ? Number(row[k]) : 1;
+    }
+    out.privacy = { ok: true, privacy: flags };
   } catch (_) {}
 
   return out;

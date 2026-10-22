@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v131';
+const VERSION = 'thw-v132';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -59,7 +59,7 @@ const PRECACHE = [
   './script.js?v=thw-v50',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
-  './auth.js?v=thw-v7',
+  './auth.js?v=thw-v8',
   './wanted-realtime.js?v=thw-v4',
   './community-realtime.js?v=thw-v6',
   './presence.js?v=thw-v6',
@@ -151,12 +151,12 @@ const PRECACHE = [
   './presets.js?v=thw-v3',
   './mobile-player.js?v=thw-v4',
   './follows.js?v=thw-v3',
-  './privacy.js?v=thw-v3',
+  './privacy.js?v=thw-v4',
   './playlists-ui.js?v=thw-v6',
   './drops.js?v=thw-v3',
   './legal-info.js?v=thw-v5',
   './social-panel.js?v=thw-v30',
-  './push-client.js?v=thw-v22',
+  './push-client.js?v=thw-v23',
   './simple-toast.js?v=thw-v5',
   './cover-preview.js?v=thw-v7',
 

@@ -1659,14 +1659,23 @@ function safeDecode4(v) {
  * once. */
 {
   const push = readFileSync(join(ROOT, "push-client.js"), "utf8");
-  const loadState = push.slice(push.indexOf("function loadState("), push.indexOf("function loadState(") + 900);
+  const boot = readFileSync(join(ROOT, "bootstrap-client.js"), "utf8");
 
-  if (!/state\.tried = true/.test(loadState)) {
+  /* The state comes with the bootstrap, and the bootstrap remembers that it
+     has asked - once, and the answer whatever it was. A panel that asked
+     again after a failure is what emptied the daily request limit. */
+  if (!/function take\(key, fallback\)/.test(boot)) {
+    structureFail("the bootstrap cannot hand an answer to a caller that waits for it");
+  } else if (!/if \(loading\) return loading/.test(boot)) {
+    structureFail("the bootstrap asks for itself again while a request is already under way");
+  } else if (!/state\.tried = true/.test(push)) {
     structureFail("the push panel does not remember that it has asked for the state");
   } else if (!/if \(state\.tried\)/.test(push)) {
     structureFail("the push panel asks for the state again after it has already asked");
+  } else if (!/bootTake\("push", ask\)/.test(push)) {
+    structureFail("the push panel does not take its state from the bootstrap");
   } else {
-    structureOk("the push panel asks for the state once, whatever the answer is");
+    structureOk("the push panel takes its state from the bootstrap, and asks once");
   }
 }
 

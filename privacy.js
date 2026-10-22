@@ -83,12 +83,19 @@
     var body = document.getElementById("profilePageBody");
     if (!body || !isSelfProfile()) return;
     if (document.getElementById(WID)) return;
-    fetch("/api/privacy", { cache: "no-store", credentials: "same-origin" })
-      .then(function (r) { return r.json(); })
-      .catch(function () { return { ok: false }; })
-      .then(function (d) {
-        if (d && d.ok) mount(d.privacy || {});
-      });
+    /* The privacy record comes with the bootstrap - one request carrying
+       several answers rather than one request each. */
+    var take = window.THWBootstrap && window.THWBootstrap.take;
+    var ask = function () {
+      return fetch("/api/privacy", { cache: "no-store", credentials: "same-origin" })
+        .then(function (r) { return r.json(); })
+        .catch(function () { return { ok: false }; })
+        .then(function (d) { return d && d.ok ? d : null; });
+    };
+    (take ? take("privacy", ask) : ask()).then(function (d) {
+      if (!d || !d.privacy) return;
+      mount(d.privacy);
+    });
   }
 
   function boot() {
