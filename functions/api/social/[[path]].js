@@ -12,7 +12,16 @@ const CORS = {
   "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
-const EMOJIS = ["❤️", "🔥", "😂", "😮", "👏", "💯"];
+/* The reactions a message can carry.
+ *
+ * It used to be six, and the panel only ever offered three of them - so
+ * the other three could not be given without going round the API. The
+ * list is the whole set now, and the panel offers all of it.
+ *
+ * A reaction is a fixed set rather than free text, because it goes into
+ * a column and it is drawn as a button. Anything else would be a
+ * different kind of thing. */
+const EMOJIS = ["❤️", "🔥", "😂", "😮", "👏", "💯", "👍", "👎", "🎉", "😢", "🤔", "🙏"];
 const MAX_MESSAGE = 2000;
 
 function json(data, status = 200) {
@@ -217,14 +226,20 @@ async function bootstrap(db, env, me) {
 
   const online = new Set(presence.online);
   const friendIds = ids.filter((uid) => online.has(uid));
+  /* The people whose activity is looked up: the friends, and the people in
+     the conversations. They are nearly always the same people, so this is
+     one query rather than two - and one query is what the row budget can
+     afford. */
+  const convoRows = conversationsResult.results || [];
+  const statusIds = Array.from(new Set(ids.concat(convoRows.map((r) => r.uid)))).filter(uidOk);
   const activityByUid = new Map();
-  if (ids.length) {
-    const q = ids.map(() => "?").join(",");
+  if (statusIds.length) {
+    const q = statusIds.map(() => "?").join(",");
     const activities = await db.prepare(
       "SELECT uid, type, label, detail FROM (" +
       "SELECT uid, type, label, detail, ROW_NUMBER() OVER (PARTITION BY uid ORDER BY ts DESC) AS rn " +
       "FROM activity WHERE uid IN (" + q + ")) WHERE rn = 1"
-    ).bind(...ids).all();
+    ).bind(...statusIds).all();
     for (const row of activities.results || []) activityByUid.set(row.uid, row);
   }
   const friends = friendRows.map((r) => ({
@@ -243,7 +258,7 @@ async function bootstrap(db, env, me) {
     avatar: r.recipient_uid === me.uid ? r.requester_avatar : r.recipient_avatar,
     createdAt: r.created_at,
   }));
-  const conversations = (conversationsResult.results || []).map((r) => ({
+  const conversations = convoRows.map((r) => ({
     id: r.id, uid: r.uid, name: r.name, avatar: r.avatar,
     lastMessage: r.last_message || "", lastSenderUid: r.last_sender_uid || "",
     lastMessageAt: r.last_message_at, unread: Number(r.unread) || 0,
@@ -252,6 +267,8 @@ async function bootstrap(db, env, me) {
        header said "Offline" to everybody, always. */
     online: friendIds.includes(r.uid) && r.online_status !== "nobody",
     lastActive: r.online_status === "nobody" ? "" : (r.last_seen || ""),
+    /* Their own words about what they are up to, when they have set one. */
+    activity: r.online_status === "nobody" ? "" : (activityByUid.get(r.uid)?.label || ""),
   }));
   const unreadMessages = conversations.reduce((n, c) => n + c.unread, 0);
   return {
@@ -475,7 +492,16 @@ async function typing(context, db, me, conversationId, body) {
   const otherUid = await memberPair(db, conversationId, me.uid);
   if (!otherUid) return json({ error: "conversation_not_found" }, 404);
   if (await isBlocked(db, me.uid, otherUid)) return json({ error: "blocked" }, 403);
-  if (!(await rateLimit(db, me.uid, "dm_typing", 60, 60000))) return json({ error: "rate_limited" }, 429);
+  /* The typing limit. See the client for why it is a limit and not a
+     once-per-burst. This is the server's own bound, in case a client does
+     not keep to it. */
+  if (body.typing !== true) {
+    /* The event that stops it is never withheld - it is the one that clears
+       the indicator on the other end, and holding it back would leave
+       "is typing…" on the screen for good. */
+  } else if (!(await rateLimit(db, me.uid, "dm_typing", 40, 60000))) {
+    return json({ error: "rate_limited" }, 429);
+  }
   await hubBroadcast(context.env, {
     type: "social:typing",
     private: true,

@@ -176,12 +176,20 @@
         .then(function (d) { return d && d.ok ? d : null; });
     };
     (take ? take("trending", ask) : ask()).then(function (d) {
-      if (!d || d.ok !== true) {
+      /* The answer is read the same way whichever it came from.
+       *
+       * It used to insist on an "ok" and throw the whole section away
+       * without it - so a shape that was one field different took the
+       * trending strip off the page with nothing to show for it. A bare
+       * list is understood, and only an outright failure removes the
+       * section. */
+      var payload = Array.isArray(d) ? { ok: true, trending: d, days: 7, total_listens: 0 } : d;
+      if (!payload || payload.ok === false) {
         var sec = document.getElementById("trending-sec");
         if (sec) sec.remove();
         return;
       }
-      fill(d.trending || [], d.days || 7, d.total_listens || 0);
+      fill(payload.trending || [], payload.days || 7, payload.total_listens || 0);
     });
   }
 

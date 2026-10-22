@@ -84,18 +84,35 @@ async function sharedParts(env) {
         upcoming.push(d);
       }
     }
-    drops = { live, upcoming, past };
+    /* The "ok" is what the client looks for before it draws anything, and
+       the drops endpoint answers with it - so the bootstrap does too.
+       Without it the whole Drops & Events section was thrown away. */
+    drops = { ok: true, live, upcoming, past };
   } catch (_) {}
 
+  /* The trending tracks, in the shape the trending endpoint answers in.
+   *
+   * It has to be the same shape, because the client reads the two the same
+   * way whichever it got - and it was not. The bootstrap handed over a bare
+   * list of rows and the client was looking for an object with an "ok" in
+   * it, so it threw the whole section away. The trending strip was not
+   * there, and nobody could say why. */
   let trending = [];
   let totalListens = 0;
   try {
     const rows = await db.prepare(
       /* The index is named outright - see the trending endpoint for why. */
-      "SELECT track_id AS title, COUNT(*) AS plays FROM listens INDEXED BY idx_listens_ts_track " +
+      "SELECT track_id AS title, COUNT(*) AS plays, COUNT(DISTINCT uid) AS listeners, MAX(ts) AS last_play " +
+      "FROM listens INDEXED BY idx_listens_ts_track " +
       "WHERE ts >= datetime('now', '-7 days') GROUP BY track_id ORDER BY plays DESC LIMIT 10"
     ).all();
-    trending = rows.results || [];
+    trending = (rows.results || []).map((r, i) => ({
+      rank: i + 1,
+      title: r.title || "",
+      plays: r.plays || 0,
+      listeners: r.listeners || 0,
+      last_play: r.last_play || "",
+    }));
   } catch (_) {}
   try {
     /* The number of plays, counted day by day. Asking the history meant
@@ -108,7 +125,14 @@ async function sharedParts(env) {
     /* The table is not there yet - the trending page has its own count. */
   }
 
-  shared = { announcements, drops, trending, totalListens };
+  /* The same shapes the endpoints answer in, so the client reads them the
+     same way whichever it got. */
+  shared = {
+    announcements,
+    drops,
+    trending: { ok: true, days: 7, trending, total_listens: totalListens },
+    totalListens,
+  };
   sharedAt = now;
   return shared;
 }

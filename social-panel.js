@@ -17,11 +17,22 @@
     hasOlder: false,
     blocked: false,
     typingStarted: false,
+    /* The timestamps of the typing events sent for this conversation, so
+       the limit can be counted without asking the server. */
+    typingStamps: [],
+    typingRefresh: null,
     replyTo: null,
     typingTimer: null,
     refreshTimer: null,
     focusBeforeOpen: null,
     rulesOpen: false,
+    /* Whether the message menu is open, and whether the grammar check is
+       showing. Both are closed when the panel closes and when the thread is
+       re-rendered. */
+    menuOpen: false,
+    grammarOpen: false,
+    /* Whether the friends list is folded away. Desktop only - see the toggle. */
+    friendsCollapsed: false,
     /* Which list was open before the Settings button took over the panel, so
        closing Settings returns there instead of always landing on Friends. */
     tabBeforeSettings: null,
@@ -150,7 +161,7 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v26";
+    css.href = "/social.css?v=thw-v29";
     document.head.appendChild(css);
 
     var root = el("div");
@@ -184,7 +195,11 @@
               '<button class="thw-social-search-clear" data-action="clear-search" type="button" aria-label="Clear search" hidden><i class="fas fa-xmark" aria-hidden="true"></i></button></div>' +
             '<div class="thw-social-search-meta" id="thw-social-search-meta" aria-live="polite"></div>' +
             '<div class="thw-social-list" id="thw-social-search-results" aria-live="polite"></div>' +
-            '<div class="thw-social-section-label">Your friends</div><div class="thw-social-list" id="thw-social-friends"></div>' +
+            '<div class="thw-social-section-label thw-social-friends-head">' +
+              '<span>Your friends</span>' +
+              '<button class="thw-social-friends-toggle" type="button" data-action="toggle-friends" aria-expanded="true" aria-controls="thw-social-friends" title="Collapse the friends list">' +
+                '<i class="fas fa-chevron-up" aria-hidden="true"></i></button>' +
+            '</div><div class="thw-social-list" id="thw-social-friends"></div>' +
           '</section>' +
           '<section class="thw-social-view" data-view="messages" role="tabpanel">' +
             '<div class="thw-social-messages"><div class="thw-social-convos" id="thw-social-conversations" aria-label="Conversations"></div>' +
@@ -209,10 +224,39 @@
       '</div>';
     document.body.appendChild(root);
 
+    loadFriendsCollapse();
+    applyFriendsCollapse();
     document.getElementById("thw-social-fab").addEventListener("click", function () { setOpen(!state.open); });
     document.getElementById("thw-social-close").addEventListener("click", function () { setOpen(false); });
     root.addEventListener("click", onClick);
     root.addEventListener("input", onInput);
+    /* Right-clicking a message opens its menu.
+     *
+     * This is the way the menu is meant to be reached, and it is why the
+     * inline row of buttons went: seven buttons under every message made the
+     * thread unreadable, and the menu holds all of them in one place.
+     *
+     * The browser's own menu is suppressed on a message, because it would
+     * offer "copy" for the text of the message and nothing else useful. */
+    root.addEventListener("contextmenu", function (event) {
+      var bubble = event.target.closest && event.target.closest(".thw-social-message");
+      if (!bubble) return;
+      var id = bubble.dataset.messageId;
+      var target = state.messages.find(function (m) { return String(m.id) === String(id); });
+      if (!target || target.deleted) return;
+      event.preventDefault();
+      closeGrammarResult();
+      openMessageMenu(target, event.clientX, event.clientY);
+    });
+    /* A click anywhere else closes the menu. It is a capture-phase listener on
+       the document, so a click inside the menu does not close it before the
+       menu's own button has been acted on. */
+    document.addEventListener("click", function (event) {
+      if (!state.menuOpen) return;
+      var menu = document.getElementById("thw-social-menu");
+      if (menu && event.target && menu.contains(event.target)) return;
+      closeMessageMenu();
+    }, true);
     document.getElementById("thw-social-composer").addEventListener("submit", sendMessage);
     document.getElementById("thw-social-reply-cancel").addEventListener("click", clearReply);
     document.getElementById("thw-social-rules-link").addEventListener("click", openRules);
@@ -243,6 +287,8 @@
       if (event.key === "Escape") {
         event.preventDefault();
         if (state.rulesOpen) closeRules();
+        else if (state.grammarOpen) closeGrammarResult();
+        else if (state.menuOpen) closeMessageMenu();
         else setOpen(false);
         return;
       }
@@ -531,7 +577,10 @@
         var typing = document.getElementById("thw-social-typing");
         typing.textContent = msg.typing ? ((msg.user && msg.user.name || "Someone") + " is typing…") : "";
         clearTimeout(state.typingTimer);
-        if (msg.typing) state.typingTimer = setTimeout(function () { typing.textContent = ""; }, 3200);
+        /* It goes away on its own. Somebody who closes the tab in the middle
+           of a word would otherwise leave "is typing…" on the other end for
+           good, because the event that clears it was never sent. */
+        if (msg.typing) state.typingTimer = setTimeout(function () { typing.textContent = ""; }, 6000);
       }
       return;
     }
@@ -672,6 +721,25 @@
     }
   }
 
+  /* Fold the friends list away, or back. */
+  function applyFriendsCollapse() {
+    var view = document.querySelector('#thw-social-root [data-view="friends"]');
+    if (!view) return;
+    view.classList.toggle("thw-social-friends-collapsed", state.friendsCollapsed);
+    var toggle = view.querySelector(".thw-social-friends-toggle");
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", state.friendsCollapsed ? "false" : "true");
+      toggle.title = state.friendsCollapsed ? "Expand the friends list" : "Collapse the friends list";
+      var glyph = toggle.querySelector("i");
+      if (glyph) glyph.className = state.friendsCollapsed ? "fas fa-chevron-down" : "fas fa-chevron-up";
+    }
+  }
+
+  /* Whether the list is folded away, remembered between visits. */
+  function loadFriendsCollapse() {
+    try { state.friendsCollapsed = localStorage.getItem("thwSocialFriendsCollapsed") === "1"; } catch (e) { state.friendsCollapsed = false; }
+  }
+
   function renderFriends(friends) {
     var list = document.getElementById("thw-social-friends");
     list.replaceChildren();
@@ -681,10 +749,15 @@
     }
     friends.forEach(function (friend) {
       var row = el("div", "thw-social-row");
-      row.appendChild(avatarNode(friend));
+      var face = el("span", "thw-social-face");
+      face.appendChild(avatarNode(friend));
+      /* The dot sits on the corner of the avatar, so the state is next to
+         the face. */
+      face.appendChild(statusDot(friend));
+      row.appendChild(face);
       var person = el("span", "thw-social-person");
       person.appendChild(el("span", "thw-social-name", friend.name));
-      var label = friend.online ? "Online" : (friend.activity || (friend.lastActive ? "Last active " + relativeTime(friend.lastActive) : "Offline"));
+      var label = statusLabel(friend);
       var meta = el("span", "thw-social-meta" + (friend.online ? " thw-social-online" : ""), label);
       person.appendChild(meta);
       row.appendChild(person);
@@ -892,16 +965,23 @@
       if (Number.isFinite(at) && Number.isFinite(bt) && at !== bt) return bt - at;
       return String(a.name || "").localeCompare(String(b.name || ""));
     });
-    var markAll = el("button", "thw-social-mark-all", unreadTotal ? "Mark all read (" + unreadTotal + ")" : "");
+    /* The button is always there. It used to be hidden when there was
+       nothing to mark, so pressing it was impossible - and the person
+       pressing it was told nothing about why. */
+    var markAll = el("button", "thw-social-mark-all", unreadTotal ? "Mark all read (" + unreadTotal + ")" : "Mark all read");
     markAll.type = "button";
-    if (!unreadTotal) markAll.hidden = true;
     markAll.dataset.action = "mark-all-read";
     list.appendChild(markAll);
     sorted.forEach(function (conversation) {
       var row = el("button", "thw-social-convo" + (state.conversation && state.conversation.id === conversation.id ? " active" : ""));
       row.type = "button";
       row.dataset.conversationId = conversation.id;
-      row.appendChild(avatarNode(conversation, 29));
+      var face = el("span", "thw-social-face");
+      face.appendChild(avatarNode(conversation, 29));
+      /* The same dot the friends list has, so a conversation carries the
+         state of the person on the other end of it. */
+      face.appendChild(statusDot(conversation));
+      row.appendChild(face);
       var copy = el("span", "thw-social-convo-copy");
       copy.appendChild(el("span", "thw-social-name", conversation.name));
       copy.appendChild(el("span", "thw-social-preview", conversation.lastMessage || "Start a conversation"));
@@ -923,6 +1003,239 @@
     if (seconds < 3600) return Math.floor(seconds / 60) + "m ago";
     if (seconds < 86400) return Math.floor(seconds / 3600) + "h ago";
     return Math.floor(seconds / 86400) + "d ago";
+  }
+
+  /* How long ago somebody was last here.
+   *
+   * The presence table keeps a last-seen time and the live presence set
+   * says who is here now. Between them there is enough to say something
+   * more useful than "offline" - which is what everybody was told,
+   * always, because the query that lists the conversations never asked
+   * for the presence at all. */
+  function statusOf(person) {
+    if (!person) return { key: "offline", label: "Offline" };
+    if (person.online) return { key: "online", label: "Online" };
+    var last = Date.parse(String(person.lastActive || "").replace(" ", "T"));
+    if (!Number.isFinite(last)) return { key: "offline", label: "Offline" };
+    var minutes = Math.floor((Date.now() - last) / 60000);
+    if (minutes < 15) return { key: "recent", label: "Active recently" };
+    if (minutes < 1440) return { key: "today", label: "Active today" };
+    return { key: "offline", label: "Last active " + relativeTime(person.lastActive) };
+  }
+
+  /* The dot, which goes on the corner of the avatar.
+   *
+   * A dot on its own says nothing to anybody who cannot see it, so the
+   * words are still there too - the dot is the quick read, the words are
+   * the certain one. */
+  function statusDot(person) {
+    var status = statusOf(person);
+    var dot = el("span", "thw-social-status thw-social-status--" + status.key);
+    dot.title = status.label;
+    dot.setAttribute("aria-hidden", "true");
+    return dot;
+  }
+
+  /* The words. A custom status is the person's own words about what they
+   * are doing, so it says more than a presence does. */
+  function statusLabel(person) {
+    if (person && person.activity) return person.activity;
+    return statusOf(person).label;
+  }
+  /* The reactions a message can carry.
+   *
+   * The same set the server accepts. It used to offer three of the six the
+   * server had, so half the reactions could not be given without going
+   * round the API - and the three that could be given were the only ones
+   * anybody ever used. */
+  var REACTIONS = ["❤️", "🔥", "😂", "😮", "👏", "💯", "👍", "👎", "🎉", "😢", "🤔", "🙏"];
+
+  /* The message menu.
+   *
+   * Right-click a message and this opens: the reactions, and the things you
+   * can do with it. It used to be a row of small buttons under every message
+   * - seven of them for a message nobody had touched, which turned the
+   * thread into a wall of buttons and pushed the actual conversation down the
+   * page.
+   *
+   * The buttons are all still there. They are just in here now, where they
+   * can be found when they are wanted rather than when the message is read. */
+  function openMessageMenu(message, x, y) {
+    closeMessageMenu();
+    if (!message || message.deleted) return;
+
+    var root = document.getElementById("thw-social-root");
+    var panel = document.getElementById("thw-social-panel");
+    if (!root || !panel) return;
+
+    var menu = el("div", "thw-social-menu");
+    menu.id = "thw-social-menu";
+    menu.setAttribute("role", "menu");
+
+    /* The reactions. The ones already given are shown with their count, so
+       the menu says what is there as well as what can be added. */
+    var reactRow = el("div", "thw-social-menu-reactions");
+    reactRow.setAttribute("role", "group");
+    reactRow.setAttribute("aria-label", "React to this message");
+    var mine = {};
+    (message.reactions || []).forEach(function (reaction) { mine[reaction.emoji] = reaction; });
+    var every = REACTIONS.slice();
+    Object.keys(mine).forEach(function (emoji) { if (every.indexOf(emoji) === -1) every.push(emoji); });
+    every.forEach(function (emoji) {
+      var reaction = mine[emoji];
+      var node = el("button", "thw-social-menu-reaction" + (reaction && reaction.mine ? " mine" : ""),
+        emoji + (reaction && reaction.count > 1 ? " " + reaction.count : ""));
+      node.type = "button";
+      node.dataset.action = "react";
+      node.dataset.messageId = message.id;
+      node.dataset.emoji = emoji;
+      node.title = reaction ? (reaction.count + (reaction.count === 1 ? " reaction" : " reactions")) : "React";
+      reactRow.appendChild(node);
+    });
+    menu.appendChild(reactRow);
+    menu.appendChild(el("div", "thw-social-menu-divider"));
+
+    var add = function (label, action) {
+      var node = el("button", "thw-social-menu-item", label);
+      node.type = "button";
+      node.dataset.action = action;
+      node.dataset.messageId = message.id;
+      node.setAttribute("role", "menuitem");
+      menu.appendChild(node);
+      return node;
+    };
+
+    add("Reply", "reply");
+    add("Copy", "copy-message");
+    add("Grammar check", "grammar-check");
+    var mineMessage = message.senderUid === (state.boot && state.boot.me && state.boot.me.uid);
+    if (mineMessage) {
+      add("Edit", "edit-message");
+      add("Delete", "delete-message");
+    } else {
+      add("Report", "report-message");
+    }
+
+    root.appendChild(menu);
+
+    /* Placed where the pointer was, and kept inside the panel.
+     *
+     * A menu that hangs off the edge of the panel is a menu whose half the
+     * items cannot be reached, so it is measured and then nudged back in. */
+    var box = menu.getBoundingClientRect();
+    var bounds = panel.getBoundingClientRect();
+    var left = x;
+    var top = y;
+    if (left + box.width > bounds.right - 8) left = bounds.right - box.width - 8;
+    if (left < bounds.left + 8) left = bounds.left + 8;
+    if (top + box.height > bounds.bottom - 8) top = bounds.bottom - box.height - 8;
+    if (top < bounds.top + 8) top = bounds.top + 8;
+    menu.style.left = Math.round(left - bounds.left) + "px";
+    menu.style.top = Math.round(top - bounds.top) + "px";
+
+    state.menuOpen = true;
+    return menu;
+  }
+
+  function closeMessageMenu() {
+    var menu = document.getElementById("thw-social-menu");
+    if (menu && menu.parentNode) menu.parentNode.removeChild(menu);
+    state.menuOpen = false;
+  }
+
+  /* The grammar check.
+   *
+   * The result is a list of suggestions, and nothing is changed until the
+   * person says so - a checker that rewrote your message as you typed would
+   * be worse than no checker. */
+  function openGrammarResult(message, suggestions) {
+    closeMessageMenu();
+    var root = document.getElementById("thw-social-root");
+    if (!root) return;
+
+    var panel = el("div", "thw-social-grammar");
+    panel.id = "thw-social-grammar";
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-label", "Grammar check");
+
+    var head = el("div", "thw-social-grammar-head");
+    head.appendChild(el("strong", "thw-social-grammar-title", "Grammar check"));
+    var close = el("button", "thw-social-grammar-close", "×");
+    close.type = "button";
+    close.setAttribute("aria-label", "Close the grammar check");
+    close.addEventListener("click", function () { closeGrammarResult(); });
+    head.appendChild(close);
+    panel.appendChild(head);
+
+    if (!suggestions.length) {
+      panel.appendChild(el("p", "thw-social-grammar-text",
+        "Nothing to point out here. This is a short check for common slips - it does not judge how you write."));
+    } else {
+      panel.appendChild(el("p", "thw-social-grammar-text",
+        "A few things worth a look. Nothing is changed until you say so."));
+      var list = el("ul", "thw-social-grammar-list");
+      suggestions.forEach(function (item) {
+        var row = el("li", "thw-social-grammar-row");
+        var text = el("div", "thw-social-grammar-row-text");
+        text.appendChild(el("span", "thw-social-grammar-wrong", item.text));
+        text.appendChild(el("span", "thw-social-grammar-right", item.fix));
+        text.appendChild(el("span", "thw-social-grammar-why", item.why));
+        row.appendChild(text);
+        var use = el("button", "thw-social-grammar-use", "Use this");
+        use.type = "button";
+        use.addEventListener("click", function () { applyGrammarFix(message, item); });
+        row.appendChild(use);
+        list.appendChild(row);
+      });
+      panel.appendChild(list);
+
+      var applyAll = el("button", "thw-social-grammar-all", "Use all of these");
+      applyAll.type = "button";
+      applyAll.addEventListener("click", function () { applyGrammarFix(message, null, suggestions); });
+      panel.appendChild(applyAll);
+    }
+
+    root.appendChild(panel);
+    state.grammarOpen = true;
+  }
+
+  function closeGrammarResult() {
+    var panel = document.getElementById("thw-social-grammar");
+    if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
+    state.grammarOpen = false;
+  }
+
+  /* Apply one suggestion, or all of them.
+   *
+   * The text is changed in the message that is on screen, and the change is
+   * saved through the same endpoint the edit button uses - so it is the same
+   * message, updated, rather than a new one. */
+  function applyGrammarFix(message, one, all) {
+    if (!message) return;
+    var suggestions = all || (one ? [one] : []);
+    if (!suggestions.length) return;
+
+    var body = message.body || "";
+    if (one && !all) {
+      body = body.slice(0, one.start) + one.fix + body.slice(one.start + one.length);
+    } else {
+      var sorted = suggestions.slice().sort(function (a, b) { return b.start - a.start; });
+      sorted.forEach(function (item) {
+        body = body.slice(0, item.start) + item.fix + body.slice(item.start + item.length);
+      });
+    }
+
+    message.body = body;
+    closeGrammarResult();
+    api("/conversations/" + encodeURIComponent(state.conversation.id) + "/messages/" + message.id, {
+      method: "PATCH",
+      body: { body: body },
+    }).then(function () {
+      renderMessages();
+      showStatus("Message updated.");
+    }).catch(function (error) {
+      showStatus(describeError(error), "error");
+    });
   }
 
   function search(query) {
@@ -977,7 +1290,11 @@
       }).catch(function () {});
     }
     clearTimeout(state.typingTimer);
+    /* The repeat has to be stopped as well, or it would keep saying "still
+       typing" for a conversation nobody is in any more. */
+    clearTimeout(state.typingRefresh);
     state.typingStarted = false;
+    state.typingStamps = [];
     state.blocked = false;
     state.conversation = conversation;
     state.messages = [];
@@ -1008,6 +1325,9 @@
       ? "Online"
       : (conversation.lastActive ? "Last active " + relativeTime(conversation.lastActive) : "Offline");
     person.appendChild(el("span", "thw-social-meta" + (conversation.online ? " thw-social-online" : ""), presence));
+    /* A custom status, when they have set one - it says more than a
+       presence does. */
+    if (conversation.activity) person.appendChild(el("span", "thw-social-meta", conversation.activity));
     head.appendChild(person);
     head.appendChild(button("Block", "block-user", "danger", { uid: conversation.uid }));
     head.appendChild(button("Report", "report-user", "", { uid: conversation.uid }));
@@ -1109,16 +1429,11 @@
         discard.dataset.messageId = message.id;
         tools.appendChild(discard);
       } else if (!message.deleted) {
-        var reply = el("button", "", "Reply");
-        reply.type = "button";
-        reply.dataset.action = "reply";
-        reply.dataset.messageId = message.id;
-        tools.appendChild(reply);
-        var copy = el("button", "", "Copy");
-        copy.type = "button";
-        copy.dataset.action = "copy-message";
-        copy.dataset.messageId = message.id;
-        tools.appendChild(copy);
+        /* The reactions that are already there stay on the message, because
+           they are a fact about the message rather than a control: they say
+           who has reacted and how many times. Everything else - the
+           reactions you can add, Reply, Copy, Report - is in the message
+           menu, which is what right-clicking a message opens.
         (message.reactions || []).forEach(function (reaction) {
           var reactionButton = el("button", reaction.mine ? "mine" : "", reaction.emoji + " " + reaction.count);
           reactionButton.type = "button";
@@ -1127,33 +1442,16 @@
           reactionButton.dataset.emoji = reaction.emoji;
           tools.appendChild(reactionButton);
         });
-        ["❤️", "🔥", "😂"].forEach(function (emoji) {
-          if ((message.reactions || []).some(function (reaction) { return reaction.emoji === emoji; })) return;
-          var reactionButton = el("button", "", emoji);
-          reactionButton.type = "button";
-          reactionButton.dataset.action = "react";
-          reactionButton.dataset.messageId = message.id;
-          reactionButton.dataset.emoji = emoji;
-          tools.appendChild(reactionButton);
-        });
-        if (mine) {
-          var edit = el("button", "", "Edit");
-          edit.type = "button";
-          edit.dataset.action = "edit-message";
-          edit.dataset.messageId = message.id;
-          tools.appendChild(edit);
-          var remove = el("button", "", "Delete");
-          remove.type = "button";
-          remove.dataset.action = "delete-message";
-          remove.dataset.messageId = message.id;
-          tools.appendChild(remove);
-        } else {
-          var report = el("button", "", "Report");
-          report.type = "button";
-          report.dataset.action = "report-message";
-          report.dataset.messageId = message.id;
-          tools.appendChild(report);
-        }
+        /* The one control that stays visible: how to open the menu. It is
+           there because a menu that can only be reached by right-clicking
+           is a menu nobody finds - and a phone has no right-click at all. */
+        var more = el("button", "thw-social-message-more", "⋯");
+        more.type = "button";
+        more.dataset.action = "message-menu";
+        more.dataset.messageId = message.id;
+        more.setAttribute("aria-label", "Message options");
+        more.title = "Message options";
+        tools.appendChild(more);
       }
       bubble.appendChild(tools);
       body.appendChild(bubble);
@@ -1173,22 +1471,81 @@
     document.getElementById("thw-social-input").focus();
   }
 
+  /* The typing limit.
+   *
+   * A typing indicator is a small thing that can be made to cost a great
+   * deal. It used to be sent once at the start of a burst and once when it
+   * stopped - which was cheap, but it meant the indicator on the other end
+   * went dark after three seconds even though the person was still typing,
+   * so it was both wrong and short-lived.
+   *
+   * So it is repeated while the typing continues, and it is bounded:
+   *
+   *   - at most TYPING_LIMIT events a minute for the conversation, so a
+   *     long message costs a bounded number of requests rather than one
+   *     every couple of seconds for as long as somebody is typing;
+   *   - the indicator on the other end goes away on its own, so a person
+   *     who closes the tab mid-word does not leave somebody looking at
+   *     "is typing…" for ever.
+   *
+   * The "stopped" event is never withheld: it is the one that clears the
+   * indicator, and withholding it would leave a lie on screen.
+   */
+  var TYPING_LIMIT = 24;
+  var TYPING_WINDOW_MS = 60000;
+  var TYPING_REFRESH_MS = 2500;
+  var TYPING_IDLE_MS = 1800;
+
+  /* Whether this conversation is still under its limit. */
+  function typingUnderLimit() {
+    var now = Date.now();
+    var stamps = (state.typingStamps || []).filter(function (at) { return now - at < TYPING_WINDOW_MS; });
+    state.typingStamps = stamps;
+    return stamps.length < TYPING_LIMIT;
+  }
+
+  function sendTyping(typing) {
+    if (!state.conversation) return;
+    if (typing) {
+      /* Under the limit, the event is counted and sent. Over it, it is
+         not sent - and not counted either, so the window can recover. */
+      if (!typingUnderLimit()) return;
+      state.typingStamps.push(Date.now());
+    }
+    api("/conversations/" + encodeURIComponent(state.conversation.id) + "/typing", {
+      method: "POST", body: { typing: typing }
+    }).catch(function () {});
+  }
+
   function scheduleTyping() {
     if (!state.conversation || state.blocked) return;
     clearTimeout(state.typingTimer);
     if (!state.typingStarted) {
       state.typingStarted = true;
-      api("/conversations/" + encodeURIComponent(state.conversation.id) + "/typing", {
-        method: "POST", body: { typing: true }
-      }).catch(function () {});
+      sendTyping(true);
     }
+    /* The "still typing" repeat. It runs while the person keeps typing and
+       stops when they stop - and it is bounded by the limit above. */
+    state.typingRefresh = setTimeout(function () {
+      if (!state.typingStarted || !state.conversation) return;
+      sendTyping(true);
+      scheduleTypingRefresh();
+    }, TYPING_REFRESH_MS);
+    /* And the stop, once the typing stops. */
     state.typingTimer = setTimeout(function () {
       state.typingStarted = false;
-      if (!state.conversation) return;
-      api("/conversations/" + encodeURIComponent(state.conversation.id) + "/typing", {
-        method: "POST", body: { typing: false }
-      }).catch(function () {});
-    }, 1800);
+      clearTimeout(state.typingRefresh);
+      sendTyping(false);
+    }, TYPING_IDLE_MS);
+  }
+
+  function scheduleTypingRefresh() {
+    if (!state.typingStarted || !state.conversation) return;
+    state.typingRefresh = setTimeout(function () {
+      if (!state.typingStarted || !state.conversation) return;
+      sendTyping(true);
+      scheduleTypingRefresh();
+    }, TYPING_REFRESH_MS);
   }
 
   function sendMessage(event) {
@@ -1262,12 +1619,36 @@
     var uid = node.dataset.uid;
     var requestId = node.dataset.requestId;
     var messageId = node.dataset.messageId;
+    /* The menu closes when something in it is chosen. The click that chose
+       it is still on its way, and the menu would otherwise stay open over
+       a message that has just been reacted to or reported. */
+    closeMessageMenu();
     if (action === "noop") return;
+    if (action === "toggle-friends") {
+      /* Folding the friends list away, and back again.
+         *
+         * The choice is remembered, because a panel that forgets it every
+         * time it is opened is a control that has to be set every time it
+         * is opened - which is how it stops being used.
+         *
+         * On a phone the control is not there at all: the list is the
+         * panel, and there is nothing behind it to give the space to. */
+      state.friendsCollapsed = !state.friendsCollapsed;
+      try { localStorage.setItem("thwSocialFriendsCollapsed", state.friendsCollapsed ? "1" : "0"); } catch (e) {}
+      applyFriendsCollapse();
+      return;
+    }
     if (action === "mark-all-read") {
       /* Each conversation has its own read endpoint, so this walks them rather
          than inventing a bulk one that does not exist. Sequential so a failure
          part-way leaves a truthful count instead of a half-applied lie. */
       var unreadOnes = (state.boot && state.boot.conversations || []).filter(function (c) { return Number(c.unread) > 0; });
+      /* Nothing to mark. The button is always there now, so it has to say
+         so rather than doing nothing at all. */
+      if (!unreadOnes.length) {
+        showStatus("There is nothing to mark as read.");
+        return;
+      }
       var chain = unreadOnes.reduce(function (p, c) {
         return p.then(function () {
           return api("/conversations/" + encodeURIComponent(c.id) + "/read", { method: "POST", body: {} }).catch(function () {});
@@ -1287,12 +1668,35 @@
       return;
     }
     if (action === "copy-message") {
-      var target = state.messages.find(function (m) { return m.id === messageId; });
+      var target = state.messages.find(function (m) { return String(m.id) === String(messageId); });
       if (!target) return;
       var done = function () { showStatus("Message copied."); };
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(String(target.body || "")).then(done, function () { showStatus("Could not copy that message.", "error"); });
       } else done();
+      return;
+    }
+    if (action === "message-menu") {
+      /* The menu opens where the button is, so a touch does not have to guess
+         where the pointer was. */
+      var menuTarget = state.messages.find(function (m) { return String(m.id) === String(messageId); });
+      if (!menuTarget) return;
+      var anchor = node.getBoundingClientRect();
+      closeGrammarResult();
+      openMessageMenu(menuTarget, anchor.left, anchor.bottom + 4);
+      return;
+    }
+    if (action === "grammar-check") {
+      var grammarTarget = state.messages.find(function (m) { return String(m.id) === String(messageId); });
+      if (!grammarTarget) return;
+      var body = String(grammarTarget.body || "");
+      var suggestions = [];
+      /* The check runs here, in the page. Nothing is sent anywhere to be
+         checked - there is no service to send it to. */
+      if (window.THWGrammar && typeof window.THWGrammar.check === "function") {
+        try { suggestions = window.THWGrammar.check(body); } catch (e) { suggestions = []; }
+      }
+      openGrammarResult(grammarTarget, suggestions);
       return;
     }
     if (action === "retry") {

@@ -1,6 +1,10 @@
 (function(){
   var defaults = {
-    keyboardShortcuts: true
+    keyboardShortcuts: true,
+    /* The cover gradients. On by default - they are how the site has
+       always looked - and turned off they take the gradients off every
+       cover and leave the colour. */
+    coverGradients: true
   };
   var storageKey = 'wrldPlayerSettings';
   var settings = {};
@@ -236,12 +240,37 @@
       lockScroll();
       var kbToggle = document.getElementById('ps-keyboard-toggle');
       if(kbToggle) kbToggle.checked = get('keyboardShortcuts');
+      var cgToggle = document.getElementById('ps-cover-gradients-toggle');
+      if(cgToggle) cgToggle.checked = coverGradientsOn();
       applyDrpGate();
     } else {
       overlay.classList.remove('open');
       unlockScroll();
     }
   }
+  /* The cover gradients. */
+  function coverGradientsOn(){ return get('coverGradients') !== false; }
+  /* Turning them on or off redraws the covers. */
+  function applyCoverGradients(){
+    var on = coverGradientsOn();
+    try { document.documentElement.classList.toggle('thw-no-cover-gradients', !on); } catch(e){}
+    /* The memoised gradients are stale now. */
+    try { if (typeof window.__thwClearCoverMemo === 'function') window.__thwClearCoverMemo(); } catch(e){}
+    /* And everything that draws a cover is drawn again. */
+    ['renderQueueUI', 'renderQueueDropdown', 'renderPlaylistUI', 'renderCustomPlaylistsUI', 'renderSidebarPlaylists', 'renderHubPlaylists', 'renderArtistPanel'].forEach(function (name) {
+      try { if (typeof window[name] === 'function') window[name](); } catch(e){}
+    });
+    /* The title in the player. */
+    try {
+      var title = document.getElementById('track-title');
+      if (title && typeof getCoverGradientStyle === 'function' && typeof trackList !== 'undefined') {
+        var track = trackList[currentTrackIndex];
+        if (track) title.setAttribute('style', getCoverGradientStyle(track.cover || 'Juice-WRLD.png'));
+      }
+    } catch(e){}
+  }
+  window.__thwApplyCoverGradients = applyCoverGradients;
+
   window.togglePlayerSettings = togglePlayerSettings;
   window.__togglePS = togglePlayerSettings;
 
@@ -295,6 +324,13 @@
     var kbSync = document.getElementById('ps-keyboard-toggle');
     if(kbSync) kbSync.checked = get('keyboardShortcuts');
 
+    /* The cover gradients are applied from the first paint, for the same
+       reason: the stored setting has to be what the page looks like before
+       anybody touches anything. */
+    var cgSync = document.getElementById('ps-cover-gradients-toggle');
+    if(cgSync) cgSync.checked = coverGradientsOn();
+    try { applyCoverGradients(); } catch(e){}
+
     var cog = document.getElementById('player-settings-cog');
     if(cog) cog.addEventListener('click', function(){ window.togglePlayerSettings(); });
 
@@ -318,6 +354,19 @@
        thwShortcutsOffToast below, which is what script.js calls when a playback
        key is pressed while the shortcuts are off. */
     if(kbToggle) kbToggle.addEventListener('change', function(){ set('keyboardShortcuts', this.checked); });
+
+    /* The cover gradients.
+       *
+       * Turning them off takes the gradient off every cover and leaves the
+       * colour, so the covers still look like themselves - they just stop
+       * being gradients. The covers are drawn again straight away, because
+       * a setting that only takes effect on the next page load is a setting
+       * nobody believes. */
+    var cgToggle = document.getElementById('ps-cover-gradients-toggle');
+    if(cgToggle) cgToggle.addEventListener('change', function(){
+      set('coverGradients', this.checked);
+      applyCoverGradients();
+    });
 
     var drpToggle = document.getElementById('ps-drp-toggle');
     if(drpToggle){

@@ -230,7 +230,10 @@
         .then(function (d) { return d && d.ok ? d : null; });
     };
     (take ? take("drops", ask) : ask()).then(function (d) {
-      if (!d || d.ok !== true) return;
+      /* Only an outright failure stops it. The same shape from the bootstrap
+         and from the endpoint, and a section that disappears because one
+         field was missing is worse than one that draws a little too much. */
+      if (!d || d.ok === false) return;
       var sec = mount(d);
       if (refresh) fill(sec, d);
     });

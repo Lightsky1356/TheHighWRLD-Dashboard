@@ -111,6 +111,15 @@
 
   /* Cover gradients are static, so the accent/gradient lookups (2 regex hits
    * each) are memoized instead of re-running for every rendered row. */
+  /* The memo holds the gradient as it was when it was first looked up, so
+     a change to the Cover Gradients setting has to drop it - otherwise
+     the rows keep the gradient they were given the first time they were
+     drawn, and the setting appears to do nothing until the page is
+     reloaded. */
+  window.__thwClearCoverMemo = function () {
+    for (var k in coverMemo) delete coverMemo[k];
+  };
+
   function accentFor(cover) {
     var m = coverMemo[cover];
     if (!m) m = coverMemo[cover] = { accent: getGradientAccentColor(cover), gradient: getCoverGradientStyle(cover) };

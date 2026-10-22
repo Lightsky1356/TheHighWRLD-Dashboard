@@ -1776,6 +1776,207 @@ function safeDecode4(v) {
   }
 }
 
+/* ---------------------------------------------------------------------------
+   The friend activity feed, the message menu and the rest of this batch
+
+   These are the things a static check can say something useful about:
+
+     - that the grammar check never sends the message anywhere. It is a
+       check of what somebody is about to send, so the one thing it must
+       never do is send it.
+     - that the sharing settings are off by default. Everything about the
+       feed is worthless if a new account is in everybody's feed before
+       anybody has decided it should be.
+     - that the message menu holds what it used to hold inline, so moving
+       the buttons did not lose them.
+     - that the reactions in the menu are the ones the server accepts.
+--------------------------------------------------------------------------- */
+{
+  const socialPanel = readFileSync(join(ROOT, "social-panel.js"), "utf8");
+  const grammar = readFileSync(join(ROOT, "grammar-check.js"), "utf8");
+  const socialApi = readFileSync(join(ROOT, "functions/api/social/[[path]].js"), "utf8");
+  const activityApi = readFileSync(join(ROOT, "functions/api/activity.js"), "utf8");
+  const playerSettings = readFileSync(join(ROOT, "player-settings.js"), "utf8");
+  const script = readFileSync(join(ROOT, "script.js"), "utf8");
+  const migration49 = readFileSync(join(ROOT, "migrations/0049_friend_activity.sql"), "utf8");
+
+  /* The grammar check runs in the page. Nothing about it may reach the
+     network - a message is about to be sent to the server anyway, but the
+     check itself must not hand it to anything else. */
+  if (/\bfetch\s*\(/.test(grammar) || /XMLHttpRequest/.test(grammar) || /navigator\.sendBeacon/.test(grammar)) {
+    structureFail("the grammar check sends the message somewhere");
+  } else if (!/function check\(text\)/.test(grammar)) {
+    structureFail("the grammar check has no check to speak of");
+  } else {
+    structureOk("the grammar check runs in the page and sends nothing anywhere");
+  }
+
+  /* The sharing settings are off by default. */
+  if (!/activity_listening TEXT NOT NULL DEFAULT 'nobody'/.test(migration49)) {
+    structureFail("listening activity is not off by default");
+  } else if (!/activity_playlists TEXT NOT NULL DEFAULT 'nobody'/.test(migration49)) {
+    structureFail("playlist activity is not off by default");
+  } else if (!/activity_community TEXT NOT NULL DEFAULT 'nobody'/.test(migration49)) {
+    structureFail("community activity is not off by default");
+  } else if (!/|| "nobody"/.test(activityApi)) {
+    structureFail("a missing settings row does not mean off");
+  } else {
+    structureOk("the friend activity settings are off until they are turned on");
+  }
+
+  /* The server decides who may see a row, on every read. */
+  if (!/async function canSee/.test(activityApi)) {
+    structureFail("the feed does not check who may see a row");
+  } else if (!/blockedEitherWay/.test(activityApi)) {
+    structureFail("the feed does not exclude somebody who has blocked the actor");
+  } else if (!/visibility !== "friends"/.test(activityApi)) {
+    structureFail("the feed does not honour the sharing setting when it reads");
+  } else if (!/a.expires_at > ?/.test(activityApi)) {
+    structureFail("an expired listening event is still shown");
+  } else {
+    structureOk("the feed checks the rules on every read");
+  }
+
+  /* The message menu holds what used to be inline. */
+  if (!/function openMessageMenu/.test(socialPanel)) {
+    structureFail("there is no message menu");
+  } else if (!/add\("Reply", "reply"\)/.test(socialPanel)) {
+    structureFail("the message menu has lost Reply");
+  } else if (!/add\("Copy", "copy-message"\)/.test(socialPanel)) {
+    structureFail("the message menu has lost Copy");
+  } else if (!/add\("Grammar check", "grammar-check"\)/.test(socialPanel)) {
+    structureFail("the message menu has lost the grammar check");
+  } else if (!/add\("Report", "report-message"\)/.test(socialPanel)) {
+    structureFail("the message menu has lost Report");
+  } else {
+    structureOk("the message menu holds Reply, Copy, the grammar check and Report");
+  }
+
+  /* The menu's reactions are the ones the server accepts. */
+  const serverEmojis = (/const EMOJIS = (\[[^\]]*\])/.exec(socialApi) || [, "[]"])[1];
+  const panelEmojis = (/var REACTIONS = (\[[^\]]*\])/.exec(socialPanel) || [, "[]"])[1];
+  const serverSet = new Set((serverEmojis.match(/"[^"]+"/g) || []));
+  const panelSet = new Set((panelEmojis.match(/"[^"]+"/g) || []));
+  if (!serverSet.size) {
+    structureFail("the server's reaction list could not be read");
+  } else if (serverSet.size !== panelSet.size) {
+    structureFail("the panel offers " + panelSet.size + " reactions and the server accepts " + serverSet.size);
+  } else {
+    let same = true;
+    serverSet.forEach((e) => { if (!panelSet.has(e)) same = false; });
+    if (!same) {
+      structureFail("the panel offers a reaction the server will refuse");
+    } else {
+      structureOk("the panel offers every reaction the server accepts");
+    }
+  }
+
+  /* The buttons that moved into the menu are not on the message any more. */
+  const tools = socialPanel.slice(
+    socialPanel.indexOf("function renderMessages"),
+    socialPanel.indexOf("function renderMessages") + 6000
+  );
+  if (/dataset\.action = "copy-message"/.test(tools)) {
+    structureFail("Copy is back on the message as well as in the menu");
+  } else if (!/dataset\.action = "message-menu"/.test(tools)) {
+    structureFail("there is no way to open the message menu from a message");
+  } else {
+    structureOk("the message tools live in the menu, and there is a way in");
+  }
+
+  /* The message id on a button is a string and the id in the message is a
+     number, so they have to be compared as strings. Comparing them with
+     === never matches, and the action quietly did nothing - which is what
+     Copy did for as long as it was there. */
+  if (/m\.id === messageId/.test(socialPanel)) {
+    structureFail("a message is looked up by comparing a number with a string, so it is never found");
+  } else if (!/String\(m\.id\) === String\(messageId\)/.test(socialPanel)) {
+    structureFail("the message is not looked up at all");
+  } else {
+    structureOk("a message is looked up by its id, as a string");
+  }
+
+  /* The typing indicator is bounded. */
+  if (!/TYPING_LIMIT/.test(socialPanel)) {
+    structureFail("the typing indicator has no limit");
+  } else if (!/TYPING_REFRESH_MS/.test(socialPanel)) {
+    structureFail("the typing indicator is not repeated while the typing continues");
+  } else {
+    structureOk("the typing indicator is bounded, and it is repeated while it lasts");
+  }
+
+  /* The status indicator. */
+  if (!/function statusDot/.test(socialPanel)) {
+    structureFail("there is no status indicator");
+  } else if (!/thw-social-status--online/.test(readFileSync(join(ROOT, "social.css"), "utf8"))) {
+    structureFail("the status indicator has no style");
+  } else {
+    structureOk("the status indicator is there, in both tabs");
+  }
+
+  /* The foldable friends list is a desktop control. */
+  if (!/data-action="toggle-friends"/.test(socialPanel)) {
+    structureFail("the friends list cannot be folded away");
+  } else if (!/@media \(min-width:681px\)\{\s*\.thw-social-friends-toggle\{display:inline-flex\}/.test(readFileSync(join(ROOT, "social.css"), "utf8"))) {
+    structureFail("the fold control is not a desktop control");
+  } else {
+    structureOk("the friends list folds away, on a desktop only");
+  }
+
+  /* The Cover Gradients setting. */
+  if (!/coverGradients: true/.test(playerSettings)) {
+    structureFail("the cover gradients are not on by default");
+  } else if (!/function coverGradientsOn/.test(script)) {
+    structureFail("the covers do not answer to the setting");
+  } else if (!/function getCoverGradientStyle/.test(script)) {
+    structureFail("there is no cover gradient style to answer to it");
+  } else if (!/ps-cover-gradients-toggle/.test(readFileSync(join(ROOT, "index.html"), "utf8"))) {
+    structureFail("the Cover Gradients setting has no control");
+  } else {
+    structureOk("the Cover Gradients setting is on by default, and the covers answer to it");
+  }
+
+  /* The "mark all read" button says what it did, and the cache it reads from
+     is marked too - otherwise the next poll brings the unread rows back and
+     the button looks like it did nothing. */
+  if (!/function markCachedNotificationsRead/.test(readFileSync(join(ROOT, "account.js"), "utf8"))) {
+    structureFail("the mark all read button does not mark the cached rows, so the next poll undoes it");
+  } else {
+    structureOk("the mark all read button marks the cache as well as the screen");
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The bootstrap answers in the same shapes as the endpoints it stands in
+
+   The bootstrap was asked for the answers the endpoints give, so that one
+   request could carry several of them. But the shapes drifted: the
+   bootstrap handed over a bare list of trending rows and a drops object
+   without its "ok", and the clients - which look for that "ok" before they
+   draw anything - threw both sections away.
+
+   So the trending strip and the Drops & Events section were simply not on
+   the page, and nothing said why. The gate below is the shape check, and
+   the clients were made to read either shape rather than throw the section
+   away over it. */
+{
+  const bootstrap = readFileSync(join(ROOT, "functions/api/bootstrap.js"), "utf8");
+  const trending = readFileSync(join(ROOT, "trending.js"), "utf8");
+  const drops = readFileSync(join(ROOT, "drops.js"), "utf8");
+
+  if (!/trending: \{ ok: true, days: 7, trending, total_listens: totalListens \}/.test(bootstrap)) {
+    structureFail("the bootstrap does not answer with the trending endpoint's shape");
+  } else if (!/drops = \{ ok: true, live, upcoming, past \}/.test(bootstrap)) {
+    structureFail("the bootstrap does not answer with the drops endpoint's shape");
+  } else if (!/Array\.isArray\(d\)/.test(trending)) {
+    structureFail("the trending section is thrown away over a shape");
+  } else if (!/d\.ok === false/.test(drops)) {
+    structureFail("the drops section is thrown away over a shape");
+  } else {
+    structureOk("the bootstrap answers in the shapes the endpoints answer in");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

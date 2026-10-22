@@ -735,6 +735,48 @@ function compactProfileViewHtml(d) {
   function commNotifReadAll() {
     try { fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ action: "readAll" }) }).catch(function () {}); } catch (e) {}
   }
+  /* Mark the cached rows as read.
+   *
+   * The bell draws from two caches - the account's own notifications and the
+   * community ones - and both have to be told, or the next poll undoes what
+   * the button just did.
+   *
+   * The bootstrap cache is dropped as well. It holds the same community
+   * notifications, and it is what the next poll reads from, so leaving it
+   * alone would mean the next refresh asks a question whose answer was
+   * decided before the button was pressed. */
+  function markCachedNotificationsRead() {
+    if (_data && Array.isArray(_data.notifications)) {
+      for (var i = 0; i < _data.notifications.length; i++) _data.notifications[i].read = 1;
+      _data.unread = 0;
+    }
+    if (Array.isArray(window.__commNotifs)) {
+      for (var j = 0; j < window.__commNotifs.length; j++) window.__commNotifs[j].read = true;
+    }
+    try {
+      if (window.THWBootstrap && typeof window.THWBootstrap.invalidate === "function") {
+        window.THWBootstrap.invalidate();
+      }
+    } catch (e) {}
+  }
+  /* Mark one cached notification as read. */
+  function markCachedNotifRead(nid) {
+    var key = String(nid);
+    if (_data && Array.isArray(_data.notifications)) {
+      for (var i = 0; i < _data.notifications.length; i++) {
+        if (String(_data.notifications[i].id) === key) {
+          _data.notifications[i].read = 1;
+          if (_data.unread > 0) _data.unread -= 1;
+        }
+      }
+    }
+    if (Array.isArray(window.__commNotifs)) {
+      for (var j = 0; j < window.__commNotifs.length; j++) {
+        if (String(window.__commNotifs[j].id) === key) window.__commNotifs[j].read = true;
+      }
+    }
+  }
+
   function applyNotifications() {
     var wrap = document.getElementById("nav-notif-wrap");
     if (!wrap) return;
@@ -825,6 +867,10 @@ function compactProfileViewHtml(d) {
       if (!row.classList.contains("read")) {
         row.classList.add("read");
         row.classList.remove("unread");
+        /* The cached copy has to be marked too, or the next poll draws the
+           row as unread again - the same reason the "mark all read" button
+           needed it. */
+        markCachedNotifRead(nid);
         if (post) commNotifRead(nid);
         else api({ action: "markNotifRead", id: nid });
       }
@@ -855,6 +901,19 @@ function compactProfileViewHtml(d) {
         var dot = rows[ri].querySelector(".unread-dot");
         if (dot && dot.parentNode) dot.parentNode.removeChild(dot);
       }
+
+      /* The cached rows have to be marked too.
+       *
+       * This is why the button looked like it did nothing. The rows on screen
+       * were marked, and the server was told - but the cached copies still
+       * said "unread", so the next poll brought the unread dots and the
+       * badge straight back, a few seconds later. The button appeared not to
+       * work because it did work, and then undid itself.
+       *
+       * So the cache is marked here, and the bootstrap cache is dropped, so
+       * the next fetch is the truth rather than the answer to a question
+       * asked before the button was pressed. */
+      markCachedNotificationsRead();
 
       /* Server side only with a session - both calls 401 without one. */
       if (signedIn()) {

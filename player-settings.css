@@ -1693,3 +1693,11 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
 }
 
 .queue-head-btn:focus-visible,.queue-act:focus-visible,.queue-item-check:focus-visible,#queue-dropdown-clear:focus-visible{outline:2px solid rgba(34,211,238,.85);outline-offset:2px;border-radius:8px}
+/* The Cover Gradients setting is a desktop control.
+ *
+ * The player settings panel is a desktop panel, and this one is drawn only
+ * on a desktop - a narrow window has no room for it, and a setting that
+ * cannot be seen is not a setting. */
+@media (max-width:680px){
+.psp-row-desktop-only{display:none!important}
+}
