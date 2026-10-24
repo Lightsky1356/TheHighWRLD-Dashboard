@@ -161,7 +161,7 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v29";
+    css.href = "/social.css?v=thw-v33";
     document.head.appendChild(css);
 
     var root = el("div");
@@ -177,6 +177,7 @@
             '<span class="thw-social-head-actions">' +
             '<button class="thw-social-rules-link" id="thw-social-rules-link" type="button" aria-haspopup="dialog" title="House rules"><i class="fas fa-shield-halved" aria-hidden="true"></i><span>Rules</span></button>' +
             '<button class="thw-social-settings-link" id="thw-social-settings-link" type="button" aria-controls="thw-social-settings-view" aria-pressed="false" title="Friends &amp; Messaging settings"><i class="fas fa-gear" aria-hidden="true"></i><span>Settings</span></button>' +
+            '<button class="thw-social-expand" id="thw-social-expand" data-action="toggle-panel-size" type="button" aria-pressed="false" aria-controls="thw-social-panel" title="Make the panel bigger"><i class="fas fa-expand" aria-hidden="true"></i></button>' +
             '<button class="thw-social-close" id="thw-social-close" type="button" aria-label="Close Friends and Messages"><i class="fas fa-xmark" aria-hidden="true"></i></button></span></header>' +
           '<nav class="thw-social-tabs" role="tablist" aria-label="Social sections">' +
             '<button class="thw-social-tab" type="button" role="tab" data-tab="friends" aria-selected="true">Friends</button>' +
@@ -226,6 +227,8 @@
 
     loadFriendsCollapse();
     applyFriendsCollapse();
+    loadPanelSize();
+    applyPanelSize();
     document.getElementById("thw-social-fab").addEventListener("click", function () { setOpen(!state.open); });
     document.getElementById("thw-social-close").addEventListener("click", function () { setOpen(false); });
     root.addEventListener("click", onClick);
@@ -266,20 +269,6 @@
       if (event.target === event.currentTarget) closeRules();
     });
     document.querySelector(".thw-social-rules-close").addEventListener("click", closeRules);
-    /* The Community menu is suppressed while this panel is open, so a click on
-       its trigger would otherwise do nothing at all - the menu would just fail
-       to appear with no explanation. Intercept it and say why instead.
-
-       Capture phase, because the trigger carries an inline onclick that would
-       otherwise run first and re-open the menu behind the suppression. */
-    document.addEventListener("click", function (event) {
-      if (!state.open) return;
-      var trigger = event.target && event.target.closest && event.target.closest("#page-nav-wanted");
-      if (!trigger) return;
-      event.preventDefault();
-      event.stopPropagation();
-      notifyCommunityMenuBlocked();
-    }, true);
     document.addEventListener("keydown", function (event) {
       if (!state.open) return;
       /* The rules dialog sits above the panel, so Escape unwinds one level at a
@@ -292,12 +281,13 @@
         else setOpen(false);
         return;
       }
-      /* Keep Tab inside the dialog while it is open. The panel was marked
-         aria-modal="false", so nothing stopped focus walking out into the page
-         behind it and leaving keyboard users stranded. Focus still returns to
-         the trigger on close, and Escape always works, so this is a loop and not
-         a cage. */
-      if (event.key !== "Tab") return;
+      /* Keep Tab inside the dialog while the panel is modal. On a phone the page
+         behind is inert, so letting focus walk out would strand a keyboard user
+         on targets that answer nothing. On desktop the panel is a side sheet and
+         the nav and player behind it are live - a loop that will not release
+         focus is then a cage, and the user cannot Tab to the WRLD Player at all.
+         Focus still returns to the trigger on close, and Escape always works. */
+      if (event.key !== "Tab" || !panelIsModal()) return;
       var panel = document.getElementById("thw-social-panel");
       if (!panel) return;
       var focusable = panel.querySelectorAll('a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])');
@@ -361,12 +351,22 @@
     }
   }
 
-  /* The panel only freezes the page on a phone. On desktop it is a side sheet
-     sitting beside the content, so locking there would take away the very page
-     the user opened it from. 680px is the width social.css uses to switch the
-     panel to full-screen. */
-  function panelLocksScroll() {
+  /* The panel covers the whole viewport on a phone, and only there. 680px is
+     the width social.css uses to switch it to full-screen.
+
+     Everything that treats the panel as modal hangs off this one width: the
+     scroll lock, the inert background, the Tab loop and aria-modal. On desktop
+     the panel is a side sheet beside the content, so taking the page behind it
+     away is not a modal at all - it just stops the nav and the WRLD Player from
+     working while the panel is open, which is what was happening. Every link in
+     the nav and every control on the player was inert: clicks landed nowhere. */
+  function panelIsModal() {
     return window.matchMedia("(max-width: 680px)").matches;
+  }
+
+  /* The panel only freezes the page where the panel is actually covering it. */
+  function panelLocksScroll() {
+    return panelIsModal();
   }
 
   /* Keeps the panel's hold in step with the panel across a resize or rotation,
@@ -381,17 +381,29 @@
 
   /* Rotating a phone or dragging a window across 680px changes whether the panel
      should be holding the page still. Re-check rather than locking on open and
-     leaving a stranded hold behind. */
+     leaving a stranded hold behind.
+
+     The same crossing decides whether the background is inert and whether the
+     Community menu has room beside the panel, so all three settle here - a
+     rotation to landscape must not strand an inert <main> on a wide window. */
   window.addEventListener("resize", function () {
     syncPanelScrollLock();
+    syncPanelModality();
+    syncCommMenuClearance();
   });
 
-  /* Make the rest of the document inert while the panel is open.
+  /* Make the rest of the document inert while the panel is covering it.
    *
    * aria-modal="true" is only honest if the background really is
    * unavailable. The `inert` attribute does that in one step: it removes the
    * subtree from the tab order and the accessibility tree and blocks pointer
    * interaction, which a manual aria-hidden sweep would not do.
+   *
+   * Only where the panel is modal. On desktop the panel sits beside the page,
+   * so <nav> and <main> have to stay live: they are what the user opened the
+   * panel alongside, and inerting them is what made the nav and the WRLD Player
+   * dead to every click while it was open. Nothing behind an open side sheet is
+   * hidden, so nothing behind it may be taken away.
    *
    * Only direct children of <body> are marked, and the panel's own root is
    * skipped so the panel never inerting itself. Iterates a copy because
@@ -407,6 +419,52 @@
     });
   }
 
+  /* Everything that depends on the panel being modal, settled in one place, so
+     opening, closing and crossing 680px all resolve it the same way. aria-modal
+     is set from here rather than fixed in the markup because it describes a
+     moment: true over a background that is genuinely unavailable, false over a
+     background the reader is welcome to walk into. */
+  function syncPanelModality() {
+    var modal = !!state.open && panelIsModal();
+    setBackgroundInert(modal);
+    var panel = document.getElementById("thw-social-panel");
+    if (panel) panel.setAttribute("aria-modal", modal ? "true" : "false");
+  }
+
+  /* The Community menu drops out of the middle of the nav; the panel is a sheet
+     on the right of the window. How much of them collide depends on both
+     widths, so it is not a decision one rule can make: at 1904px they are 280px
+     apart, at 1440px 51px apart, and at 1280px they cross by 29. Hiding the
+     menu outright, as this used to, took the whole nav dropdown away every time
+     the panel was open in order to dodge a collision that only happens in some
+     windows.
+
+     So it is shifted instead - by exactly the distance that clears the panel -
+     which keeps it working at every desktop width. Only horizontal position is
+     touched: the menu keeps its layout, its hover and focus behaviour, and the
+     shift is dropped the moment the panel closes. */
+  function syncCommMenuClearance() {
+    var menu = document.querySelector(".nav-comm-menu");
+    if (!menu) return;
+    var panel = document.getElementById("thw-social-panel");
+    var shift = 0;
+    if (state.open && panel && !panelIsModal()) {
+      /* Measured while the menu is still hidden: visibility:hidden keeps it in
+         layout, so this rect is the real one and nothing has to flash open to
+         be measured. 12px is the gutter it gets to keep beside the panel. */
+      var m = menu.getBoundingClientRect();
+      var p = panel.getBoundingClientRect();
+      if (m.width && p.width) {
+        shift = m.right - (p.left - 12);
+        if (shift < 0) shift = 0;
+        /* Never slide it off the left edge to make room - a menu that is half
+           under the panel beats one that is half off the screen. */
+        if (shift > 0 && m.left - shift < 8) shift = Math.max(0, m.left - 8);
+      }
+    }
+    menu.style.marginLeft = shift ? -Math.round(shift) + "px" : "";
+  }
+
   function setOpen(open) {
     var overlay = document.getElementById("thw-social-overlay");
     var fab = document.getElementById("thw-social-fab");
@@ -414,17 +472,18 @@
     if (open && !state.open) state.focusBeforeOpen = document.activeElement;
     state.open = !!open;
     overlay.hidden = !state.open;
-    setBackgroundInert(!!state.open);
+    syncPanelModality();
+    syncCommMenuClearance();
     fab.setAttribute("aria-expanded", state.open ? "true" : "false");
     /* Rules lives inside this panel, so closing the panel closes Rules with it.
        closeRules() drops its own lock hold; without this the count would be left
        one too high and the page would stay frozen after the panel is gone. */
     if (!state.open && state.rulesOpen) closeRules();
     if (state.open) {
-      /* The Community menu is suppressed while this panel is open (see
-         social.css), so closing it here too keeps the click path and the hover
-         path consistent - otherwise the menu would vanish on one and survive on
-         the other. Attempting to use it raises a toast instead. */
+      /* A Community menu left hovering would sit straight over the panel the
+         moment focus moved into it, so it is closed once on open. It is not
+         blocked after that on desktop: it reopens shifted clear of the panel
+         (syncCommMenuClearance), so closing here costs nothing. */
       if (typeof closeCommMenu === "function") { try { closeCommMenu(); } catch (e) {} }
       refresh();
       document.getElementById("thw-social-close").focus();
@@ -735,6 +794,24 @@
     }
   }
 
+  /* Whether the panel is the bigger size, remembered between visits. */
+  function loadPanelSize() {
+    try {
+      var wide = localStorage.getItem("thwSocialWide") === "1";
+      document.documentElement.classList.toggle("thw-social-wide", wide);
+    } catch (e) {}
+  }
+
+  function applyPanelSize() {
+    var btn = document.getElementById("thw-social-expand");
+    if (!btn) return;
+    var wide = document.documentElement.classList.contains("thw-social-wide");
+    btn.setAttribute("aria-pressed", wide ? "true" : "false");
+    btn.title = wide ? "Make the panel the usual size" : "Make the panel bigger";
+    var glyph = btn.querySelector("i");
+    if (glyph) glyph.className = wide ? "fas fa-compress" : "fas fa-expand";
+  }
+
   /* Whether the list is folded away, remembered between visits. */
   function loadFriendsCollapse() {
     try { state.friendsCollapsed = localStorage.getItem("thwSocialFriendsCollapsed") === "1"; } catch (e) { state.friendsCollapsed = false; }
@@ -866,45 +943,6 @@
    a moderation safety net that does not exist. The reason lists mirror
    reports.js (USER_REASONS / MESSAGE_REASONS) so people can only be pointed at
    options that genuinely exist. */
-  /* Explains why the Community menu will not open.
-
-     This is informational, not a failure - the click did exactly what it was
-     supposed to, the menu is simply unavailable while this panel is up. So it
-     uses the toast's neutral (blue) frame rather than the red error one, which
-     would have read as "something broke".
-
-     showToastSimple is preferred when simple-toast.js has loaded; the older
-     showToast is kept as a fallback because both are guarded - this file also
-     loads on pages where neither may have run yet. */
-  var menuToastTimer = null;
-  function notifyCommunityMenuBlocked() {
-    var message = "Close Friends & Messages to use the Community menu";
-    /* Throttle: holding the trigger down would otherwise stack a toast per
-       click and bury the screen in duplicates. */
-    if (menuToastTimer) return;
-    menuToastTimer = setTimeout(function () { menuToastTimer = null; }, 1200);
-
-    if (typeof window.showToastSimple === "function") {
-      window.showToastSimple(message, { type: "info", duration: 2600 });
-      return;
-    }
-    if (typeof window.showToast === "function") {
-      /* No "error" type here on purpose - see the note above. */
-      window.showToast(message);
-      return;
-    }
-    /* Last resort so the user is never left with a dead click. */
-    var node = document.createElement("div");
-    node.className = "player-toast toast-default";
-    node.textContent = message;
-    document.body.appendChild(node);
-    requestAnimationFrame(function () { node.style.opacity = "1"; });
-    setTimeout(function () {
-      node.style.opacity = "0";
-      setTimeout(function () { node.remove(); }, 400);
-    }, 2600);
-  }
-
   var RULES = [
     ["Be decent", "No harassment, bullying, threats or targeted abuse. You would rather not receive what you would not send."],
     ["No spam or scams", "No unsolicited links, fake giveaways, or requests for money, codes or gift cards."],
@@ -1116,12 +1154,19 @@
       add("Report", "report-message");
     }
 
-    root.appendChild(menu);
-
-    /* Placed where the pointer was, and kept inside the panel.
+    /* On the page, and not inside the panel's root.
      *
-     * A menu that hangs off the edge of the panel is a menu whose half the
-     * items cannot be reached, so it is measured and then nudged back in. */
+     * The root is a positioned box with no height - it holds the button and
+     * the overlay, and the overlay is fixed - so a menu put inside it and
+     * positioned absolutely is placed against the bottom of the document,
+     * about two thousand pixels below where the panel is. The menu was
+     * opening. It was just opening where nobody could see it, which is the
+     * same thing as not opening at all.
+     *
+     * So it is put on the page and positioned against the page, and it is
+     * kept inside the panel - a menu that hangs off the edge of the panel is
+     * a menu whose half the items cannot be reached. */
+    document.body.appendChild(menu);
     var box = menu.getBoundingClientRect();
     var bounds = panel.getBoundingClientRect();
     var left = x;
@@ -1130,8 +1175,18 @@
     if (left < bounds.left + 8) left = bounds.left + 8;
     if (top + box.height > bounds.bottom - 8) top = bounds.bottom - box.height - 8;
     if (top < bounds.top + 8) top = bounds.top + 8;
-    menu.style.left = Math.round(left - bounds.left) + "px";
-    menu.style.top = Math.round(top - bounds.top) + "px";
+    menu.style.left = Math.round(left) + "px";
+    menu.style.top = Math.round(top) + "px";
+
+    /* The menu is not inside the panel's root any more, so the root's own
+       click handler does not see its buttons. It has its own. */
+    menu.addEventListener("click", function (event) {
+      var item = event.target.closest("[data-action]");
+      if (!item || !menu.contains(item)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      runAction(item);
+    });
 
     state.menuOpen = true;
     return menu;
@@ -1195,7 +1250,18 @@
       panel.appendChild(applyAll);
     }
 
-    root.appendChild(panel);
+    /* On the page, for the same reason the menu is: the panel's root is a
+       positioned box with no height, so anything placed inside it and
+       positioned absolutely lands at the bottom of the document. */
+    document.body.appendChild(panel);
+    var box = panel.getBoundingClientRect();
+    var bounds = document.getElementById("thw-social-panel");
+    var area = bounds ? bounds.getBoundingClientRect() : { left: 12, right: window.innerWidth - 12, top: 78, bottom: window.innerHeight - 20 };
+    var left = area.left + 12;
+    var top = area.bottom - box.height - 12;
+    if (top < area.top + 8) top = area.top + 8;
+    panel.style.left = Math.round(left) + "px";
+    panel.style.top = Math.round(top) + "px";
     state.grammarOpen = true;
   }
 
@@ -1624,6 +1690,28 @@
        a message that has just been reacted to or reported. */
     closeMessageMenu();
     if (action === "noop") return;
+    if (action === "toggle-panel-size") {
+      /* The panel can be made bigger, on a desktop only.
+         *
+         * The width is a variable - the player steps aside by it - so the
+         * variable is what changes, and everything that follows the panel
+         * moves with it. The choice is remembered, because a panel that
+         * forgets it every time it is opened is a control that has to be
+         * set every time it is opened. */
+      var wide = !document.documentElement.classList.contains("thw-social-wide");
+      document.documentElement.classList.toggle("thw-social-wide", wide);
+      try { localStorage.setItem("thwSocialWide", wide ? "1" : "0"); } catch (e) {}
+      var btn = document.getElementById("thw-social-expand");
+      if (btn) {
+        btn.setAttribute("aria-pressed", wide ? "true" : "false");
+        btn.title = wide ? "Make the panel the usual size" : "Make the panel bigger";
+        var glyph = btn.querySelector("i");
+        if (glyph) glyph.className = wide ? "fas fa-compress" : "fas fa-expand";
+      }
+      /* Panel width is one of the two numbers the Community menu has to clear. */
+      syncCommMenuClearance();
+      return;
+    }
     if (action === "toggle-friends") {
       /* Folding the friends list away, and back again.
          *

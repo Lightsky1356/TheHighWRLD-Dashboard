@@ -551,7 +551,7 @@ const trackList=[
   },
   {
     title: "Drown (Sessions)",
-    tag: "Drown (Pool Of My Sins) (Train Wreck) (Sessions (GB&GR))",
+    tag: "Drown (Pool Of My Sins) (Train Wreck) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Drown%20(Pool%20Of%20My%20Sins)%20(Train%20Wreck)%20(Sessions).mp3",
@@ -1263,17 +1263,6 @@ const trackList=[
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Migraine.png",
     producer: "Nick Mira",
     year: "2017"
-  },
-  {
-    title: "Militia",
-    tag: "Militia (One) (Outside) (WOD)",
-    artist: "Juice WRLD",
-    category: "leaks",
-    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Militia%20(One).mp3",
-    duration: 166,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Militia.png",
-    producer: "Pi'erre Bourne",
-    year: "2018"
   },
   {
     title: "Misery Avenue (Sessions)",
@@ -2088,6 +2077,17 @@ const trackList=[
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Tick%20Tock.png",
     producer: "Dre Moon",
     year: "2018"
+  },
+  {
+    title: "Time (Sessions)",
+    tag: "Time (Charcoal) (Sessions) (OUT)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Time%20(Charcoal)%20(Sessions)%20(OUT).mp3",
+    duration: 444,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Time.png",
+    producer: "Russell Chell & Take A Daytrip",
+    year: "2019"
   },
   {
     title: "To The Face (Sessions)",
@@ -3092,8 +3092,8 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Move The Bale (The Bale) (Sessions)",
-    tag: "Move The Bale (Sessions) (ND)",
+    title: "Move The Bale (Sessions)",
+    tag: "Move The Bale (The Bale) (Sessions) (ND)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Move%20The%20Bale%20(Sessions).mp3",
@@ -3113,18 +3113,15 @@ const trackList=[
     producer: "Nick Mira",
     year: "2018"
   },
-  /* Percs and Play Fair arrived after the rest. Neither has a producer recorded
-     anywhere we can read, so the field is left off rather than guessed - the
-     player and search both treat a missing producer as "unknown". Durations were
-     measured from the audio, and Percs' category and year come from the wrld log. */
   {
     title: "Percs",
-    tag: "Percs",
+    tag: "Percs (Operas) (Uh-Huh) (WOD)",
     artist: "Juice WRLD",
     category: "leaks",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Percs.mp3",
     duration: 177,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Percs.png",
+    producer: "Nick Mira",
     year: "2018"
   },
   {
@@ -3132,54 +3129,14 @@ const trackList=[
     tag: "Play Fair (Play) (Fair) (Sessions) (WOD)",
     artist: "Juice WRLD",
     category: "sessions",
-    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Play%20Fair%20(Sessions).mp3",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Play%20Fair%20(Play)%20(Fair)%20(Sessions)%20(WOD).mp3",
     duration: 328,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Play%20Fair.png",
     year: "2018"
   },
-  /* Royer, Smith & Wesson and The Party Never Ends arrived after the rest.
-
-     Durations were measured from the audio files themselves rather than taken
-     from the catalogue, and they disagree with it: Royer runs 3:12 here against
-     1:26 in the catalogue, and The Party Never Ends runs 12:25 against 2:20
-     released, 3:50 for v1 and 1:01 for v2. Both files are full session takes,
-     so the catalogue's lengths would have been wrong on the progress bar.
-
-     Royer's producer and era come from juicewrldapi.com - Rvssian, recorded
-     15 October 2018. It uses the WOD era artwork because the repo has no
-     Covers/Royer.png, which is how Smile and I Want It, both WOD sessions,
-     already get theirs.
-
-     The Party Never Ends is Abyss, the WOD-era demo of NO BYSTANDERS, produced
-     by Gezin and WondaGurl and recorded 14 June 2018; Genius and Audiomack agree
-     on the credit.
-
-     Smith & Wesson is in neither the catalogue nor the wrld log, but Genius does
-     credit it: producer Danny Wolf, engineered by Max Lord at a home studio in
-     Encino Hills. The year is the recorded year, matching Heart Racing, which sits
-     on a 2024 album but is dated 2019.
-
-     Its alt names come from three sources. Genius titles it "Let's Ride (Smith &
-     Wesson)", and juicewrldvault.com lists it as "Let's Ride (v1.2)" over the
-     source file "Juice Wrld - lets ride v1.2 (shoot DW).wav" - so "Let's Ride" was
-     the name on the tape, "Smith & Wesson" is what it is better known as, and the
-     DW in that filename is Danny Wolf. "Comply" and "Hollow Tips" are hook lines,
-     naming it the same way "Omen" and "Overseer" name Blood, Sweat, Tears; the
-     vault carries both in its alternateTitles and Last.fm lists them too.
-
-     No version marker, though the vault calls its copy v1.2: that runs 2:50 and
-     this file measures 3:37, so this is a longer take and calling it v1.2 would be
-     wrong.
-
-     The era is OUT, which the vault states outright on the track's own page, and
-     which is the same code juicewrldapi.com uses. The recording date is contested
-     - Genius says first previewed 22 June 2019, the vault's file record says 14
-     June, and its recording details say recorded 16 June - but every source puts
-     it in 2019, two months after Juice died, and that is all the year field
-     records. */
   {
-    title: "Royer (Sessions)",
-    tag: "Royer (Sessions) (WOD)",
+    title: "Ring Ring (Sessions)",
+    tag: "Ring Ring (Royer) (Sessions) (WOD)",
     artist: "Juice WRLD",
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Royer%20(Sessions).mp3",

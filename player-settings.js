@@ -260,12 +260,16 @@
     ['renderQueueUI', 'renderQueueDropdown', 'renderPlaylistUI', 'renderCustomPlaylistsUI', 'renderSidebarPlaylists', 'renderHubPlaylists', 'renderArtistPanel'].forEach(function (name) {
       try { if (typeof window[name] === 'function') window[name](); } catch(e){}
     });
-    /* The title in the player. */
+    /* The title, the album and the controls are drawn by the player's own
+       functions, so those are what have to be called again. The title in
+       particular is not the style helper's business - it is the title, the
+       album and the controls that go white when the gradients are off. */
     try {
-      var title = document.getElementById('track-title');
-      if (title && typeof getCoverGradientStyle === 'function' && typeof trackList !== 'undefined') {
-        var track = trackList[currentTrackIndex];
-        if (track) title.setAttribute('style', getCoverGradientStyle(track.cover || 'Juice-WRLD.png'));
+      if (typeof trackList !== 'undefined' && trackList[currentTrackIndex]) {
+        var cover = trackList[currentTrackIndex].cover || 'Juice-WRLD.png';
+        if (typeof applyMainGradient === 'function') applyMainGradient(cover);
+        if (typeof applyControlsGradient === 'function') applyControlsGradient(cover);
+        if (typeof applyBackgroundGradient === 'function') applyBackgroundGradient(cover);
       }
     } catch(e){}
   }

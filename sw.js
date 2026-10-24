@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v138';
+const VERSION = 'thw-v146';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -51,12 +51,12 @@ const PRECACHE = [
   './crypto-js.min.js?v=thw-v2',
   './qrcode.min.js?v=thw-v2',
   './toast.js?v=thw-v1',
-  './tracks.js?v=thw-v9',
+  './tracks.js?v=thw-v10',
   './browser-id3-writer.js?v=thw-v2',
   './bootstrap-client.js?v=thw-v3',
   './account.js?v=thw-v25',
   './i18n.js?v=9',
-  './script.js?v=thw-v54',
+  './script.js?v=thw-v56',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v8',
@@ -68,7 +68,7 @@ const PRECACHE = [
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v4',
   'player-settings.css?v=thw-v67',
-  './style.css?v=thw-v31',
+  './style.css?v=thw-v32',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
   './themes.css?v=thw-v3',
@@ -121,9 +121,9 @@ const PRECACHE = [
   /* --- page scripts --- */
   './user-relations.js?v=thw-v2',
   './user-menu.js?v=thw-v6',
-  './player-settings.js?v=thw-v8',
+  './player-settings.js?v=thw-v9',
   './reports.js?v=thw-v3',
-  './player-performance.js?v=thw-v6',
+  './player-performance.js?v=thw-v7',
     './queue-ui.js?v=thw-v17',
   './vault-discography.js?v=thw-v4',
   './global-search.js?v=thw-v4',
@@ -157,7 +157,7 @@ const PRECACHE = [
   './legal-info.js?v=thw-v5',
   './friend-activity.js?v=thw-v1',
   './grammar-check.js?v=thw-v2',
-  './social-panel.js?v=thw-v36',
+  './social-panel.js?v=thw-v40',
   './push-client.js?v=thw-v23',
   './simple-toast.js?v=thw-v5',
   './cover-preview.js?v=thw-v7',

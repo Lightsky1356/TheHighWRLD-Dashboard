@@ -192,6 +192,25 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
   .player-search-wrap input{width:100%}
 }
 
+/* ===== The same treatment, keyed to the column rather than the window =====
+ *
+ * The rules above ask how wide the WINDOW is. When Friends & Messages is open
+ * the window stays the same size and the player's column is what narrows - so
+ * on a desktop with the panel open the player is as narrow as a phone while
+ * still being told it is on a desktop. The toolbar did not wrap, and the row
+ * ran out from under the panel: the track counter was simply cut off.
+ *
+ * A container query asks how wide the container is. The rules are the same
+ * three the phones get, because a 430px column is a 430px column wherever it
+ * comes from - and the media query stays, for the case where there is no
+ * container to measure. */
+#audio-preview{container-type:inline-size}
+@container (max-width:640px){
+  .playlist-sticky-controls>div{flex-wrap:wrap;gap:8px}
+  .player-search-wrap{flex:1 1 100%}
+  .player-search-wrap input{width:100%}
+}
+
 /* ===== Mobile profile tab avatar (matches 20px nav icons) ===== */
 .mbn-avatar{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:10px;font-weight:800;color:rgba(255,255,255,.75);margin-bottom:0}
 .mbn-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}

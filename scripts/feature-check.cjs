@@ -117,6 +117,22 @@ async function main() {
   await cdp.send("Runtime.enable");
   await cdp.send("Network.enable");
 
+  /* An explicit desktop viewport, because several checks below are desktop
+     layout assertions and this script otherwise ran against whatever window
+     Edge opens headless - about 800px, innerWidth 756.
+     *
+     * At that width the panel is pinned to its 360px floor (clamp(360,
+     * 100vw-612, 430) cannot go lower), so the expand control has nowhere to
+     * grow and reads 360 -> 360; and a 500px player cannot fit in the ~340px
+     * that is left of the panel no matter how the layout behaves. Those three
+     * failures were the window, not the code - but a check that depends on the
+     * browser's default window is not reproducible either, so the width is
+     * stated: 1440 is a standard laptop, and both the panel's normal and its
+     * expanded size are representable there. */
+  await cdp.send("Emulation.setDeviceMetricsOverride", {
+    width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+  });
+
   /* Sign in as a seeded account, so the panel has somebody to show. */
   const token = "notifontoken1";
   await cdp.send("Network.setCookie", {
@@ -180,13 +196,16 @@ async function main() {
 
   await cdp.evalJson("window.wrldPlayerSettings.set('coverGradients', false)");
   const withoutGradients = await cdp.evalJson("getCoverGradientStyle('Juice-WRLD.png')");
-  check("turning it off takes the gradient off the cover",
-    !/gradient/.test(String(withoutGradients)) && /color:/.test(String(withoutGradients)),
+  /* The text helper answers white rather than the blank state's purple. The
+     playlist and the queue clip this value to type, so purple type here is
+     exactly what the setting is supposed to switch off. */
+  check("turning it off draws that text white instead of as a gradient",
+    /255,\s*255,\s*255|#fff/i.test(String(withoutGradients)) && /background-clip:text/.test(String(withoutGradients)),
     String(withoutGradients).slice(0, 70));
 
   const valueOff = await cdp.evalJson("getCoverGradientValue('Juice-WRLD.png')");
-  check("the value is a flat colour when they are off",
-    !/gradient/.test(String(valueOff)), String(valueOff).slice(0, 70));
+  check("the value is the blank state gradient when they are off",
+    /gradient/.test(String(valueOff)), String(valueOff).slice(0, 70));
 
   await cdp.evalJson("window.wrldPlayerSettings.set('coverGradients', true)");
   const backOn = await cdp.evalJson("getCoverGradientStyle('Juice-WRLD.png')");
@@ -276,6 +295,17 @@ async function main() {
   })()`);
   check("right-clicking a message opens the menu", !menu || !menu.error, JSON.stringify(menu).slice(0, 90));
   check("the menu holds the reactions", menu && Number(menu.reactions) >= 12, String(menu && menu.reactions));
+
+  /* The menu has to be somewhere it can be seen.
+   *
+   * It was opening - the element existed, the buttons were in it - and it was
+   * opening two thousand pixels below the panel, because it was positioned
+   * against a box with no height. So the check that matters is where it is,
+   * not whether it exists. */
+  const where = await cdp.evalJson("(function(){ var m = document.getElementById('thw-social-menu'); if (!m) return null; var r = m.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, w: innerWidth, h: innerHeight }; })()");
+  check("the menu is on the screen", where && where.top >= 0 && where.left >= 0 && where.bottom <= where.h && where.right <= where.w, JSON.stringify(where));
+  const onPanel = await cdp.evalJson("(function(){ var m = document.getElementById('thw-social-menu'); var p = document.getElementById('thw-social-panel'); if (!m || !p) return null; var r = m.getBoundingClientRect(), q = p.getBoundingClientRect(); return r.top >= q.top - 2 && r.bottom <= q.bottom + 2 && r.left >= q.left - 2 && r.right <= q.right + 2; })()");
+  check("the menu is inside the panel", onPanel === true, String(onPanel));
   const items = (menu && menu.items) || [];
   check("the menu holds Reply", items.includes("Reply"), JSON.stringify(items));
   check("the menu holds Copy", items.includes("Copy"), JSON.stringify(items));
@@ -473,8 +503,10 @@ async function main() {
   const toggled = await cdp.evalJson("(function(){ var t = document.getElementById('ps-cover-gradients-toggle'); if (!t) return { error: 'no toggle' }; var before = window.wrldPlayerSettings.get('coverGradients'); t.checked = false; t.dispatchEvent(new Event('change', { bubbles: true })); return { before: before, after: window.wrldPlayerSettings.get('coverGradients'), style: getCoverGradientStyle('Juice-WRLD.png') }; })()");
   check("clicking the toggle turns the gradients off",
     toggled && toggled.after === false, JSON.stringify(toggled));
-  check("the covers are flat once it is off",
-    toggled && !/gradient/.test(String(toggled.style)), String(toggled && toggled.style).slice(0, 80));
+  const flatStyle = await cdp.evalJson("(function(){ var s = getCoverGradientStyle('Covers/Cheat Code.png'); var own = (typeof coverGradientMap !== 'undefined') ? (coverGradientMap['Covers/Cheat Code.png'] || '') : ''; return { style: s, own: own, ownInStyle: own ? s.indexOf(own) !== -1 : null, white: /255,\s*255,\s*255|#fff/i.test(String(s)), blank: s.indexOf('hsl(280,60%,55%)') !== -1 }; })()");
+  check("the playlist and queue text go white once it is off",
+    flatStyle && flatStyle.white === true && flatStyle.blank === false && flatStyle.ownInStyle === false,
+    JSON.stringify(flatStyle).slice(0, 110));
 
   const toggledBack = await cdp.evalJson("(function(){ var t = document.getElementById('ps-cover-gradients-toggle'); if (!t) return null; t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); return { after: window.wrldPlayerSettings.get('coverGradients'), style: getCoverGradientStyle('Juice-WRLD.png') }; })()");
   check("clicking it again brings them back",
@@ -482,6 +514,84 @@ async function main() {
     JSON.stringify(toggledBack).slice(0, 110));
 
   await cdp.evalJson("window.togglePlayerSettings && window.togglePlayerSettings()");
+
+  /* ---- the panel can be made bigger ---- */
+  const expanded = await cdp.evalJson("(function(){ var b = document.getElementById('thw-social-expand'); if (!b) return { error: 'no button' }; var before = document.getElementById('thw-social-panel').getBoundingClientRect().width; b.click(); var after = document.getElementById('thw-social-panel').getBoundingClientRect().width; b.click(); return { before: before, after: after }; })()");
+  check("the panel can be made bigger", expanded && expanded.after > expanded.before, JSON.stringify(expanded));
+
+  /* ---- the player and the panel: no overlap, and neither squeezed ---- */
+  const room = await cdp.evalJson("(function () {\n  if (window.THWSocial && window.THWSocial.open) window.THWSocial.open();\n  function b(sel) {\n    var e = document.querySelector(sel);\n    if (!e) return null;\n    var r = e.getBoundingClientRect();\n    return { x: Math.round(r.left), r: Math.round(r.right), w: Math.round(r.width) };\n  }\n  function probe() {\n    var c = b('#player-container'), p = b('#thw-social-panel'), counter = b('#playlist-track-counter');\n    var ctrl = document.querySelector('.playlist-sticky-controls > div');\n    return {\n      vw: innerWidth,\n      player: c && c.w,\n      panel: p && p.w,\n      clear: (c && p) ? p.x - c.r : null,\n      wraps: ctrl ? getComputedStyle(ctrl).flexWrap : null,\n      counterClipped: (counter && p) ? counter.r > p.x : null\n    };\n  }\n  var closed = probe();\n  document.documentElement.classList.add('thw-social-wide');\n  var wide = probe();\n  document.documentElement.classList.remove('thw-social-wide');\n  return JSON.stringify({ closed: closed, wide: wide });\n})()");
+  const r = room ? JSON.parse(room) : null;
+
+  check("the player and the panel never overlap",
+    r && r.closed.clear > 0 && r.wide.clear > 0,
+    "closed " + (r && r.closed.clear) + "px, wide " + (r && r.wide.clear) + "px");
+
+  check("opening the panel does not starve the player",
+    r && r.closed.player >= 500,
+    String(r && r.closed.player) + "px of " + (r && r.closed.vw));
+
+  check("the bigger panel gives up width before the player does",
+    r && r.wide.player >= 500 && r.wide.panel < r.wide.vw - 500,
+    "player " + (r && r.wide.player) + "px, panel " + (r && r.wide.panel) + "px");
+
+  /* The toolbar assertion is the opposite case and belongs to a narrow window:
+     flex-wrap only comes into play when the section is genuinely squeezed. At
+     1440 the player keeps 654px in the expanded state, there is room for the
+     controls, and staying on one line is the correct behaviour - so measuring
+     it there would be asserting that the page wraps when it does not need to.
+     Narrow the window for this one check, then put it back. */
+  await cdp.send("Emulation.setDeviceMetricsOverride", {
+    width: 780, height: 900, deviceScaleFactor: 1, mobile: false,
+  });
+  await sleep(700);
+  const squeezed = await cdp.evalJson(`(function () {
+    if (window.THWSocial && window.THWSocial.open) window.THWSocial.open();
+    document.documentElement.classList.add('thw-social-wide');
+    var ctrl = document.querySelector('.playlist-sticky-controls > div');
+    var counter = document.getElementById('playlist-track-counter');
+    var p = document.getElementById('thw-social-panel');
+    var out = {
+      vw: innerWidth,
+      wraps: ctrl ? getComputedStyle(ctrl).flexWrap : null,
+      counterClipped: (counter && p) ? counter.getBoundingClientRect().right > p.getBoundingClientRect().left : null
+    };
+    document.documentElement.classList.remove('thw-social-wide');
+    return JSON.stringify(out);
+  })()`);
+  const sq = squeezed ? JSON.parse(squeezed) : null;
+  await cdp.send("Emulation.setDeviceMetricsOverride", {
+    width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+  });
+
+  check("the toolbar wraps instead of running under the panel",
+    sq && sq.wraps === "wrap" && sq.counterClipped === false,
+    JSON.stringify(sq));
+
+  /* ---- the cover gradients, the title, the album and the controls ---- */
+  await cdp.evalJson("window.wrldPlayerSettings.set('coverGradients', false)");
+  await cdp.evalJson("(function(){ if (typeof applyMainGradient === 'function') applyMainGradient('Juice-WRLD.png'); if (typeof applyControlsGradient === 'function') applyControlsGradient('Juice-WRLD.png'); })()");
+  /* The panel washes are the other half of this setting. They used to be painted
+     from the same blank state the covers get, which left the player and the
+     playlist a strong purple with the gradients switched off. The off state is
+     meant to read as black, so check the wash each panel was actually handed
+     rather than how it ends up compositing over the page behind it. */
+  const panelWash = await cdp.evalJson("(function(){ function wash(id) { var e = document.getElementById(id); return e ? (e.getAttribute('style') || '').toLowerCase() : ''; } function black(s) { var flat = s.replace(/\\s+/g, ''); return flat.indexOf('rgba(0,0,0') !== -1 && flat.indexOf('hsl(') === -1; } var player = wash('player-panel'), playlist = wash('playlist-panel'); return { player: player.slice(0, 110), playlist: playlist.slice(0, 110), playerBlack: black(player), playlistBlack: black(playlist) }; })()");
+  check("the player panel washes black when the gradients are off",
+    panelWash && panelWash.playerBlack === true, JSON.stringify(panelWash).slice(0, 150));
+  check("the playlist panel washes black when the gradients are off",
+    panelWash && panelWash.playlistBlack === true, JSON.stringify(panelWash).slice(0, 150));
+  const whites = await cdp.evalJson("(function(){ var t = document.getElementById('track-title'), g = document.getElementById('track-tag'); var u = document.getElementById('controls-container'); return { title: t ? getComputedStyle(t).backgroundImage : '', tag: g ? getComputedStyle(g).backgroundImage : '', controls: u ? getComputedStyle(u).getPropertyValue('--controls-c1').trim() : '', cover: getCoverGradientValue('Juice-WRLD.png') }; })()");
+  check("the title is white when the gradients are off",
+    whites && /255,\s*255,\s*255|#fff/i.test(String(whites.title)), JSON.stringify(whites).slice(0, 140));
+  check("the album is white when the gradients are off",
+    whites && /255,\s*255,\s*255|#fff/i.test(String(whites.tag)), JSON.stringify(whites).slice(0, 140));
+  check("the controls are white when the gradients are off",
+    whites && /255,\s*255,\s*255|#fff/i.test(String(whites.controls)), JSON.stringify(whites).slice(0, 140));
+  const blank = await cdp.evalJson("(function(){ var on = getCoverGradientValue('Juice-WRLD.png'); var map = ''; if (typeof coverGradientMap !== 'undefined') map = coverGradientMap['Covers/Juice-WRLD.png'] || coverGradientMap['Juice-WRLD.png'] || ''; return { got: on, blank: map, same: !!map && on === map }; })()");
+  check("the covers use the blank state gradient when the gradients are off",
+    blank && blank.same === true, JSON.stringify(blank).slice(0, 140));
+  await cdp.evalJson("window.wrldPlayerSettings.set('coverGradients', true)");
 
   /* ---- the keyboard-shortcuts hint goes behind the panel ---- */
   const behind = await cdp.evalJson("(function(){ var t = document.createElement('div'); t.id = 'shortcuts-toast'; t.textContent = 'hint'; t.style.cssText = 'position:fixed;bottom:140px;right:30px;z-index:298'; document.body.appendChild(t); document.documentElement.classList.add('thw-social-open'); var z = getComputedStyle(t).zIndex; var root = document.getElementById('thw-social-root'); var pz = root ? getComputedStyle(root).zIndex : 'none'; t.remove(); document.documentElement.classList.remove('thw-social-open'); return { toast: z, panel: pz }; })()");

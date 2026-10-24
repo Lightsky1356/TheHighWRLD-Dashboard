@@ -136,9 +136,18 @@
 
   /* Play/pause state and favourites change the row markup but not the row
    * window, so they're part of the render key (otherwise the visible rows keep
-   * a stale play icon until you scroll). */
+   * a stale play icon until you scroll).
+   *
+   * The Cover Gradients setting belongs in here for exactly the same reason.
+   * The text colour of a row comes from it, so without it in the key the rows
+   * kept the gradient they were drawn with when the toggle was flipped, and the
+   * setting looked like it did nothing - the playlist still showed cover colours
+   * with the gradients turned off, until a scroll or a track change happened to
+   * force a repaint. */
   function paintSig() {
-    return currentTrackIndex + "|" + (isPlaying ? 1 : 0) + "|" + favSig();
+    var gradients = 1;
+    try { gradients = (typeof coverGradientsOn === "function" && coverGradientsOn()) ? 1 : 0; } catch (e) {}
+    return currentTrackIndex + "|" + (isPlaying ? 1 : 0) + "|" + favSig() + "|g" + gradients;
   }
 
   function getContainer() { return document.getElementById("scrollable-playlist"); }

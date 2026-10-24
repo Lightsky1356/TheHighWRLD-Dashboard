@@ -13,7 +13,16 @@
 /* One source of truth for the panel's width. The player uses it to step aside
    (see the .thw-social-open #audio-preview rule below), so the two cannot drift
    apart the way a hardcoded pixel value would. */
-:root { --thw-panel-w: 430px; }
+/* The panel's width, and the space the player keeps clear of it.
+   *
+   * It is a clamp rather than a number because the two cannot both be had on
+   * every screen: the player needs 560px, the gap between them is 52px, so
+   * the panel may be at most (the window minus 612). On a wide screen the
+   * clamp is never reached and the panel is the 430 it has always been; on a
+   * screen that cannot fit both, the panel gives up its extra width instead
+   * of taking it out of the player. Below 681px the panel becomes the whole
+   * screen anyway and this variable stops mattering. */
+:root { --thw-panel-w: clamp(360px, calc(100vw - 612px), 430px); }
 #thw-social-panel{position:absolute;top:78px;right:18px;bottom:20px;width:min(var(--thw-panel-w),calc(100vw - 24px));max-height:760px;min-height:360px;display:flex;flex-direction:column;overflow:hidden;pointer-events:auto;color:#f8fafc;background:rgba(9,12,28,.97);border:1px solid rgba(148,163,184,.24);border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.58),0 0 34px rgba(34,211,238,.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
 .thw-social-head{display:flex;align-items:center;justify-content:space-between;padding:15px 17px 11px;border-bottom:1px solid rgba(148,163,184,.13)}
 .thw-social-title{margin:0;font:800 15px/1.2 system-ui;letter-spacing:.02em}
@@ -141,10 +150,12 @@
    raising <nav> itself did lift it above the panel, but that also dragged the
    nav over the rules sheet and clipped the panel's top corners.
 
-   So the menu is suppressed while the panel is open instead. !important is
-   required: the show-on-hover rule is more specific than a plain class here.
-   Attempting to open it raises a toast instead of failing silently. */
-html.thw-social-open .nav-comm-menu{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+   So the menu is not raised, it is moved: social-panel.js shifts it sideways by
+   exactly the distance that clears the panel (syncCommMenuClearance), leaving no
+   overlap for z-index to argue about. It works at 1904px, where the two sit 280px
+   apart, and at 1280px, where they used to cross by 29. Hiding it outright - what
+   this stylesheet did until now - cost the entire nav dropdown every time the
+   panel was open, which is one of the ways "the Nav does not work". */
 /* The panel is an overlay, not a modal, so the page behind it stays live - which
    is the problem: anchored to the right, it sat on top of the player's controls
    and made them unclickable. Measured at 1301px it was covering the volume,
@@ -152,14 +163,25 @@ html.thw-social-open .nav-comm-menu{opacity:0!important;visibility:hidden!import
    progress bar, and three buttons on every playlist row.
 
    So the player steps aside instead. #audio-preview is the page's centred
-   max-width container, so padding it right shifts its contents clear of the
-   panel rather than scaling them. The full-bleed background layers are siblings
-   of it and stay edge to edge, which is what you want.
+   max-width container, so the reserve comes out of its WIDTH and its left
+   offset, not its right padding - padding it right squeezed the player inside a
+   box that never touched the panel. Measured at 1904px with the panel open, that
+   left the player 508px wide (its maximum is 672) with 330px of empty page
+   between it and the panel, which had walked over the right end of the section
+   entirely. Cap the section to what fits left of the panel and centre it in that
+   space instead: it then ends 16px short of the panel at every width, and the
+   player takes whatever of the 672 it is owed. The full-bleed background layers
+   are siblings of it and stay edge to edge, which is what you want.
 
    Below 680px the panel already spans the full width by design, so there is
-   nothing to step aside for and the padding would only squeeze the page. */
+   nothing to step aside for and the reserve would only squeeze the page. */
 @media (min-width:681px){
-  html.thw-social-open #audio-preview{padding-right:calc(var(--thw-panel-w) + 36px)}
+html.thw-social-open #audio-preview{
+  --thw-reserve:calc(var(--thw-panel-w) + 34px);
+  max-width:min(1280px, calc(100vw - var(--thw-reserve)));
+  margin-left:max(0px, calc((100vw - var(--thw-reserve) - 1280px) / 2));
+  padding-right:16px;
+}
 }
 /* The keyboard-shortcuts hint is built in script.js with inline styles at
    position:fixed; bottom:140px; right:30px; z-index:298 - bottom-right, which
@@ -384,7 +406,7 @@ html.thw-social-scrolllock body {
    The skeletons are drawn with two tones and a slow pulse, so a slow
    connection still reads as "loading" rather than as "empty" - an empty
    feed and a feed that has not arrived yet are different things, and the
-   person should be able to tell which one they are looking at. */
+   person should be able to tell which one they are looking at.
 --------------------------------------------------------------------------- */
 .thw-activity-mount{display:flex;flex-direction:column;gap:10px;padding:12px 13px 16px;min-height:0;overflow-y:auto}
 .thw-activity-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -449,9 +471,9 @@ html.thw-social-scrolllock body {
    touched. The thread was unreadable.
 
    It is placed by the script and kept inside the panel, so it is
-   positioned rather than flowing. */
+   positioned rather than flowing.
 --------------------------------------------------------------------------- */
-.thw-social-menu{position:absolute;z-index:130;min-width:210px;max-width:280px;padding:7px;border-radius:14px;border:1px solid rgba(148,163,184,.24);background:rgba(11,15,34,.985);box-shadow:0 18px 48px rgba(0,0,0,.6),0 0 22px rgba(34,211,238,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.thw-social-menu{position:fixed;z-index:240;min-width:210px;max-width:280px;padding:7px;border-radius:14px;border:1px solid rgba(148,163,184,.24);background:rgba(11,15,34,.985);box-shadow:0 18px 48px rgba(0,0,0,.6),0 0 22px rgba(34,211,238,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .thw-social-menu-reactions{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;padding:2px}
 .thw-social-menu-reaction{display:grid;place-items:center;min-width:30px;height:30px;padding:0;border:1px solid transparent;border-radius:9px;background:rgba(148,163,184,.07);color:#e2e8f0;font:15px/1 system-ui,sans-serif;cursor:pointer;transition:background .14s ease,transform .14s ease}
 .thw-social-menu-reaction:hover{background:rgba(34,211,238,.16);transform:translateY(-1px)}
@@ -472,9 +494,9 @@ html.thw-social-scrolllock body {
 
    A list of suggestions. Nothing is changed until the person asks for it -
    a checker that rewrote your message as you typed would be worse than no
-   checker. */
+   checker.
 --------------------------------------------------------------------------- */
-.thw-social-grammar{position:absolute;z-index:131;right:12px;bottom:12px;left:12px;max-height:70%;overflow-y:auto;padding:14px;border-radius:16px;border:1px solid rgba(148,163,184,.26);background:rgba(9,12,28,.99);box-shadow:0 22px 56px rgba(0,0,0,.62),0 0 26px rgba(34,211,238,.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.thw-social-grammar{position:fixed;z-index:241;max-height:70%;overflow-y:auto;padding:14px;border-radius:16px;border:1px solid rgba(148,163,184,.26);background:rgba(9,12,28,.99);box-shadow:0 22px 56px rgba(0,0,0,.62),0 0 26px rgba(34,211,238,.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
 .thw-social-grammar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .thw-social-grammar-title{font:800 12.5px/1.2 "Sora",system-ui,sans-serif;color:#e2e8f0}
 .thw-social-grammar-close{width:28px;height:28px;border:0;border-radius:9px;background:rgba(255,255,255,.07);color:#dbeafe;font-size:15px;line-height:1;cursor:pointer}
@@ -497,7 +519,7 @@ html.thw-social-scrolllock body {
 
    The dot goes on the corner of the avatar, so the state is next to the
    face. The words are still there as well - a dot on its own says nothing
-   to anybody who cannot see it. */
+   to anybody who cannot see it.
 --------------------------------------------------------------------------- */
 .thw-social-face{position:relative;display:inline-flex;flex:0 0 auto}
 .thw-social-status{position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;border:2px solid rgba(9,12,28,.95);background:#64748b}
@@ -511,7 +533,7 @@ html.thw-social-scrolllock body {
 
    Desktop only. On a phone the list is the panel, and there is nothing
    behind it to give the space to - so the control is not drawn there at
-   all, rather than being drawn and doing something unhelpful. */
+   all, rather than being drawn and doing something unhelpful.
 --------------------------------------------------------------------------- */
 .thw-social-friends-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .thw-social-friends-toggle{display:none;border:1px solid rgba(148,163,184,.16);border-radius:8px;background:rgba(148,163,184,.05);color:#94a3b8;width:24px;height:24px;align-items:center;justify-content:center;cursor:pointer;font-size:10px}
@@ -523,3 +545,23 @@ html.thw-social-scrolllock body {
 }
 /* The note under the friend activity settings. */
 .thw-social-settings-note{margin:0 0 9px;color:#64748b;font:500 10.5px/1.6 "Sora",system-ui,sans-serif}
+/* ---------------------------------------------------------------------------
+   The panel can be made bigger
+
+   On a desktop. The width is a variable - the player steps aside by it - so
+   the variable is what changes, and everything that follows the panel moves
+   with it.
+
+   On a phone the control is not drawn at all: the panel is the whole
+   screen, and there is nothing behind it to give the space to.
+--------------------------------------------------------------------------- */
+.thw-social-expand{display:none;border:1px solid rgba(148,163,184,.16);border-radius:10px;background:rgba(148,163,184,.05);color:#94a3b8;width:30px;height:30px;align-items:center;justify-content:center;cursor:pointer;font-size:12px;transition:background .14s ease,color .14s ease}
+.thw-social-expand:hover{background:rgba(34,211,238,.14);color:#baf7ff}
+.thw-social-expand:focus-visible{outline:2px solid rgba(103,232,249,.7);outline-offset:2px}
+@media (min-width:681px){
+.thw-social-expand{display:inline-flex}
+/* The bigger size, held to whatever the screen can give it without squeezing
+   the player below 560px. */
+html.thw-social-wide{--thw-panel-w:clamp(360px, calc(100vw - 612px), 720px)}
+html.thw-social-wide #thw-social-panel{max-height:calc(100vh - 98px)}
+}

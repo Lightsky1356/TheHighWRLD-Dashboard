@@ -12,7 +12,8 @@
 // Run:  npm test
 //
 // Groups:
-//   offline  - parse-gate, crypto. No server, no network.
+//   offline  - parse-gate, crypto, listens-rollup, friend-activity, asset-tokens,
+//              social-modal. No server, no network.
 //   browser  - scripts/browser-check.cjs. Needs a dev server AND a local Edge;
 //              run manually, see the comment at the top of that file.
 //   server   - push-api, notifications, gallery-publish. Need a dev server on :8788.
@@ -44,6 +45,8 @@ const GROUPS = [
   { name: "crypto", file: "./crypto-selftest.mjs", needsServer: false },
   { name: "listens-rollup", file: "./listens-rollup.test.mjs", needsServer: false },
   { name: "friend-activity", file: "./friend-activity.test.mjs", needsServer: false },
+  { name: "asset-tokens", file: "./asset-tokens.test.mjs", needsServer: false },
+  { name: "social-modal", file: "./social-modal.test.mjs", needsServer: false },
   { name: "push-api", file: "./push-api.test.mjs", needsServer: true },
   { name: "notifications", file: "./notifications-optout.test.mjs", needsServer: true },
   { name: "notification-prefs", file: "./notification-prefs.test.mjs", needsServer: true },

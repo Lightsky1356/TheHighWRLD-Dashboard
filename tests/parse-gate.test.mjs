@@ -1977,6 +1977,58 @@ function safeDecode4(v) {
   }
 }
 
+/* ---------------------------------------------------------------------------
+   The stylesheets have to parse
+
+   A comment that closes twice leaves a stray line behind, and the parser
+   reads it as a rule it cannot make sense of - and swallows the next rule
+   with it. Six of them went in at once, and the rule after each was gone:
+   the message menu, the grammar check and four others. The site looked
+   broken in a way nothing in the source said it should.
+
+   The check is the shape of the comment: a line of dashes with a terminator
+   on it, and nothing before it that ends the comment as well. */
+{
+  const stylesheets = ["social.css", "about.css", "community-realtime.css", "player-settings.css", "account.css", "style.css"];
+  let cssBad = 0;
+  for (const file of stylesheets) {
+    const path = join(ROOT, file);
+    if (!existsSync(path)) continue;
+    const lines = readFileSync(path, "utf8").split(/\r?\n/);
+    for (let i = 1; i < lines.length; i++) {
+      if (!/^\s*-{10,}\s*\*\/\s*$/.test(lines[i])) continue;
+      let j = i - 1;
+      while (j >= 0 && lines[j].trim() === "") j--;
+      if (j >= 0 && /\*\/\s*$/.test(lines[j])) {
+        structureFail(file + " has a comment that closes twice - the rule after it is dropped");
+        cssBad++;
+      }
+    }
+  }
+  if (!cssBad) {
+    structureOk("every stylesheet comment closes once");
+  }
+
+  /* And the rules this batch added are actually in the file - the parser
+     dropping one is invisible in the source. */
+  const socialCss = readFileSync(join(ROOT, "social.css"), "utf8");
+  const wanted = [
+    ".thw-social-menu{position:fixed",
+    ".thw-social-grammar{position:fixed",
+    ".thw-social-status--online",
+    ".thw-social-face",
+    ".thw-social-friends-toggle",
+    ".thw-social-expand",
+    ".thw-activity-card",
+  ];
+  const missing = wanted.filter((rule) => socialCss.indexOf(rule) === -1);
+  if (missing.length) {
+    structureFail("social.css is missing " + missing.length + " rule(s) - " + missing[0]);
+  } else {
+    structureOk("the panel's rules are all in the stylesheet");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);
