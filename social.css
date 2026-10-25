@@ -251,6 +251,8 @@ html.thw-social-open #shortcuts-toast{z-index:110!important}
 .thw-social-avatar{width:34px;height:34px;flex:none;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,#172554,#581c87);display:grid;place-items:center;color:#cffafe;font:800 11px system-ui}
 .thw-social-person{min-width:0;flex:1}
 .thw-social-name{display:block;overflow:hidden;color:#e5e7eb;font:700 12px system-ui;text-overflow:ellipsis;white-space:nowrap}
+a.thw-social-name{text-decoration:none;cursor:pointer}
+a.thw-social-name:hover,a.thw-social-name:focus-visible{text-decoration:underline;color:#a5f3fc}
 .thw-social-meta{display:block;margin-top:3px;overflow:hidden;color:#8290a8;font:500 10px system-ui;text-overflow:ellipsis;white-space:nowrap}
 .thw-social-online{color:#4ade80}
 .thw-social-actions{display:flex;align-items:center;gap:5px;flex:none}

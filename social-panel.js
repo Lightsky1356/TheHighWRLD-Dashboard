@@ -165,7 +165,7 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v34";
+    css.href = "/social.css?v=thw-v35";
     document.head.appendChild(css);
 
     var root = el("div");
@@ -950,7 +950,17 @@
       face.appendChild(statusDot(friend));
       row.appendChild(face);
       var person = el("span", "thw-social-person");
-      person.appendChild(el("span", "thw-social-name", friend.name));
+      /* The name is the way to the person. It carries their profile
+         address like any other link - it can be middle-clicked, copied,
+         read in the status bar - and the click is handled by the panel
+         below, which opens the profile in place instead of loading the
+         page over it. */
+      var nameLink = el("a", "thw-social-name", friend.name);
+      nameLink.href = "/Profile/" + encodeURIComponent(friend.uid);
+      nameLink.dataset.action = "view-profile";
+      nameLink.dataset.uid = friend.uid;
+      nameLink.title = "View profile";
+      person.appendChild(nameLink);
       /* Whether they are here, always said - and under it what they are up
          to. Both are true at once, so neither stands in for the other: the
          activity used to replace the presence whenever there was one, and
@@ -1836,6 +1846,18 @@
        a message that has just been reacted to or reported. */
     closeMessageMenu();
     if (action === "noop") return;
+    if (action === "view-profile") {
+      /* The name in the Friends list is the way to that person. The link
+         carries their address for the browser, and the page opens it in
+         place - the same call the search results and the notifications
+         use. The panel steps aside as it goes: it would otherwise sit
+         over the profile it just opened, under its own dimmed wash. */
+      if (uid && window.openProfile) {
+        window.openProfile(uid);
+        setOpen(false);
+      }
+      return;
+    }
     if (action === "toggle-panel-size") {
       /* The panel can be made bigger, on a desktop only.
          *

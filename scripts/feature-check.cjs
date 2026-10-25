@@ -613,6 +613,48 @@ async function main() {
     name: "thw_session", value: "notifontoken1", domain: "127.0.0.1", path: "/",
   });
 
+  /* ---- the friend's name takes you to their profile ---- */
+  /* The name in the Friends row is a link: it carries the address the
+     browser would use, and clicking it opens that person's profile in
+     place - with the panel stepping aside, so the profile is not sitting
+     behind it under a dimmed wash. */
+  const nameLink = await cdp.evalJson(`(async function(){
+    window.THWSocial && window.THWSocial.open();
+    var tab = document.querySelector('#thw-social-root [data-tab="friends"]');
+    if (tab) tab.click();
+    await new Promise(function(r){ setTimeout(r, 1500); });
+    var row = [...document.querySelectorAll('#thw-social-friends .thw-social-row')]
+      .find(function(r){ return /Gallery Linked/.test(r.textContent); });
+    var link = row && row.querySelector('a.thw-social-name');
+    if (!link) return { error: "the friend's name is not a link" };
+    var href = link.getAttribute('href');
+    link.click();
+    await new Promise(function(r){ setTimeout(r, 3000); });
+    var sec = document.getElementById('page-section-profile');
+    var nm = document.querySelector('#profilePageBody .cmp-name');
+    var ov = document.getElementById('thw-social-overlay');
+    return {
+      href: href,
+      path: location.pathname,
+      section: !!(sec && sec.classList.contains('active')),
+      name: nm ? nm.textContent.trim() : "",
+      panel: !!(ov && ov.hidden === true)
+    };
+  })()`);
+  check("the friend's name carries their profile address",
+    nameLink && String(nameLink.href) === "/Profile/gallinked1",
+    JSON.stringify(nameLink).slice(0, 160));
+  check("clicking the name takes you to their profile",
+    nameLink && String(nameLink.path).indexOf("/Profile/") === 0 &&
+      nameLink.section === true && /Gallery Linked/.test(String(nameLink.name)),
+    JSON.stringify(nameLink).slice(0, 200));
+  check("the panel steps aside so the profile is not behind it",
+    nameLink && nameLink.panel === true, JSON.stringify(nameLink).slice(0, 200));
+  /* The panel closed itself to show the profile, which is what a person
+     would want - so open it again for the measurements below, the way
+     every other section of this check finds it. */
+  await cdp.evalJson("window.THWSocial && window.THWSocial.open()");
+
   /* ---- the trending strip and the drops, on the page ---- */
   await cdp.evalJson("window.switchAppPage && window.switchAppPage('player')");
   await sleep(2500);
