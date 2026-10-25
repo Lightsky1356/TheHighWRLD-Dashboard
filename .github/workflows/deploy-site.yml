@@ -37,6 +37,28 @@ jobs:
           node tests/parse-gate.test.mjs
           node tests/crypto-selftest.mjs
 
+      # Schema before code. A push moves two things that live in different
+      # places: the assets, by `pages deploy`, and the D1 database they read,
+      # only when a migration is applied - and nothing applied them, so the two
+      # drifted once. The conversations query asked for columns 0050 adds, got
+      # a SQL error, and bootstrap answered nothing at all: empty friends list,
+      # empty message list, a thread that would not open - while search, which
+      # asks for no new column, kept working and called the person a Friend.
+      # Forty-two messages were in the database the whole time.
+      #
+      # Deliberately before the deploy. An additive migration is invisible to
+      # the code already live, so landing it first cannot break anything; if
+      # this step fails, the site keeps shipping the build it already has
+      # rather than shipping code the database cannot answer - the failure
+      # points at the migration instead of at the panel.
+      - name: Apply D1 migrations
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: d1 migrations apply wanted-vault --remote
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
