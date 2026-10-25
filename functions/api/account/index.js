@@ -431,19 +431,28 @@ export async function onRequestPost(context) {
       case "listen": {
         const title = String(body.title || "").slice(0, 160);
         const seconds = Math.max(1, Math.min(86400, Number(body.seconds) || 0));
+
+        /* What the friends list shows is what this member is playing now, so
+           the presence row is decided first and on its own: it changes the
+           moment the track does. The half hour still holds while the track
+           stands - a page that asks on every play does not write a row each
+           time - but a different track writes it at once, or the row would
+           carry the last song all through the next one. */
+        try {
+          const current = await db.prepare(
+            "SELECT track_id, ts FROM activity WHERE uid = ? AND type = 'listen' ORDER BY id DESC LIMIT 1"
+          ).bind(uid).first();
+          if (!current || current.track_id !== title ||
+            !current.ts || current.ts < new Date(Date.now() - 1800000).toISOString()) {
+            await recordActivity(db, uid, "listen", "You played " + title, title, title);
+          }
+        } catch (_) {}
+
         const recent = await db.prepare(
           "SELECT ts FROM listens WHERE uid = ? AND track_id = ? ORDER BY id DESC LIMIT 1"
         ).bind(uid, title).first();
         if (!recent || !recent.ts || recent.ts < new Date(Date.now() - 90000).toISOString()) {
           await recordPlay(db, uid, title, seconds);
-          try {
-            const lastPlay = await db.prepare(
-              "SELECT ts FROM activity WHERE uid = ? AND type = 'listen' ORDER BY id DESC LIMIT 1"
-            ).bind(uid).first();
-            if (!lastPlay || !lastPlay.ts || lastPlay.ts < new Date(Date.now() - 1800000).toISOString()) {
-              await recordActivity(db, uid, "listen", "You played " + title, title, title);
-            }
-          } catch (_) {}
         }
         break;
       }

@@ -406,11 +406,11 @@ async function main() {
     return incoming.length;
   })()`).then(v => console.log("    accepted requests: " + v));
 
-  /* The friend does four things the site records: shares its listening,
-     publishes a track, plays a song, and votes in the Wanted Vault. The play
-     is the one the row is allowed to say - presence is the song, nothing
-     else. The vote is cast last, so the newest recorded action is exactly
-     the one that must not stand in for the music. */
+  /* The friend shares its listening and publishes a track (the feed's own
+     table), then plays a song - the play is what the friends row is allowed
+     to say. The song is read back as this account before anything else is
+     played, so the switch to another track is observed as a change and not
+     only as an end state. */
   const friendActs = await cdp.evalJson(`(async function () {
     var settings = await fetch("/api/social/settings", {
       method: "POST", credentials: "same-origin",
@@ -430,17 +430,11 @@ async function main() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "listen", title: "Presence Probe", seconds: 45 })
     }).then(function (r) { return r.status; });
-    var vote = await fetch("/api/wanted", {
-      method: "POST", credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "vote", track: "Indicator Probe", user: "gallinked1", value: 1 })
-    }).then(function (r) { return r.status; });
-    return { settings: settings, published: pub.published === true, play: play, vote: vote };
+    return { settings: settings, published: pub.published === true, play: play };
   })()`);
   check("the other account's sharing was turned on", friendActs.settings === 200, String(friendActs.settings));
   check("its listening publication was accepted", friendActs.published === true, JSON.stringify(friendActs));
   check("its play was recorded by the site", friendActs.play === 200, String(friendActs.play));
-  check("its vote was recorded by the site", friendActs.vote === 200, String(friendActs.vote));
 
   /* Back to this account. */
   await cdp.send("Network.setCookie", {
@@ -468,35 +462,76 @@ async function main() {
     JSON.stringify(saw));
 
   /* The panel is the view of it now: a friend's row says whether they are
-     here, and under that what they are up to. The panel has been open
-     through all of this, so asking for it again is the refresh an open
-     costs - the same call, answering as this account. */
-  await cdp.evalJson("window.THWSocial.open()");
-  await sleep(2500);
-  const indicator = await cdp.evalJson(`(async function(){
-    var boot = await fetch('/api/social/bootstrap', { credentials: 'same-origin' })
-      .then(function(r){ return r.json(); }).catch(function(){ return {}; });
-    var friend = (boot.friends || []).find(function(f){ return f.uid === 'gallinked1'; }) || {};
-    var rows = [...document.querySelectorAll('#thw-social-friends .thw-social-row')];
-    var row = rows.find(function(r){ return /Gallery Linked/.test(r.textContent); });
-    if (!row) return { error: "no row for that friend", rows: rows.length, expected: (friend.activity || "").trim() };
-    var presence = row.querySelector('.thw-social-meta');
-    var activity = row.querySelector('.thw-social-activity');
-    return {
-      expected: (friend.activity || "").trim(),
-      presence: presence ? presence.textContent.trim() : "",
-      activity: activity ? activity.textContent.trim() : "",
-      under: !!(presence && activity && (presence.compareDocumentPosition(activity) & Node.DOCUMENT_POSITION_FOLLOWING)),
-    };
-  })()`);
+     here, and under that the song they are playing. Asking the panel to
+     open is the refresh an open costs, and the row is read back against the
+     bootstrap - the two have to agree every time it is asked. */
+  const readFriendRow = async function () {
+    await cdp.evalJson("window.THWSocial.open()");
+    await sleep(2500);
+    return await cdp.evalJson(`(async function(){
+      var boot = await fetch('/api/social/bootstrap', { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); }).catch(function(){ return {}; });
+      var friend = (boot.friends || []).find(function(f){ return f.uid === 'gallinked1'; }) || {};
+      var rows = [...document.querySelectorAll('#thw-social-friends .thw-social-row')];
+      var row = rows.find(function(r){ return /Gallery Linked/.test(r.textContent); });
+      if (!row) return { error: "no row for that friend", rows: rows.length, expected: (friend.activity || "").trim() };
+      var presence = row.querySelector('.thw-social-meta');
+      var activity = row.querySelector('.thw-social-activity');
+      return {
+        expected: (friend.activity || "").trim(),
+        presence: presence ? presence.textContent.trim() : "",
+        activity: activity ? activity.textContent.trim() : "",
+        under: !!(presence && activity && (presence.compareDocumentPosition(activity) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      };
+    })()`);
+  };
+
+  /* The first song, read before anything else is played. */
+  const firstSong = await readFriendRow();
   check("the friend's row says whether they are here",
-    indicator && !!indicator.presence, JSON.stringify(indicator).slice(0, 110));
-  check("the row says what the friend is up to, under the online indicator",
-    indicator && indicator.under === true && !!indicator.expected && indicator.activity === indicator.expected,
-    JSON.stringify(indicator).slice(0, 160));
-  check("the row says it as Listening To ... - and never the newer vote",
-    indicator && indicator.activity === "Listening To Presence Probe" &&
+    firstSong && !!firstSong.presence, JSON.stringify(firstSong).slice(0, 110));
+  check("the row brings up the song they are playing",
+    firstSong && firstSong.under === true && !!firstSong.expected &&
+      firstSong.activity === "Listening To Presence Probe" &&
+      firstSong.activity === firstSong.expected,
+    JSON.stringify(firstSong).slice(0, 160));
+
+  /* Going to another track - the same call the player makes when it does,
+     carrying the next title. Then a vote: the newest recorded action of
+     all, which must never stand in for the music. */
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: "gallinked1token", domain: "127.0.0.1", path: "/",
+  });
+  const switched = await cdp.evalJson(`(async function () {
+    var play = await fetch("/api/account", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "listen", title: "Second Probe", seconds: 45 })
+    }).then(function (r) { return r.status; });
+    var vote = await fetch("/api/wanted", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "vote", track: "Indicator Probe", user: "gallinked1", value: 1 })
+    }).then(function (r) { return r.status; });
+    return { play: play, vote: vote };
+  })()`);
+  check("going to another track is recorded", switched.play === 200, String(switched.play));
+  check("its vote was recorded by the site", switched.vote === 200, String(switched.vote));
+
+  /* Back to this account, to see it as the friend's friend does. */
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: "notifontoken1", domain: "127.0.0.1", path: "/",
+  });
+
+  const indicator = await readFriendRow();
+  check("the row follows them to the new track",
+    indicator && indicator.under === true && !!indicator.expected &&
+      indicator.activity === "Listening To Second Probe" &&
       indicator.activity === indicator.expected,
+    JSON.stringify(indicator).slice(0, 160));
+  check("the newer vote never stands in for the song",
+    indicator && !/voted/i.test(String(indicator.activity)) &&
+      indicator.activity === "Listening To Second Probe",
     JSON.stringify(indicator).slice(0, 160));
 
   /* ---- group chats, end to end ---- */
