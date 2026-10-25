@@ -347,6 +347,12 @@ async function bootstrap(db, env, me) {
       };
     }
     const person = profilesByUid.get(r.other_uid) || {};
+    /* Presence is for friends. A thread can be open with anybody the site
+       lets you message, and none of those people has agreed to be followed
+       around the site - so without the friendship this row says nothing
+       about them: no last-seen, no song. Whether they are here right now
+       was already gated the same way, one line below. */
+    const sharesPresence = ids.includes(r.other_uid) && person.online_status !== "nobody";
     return {
       id: r.id, kind: "dm", uid: r.other_uid || "",
       name: person.name || "Member", avatar: person.avatar || "",
@@ -357,10 +363,11 @@ async function bootstrap(db, env, me) {
          here now, and when they were last here. Without this the thread
          header said "Offline" to everybody, always. */
       online: friendIds.includes(r.other_uid) && person.online_status !== "nobody",
-      lastActive: person.online_status === "nobody" ? "" : (person.last_seen || ""),
+      lastActive: sharesPresence ? (person.last_seen || "") : "",
       /* The song they are playing - the same one the friends list says, and
-         the only thing the presence ever claims. */
-      activity: person.online_status === "nobody" ? "" : (activityByUid.get(r.other_uid)?.present || ""),
+         the only thing the presence ever claims. Friends only, for the same
+         reason as the line above. */
+      activity: sharesPresence ? (activityByUid.get(r.other_uid)?.present || "") : "",
     };
   });
   const unreadMessages = conversations.reduce((n, c) => n + c.unread, 0);

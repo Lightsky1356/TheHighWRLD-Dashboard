@@ -534,6 +534,80 @@ async function main() {
       indicator.activity === "Listening To Second Probe",
     JSON.stringify(indicator).slice(0, 160));
 
+  /* ---- presence is for friends only ---- */
+  /* A thread can be open with somebody you are not friends with, and that
+     person has not agreed to be followed around the site: their song and
+     their last-seen stay out of the row. They play something first, so the
+     emptiness below is the friendship holding, not an absence of data - and
+     the friend's own thread still says it, for the same reason. */
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: "galunlinked1token", domain: "127.0.0.1", path: "/",
+  });
+  const strangerPlays = await cdp.evalJson(`(async function () {
+    var s = await fetch("/api/social/settings", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ direct_messages: "everyone" })
+    }).then(function (r) { return r.status; });
+    var p = await fetch("/api/account", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "listen", title: "Nonfriend Probe", seconds: 45 })
+    }).then(function (r) { return r.status; });
+    return { settings: s, play: p };
+  })()`);
+  check("the stranger opened their messages and played a song",
+    strangerPlays.settings === 200 && strangerPlays.play === 200, JSON.stringify(strangerPlays));
+
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: "notifontoken1", domain: "127.0.0.1", path: "/",
+  });
+  const threadPresence = await cdp.evalJson(`(async function () {
+    var opened = await fetch("/api/social/conversations", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid: "galunlinked1" })
+    }).then(function (r) { return r.json(); }).catch(function () { return {}; });
+    var boot = await fetch("/api/social/bootstrap", { credentials: "same-origin" })
+      .then(function (r) { return r.json(); }).catch(function () { return {}; });
+    var dms = (boot.conversations || []).filter(function (c) { return c.kind === "dm"; });
+    var stranger = dms.find(function (c) { return c.uid === "galunlinked1"; }) || {};
+    var friend = dms.find(function (c) { return c.uid === "gallinked1"; }) || {};
+    return {
+      made: !!(opened && opened.conversationId),
+      strangerIsFriend: (boot.friends || []).some(function (f) { return f.uid === "galunlinked1"; }),
+      strangerActivity: stranger.activity || "",
+      strangerLast: stranger.lastActive || "",
+      friendActivity: friend.activity || ""
+    };
+  })()`);
+  check("a thread carries no presence for someone who is not a friend",
+    threadPresence.made === true && threadPresence.strangerIsFriend === false &&
+      threadPresence.strangerActivity === "" && threadPresence.strangerLast === "",
+    JSON.stringify(threadPresence));
+  check("the same thread still shows what a friend is playing",
+    threadPresence.friendActivity === "Listening To Second Probe",
+    JSON.stringify(threadPresence));
+
+  /* And what a person sees: their thread header says their name and nothing
+     about what they are doing. */
+  const strangerHead = await cdp.evalJson(`(async function(){
+    window.THWSocial && window.THWSocial.open();
+    if (window.THWSocial && window.THWSocial.goMessages) window.THWSocial.goMessages();
+    await new Promise(function(r){ setTimeout(r, 2500); });
+    var rows = [...document.querySelectorAll('#thw-social-root .thw-social-convo')];
+    var row = rows.find(function(r){ return /Gallery Unlinked/.test(r.textContent); });
+    if (!row) return { error: "no thread row for them", rows: rows.map(function(r){ return (r.innerText || '').slice(0, 24); }) };
+    row.click();
+    await new Promise(function(r){ setTimeout(r, 2500); });
+    var head = document.getElementById('thw-social-thread-head');
+    return { text: (head && head.innerText || '').replace(/\\s+/g, ' ').trim().slice(0, 120) };
+  })()`);
+  check("their thread says nothing about what they are doing",
+    strangerHead && !/Listening To/i.test(String(strangerHead.text)) &&
+      !/Last active/i.test(String(strangerHead.text)) && !/Online/i.test(String(strangerHead.text)),
+    JSON.stringify(strangerHead).slice(0, 200));
+
   /* ---- group chats, end to end ---- */
   /* A group is made from the friends list: a name, and the people to put in
      it. The one friend this account has is already a friend, so the group can
