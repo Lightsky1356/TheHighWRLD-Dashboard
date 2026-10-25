@@ -2019,7 +2019,8 @@ function safeDecode4(v) {
     ".thw-social-face",
     ".thw-social-friends-toggle",
     ".thw-social-expand",
-    ".thw-activity-card",
+    ".thw-social-activity",
+    ".thw-social-group{position:fixed",
   ];
   const missing = wanted.filter((rule) => socialCss.indexOf(rule) === -1);
   if (missing.length) {

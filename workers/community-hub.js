@@ -543,7 +543,12 @@ export class CommunityHub extends DurableObject {
       // Never echo a user's own typing back to them.
       if (exceptUid && att.uid === exceptUid && String(event.type || "").startsWith("typing:")) continue;
       if (event.private === true) {
-        if (!event.recipientUid || att.sessionUid !== event.recipientUid) continue;
+        // A one-to-one names one recipient; a group names the rest of the
+        // conversation. Either way a socket only answers if it is named.
+        const named = Array.isArray(event.recipientUids) && event.recipientUids.length
+          ? event.recipientUids
+          : (event.recipientUid ? [event.recipientUid] : null);
+        if (!named || !named.includes(att.sessionUid)) continue;
       }
       // Notifications are recipient-scoped.
       if (event.private !== true && event.type === "notification:created" && event.recipientUid && att.sessionUid !== event.recipientUid) continue;

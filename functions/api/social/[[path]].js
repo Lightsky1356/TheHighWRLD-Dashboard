@@ -23,6 +23,9 @@ const CORS = {
  * different kind of thing. */
 const EMOJIS = ["❤️", "🔥", "😂", "😮", "👏", "💯", "👍", "👎", "🎉", "😢", "🤔", "🙏"];
 const MAX_MESSAGE = 2000;
+/* A group is a group rather than a broadcast list, so it stays small enough
+   for the thread to be readable and for one send to reach everybody. */
+const MAX_GROUP = 10;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -149,13 +152,58 @@ async function signalRefresh(env, recipientUid) {
 }
 
 
-async function memberPair(db, conversationId, uid) {
+/* The conversation, and whether this person is in it.
+ *
+ * Group conversations are answered by the members table alone. The pair of
+ * columns on dm_conversations belongs to the one-to-one shape and means
+ * nothing for a group, so nothing here reads them. */
+async function conversationOf(db, conversationId, uid) {
   const row = await db.prepare(
-    "SELECT other.uid AS other_uid FROM dm_conversation_members me " +
-    "JOIN dm_conversation_members other ON other.conversation_id = me.conversation_id AND other.uid <> me.uid " +
-    "WHERE me.conversation_id = ? AND me.uid = ? LIMIT 1"
-  ).bind(conversationId, uid).first();
-  return row ? row.other_uid : "";
+    "SELECT c.id, c.kind, c.title, " +
+    "(SELECT COUNT(*) FROM dm_conversation_members m WHERE m.conversation_id = c.id) AS member_count, " +
+    "EXISTS(SELECT 1 FROM dm_conversation_members m WHERE m.conversation_id = c.id AND m.uid = ?) AS mine " +
+    "FROM dm_conversations c WHERE c.id = ?"
+  ).bind(uid, conversationId).first();
+  if (!row || !Number(row.mine)) return null;
+  return {
+    id: row.id,
+    kind: row.kind === "group" ? "group" : "dm",
+    title: String(row.title || ""),
+    memberCount: Number(row.member_count) || 0,
+  };
+}
+
+/* Everyone else in the conversation. For a one-to-one this is one person; for
+   a group it is the rest of it. */
+async function memberUids(db, conversationId, uid) {
+  const rows = await db.prepare(
+    "SELECT uid FROM dm_conversation_members WHERE conversation_id = ? AND uid <> ? ORDER BY joined_at, uid LIMIT 50"
+  ).bind(conversationId, uid).all();
+  return (rows.results || []).map((r) => r.uid);
+}
+
+/* The names of a set of people, in one query. A group thread has to say which
+   of the people in it wrote each line, so every sender's name is here. */
+async function namesFor(db, uids) {
+  const list = (uids || []).filter(uidOk).slice(0, 100);
+  if (!list.length) return {};
+  const q = list.map(() => "?").join(",");
+  const rows = await db.prepare(
+    "SELECT u.uid, COALESCE(NULLIF(p.name,''), NULLIF(d.display_name,''), u.name, 'Member') AS name " +
+    "FROM users u LEFT JOIN user_profiles p ON p.site_uid = u.uid LEFT JOIN discord_links d ON d.site_uid = u.uid " +
+    "WHERE u.uid IN (" + q + ")"
+  ).bind(...list).all();
+  const map = {};
+  for (const row of rows.results || []) map[row.uid] = row.name;
+  return map;
+}
+
+/* An event for everybody but me in a conversation. The Durable Object routes
+   it to each name in recipientUids, so a group is one broadcast rather than
+   one per person. */
+async function fanoutToOthers(env, others, event) {
+  if (!others.length) return;
+  await hubBroadcast(env, Object.assign({}, event, { private: true, recipientUids: others }));
 }
 
 async function canMessage(db, senderUid, recipientUid) {
@@ -206,19 +254,16 @@ async function bootstrap(db, env, me) {
       "WHERE r.status = 'pending' AND (r.requester_uid = ? OR r.recipient_uid = ?) ORDER BY r.created_at DESC LIMIT 100"
     ).bind(me.uid, me.uid).all(),
     db.prepare(
-      "SELECT c.id, other.uid AS uid, " +
-      "COALESCE(NULLIF(p.name,''), NULLIF(d.display_name,''), u.name, 'Member') AS name, " +
-      "COALESCE(NULLIF(p.avatar,''), NULLIF(d.avatar,''), u.avatar, '') AS avatar, " +
-      "ps.last_seen, COALESCE(ss.online_status, 'friends') AS online_status, " +
+      "SELECT c.id, c.kind, c.title, " +
+      "(SELECT COUNT(*) FROM dm_conversation_members m2 WHERE m2.conversation_id = c.id) AS member_count, " +
+      "(SELECT other.uid FROM dm_conversation_members other " +
+      " WHERE other.conversation_id = c.id AND other.uid <> mine.uid LIMIT 1) AS other_uid, " +
       "c.last_message_at, m.body AS last_message, m.sender_uid AS last_sender_uid, " +
       "(SELECT COUNT(*) FROM dm_messages unread " +
       " WHERE unread.conversation_id = c.id AND unread.sender_uid <> ? " +
       " AND unread.id > mine.last_read_message_id AND unread.deleted_at IS NULL) AS unread " +
       "FROM dm_conversation_members mine " +
       "JOIN dm_conversations c ON c.id = mine.conversation_id " +
-      "JOIN dm_conversation_members other ON other.conversation_id = c.id AND other.uid <> mine.uid " +
-      "JOIN users u ON u.uid = other.uid LEFT JOIN user_profiles p ON p.site_uid = u.uid LEFT JOIN discord_links d ON d.site_uid = u.uid " +
-      "LEFT JOIN presence_state ps ON ps.uid = u.uid LEFT JOIN user_social_settings ss ON ss.uid = u.uid " +
       "LEFT JOIN dm_messages m ON m.id = (SELECT MAX(m2.id) FROM dm_messages m2 WHERE m2.conversation_id = c.id) " +
       "WHERE mine.uid = ? ORDER BY c.last_message_at DESC LIMIT 60"
     ).bind(me.uid, me.uid).all(),
@@ -227,11 +272,28 @@ async function bootstrap(db, env, me) {
   const online = new Set(presence.online);
   const friendIds = ids.filter((uid) => online.has(uid));
   /* The people whose activity is looked up: the friends, and the people in
-     the conversations. They are nearly always the same people, so this is
-     one query rather than two - and one query is what the row budget can
-     afford. */
+     the one-to-one conversations. They are nearly always the same people, so
+     this is one query rather than two - and one query is what the row budget
+     can afford. */
   const convoRows = conversationsResult.results || [];
-  const statusIds = Array.from(new Set(ids.concat(convoRows.map((r) => r.uid)))).filter(uidOk);
+  /* The one-to-one rows carry the person on the other end; a group has no
+     such person, and carries its title and size instead. Their profiles are
+     fetched separately so a group is one row rather than one per member. */
+  const otherUids = Array.from(new Set(convoRows.map((r) => r.other_uid).filter(uidOk)));
+  const profilesByUid = new Map();
+  if (otherUids.length) {
+    const people = otherUids.map(() => "?").join(",");
+    const profileRows = await db.prepare(
+      "SELECT u.uid, COALESCE(NULLIF(p.name,''), NULLIF(d.display_name,''), u.name, 'Member') AS name, " +
+      "COALESCE(NULLIF(p.avatar,''), NULLIF(d.avatar,''), u.avatar, '') AS avatar, " +
+      "ps.last_seen, COALESCE(ss.online_status, 'friends') AS online_status " +
+      "FROM users u LEFT JOIN user_profiles p ON p.site_uid = u.uid LEFT JOIN discord_links d ON d.site_uid = u.uid " +
+      "LEFT JOIN presence_state ps ON ps.uid = u.uid LEFT JOIN user_social_settings ss ON ss.uid = u.uid " +
+      "WHERE u.uid IN (" + people + ")"
+    ).bind(...otherUids).all();
+    for (const row of profileRows.results || []) profilesByUid.set(row.uid, row);
+  }
+  const statusIds = Array.from(new Set(ids.concat(otherUids))).filter(uidOk);
   const activityByUid = new Map();
   if (statusIds.length) {
     const q = statusIds.map(() => "?").join(",");
@@ -258,18 +320,36 @@ async function bootstrap(db, env, me) {
     avatar: r.recipient_uid === me.uid ? r.requester_avatar : r.recipient_avatar,
     createdAt: r.created_at,
   }));
-  const conversations = convoRows.map((r) => ({
-    id: r.id, uid: r.uid, name: r.name, avatar: r.avatar,
-    lastMessage: r.last_message || "", lastSenderUid: r.last_sender_uid || "",
-    lastMessageAt: r.last_message_at, unread: Number(r.unread) || 0,
-    /* The presence, the same way the friends list has it: whether they are
-       here now, and when they were last here. Without this the thread
-       header said "Offline" to everybody, always. */
-    online: friendIds.includes(r.uid) && r.online_status !== "nobody",
-    lastActive: r.online_status === "nobody" ? "" : (r.last_seen || ""),
-    /* Their own words about what they are up to, when they have set one. */
-    activity: r.online_status === "nobody" ? "" : (activityByUid.get(r.uid)?.label || ""),
-  }));
+  const conversations = convoRows.map((r) => {
+    /* A group is named by its title and sized by its members. It has no
+       person on the other end, so it carries no presence - the row says how
+       many people are in it instead. */
+    if (r.kind === "group") {
+      return {
+        id: r.id, kind: "group", uid: "",
+        name: String(r.title || "").trim() || "Group chat", avatar: "",
+        memberCount: Number(r.member_count) || 0,
+        lastMessage: r.last_message || "", lastSenderUid: r.last_sender_uid || "",
+        lastMessageAt: r.last_message_at, unread: Number(r.unread) || 0,
+        online: false, lastActive: "", activity: "",
+      };
+    }
+    const person = profilesByUid.get(r.other_uid) || {};
+    return {
+      id: r.id, kind: "dm", uid: r.other_uid || "",
+      name: person.name || "Member", avatar: person.avatar || "",
+      memberCount: 2,
+      lastMessage: r.last_message || "", lastSenderUid: r.last_sender_uid || "",
+      lastMessageAt: r.last_message_at, unread: Number(r.unread) || 0,
+      /* The presence, the same way the friends list has it: whether they are
+         here now, and when they were last here. Without this the thread
+         header said "Offline" to everybody, always. */
+      online: friendIds.includes(r.other_uid) && person.online_status !== "nobody",
+      lastActive: person.online_status === "nobody" ? "" : (person.last_seen || ""),
+      /* Their own words about what they are up to, when they have set one. */
+      activity: person.online_status === "nobody" ? "" : (activityByUid.get(r.other_uid)?.label || ""),
+    };
+  });
   const unreadMessages = conversations.reduce((n, c) => n + c.unread, 0);
   return {
     ok: true,
@@ -402,9 +482,68 @@ async function openConversation(db, me, body) {
   return json({ ok: true, conversationId: conversation.id });
 }
 
+/* A group chat: a name, and the people to put in it.
+ *
+ * Everyone picked has to be somebody this person can already message - the
+ * same rule a one-to-one obeys - so a group cannot be used to reach a person
+ * who has said they do not want messages, or somebody who has blocked the
+ * sender. The one-to-one path above is untouched: it opens the pair you have,
+ * it never converts into a group. */
+async function createGroupConversation(context, db, me, body) {
+  const wanted = Array.isArray(body.uids) ? body.uids : [];
+  const uids = [];
+  wanted.forEach(function (raw) {
+    const uid = String(raw || "");
+    if (uidOk(uid) && uid !== me.uid && uids.indexOf(uid) === -1) uids.push(uid);
+  });
+  if (!uids.length) return json({ error: "invalid_members" }, 400);
+  if (uids.length > MAX_GROUP) return json({ error: "too_many_members", max: MAX_GROUP }, 400);
+  const title = String(body.title || "").replace(/\u0000/g, "").trim().slice(0, 40);
+  if (!title) return json({ error: "invalid_title" }, 400);
+  for (const uid of uids) {
+    if (!(await profile(db, uid))) return json({ error: "user_not_found", uid }, 404);
+    if (await isBlocked(db, me.uid, uid)) return json({ error: "blocked", uid }, 403);
+    if (!(await canMessage(db, me.uid, uid))) return json({ error: "messages_not_allowed", uid }, 403);
+  }
+  if (!(await rateLimit(db, me.uid, "dm_group", 10, 3600000))) return json({ error: "rate_limited" }, 429);
+  const id = crypto.randomUUID();
+  /* The pair of columns is the one-to-one shape and a group has no pair, but
+     they are NOT NULL and SQLite cannot drop them. They hold a pair derived
+     from the group's own id: ordered, colliding with nothing real. */
+  try {
+    await db.prepare(
+      "INSERT INTO dm_conversations (id, uid_a, uid_b, kind, title, created_by) VALUES (?, ?, ?, 'group', ?, ?)"
+    ).bind(id, "group:" + id, "group;" + id, title, me.uid).run();
+  } catch (err) {
+    if (!/unique/i.test(String(err && err.message || err))) throw err;
+    return json({ error: "conversation_exists" }, 409);
+  }
+  const members = [me.uid].concat(uids);
+  try {
+    const values = members.map(function () { return "(?, ?)"; }).join(", ");
+    const binds = [];
+    members.forEach(function (uid) { binds.push(id, uid); });
+    await db.prepare(
+      "INSERT OR IGNORE INTO dm_conversation_members (conversation_id, uid) VALUES " + values
+    ).bind(...binds).run();
+  } catch (err) {
+    /* Half a group is worse than no group: take the row back out rather than
+       leave a conversation only some of its people can see. */
+    await db.prepare("DELETE FROM dm_conversations WHERE id = ?").bind(id).run();
+    throw err;
+  }
+  const label = (me.name || "Someone") + " added you to \u201C" + title + "\u201D";
+  for (const uid of uids) {
+    await notifyBestEffort(db, context.env, uid, me, "dm_message", label, context);
+  }
+  await fanoutToOthers(context.env, uids, { type: "social:refresh" });
+  return json({ ok: true, conversationId: id, kind: "group", title, members: members }, 201);
+}
+
 async function listMessages(db, me, conversationId, url) {
-  const otherUid = await memberPair(db, conversationId, me.uid);
-  if (!otherUid) return json({ error: "conversation_not_found" }, 404);
+  const conversation = await conversationOf(db, conversationId, me.uid);
+  if (!conversation) return json({ error: "conversation_not_found" }, 404);
+  const others = await memberUids(db, conversationId, me.uid);
   const before = Math.max(0, Number(url.searchParams.get("before")) || 0);
   const rows = await db.prepare(
     "SELECT m.id, m.conversation_id, m.sender_uid, m.body, m.reply_to_id, m.created_at, m.edited_at, m.deleted_at, " +
@@ -416,10 +555,17 @@ async function listMessages(db, me, conversationId, url) {
     "FROM dm_messages m WHERE m.conversation_id = ? AND (? = 0 OR m.id < ?) " +
     "ORDER BY m.id DESC LIMIT 50"
   ).bind(me.uid, conversationId, before, before).all();
-  const blocked = await isBlocked(db, me.uid, otherUid);
-  const canSend = !blocked && await canMessage(db, me.uid, otherUid);
+  /* A one-to-one is blocked or allowed by the one person in it. A group was
+     allowed by everybody when it was made, and each of them can still stop
+     messages from a particular person by blocking them - which is delivery,
+     not permission to type. */
+  const blocked = conversation.kind === "group" ? false
+    : (others.length ? await isBlocked(db, me.uid, others[0]) : true);
+  const canSend = conversation.kind === "group" ? others.length > 0
+    : (!blocked && others.length > 0 && await canMessage(db, me.uid, others[0]));
   return json({
     ok: true,
+    conversation,
     messages: (rows.results || []).reverse().map((m) => ({
       id: m.id, senderUid: m.sender_uid, body: m.deleted_at ? "" : m.body,
       replyToId: m.reply_to_id || null, replyBody: m.reply_body || "",
@@ -427,14 +573,24 @@ async function listMessages(db, me, conversationId, url) {
       editedAt: m.edited_at || null, deleted: !!m.deleted_at,
       reactions: JSON.parse(m.reactions || "[]"),
     })),
-    otherUid, blocked, canSend,
+    /* Who said what. A group has to name its senders; a one-to-one already
+       knows, but the map comes back either way so the client has one path. */
+    senders: await namesFor(db, others),
+    otherUid: others[0] || "", others, blocked, canSend,
   });
 }
 
 async function sendMessage(context, db, me, conversationId, body) {
-  const otherUid = await memberPair(db, conversationId, me.uid);
-  if (!otherUid) return json({ error: "conversation_not_found" }, 404);
-  if (!(await canMessage(db, me.uid, otherUid))) return json({ error: "messages_not_allowed" }, 403);
+  const conversation = await conversationOf(db, conversationId, me.uid);
+  if (!conversation) return json({ error: "conversation_not_found" }, 404);
+  const others = await memberUids(db, conversationId, me.uid);
+  if (!others.length) return json({ error: "conversation_not_found" }, 404);
+  /* A one-to-one has to be allowed by the person on the other end of it. A
+     group was allowed by everyone in it when it was made, and each of them is
+     still asked below whether this particular sender reaches them. */
+  if (conversation.kind !== "group" && !(await canMessage(db, me.uid, others[0]))) {
+    return json({ error: "messages_not_allowed" }, 403);
+  }
   const text = String(body.body || "").replace(/\u0000/g, "").trim();
   if (!text || text.length > MAX_MESSAGE) return json({ error: "invalid_message", maxLength: MAX_MESSAGE }, 400);
   if (!(await rateLimit(db, me.uid, "dm_send", 30, 60000))) return json({ error: "rate_limited" }, 429);
@@ -453,11 +609,20 @@ async function sendMessage(context, db, me, conversationId, body) {
   await db.prepare(
     "UPDATE dm_conversations SET last_message_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?"
   ).bind(conversationId).run();
-  await notifyBestEffort(db, context.env, otherUid, me, "dm_message", (me.name || "Someone") + " sent you a message", context);
-  await hubBroadcast(context.env, {
+  /* Who actually gets it. In a one-to-one that is the one person; in a group
+     it is everyone who has not blocked the sender and still takes messages. */
+  const reached = [];
+  for (const uid of others) {
+    if (conversation.kind !== "group" || await canMessage(db, me.uid, uid)) reached.push(uid);
+  }
+  const label = conversation.kind === "group"
+    ? (me.name || "Someone") + " sent a message in \u201C" + (conversation.title || "a group") + "\u201D"
+    : (me.name || "Someone") + " sent you a message";
+  for (const uid of reached) {
+    await notifyBestEffort(db, context.env, uid, me, "dm_message", label, context);
+  }
+  await fanoutToOthers(context.env, reached, {
     type: "social:message",
-    private: true,
-    recipientUid: otherUid,
     conversationId,
     messageId: id,
   });
@@ -478,8 +643,8 @@ async function sendMessage(context, db, me, conversationId, body) {
 }
 
 async function markRead(db, me, conversationId) {
-  const otherUid = await memberPair(db, conversationId, me.uid);
-  if (!otherUid) return json({ error: "conversation_not_found" }, 404);
+  const conversation = await conversationOf(db, conversationId, me.uid);
+  if (!conversation) return json({ error: "conversation_not_found" }, 404);
   await db.prepare(
     "UPDATE dm_conversation_members SET last_read_message_id = " +
     "MAX(last_read_message_id, COALESCE((SELECT MAX(id) FROM dm_messages WHERE conversation_id = ?), 0)) " +
@@ -489,9 +654,12 @@ async function markRead(db, me, conversationId) {
 }
 
 async function typing(context, db, me, conversationId, body) {
-  const otherUid = await memberPair(db, conversationId, me.uid);
-  if (!otherUid) return json({ error: "conversation_not_found" }, 404);
-  if (await isBlocked(db, me.uid, otherUid)) return json({ error: "blocked" }, 403);
+  const conversation = await conversationOf(db, conversationId, me.uid);
+  if (!conversation) return json({ error: "conversation_not_found" }, 404);
+  const others = await memberUids(db, conversationId, me.uid);
+  if (conversation.kind !== "group" && others.length && await isBlocked(db, me.uid, others[0])) {
+    return json({ error: "blocked" }, 403);
+  }
   /* The typing limit. See the client for why it is a limit and not a
      once-per-burst. This is the server's own bound, in case a client does
      not keep to it. */
@@ -502,10 +670,8 @@ async function typing(context, db, me, conversationId, body) {
   } else if (!(await rateLimit(db, me.uid, "dm_typing", 40, 60000))) {
     return json({ error: "rate_limited" }, 429);
   }
-  await hubBroadcast(context.env, {
+  await fanoutToOthers(context.env, others, {
     type: "social:typing",
-    private: true,
-    recipientUid: otherUid,
     conversationId,
     user: { uid: me.uid, name: me.name || "Member" },
     typing: body.typing === true,
@@ -520,9 +686,10 @@ async function mutateMessage(context, db, me, messageId, method, body) {
   const row = await db.prepare(
     "SELECT id, conversation_id, sender_uid, body FROM dm_messages WHERE id = ?"
   ).bind(id).first();
-  if (!row || !(await memberPair(db, row.conversation_id, me.uid))) return json({ error: "message_not_found" }, 404);
+  const conversation = row && await conversationOf(db, row.conversation_id, me.uid);
+  if (!conversation) return json({ error: "message_not_found" }, 404);
   if (row.sender_uid !== me.uid) return json({ error: "forbidden" }, 403);
-  const otherUid = await memberPair(db, row.conversation_id, me.uid);
+  const others = await memberUids(db, row.conversation_id, me.uid);
   if (method === "PATCH") {
     const text = String(body.body || "").replace(/\u0000/g, "").trim();
     if (!text || text.length > MAX_MESSAGE) return json({ error: "invalid_message", maxLength: MAX_MESSAGE }, 400);
@@ -534,10 +701,8 @@ async function mutateMessage(context, db, me, messageId, method, body) {
       "UPDATE dm_messages SET body = '', deleted_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ? AND sender_uid = ? AND deleted_at IS NULL"
     ).bind(id, me.uid).run();
   }
-  await hubBroadcast(context.env, {
+  await fanoutToOthers(context.env, others, {
     type: "social:message",
-    private: true,
-    recipientUid: otherUid,
     conversationId: row.conversation_id,
     messageId: id,
   });
@@ -551,9 +716,12 @@ async function reactToMessage(context, db, me, messageId, body) {
   const message = await db.prepare(
     "SELECT conversation_id FROM dm_messages WHERE id = ? AND deleted_at IS NULL"
   ).bind(id).first();
-  if (!message || !(await memberPair(db, message.conversation_id, me.uid))) return json({ error: "message_not_found" }, 404);
-  const otherUid = await memberPair(db, message.conversation_id, me.uid);
-  if (await isBlocked(db, me.uid, otherUid)) return json({ error: "blocked" }, 403);
+  const conversation = message && await conversationOf(db, message.conversation_id, me.uid);
+  if (!conversation) return json({ error: "message_not_found" }, 404);
+  const others = await memberUids(db, message.conversation_id, me.uid);
+  if (conversation.kind !== "group" && others.length && await isBlocked(db, me.uid, others[0])) {
+    return json({ error: "blocked" }, 403);
+  }
   if (!(await rateLimit(db, me.uid, "dm_reaction", 60, 60000))) return json({ error: "rate_limited" }, 429);
   const existing = await db.prepare(
     "SELECT 1 FROM dm_message_reactions WHERE message_id = ? AND uid = ? AND emoji = ?"
@@ -567,10 +735,8 @@ async function reactToMessage(context, db, me, messageId, body) {
       "INSERT OR IGNORE INTO dm_message_reactions (message_id, uid, emoji) VALUES (?, ?, ?)"
     ).bind(id, me.uid, emoji).run();
   }
-  await hubBroadcast(context.env, {
+  await fanoutToOthers(context.env, others, {
     type: "social:message",
-    private: true,
-    recipientUid: otherUid,
     conversationId: message.conversation_id,
     messageId: id,
   });
@@ -671,7 +837,13 @@ export async function onRequest(context) {
       return handleRequestAction(context, db, me, parts[1], String(body.action || ""));
     }
     if (parts.length === 2 && parts[0] === "friends" && method === "DELETE") return removeFriend(context, db, me, parts[1]);
-    if (parts.length === 1 && parts[0] === "conversations" && method === "POST") return openConversation(db, me, await request.json());
+    if (parts.length === 1 && parts[0] === "conversations" && method === "POST") {
+      /* One person opens a one-to-one; a list of people makes a group. The
+         shape of the body is what says which, so a group never has to be a
+         second endpoint that a one-to-one could fall into by mistake. */
+      const body = await request.json();
+      return Array.isArray(body.uids) ? createGroupConversation(context, db, me, body) : openConversation(db, me, body);
+    }
     if (parts.length === 3 && parts[0] === "conversations" && parts[2] === "messages" && method === "GET") {
       return listMessages(db, me, parts[1], url);
     }

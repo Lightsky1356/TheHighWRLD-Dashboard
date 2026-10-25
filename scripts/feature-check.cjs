@@ -150,21 +150,12 @@ async function main() {
      before the module is there reports a failure that is not one. */
   for (let i = 0; i < 60; i++) {
     const ready = await cdp.evalJson(
-      "!!(window.THWActivity && window.THWGrammar && window.THWSocial)"
+      "!!(window.THWGrammar && window.THWSocial)"
     ).catch(() => false);
     if (ready === true) break;
     await sleep(500);
   }
   await sleep(1500);
-
-  /* ---- the friend activity feed ---- */
-  const hasActivity = await cdp.evalJson("!!window.THWActivity");
-  check("the activity feed module is loaded", hasActivity === true);
-
-  const filters = await cdp.evalJson("(window.THWActivity && window.THWActivity.FILTERS || []).map(f => f.key)");
-  check("the feed has the four filters",
-    JSON.stringify(filters) === JSON.stringify(["all", "listening", "playlist", "community"]),
-    JSON.stringify(filters));
 
   /* ---- the grammar check ---- */
   const hasGrammar = await cdp.evalJson("!!window.THWGrammar");
@@ -221,11 +212,14 @@ async function main() {
   const tabs = await cdp.evalJson(
     "[...document.querySelectorAll('#thw-social-root [data-tab]')].map(t => t.dataset.tab)"
   );
-  check("the panel has the Activity tab",
-    Array.isArray(tabs) && tabs.includes("activity"), JSON.stringify(tabs));
+  check("the panel keeps its three tabs",
+    JSON.stringify(tabs) === JSON.stringify(["friends", "messages", "requests"]), JSON.stringify(tabs));
 
+  /* The Activity tab is gone: the feed is drawn inside the Friends tab, as a
+     sibling of the friends list rather than inside it - folding the list away
+     must not fold the feed away with it. */
   const activityView = await cdp.evalJson("!!document.querySelector('#thw-social-root [data-view=\"activity\"]')");
-  check("the panel has the Activity view", activityView === true);
+  check("the Activity tab is folded into Friends", activityView === false);
 
   /* ---- the foldable friends list ---- */
   const toggleThere = await cdp.evalJson("!!document.querySelector('#thw-social-root .thw-social-friends-toggle')");
@@ -236,6 +230,10 @@ async function main() {
 
   const restored = await cdp.evalJson("(function(){ var b = document.querySelector('#thw-social-root .thw-social-friends-toggle'); if(!b) return 'no button'; b.click(); return !document.querySelector('#thw-social-root [data-view=\"friends\"]').classList.contains('thw-social-friends-collapsed'); })()");
   check("unfolding it works too", restored === true, String(restored));
+
+  /* The new-group button is on the friends head, at every width. */
+  const newGroupThere = await cdp.evalJson("!!document.querySelector('#thw-social-root [data-action=\"new-group\"]')");
+  check("the friends tab offers a new group chat", newGroupThere === true);
 
   /* ---- the status indicator ---- */
   const statusThere = await cdp.evalJson("!!document.querySelector('#thw-social-root .thw-social-status, #thw-social-root .thw-social-face')");
@@ -408,22 +406,34 @@ async function main() {
     return incoming.length;
   })()`).then(v => console.log("    accepted requests: " + v));
 
-  await cdp.evalJson(`(async function () {
-    await fetch("/api/social/settings", {
+  /* The friend does three things the site records: shares its listening,
+     publishes a track, and votes in the Wanted Vault. The vote is the one
+     the row reads - the indicator is fed by the site's own activity rows,
+     which is the pipeline a real session drives, not the feed's own table. */
+  const friendActs = await cdp.evalJson(`(async function () {
+    var settings = await fetch("/api/social/settings", {
       method: "POST", credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ activity_listening: "friends" })
-    });
-    await fetch("/api/activity", {
+    }).then(function (r) { return r.status; });
+    var pub = await fetch("/api/activity", {
       method: "POST", credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: "listening", trackId: "All In", title: "All In",
         artist: "Juice WRLD", artwork: ""
       })
-    });
-    return "published";
+    }).then(function (r) { return r.json().catch(function () { return {}; }); });
+    var vote = await fetch("/api/wanted", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "vote", track: "Indicator Probe", user: "gallinked1", value: 1 })
+    }).then(function (r) { return r.status; });
+    return { settings: settings, published: pub.published === true, vote: vote };
   })()`);
+  check("the other account's sharing was turned on", friendActs.settings === 200, String(friendActs.settings));
+  check("its listening publication was accepted", friendActs.published === true, JSON.stringify(friendActs));
+  check("its vote was recorded by the site", friendActs.vote === 200, String(friendActs.vote));
 
   /* Back to this account. */
   await cdp.send("Network.setCookie", {
@@ -447,40 +457,115 @@ async function main() {
     var data = await res.json();
     return { status: res.status, items: (data.items || []).length };
   })()`);
-  check("the feed answers the signed-in member", saw.status === 200, String(saw.status));
+  check("the feed answers the signed-in member", saw.status === 200 && saw.items >= 1,
+    JSON.stringify(saw));
 
-  /* The feed is drawn when its tab is opened. */
-  await cdp.evalJson("window.THWSocial.goActivity()");
+  /* The panel is the view of it now: a friend's row says whether they are
+     here, and under that what they are up to. The panel has been open
+     through all of this, so asking for it again is the refresh an open
+     costs - the same call, answering as this account. */
+  await cdp.evalJson("window.THWSocial.open()");
   await sleep(2500);
-  const drawn = await cdp.evalJson(`(function(){
-    var list = document.getElementById("thw-activity-list");
-    if (!list) return { error: "no list" };
+  const indicator = await cdp.evalJson(`(async function(){
+    var boot = await fetch('/api/social/bootstrap', { credentials: 'same-origin' })
+      .then(function(r){ return r.json(); }).catch(function(){ return {}; });
+    var friend = (boot.friends || []).find(function(f){ return f.uid === 'gallinked1'; }) || {};
+    var rows = [...document.querySelectorAll('#thw-social-friends .thw-social-row')];
+    var row = rows.find(function(r){ return /Gallery Linked/.test(r.textContent); });
+    if (!row) return { error: "no row for that friend", rows: rows.length, expected: (friend.activity || "").trim() };
+    var presence = row.querySelector('.thw-social-meta');
+    var activity = row.querySelector('.thw-social-activity');
     return {
-      cards: list.querySelectorAll(".thw-activity-card").length,
-      empty: !!list.querySelector(".thw-activity-empty"),
-      filters: [...document.querySelectorAll("#thw-activity-filters .thw-activity-filter")].map(f => f.textContent),
-      heading: (document.querySelector(".thw-activity-title") || {}).textContent,
-      text: (list.innerText || "").slice(0, 200),
+      expected: (friend.activity || "").trim(),
+      presence: presence ? presence.textContent.trim() : "",
+      activity: activity ? activity.textContent.trim() : "",
+      under: !!(presence && activity && (presence.compareDocumentPosition(activity) & Node.DOCUMENT_POSITION_FOLLOWING)),
     };
   })()`);
-  check("the feed is drawn when its tab is opened", drawn && !drawn.error, JSON.stringify(drawn).slice(0, 110));
-  check("the friend event is in the feed",
-    drawn && Number(drawn.cards) >= 1, JSON.stringify(drawn && drawn.cards));
-  check("the event says who it is from",
-    drawn && /gallinked1|Gallery Linked|Member/.test(JSON.stringify(drawn)), JSON.stringify(drawn).slice(0, 110));
-  check("the feed has its four filters",
-    drawn && JSON.stringify(drawn.filters) === JSON.stringify(["All", "Listening", "Playlists", "Community"]),
-    JSON.stringify(drawn && drawn.filters));
+  check("the friend's row says whether they are here",
+    indicator && !!indicator.presence, JSON.stringify(indicator).slice(0, 110));
+  check("the row says what the friend is up to, under the online indicator",
+    indicator && indicator.under === true && !!indicator.expected && indicator.activity === indicator.expected,
+    JSON.stringify(indicator).slice(0, 160));
 
-  /* And it can be asked for again - the refresh control. */
-  const refreshed = await cdp.evalJson(`(async function(){
-    var b = document.querySelector(".thw-activity-refresh");
-    if (!b) return "no refresh button";
+  /* ---- group chats, end to end ---- */
+  /* A group is made from the friends list: a name, and the people to put in
+     it. The one friend this account has is already a friend, so the group can
+     be made without changing anybody's messaging settings first. */
+  const groupDialog = await cdp.evalJson(`(function(){
+    var b = document.querySelector('#thw-social-root [data-action="new-group"]');
+    if (!b) return { error: "no new-group button" };
     b.click();
-    await new Promise(function(r){ setTimeout(r, 2000); });
-    return "clicked";
+    var d = document.getElementById("thw-social-group");
+    if (!d || d.hidden) return { error: "the dialog did not open" };
+    return {
+      open: true,
+      people: document.querySelectorAll('#thw-social-group-people input[type=checkbox]').length,
+    };
   })()`);
-  check("the feed has a refresh control", refreshed === "clicked", String(refreshed));
+  check("the new group dialog opens", groupDialog && groupDialog.open === true, JSON.stringify(groupDialog));
+  check("the dialog offers the friends to pick", groupDialog && Number(groupDialog.people) >= 1, String(groupDialog && groupDialog.people));
+
+  const groupMade = await cdp.evalJson(`(async function(){
+    var name = document.getElementById('thw-social-group-name');
+    if (!name) return { error: "no name field" };
+    name.value = "Test Group";
+    var boxes = [...document.querySelectorAll('#thw-social-group-people input[type=checkbox]')];
+    if (!boxes.length) return { error: "nobody to pick" };
+    boxes[0].checked = true;
+    document.getElementById('thw-social-group-people').dispatchEvent(new Event('change', { bubbles: true }));
+    var create = document.getElementById('thw-social-group-create');
+    if (create.disabled) return { error: "create stayed disabled" };
+    var hint = (document.getElementById('thw-social-group-hint') || {}).textContent;
+    create.click();
+    await new Promise(function(r){ setTimeout(r, 3000); });
+    var head = document.getElementById('thw-social-thread-head');
+    return {
+      hint: hint,
+      dialogClosed: document.getElementById('thw-social-group').hidden === true,
+      head: (head && head.innerText || '').trim().replace(/\\s+/g, ' ').slice(0, 60),
+    };
+  })()`);
+  check("picking someone arms the create button", groupMade && /picked/i.test(String(groupMade.hint)), JSON.stringify(groupMade).slice(0, 90));
+  check("the group is created and opened", groupMade && groupMade.dialogClosed === true, JSON.stringify(groupMade).slice(0, 120));
+  check("the thread header names the group and counts its people",
+    groupMade && /Test Group/.test(String(groupMade.head)) && /2 people/.test(String(groupMade.head)),
+    String(groupMade && groupMade.head));
+
+  const groupSent = await cdp.evalJson(`(async function(){
+    var input = document.getElementById('thw-social-input');
+    if (!input || input.disabled) return { error: "no composer" };
+    input.value = "hello group";
+    document.getElementById('thw-social-composer').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise(function(r){ setTimeout(r, 2500); });
+    var bubbles = [...document.querySelectorAll('#thw-social-root .thw-social-message')];
+    return {
+      messages: bubbles.length,
+      text: (document.getElementById('thw-social-thread-body').innerText || '').slice(0, 60),
+    };
+  })()`);
+  check("a message can be sent in the group",
+    groupSent && Number(groupSent.messages) >= 1 && /hello group/i.test(String(groupSent.text)),
+    JSON.stringify(groupSent).slice(0, 110));
+
+  /* The other member sees the group in their own panel. One browser is every
+     account here, so the session cookie is swapped the same way the feed
+     section swaps it - and the panel is the panel, answering as them. */
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: "gallinked1token", domain: "127.0.0.1", path: "/",
+  });
+  const otherSees = await cdp.evalJson(`(async function(){
+    window.THWSocial.open();
+    await new Promise(function(r){ setTimeout(r, 2500); });
+    return [...document.querySelectorAll('#thw-social-root .thw-social-convo')]
+      .map(function(row){ return (row.innerText || '').replace(/\\s+/g, ' ').slice(0, 44); });
+  })()`);
+  check("the other member sees the group",
+    Array.isArray(otherSees) && otherSees.some(function(t){ return /Test Group/.test(t); }),
+    JSON.stringify(otherSees).slice(0, 140));
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: "notifontoken1", domain: "127.0.0.1", path: "/",
+  });
 
   /* ---- the trending strip and the drops, on the page ---- */
   await cdp.evalJson("window.switchAppPage && window.switchAppPage('player')");
@@ -503,6 +588,12 @@ async function main() {
   const toggled = await cdp.evalJson("(function(){ var t = document.getElementById('ps-cover-gradients-toggle'); if (!t) return { error: 'no toggle' }; var before = window.wrldPlayerSettings.get('coverGradients'); t.checked = false; t.dispatchEvent(new Event('change', { bubbles: true })); return { before: before, after: window.wrldPlayerSettings.get('coverGradients'), style: getCoverGradientStyle('Juice-WRLD.png') }; })()");
   check("clicking the toggle turns the gradients off",
     toggled && toggled.after === false, JSON.stringify(toggled));
+
+  /* The toggle says which way it is; the toast says what that did. */
+  const toastOff = await cdp.evalJson("[...document.querySelectorAll('.gtoast')].map(function(n){ return (n.textContent || '').trim(); }).filter(Boolean)");
+  check("turning them off says so in a toast",
+    Array.isArray(toastOff) && toastOff.some(function(t){ return /cover gradients off/i.test(t); }),
+    JSON.stringify(toastOff).slice(0, 120));
   const flatStyle = await cdp.evalJson("(function(){ var s = getCoverGradientStyle('Covers/Cheat Code.png'); var own = (typeof coverGradientMap !== 'undefined') ? (coverGradientMap['Covers/Cheat Code.png'] || '') : ''; return { style: s, own: own, ownInStyle: own ? s.indexOf(own) !== -1 : null, white: /255,\s*255,\s*255|#fff/i.test(String(s)), blank: s.indexOf('hsl(280,60%,55%)') !== -1 }; })()");
   check("the playlist and queue text go white once it is off",
     flatStyle && flatStyle.white === true && flatStyle.blank === false && flatStyle.ownInStyle === false,
@@ -512,6 +603,10 @@ async function main() {
   check("clicking it again brings them back",
     toggledBack && toggledBack.after === true && /gradient/.test(String(toggledBack.style)),
     JSON.stringify(toggledBack).slice(0, 110));
+
+  const toastOn = await cdp.evalJson("[...document.querySelectorAll('.gtoast')].map(function(n){ return (n.textContent || '').trim(); }).filter(function(t){ return /cover gradients on/i.test(t); })");
+  check("turning them back on says so too",
+    Array.isArray(toastOn) && toastOn.length >= 1, JSON.stringify(toastOn).slice(0, 120));
 
   await cdp.evalJson("window.togglePlayerSettings && window.togglePlayerSettings()");
 

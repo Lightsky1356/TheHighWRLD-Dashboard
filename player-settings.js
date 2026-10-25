@@ -370,6 +370,16 @@
     if(cgToggle) cgToggle.addEventListener('change', function(){
       set('coverGradients', this.checked);
       applyCoverGradients();
+      /* The toggle already says which way it is now - the toast says what
+         that did to the screen, since the change is everywhere at once. */
+      try {
+        if(typeof showToastSimple === 'function'){
+          showToastSimple(this.checked
+            ? 'Cover gradients on - titles and panels take their colour from the cover'
+            : 'Cover gradients off - covers keep their colour, text and panels go white and black',
+            { type: 'info' });
+        }
+      } catch(e){}
     });
 
     var drpToggle = document.getElementById('ps-drp-toggle');

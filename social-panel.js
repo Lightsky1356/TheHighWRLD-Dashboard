@@ -31,6 +31,10 @@
        re-rendered. */
     menuOpen: false,
     grammarOpen: false,
+    /* Whether the new-group dialog is open, and who said what in the open
+       thread (a group has to name its senders; a one-to-one already knows). */
+    groupOpen: false,
+    senders: {},
     /* Whether the friends list is folded away. Desktop only - see the toggle. */
     friendsCollapsed: false,
     /* Which list was open before the Settings button took over the panel, so
@@ -161,7 +165,7 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v33";
+    css.href = "/social.css?v=thw-v34";
     document.head.appendChild(css);
 
     var root = el("div");
@@ -183,11 +187,9 @@
             '<button class="thw-social-tab" type="button" role="tab" data-tab="friends" aria-selected="true">Friends</button>' +
             '<button class="thw-social-tab" type="button" role="tab" data-tab="messages" aria-selected="false">Messages <span class="thw-social-tab-count" id="thw-social-message-count"></span></button>' +
             '<button class="thw-social-tab" type="button" role="tab" data-tab="requests" aria-selected="false">Requests <span class="thw-social-tab-count" id="thw-social-request-count"></span></button>' +
-            /* The friend activity feed. It is a tab of this panel rather than a
-               page of its own, and it is a tab rather than a fifth item in the
-               mobile bottom navigation - that navigation is five items and
-               crowding it would push the others out. */
-            '<button class="thw-social-tab" type="button" role="tab" data-tab="activity" aria-selected="false">Activity</button>' +
+            /* There is no activity tab. What a friend is up to is said on
+               their own row, next to whether they are here - a feed of posts
+               was a second place to learn the same thing. */
           '</nav>' +
           '<div class="thw-social-status" id="thw-social-status" role="status" aria-live="polite"></div>' +
           '<div class="thw-social-freshness" id="thw-social-freshness" aria-live="off"></div>' +
@@ -198,8 +200,11 @@
             '<div class="thw-social-list" id="thw-social-search-results" aria-live="polite"></div>' +
             '<div class="thw-social-section-label thw-social-friends-head">' +
               '<span>Your friends</span>' +
+              '<span class="thw-social-friends-head-actions">' +
+              '<button class="thw-social-new-group" type="button" data-action="new-group" title="Start a group chat"><i class="fas fa-users" aria-hidden="true"></i><span>New group</span></button>' +
               '<button class="thw-social-friends-toggle" type="button" data-action="toggle-friends" aria-expanded="true" aria-controls="thw-social-friends" title="Collapse the friends list">' +
                 '<i class="fas fa-chevron-up" aria-hidden="true"></i></button>' +
+              '</span>' +
             '</div><div class="thw-social-list" id="thw-social-friends"></div>' +
           '</section>' +
           '<section class="thw-social-view" data-view="messages" role="tabpanel">' +
@@ -212,7 +217,6 @@
               '</div></div>' +
           '</section>' +
           '<section class="thw-social-view" data-view="requests" role="tabpanel"><div class="thw-social-list" id="thw-social-requests"></div></section>' +
-          '<section class="thw-social-view" data-view="activity" role="tabpanel"><div class="thw-activity-mount" id="thw-activity-mount"></div></section>' +
           '<section class="thw-social-view" data-view="settings" id="thw-social-settings-view" role="tabpanel"><div id="thw-social-settings-mount"></div></section>' +
         '</section>' +
       '</div>' +
@@ -221,6 +225,24 @@
           '<header class="thw-social-rules-head"><h3 class="thw-social-rules-title" id="thw-social-rules-title">Friends &amp; Messages rules</h3>' +
             '<button class="thw-social-rules-close" type="button" aria-label="Close rules"><i class="fas fa-xmark" aria-hidden="true"></i></button></header>' +
           '<div class="thw-social-rules-body"></div>' +
+        '</div>' +
+      '</div>' +
+      /* A new group chat: a name, and the friends to put in it. It sits over
+         the panel the way Rules does, and it closes the same three ways. */
+      '<div class="thw-social-group" id="thw-social-group" role="dialog" aria-modal="true" aria-labelledby="thw-social-group-title" hidden>' +
+        '<div class="thw-social-group-card">' +
+          '<header class="thw-social-group-head"><h3 class="thw-social-group-title" id="thw-social-group-title">New group chat</h3>' +
+            '<button class="thw-social-group-close" type="button" aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button></header>' +
+          '<form class="thw-social-group-form" id="thw-social-group-form">' +
+            '<label class="thw-social-group-label" for="thw-social-group-name">Name</label>' +
+            '<input class="thw-social-group-name" id="thw-social-group-name" type="text" maxlength="40" autocomplete="off" placeholder="Name this group">' +
+            '<span class="thw-social-group-label">People</span>' +
+            '<div class="thw-social-group-people" id="thw-social-group-people"></div>' +
+            '<div class="thw-social-group-foot">' +
+              '<span class="thw-social-group-hint" id="thw-social-group-hint">Pick the people to put in it.</span>' +
+              '<button class="thw-social-group-create" id="thw-social-group-create" type="submit" disabled>Create group</button>' +
+            '</div>' +
+          '</form>' +
         '</div>' +
       '</div>';
     document.body.appendChild(root);
@@ -269,6 +291,15 @@
       if (event.target === event.currentTarget) closeRules();
     });
     document.querySelector(".thw-social-rules-close").addEventListener("click", closeRules);
+    document.getElementById("thw-social-group").addEventListener("click", function (event) {
+      /* Backdrop click closes; clicks inside the card must not. */
+      if (event.target === event.currentTarget) closeGroupDialog();
+    });
+    document.querySelector(".thw-social-group-close").addEventListener("click", closeGroupDialog);
+    document.getElementById("thw-social-group-form").addEventListener("submit", createGroup);
+    /* The count of picked people, and whether that is enough, follow the
+       checkboxes rather than being decided when the form is sent. */
+    document.getElementById("thw-social-group-people").addEventListener("change", syncGroupCount);
     document.addEventListener("keydown", function (event) {
       if (!state.open) return;
       /* The rules dialog sits above the panel, so Escape unwinds one level at a
@@ -276,6 +307,7 @@
       if (event.key === "Escape") {
         event.preventDefault();
         if (state.rulesOpen) closeRules();
+        else if (state.groupOpen) closeGroupDialog();
         else if (state.grammarOpen) closeGrammarResult();
         else if (state.menuOpen) closeMessageMenu();
         else setOpen(false);
@@ -479,6 +511,7 @@
        closeRules() drops its own lock hold; without this the count would be left
        one too high and the page would stay frozen after the panel is gone. */
     if (!state.open && state.rulesOpen) closeRules();
+    if (!state.open && state.groupOpen) closeGroupDialog();
     if (state.open) {
       /* A Community menu left hovering would sit straight over the panel the
          moment focus moved into it, so it is closed once on open. It is not
@@ -515,34 +548,118 @@
        reason to ask on every panel open. Re-asking on each visit keeps the
        selects honest if they were changed in another tab. */
     if (tab === "settings") loadPrivacySettings();
-    /* The activity feed is drawn when its tab is opened, not when the panel
-       is - a feed nobody is looking at is a request that bought nothing. */
-    if (tab === "activity") mountActivityFeed();
   }
 
-  /* The friend activity feed.
+  /* A group has no face of its own, so it gets the same box everybody else
+     has, with the people glyph in it instead of initials. */
+  function groupAvatarNode(conversation, size) {
+    var box = el("span", "thw-social-avatar thw-social-avatar--group");
+    if (size) box.style.width = size + "px", box.style.height = size + "px";
+    box.innerHTML = '<i class="fas fa-users" aria-hidden="true"></i>';
+    var count = Number(conversation && conversation.memberCount) || 0;
+    box.title = count ? count + " people" : "Group chat";
+    return box;
+  }
+
+  /* The new group chat.
    *
-   * It lives in its own module (friend-activity.js) so this panel is not
-   * carrying the drawing of it. The module keeps what it has already
-   * fetched, so coming back to the tab does not ask again unless the person
-   * pressed Refresh. */
-  function mountActivityFeed() {
-    var mount = document.getElementById("thw-activity-mount");
-    if (!mount) return;
-    if (!window.THWActivity) {
-      mount.innerHTML = '<div class="thw-activity-empty"><strong class="thw-activity-empty-title">The activity feed is not available</strong></div>';
-      return;
+   * The list is the friends list - the people who can already be messaged -
+     so there is nothing to search for and no way to add somebody who has not
+     chosen to be reachable. */
+  function openGroupDialog() {
+    var dialog = document.getElementById("thw-social-group");
+    if (!dialog) return;
+    var nameField = document.getElementById("thw-social-group-name");
+    if (nameField) nameField.value = "";
+    var people = document.getElementById("thw-social-group-people");
+    var friends = (state.boot && state.boot.friends) || [];
+    if (people) {
+      people.replaceChildren();
+      if (!friends.length) {
+        people.appendChild(el("div", "thw-social-empty",
+          "Add some friends first - a group is made from the people you already talk to."));
+      }
+      friends.forEach(function (friend) {
+        var label = el("label", "thw-social-group-person");
+        var box = document.createElement("input");
+        box.type = "checkbox";
+        box.className = "thw-social-group-check";
+        box.value = friend.uid;
+        label.appendChild(box);
+        var face = el("span", "thw-social-face");
+        face.appendChild(avatarNode(friend, 26));
+        label.appendChild(face);
+        label.appendChild(el("span", "thw-social-name", friend.name));
+        people.appendChild(label);
+      });
     }
-    window.THWActivity.mount(mount, {
-      onOpenProfile: function (uid) {
-        /* The site opens profiles itself - it resolves a uid, a name or a
-           handle, and it owns the history and the address bar. */
-        if (typeof window.openProfile === "function") {
-          try { window.openProfile(uid); return; } catch (e) {}
-        }
-        window.location.href = "/Profile/" + encodeURIComponent(uid);
-      },
+    state.groupOpen = true;
+    dialog.hidden = false;
+    syncGroupCount();
+    if (nameField) nameField.focus();
+  }
+
+  function closeGroupDialog() {
+    var dialog = document.getElementById("thw-social-group");
+    state.groupOpen = false;
+    if (dialog) dialog.hidden = true;
+  }
+
+  function pickedGroupMembers() {
+    return Array.prototype.map.call(
+      document.querySelectorAll("#thw-social-group-people input[type=checkbox]:checked"),
+      function (box) { return box.value; }
+    );
+  }
+
+  /* How many are picked, and whether that is enough to make one. A group of
+     one other person is still a group - it has a name, and it is a different
+     conversation from the one-to-one - so one is enough. */
+  function syncGroupCount() {
+    var picked = pickedGroupMembers();
+    var hint = document.getElementById("thw-social-group-hint");
+    if (hint) hint.textContent = picked.length ? picked.length + (picked.length === 1 ? " person picked" : " people picked") : "Pick the people to put in it.";
+    var create = document.getElementById("thw-social-group-create");
+    if (create) create.disabled = !picked.length;
+  }
+
+  function createGroup(event) {
+    event.preventDefault();
+    var nameField = document.getElementById("thw-social-group-name");
+    var title = ((nameField && nameField.value) || "").trim();
+    var uids = pickedGroupMembers();
+    if (!title) { showStatus("Give the group a name.", "warn"); if (nameField) nameField.focus(); return; }
+    if (!uids.length) { showStatus("Pick at least one person for the group.", "warn"); return; }
+    var create = document.getElementById("thw-social-group-create");
+    if (create) create.disabled = true;
+    api("/conversations", { method: "POST", body: { title: title, uids: uids } }).then(function (data) {
+      closeGroupDialog();
+      openConversation({
+        id: data.conversationId,
+        kind: "group",
+        uid: "",
+        name: data.title || title,
+        avatar: "",
+        memberCount: (data.members || []).length || (uids.length + 1),
+      });
+      showStatus("Group created.");
+      /* The list has to show it for everyone else too, and the server is the
+         one that knows it exists. */
+      refresh();
+    }).catch(function (error) {
+      showStatus(describeError(error), "error");
+      if (create) create.disabled = false;
     });
+  }
+
+  /* Who said it. A one-to-one already knows: the thread is named after the
+     one other person. A group has to say which of its people wrote each
+     line, and that name comes back with the messages. */
+  function senderName(message) {
+    if (!state.conversation) return "Member";
+    if (state.conversation.kind !== "group") return state.conversation.name || "Member";
+    var uid = message && message.senderUid;
+    return (state.senders && state.senders[uid]) || "Member";
   }
 
   /* Settings sits beside Rules as a header button rather than a fourth tab.
@@ -834,9 +951,13 @@
       row.appendChild(face);
       var person = el("span", "thw-social-person");
       person.appendChild(el("span", "thw-social-name", friend.name));
-      var label = statusLabel(friend);
-      var meta = el("span", "thw-social-meta" + (friend.online ? " thw-social-online" : ""), label);
+      /* Whether they are here, always said - and under it what they are up
+         to. Both are true at once, so neither stands in for the other: the
+         activity used to replace the presence whenever there was one, and
+         the online state disappeared behind it. */
+      var meta = el("span", "thw-social-meta" + (friend.online ? " thw-social-online" : ""), statusOf(friend).label);
       person.appendChild(meta);
+      if (friend.activity) person.appendChild(el("span", "thw-social-activity", friend.activity));
       row.appendChild(person);
       var actions = el("span", "thw-social-actions");
       actions.appendChild(button("Message", "message-user", "primary", { uid: friend.uid }));
@@ -1015,14 +1136,21 @@
       row.type = "button";
       row.dataset.conversationId = conversation.id;
       var face = el("span", "thw-social-face");
-      face.appendChild(avatarNode(conversation, 29));
-      /* The same dot the friends list has, so a conversation carries the
-         state of the person on the other end of it. */
-      face.appendChild(statusDot(conversation));
+      if (conversation.kind === "group") {
+        /* A group has no person on the other end, so it carries no dot - the
+           glyph says what it is and the title says what it is called. */
+        face.appendChild(groupAvatarNode(conversation, 29));
+      } else {
+        face.appendChild(avatarNode(conversation, 29));
+        /* The same dot the friends list has, so a conversation carries the
+           state of the person on the other end of it. */
+        face.appendChild(statusDot(conversation));
+      }
       row.appendChild(face);
       var copy = el("span", "thw-social-convo-copy");
-      copy.appendChild(el("span", "thw-social-name", conversation.name));
-      copy.appendChild(el("span", "thw-social-preview", conversation.lastMessage || "Start a conversation"));
+      copy.appendChild(el("span", "thw-social-name", conversation.name || (conversation.kind === "group" ? "Group chat" : "")));
+      copy.appendChild(el("span", "thw-social-preview",
+        conversation.lastMessage || (conversation.kind === "group" ? "Say something to the group" : "Start a conversation")));
       /* When did they last talk? Useful on its own, and it is the timestamp the
          sort above is ordering by, so the two cannot disagree. */
       var stamp = relativeTime(conversation.lastMessageAt || conversation.updatedAt);
@@ -1074,12 +1202,6 @@
     return dot;
   }
 
-  /* The words. A custom status is the person's own words about what they
-   * are doing, so it says more than a presence does. */
-  function statusLabel(person) {
-    if (person && person.activity) return person.activity;
-    return statusOf(person).label;
-  }
   /* The reactions a message can carry.
    *
    * The same set the server accepts. It used to offer three of the six the
@@ -1364,6 +1486,8 @@
     state.blocked = false;
     state.conversation = conversation;
     state.messages = [];
+    /* The names of who said what belong to the thread being left. */
+    state.senders = {};
     state.olderCursor = 0;
     state.hasOlder = false;
     state.replyTo = null;
@@ -1379,6 +1503,17 @@
     head.replaceChildren();
     if (!conversation) {
       head.appendChild(el("span", "thw-social-thread-placeholder", "Select a conversation"));
+      return;
+    }
+    /* A group is named by its title and sized by its members. It has no
+       person on the other end, so there is no presence to report and no one
+       person to Block or Report from here. */
+    if (conversation.kind === "group") {
+      head.appendChild(groupAvatarNode(conversation, 30));
+      var group = el("span", "thw-social-thread-person");
+      group.appendChild(el("span", "thw-social-name", conversation.name || "Group chat"));
+      group.appendChild(el("span", "thw-social-meta", (Number(conversation.memberCount) || 0) + " people"));
+      head.appendChild(group);
       return;
     }
     head.appendChild(avatarNode(conversation, 30));
@@ -1410,6 +1545,17 @@
     if (older && state.olderCursor) path += "?before=" + encodeURIComponent(state.olderCursor);
     return api(path).then(function (data) {
       if (!state.conversation || state.conversation.id !== conversationId || data.messages == null) return;
+      /* The server is the one that knows how big a group is and who is in
+         it, so its answer fills in whatever the copy being drawn from did
+         not carry - a thread opened from a notification, for instance. */
+      if (data.conversation && state.conversation) {
+        state.conversation.kind = data.conversation.kind || state.conversation.kind;
+        if (data.conversation.title) state.conversation.name = state.conversation.name || data.conversation.title;
+        if (data.conversation.memberCount) state.conversation.memberCount = data.conversation.memberCount;
+        if (!older) renderThreadHeader(state.conversation);
+      }
+      /* Who said what. A one-to-one does not need it; a group does. */
+      state.senders = data.senders || {};
       if (older) state.messages = (data.messages || []).concat(state.messages);
       else {
         /* Keep any message that failed to send. A reload replaces the whole
@@ -1471,7 +1617,7 @@
       var bubble = el("article", "thw-social-message" + (mine ? " mine" : "") + (message.deleted ? " deleted" : "") + (message.failed ? " failed" : ""));
       bubble.dataset.messageId = message.id;
       var meta = el("div", "thw-social-message-meta");
-      meta.appendChild(el("span", "", mine ? "You" : state.conversation.name));
+      meta.appendChild(el("span", "", mine ? "You" : senderName(message)));
       meta.appendChild(el("time", "", relativeTime(message.createdAt)));
       if (message.editedAt) meta.appendChild(el("span", "", "edited"));
       if (message.failed) meta.appendChild(el("span", "thw-social-msg-state", "Not sent"));
@@ -1532,7 +1678,7 @@
   function setReply(message) {
     state.replyTo = message;
     var label = document.getElementById("thw-social-reply-label");
-    label.textContent = "Replying to " + (message.senderUid === state.boot.me.uid ? "your message" : state.conversation.name) + ": " + String(message.body || "").slice(0, 80);
+    label.textContent = "Replying to " + (message.senderUid === state.boot.me.uid ? "your message" : senderName(message)) + ": " + String(message.body || "").slice(0, 80);
     document.getElementById("thw-social-replying").classList.add("active");
     document.getElementById("thw-social-input").focus();
   }
@@ -1710,6 +1856,12 @@
       }
       /* Panel width is one of the two numbers the Community menu has to clear. */
       syncCommMenuClearance();
+      return;
+    }
+    if (action === "new-group") {
+      /* A group chat starts from the friends you already have: a name, and
+         the people to put in it. */
+      openGroupDialog();
       return;
     }
     if (action === "toggle-friends") {
@@ -1929,8 +2081,15 @@
       return;
     }
     if (action === "report-message") {
-      if (window.openReportModal) window.openReportModal("MESSAGE", String(messageId), "Direct message from " + state.conversation.name);
-      else showStatus("Reporting is unavailable right now.", true);
+      /* Who wrote it, said the way the thread says it: the person in a group,
+         the other person in a one-to-one. */
+      var reported = state.messages.find(function (item) { return String(item.id) === String(messageId); });
+      var isGroup = state.conversation && state.conversation.kind === "group";
+      if (window.openReportModal) {
+        window.openReportModal("MESSAGE", String(messageId),
+          isGroup ? "Message from " + senderName(reported) + " in " + (state.conversation.name || "a group")
+                  : "Direct message from " + (state.conversation ? state.conversation.name : "a conversation"));
+      } else showStatus("Reporting is unavailable right now.", true);
     }
   }
 
@@ -2062,12 +2221,6 @@
     ]).then(function () {
       if (!socialErr && !notifyErr) {
         message.textContent = "Settings saved.";
-        /* Turning a sharing setting off has to take down what was published.
-           The server hides the rows the moment the setting changes, so the
-           feed is honest either way - but leaving them there would mean the
-           feed of somebody who turned sharing off still had their old rows
-           in it if the setting were ever turned on again. */
-        takeDownWhatWasShared();
       } else if (socialErr && notifyErr) {
         message.textContent = socialErr.status === 401
             ? "Sign in to change these settings."
@@ -2078,23 +2231,6 @@
         message.textContent = "Privacy options saved, but notifications were not.";
         }
       }).finally(function () { save.disabled = false; });
-  }
-
-  /* Take down what was published for any kind of thing that is now off.
-   *
-   * The settings are read from the form, which has just been saved, so this
-   * knows what the new state is without asking for it again. */
-  function takeDownWhatWasShared() {
-    if (!window.THWActivity) return;
-    var card = document.getElementById("thw-social-settings");
-    if (!card) return;
-    [["activity_listening", "listening"], ["activity_playlists", "playlist"], ["activity_community", "community"]]
-      .forEach(function (pair) {
-        var select = card.querySelector('select[name="' + pair[0] + '"]');
-        if (select && select.value === "nobody") {
-          window.THWActivity.clear(pair[1]);
-        }
-      });
   }
 
   function wrapAccountSection() {
@@ -2127,8 +2263,6 @@
         goRequests: function () { this.open(); try { setTab("requests"); } catch (e) {} },
         goFriends: function () { this.open(); try { setTab("friends"); } catch (e) {} },
         goMessages: function () { this.open(); try { setTab("messages"); } catch (e) {} },
-        /* The friend activity feed. */
-        goActivity: function () { this.open(); try { setTab("activity"); } catch (e) {} },
         /* The panel's own bootstrap, so another module can read what the
            panel has already been told - the settings, in particular - rather
            than asking for them a second time. */
