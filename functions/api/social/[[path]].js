@@ -307,7 +307,14 @@ async function bootstrap(db, env, me) {
       "SELECT uid, type, label, detail, ROW_NUMBER() OVER (PARTITION BY uid ORDER BY ts DESC) AS rn " +
       "FROM activity WHERE uid IN (" + q + ") AND type = 'listen') WHERE rn = 1"
     ).bind(...statusIds).all();
-    for (const row of activities.results || []) activityByUid.set(row.uid, row);
+    for (const row of activities.results || []) {
+      /* The words are for whoever is reading the row, not for the member who
+         played the track - the account page keeps "You played ..." for their
+         own history, and this says what they are doing right now. */
+      const song = String(row.detail || "").trim() || String(row.label || "").replace(/^You played\s+/i, "");
+      row.present = song ? "Listening To " + song : "";
+      activityByUid.set(row.uid, row);
+    }
   }
   const friends = friendRows.map((r) => ({
     uid: r.uid,
@@ -315,7 +322,7 @@ async function bootstrap(db, env, me) {
     avatar: r.avatar,
     online: friendIds.includes(r.uid) && r.online_status !== "nobody",
     lastActive: r.online_status === "nobody" ? "" : (r.last_seen || ""),
-    activity: r.activity_status === "nobody" ? "" : (activityByUid.get(r.uid)?.label || ""),
+    activity: r.activity_status === "nobody" ? "" : (activityByUid.get(r.uid)?.present || ""),
   }));
   const requests = (requestsResult.results || []).map((r) => ({
     id: r.id,
@@ -353,7 +360,7 @@ async function bootstrap(db, env, me) {
       lastActive: person.online_status === "nobody" ? "" : (person.last_seen || ""),
       /* The song they are playing - the same one the friends list says, and
          the only thing the presence ever claims. */
-      activity: person.online_status === "nobody" ? "" : (activityByUid.get(r.other_uid)?.label || ""),
+      activity: person.online_status === "nobody" ? "" : (activityByUid.get(r.other_uid)?.present || ""),
     };
   });
   const unreadMessages = conversations.reduce((n, c) => n + c.unread, 0);

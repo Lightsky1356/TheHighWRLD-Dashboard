@@ -494,9 +494,8 @@ async function main() {
   check("the row says what the friend is up to, under the online indicator",
     indicator && indicator.under === true && !!indicator.expected && indicator.activity === indicator.expected,
     JSON.stringify(indicator).slice(0, 160));
-  check("only the song shows - the newer vote never stands in for it",
-    indicator && /played/i.test(String(indicator.activity)) &&
-      !/voted/i.test(String(indicator.activity)) &&
+  check("the row says it as Listening To ... - and never the newer vote",
+    indicator && indicator.activity === "Listening To Presence Probe" &&
       indicator.activity === indicator.expected,
     JSON.stringify(indicator).slice(0, 160));
 
