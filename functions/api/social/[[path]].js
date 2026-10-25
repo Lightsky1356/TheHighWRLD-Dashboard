@@ -294,13 +294,18 @@ async function bootstrap(db, env, me) {
     for (const row of profileRows.results || []) profilesByUid.set(row.uid, row);
   }
   const statusIds = Array.from(new Set(ids.concat(otherUids))).filter(uidOk);
+  /* What the rows say a person is up to is the song they are playing, and
+   * only that. The activity table records every action the site has seen - a
+   * vote, a favorite, a playlist, a password change - and a newer one of
+   * those would otherwise stand where the music should be. So the query takes
+   * the listen rows alone, and picks the newest of them per person. */
   const activityByUid = new Map();
   if (statusIds.length) {
     const q = statusIds.map(() => "?").join(",");
     const activities = await db.prepare(
       "SELECT uid, type, label, detail FROM (" +
       "SELECT uid, type, label, detail, ROW_NUMBER() OVER (PARTITION BY uid ORDER BY ts DESC) AS rn " +
-      "FROM activity WHERE uid IN (" + q + ")) WHERE rn = 1"
+      "FROM activity WHERE uid IN (" + q + ") AND type = 'listen') WHERE rn = 1"
     ).bind(...statusIds).all();
     for (const row of activities.results || []) activityByUid.set(row.uid, row);
   }
@@ -346,7 +351,8 @@ async function bootstrap(db, env, me) {
          header said "Offline" to everybody, always. */
       online: friendIds.includes(r.other_uid) && person.online_status !== "nobody",
       lastActive: person.online_status === "nobody" ? "" : (person.last_seen || ""),
-      /* Their own words about what they are up to, when they have set one. */
+      /* The song they are playing - the same one the friends list says, and
+         the only thing the presence ever claims. */
       activity: person.online_status === "nobody" ? "" : (activityByUid.get(r.other_uid)?.label || ""),
     };
   });

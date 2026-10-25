@@ -406,10 +406,11 @@ async function main() {
     return incoming.length;
   })()`).then(v => console.log("    accepted requests: " + v));
 
-  /* The friend does three things the site records: shares its listening,
-     publishes a track, and votes in the Wanted Vault. The vote is the one
-     the row reads - the indicator is fed by the site's own activity rows,
-     which is the pipeline a real session drives, not the feed's own table. */
+  /* The friend does four things the site records: shares its listening,
+     publishes a track, plays a song, and votes in the Wanted Vault. The play
+     is the one the row is allowed to say - presence is the song, nothing
+     else. The vote is cast last, so the newest recorded action is exactly
+     the one that must not stand in for the music. */
   const friendActs = await cdp.evalJson(`(async function () {
     var settings = await fetch("/api/social/settings", {
       method: "POST", credentials: "same-origin",
@@ -424,15 +425,21 @@ async function main() {
         artist: "Juice WRLD", artwork: ""
       })
     }).then(function (r) { return r.json().catch(function () { return {}; }); });
+    var play = await fetch("/api/account", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "listen", title: "Presence Probe", seconds: 45 })
+    }).then(function (r) { return r.status; });
     var vote = await fetch("/api/wanted", {
       method: "POST", credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "vote", track: "Indicator Probe", user: "gallinked1", value: 1 })
     }).then(function (r) { return r.status; });
-    return { settings: settings, published: pub.published === true, vote: vote };
+    return { settings: settings, published: pub.published === true, play: play, vote: vote };
   })()`);
   check("the other account's sharing was turned on", friendActs.settings === 200, String(friendActs.settings));
   check("its listening publication was accepted", friendActs.published === true, JSON.stringify(friendActs));
+  check("its play was recorded by the site", friendActs.play === 200, String(friendActs.play));
   check("its vote was recorded by the site", friendActs.vote === 200, String(friendActs.vote));
 
   /* Back to this account. */
@@ -486,6 +493,11 @@ async function main() {
     indicator && !!indicator.presence, JSON.stringify(indicator).slice(0, 110));
   check("the row says what the friend is up to, under the online indicator",
     indicator && indicator.under === true && !!indicator.expected && indicator.activity === indicator.expected,
+    JSON.stringify(indicator).slice(0, 160));
+  check("only the song shows - the newer vote never stands in for it",
+    indicator && /played/i.test(String(indicator.activity)) &&
+      !/voted/i.test(String(indicator.activity)) &&
+      indicator.activity === indicator.expected,
     JSON.stringify(indicator).slice(0, 160));
 
   /* ---- group chats, end to end ---- */
