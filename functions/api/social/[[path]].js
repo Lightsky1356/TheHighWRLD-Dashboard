@@ -567,6 +567,7 @@ async function listMessages(db, me, conversationId, url) {
   const before = Math.max(0, Number(url.searchParams.get("before")) || 0);
   const rows = await db.prepare(
     "SELECT m.id, m.conversation_id, m.sender_uid, m.body, m.reply_to_id, m.created_at, m.edited_at, m.deleted_at, " +
+    "m.track_title, m.track_artist, " +
     "COALESCE((SELECT json_group_array(json_object('emoji', x.emoji, 'count', x.count, 'mine', x.mine)) " +
     "FROM (SELECT emoji, COUNT(*) AS count, MAX(CASE WHEN uid = ? THEN 1 ELSE 0 END) AS mine " +
     "FROM dm_message_reactions WHERE message_id = m.id GROUP BY emoji) x), '[]') AS reactions, " +
@@ -591,6 +592,10 @@ async function listMessages(db, me, conversationId, url) {
       replyToId: m.reply_to_id || null, replyBody: m.reply_body || "",
       replySenderUid: m.reply_sender_uid || "", createdAt: m.created_at,
       editedAt: m.edited_at || null, deleted: !!m.deleted_at,
+      /* The track a message carries, or nothing. A deleted message gives up
+         its track along with its words, the same way it gives up its body. */
+      track: (m.deleted_at || !m.track_title) ? null
+        : { title: m.track_title, artist: m.track_artist || "" },
       reactions: JSON.parse(m.reactions || "[]"),
     })),
     /* Who said what. A group has to name its senders; a one-to-one already
@@ -612,7 +617,14 @@ async function sendMessage(context, db, me, conversationId, body) {
     return json({ error: "messages_not_allowed" }, 403);
   }
   const text = String(body.body || "").replace(/\u0000/g, "").trim();
-  if (!text || text.length > MAX_MESSAGE) return json({ error: "invalid_message", maxLength: MAX_MESSAGE }, 400);
+  /* A track can be the whole message - that is the point of sharing one -
+     so the text is only required when there is no track beside it. The
+     title is the track's identity everywhere else on the site, which is
+     why the card needs no id of its own, and the artist rides along as
+     the line under the title in the thread. */
+  const trackTitle = String((body.track && body.track.title) || "").replace(/\u0000/g, "").trim().slice(0, 160);
+  const trackArtist = String((body.track && body.track.artist) || "").replace(/\u0000/g, "").trim().slice(0, 120);
+  if ((!text && !trackTitle) || text.length > MAX_MESSAGE) return json({ error: "invalid_message", maxLength: MAX_MESSAGE }, 400);
   if (!(await rateLimit(db, me.uid, "dm_send", 30, 60000))) return json({ error: "rate_limited" }, 429);
   const replyTo = body.replyToId == null ? null : Number(body.replyToId);
   if (replyTo != null) {
@@ -623,8 +635,9 @@ async function sendMessage(context, db, me, conversationId, body) {
     if (!parent) return json({ error: "reply_not_found" }, 404);
   }
   const inserted = await db.prepare(
-    "INSERT INTO dm_messages (conversation_id, sender_uid, body, reply_to_id) VALUES (?, ?, ?, ?)"
-  ).bind(conversationId, me.uid, text, replyTo).run();
+    "INSERT INTO dm_messages (conversation_id, sender_uid, body, reply_to_id, track_title, track_artist) " +
+    "VALUES (?, ?, ?, ?, ?, ?)"
+  ).bind(conversationId, me.uid, text, replyTo, trackTitle, trackArtist).run();
   const id = Number(inserted.meta && inserted.meta.last_row_id) || 0;
   await db.prepare(
     "UPDATE dm_conversations SET last_message_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?"
@@ -635,9 +648,12 @@ async function sendMessage(context, db, me, conversationId, body) {
   for (const uid of others) {
     if (conversation.kind !== "group" || await canMessage(db, me.uid, uid)) reached.push(uid);
   }
+  /* What the notification says the person did. A track names itself - and it
+     is the one thing worth naming when previews are on, because a card with
+     no words would otherwise arrive as a message that says nothing. */
   const label = conversation.kind === "group"
-    ? (me.name || "Someone") + " sent a message in \u201C" + (conversation.title || "a group") + "\u201D"
-    : (me.name || "Someone") + " sent you a message";
+    ? (me.name || "Someone") + (trackTitle ? " sent a track in \u201C" + (conversation.title || "a group") + "\u201D" : " sent a message in \u201C" + (conversation.title || "a group") + "\u201D")
+    : (me.name || "Someone") + (trackTitle ? " sent you a track: " + trackTitle : " sent you a message");
   for (const uid of reached) {
     await notifyBestEffort(db, context.env, uid, me, "dm_message", label, context);
   }
@@ -654,11 +670,17 @@ async function sendMessage(context, db, me, conversationId, body) {
     messageId: id,
   });
   const row = await db.prepare(
-    "SELECT id, sender_uid, body, reply_to_id, created_at FROM dm_messages WHERE id = ?"
+    "SELECT id, sender_uid, body, reply_to_id, created_at, track_title, track_artist FROM dm_messages WHERE id = ?"
   ).bind(id).first();
   return json({
     ok: true,
-    message: { id: row.id, senderUid: row.sender_uid, body: row.body, replyToId: row.reply_to_id, createdAt: row.created_at },
+    /* The same shape listMessages answers with, so the client has one way of
+       drawing a message whether it arrived from the send or from a reload. */
+    message: {
+      id: row.id, senderUid: row.sender_uid, body: row.body, replyToId: row.reply_to_id,
+      createdAt: row.created_at,
+      track: row.track_title ? { title: row.track_title, artist: row.track_artist || "" } : null,
+    },
   }, 201);
 }
 

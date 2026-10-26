@@ -2021,6 +2021,7 @@ function safeDecode4(v) {
     ".thw-social-expand",
     ".thw-social-activity",
     ".thw-social-group{position:fixed",
+    ".thw-social-track{",
   ];
   const missing = wanted.filter((rule) => socialCss.indexOf(rule) === -1);
   if (missing.length) {

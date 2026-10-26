@@ -135,7 +135,8 @@
       '<div class="ti-actions">' +
       (fav !== null ? '<button type="button" class="ti-btn primary' + (fav ? " on" : "") + '" data-ti="fav"><i class="fas fa-heart"></i> ' + (fav ? "Favorited" : "Favorite") + "</button>" : "") +
       '<button type="button" class="ti-btn" data-ti="queue"><i class="fas fa-list-ul"></i> Queue</button>' +
-      '<button type="button" class="ti-btn" data-ti="share"><i class="fas fa-share-nodes"></i> Share</button></div>';
+      '<button type="button" class="ti-btn" data-ti="share"><i class="fas fa-share-nodes"></i> Share</button>' +
+      '<button type="button" class="ti-btn" data-ti="send"><i class="fas fa-paper-plane"></i> Send</button></div>';
     (document.getElementById("info-stats-slot") || panel).appendChild(box);
     chipsAlt();
     box.addEventListener("click", function (e) {
@@ -150,6 +151,13 @@
           else b.innerHTML = '<i class="fas fa-check"></i> Queued';
         }
         else if (a === "share") doShare(t, b);
+        /* Send it into a chat. The panel owns the picker - who to send it to
+           and the send itself - because it already knows the friends and the
+           conversations, and this panel only knows the track. */
+        else if (a === "send") {
+          if (window.THWSocial && typeof window.THWSocial.shareTrack === "function") window.THWSocial.shareTrack(t);
+          else if (window.toast) window.toast("Friends & Messages is still loading - try again in a moment.", "warn");
+        }
       } catch (err) {}
     });
   }

@@ -1,6 +1,7 @@
 // A real-browser check of the features added in this batch: the friend
 // activity feed, the message menu, the grammar check, the status indicators,
-// the foldable friends list and the Cover Gradients setting.
+// the foldable friends list, the Cover Gradients setting, group chats and
+// sending a track into a chat.
 //
 // It drives the installed Edge over the DevTools Protocol, the same way
 // scripts/browser-check.cjs does - because the only way to know whether a
@@ -686,6 +687,147 @@ async function main() {
   await cdp.send("Network.setCookie", {
     name: "thw_session", value: "notifontoken1", domain: "127.0.0.1", path: "/",
   });
+
+  /* ---- sending a track into a chat ---- */
+  /* The track travels as a message: no words, just the card. The server is
+     asked first, because the card is only ever drawn from what the server
+     says it stored - a send that quietly dropped the track would still look
+     right in the sender's own thread until it was reloaded. */
+  const trackSent = await cdp.evalJson(`(async function () {
+    var conv = await fetch("/api/social/conversations", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid: "gallinked1" })
+    }).then(function (r) { return r.json().catch(function () { return {}; }); });
+    if (!conv.conversationId) return { error: "no conversation: " + JSON.stringify(conv) };
+    var post = await fetch("/api/social/conversations/" + encodeURIComponent(conv.conversationId) + "/messages", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body: "", track: { title: "All In", artist: "Juice WRLD" } })
+    });
+    var sent = await post.json().catch(function () { return {}; });
+    var list = await fetch("/api/social/conversations/" + encodeURIComponent(conv.conversationId) + "/messages", {
+      credentials: "same-origin"
+    }).then(function (r) { return r.json().catch(function () { return {}; }); });
+    var found = (list.messages || []).filter(function (m) { return m.track && m.track.title === "All In"; })[0];
+    return {
+      status: post.status,
+      echoed: !!(sent.message && sent.message.track && sent.message.track.artist === "Juice WRLD"),
+      body: sent.message ? String(sent.message.body) : null,
+      listed: !!found
+    };
+  })()`);
+  check("a message can be a track with no words at all", trackSent && trackSent.status === 201, JSON.stringify(trackSent));
+  check("the send answers with the track it stored",
+    trackSent && trackSent.echoed === true && trackSent.body === "", JSON.stringify(trackSent));
+  check("the thread reads the track back", trackSent && trackSent.listed === true, JSON.stringify(trackSent));
+
+  /* Now the panel: what the Send button on a track opens, and who it offers. */
+  const shareDialog = await cdp.evalJson(`(async function () {
+    window.THWSocial.open();
+    await new Promise(function (r) { setTimeout(r, 2500); });
+    window.THWSocial.shareTrack({ title: "All In", artist: "Juice WRLD" });
+    await new Promise(function (r) { setTimeout(r, 900); });
+    var d = document.getElementById("thw-social-share");
+    var rows = [...document.querySelectorAll('#thw-social-share-people .thw-social-group-person')];
+    var send = document.getElementById('thw-social-share-send');
+    return {
+      open: !!d && d.hidden === false,
+      label: (document.getElementById('thw-social-share-track') || {}).textContent || "",
+      rows: rows.length,
+      /* These rows sit inside the panel, whose click handler opens any
+         conversation it finds data-conversation-id on - which would take the
+         pick out of the form before the form could send it. */
+      hijacked: rows.some(function (r) { return r.hasAttribute('data-conversation-id'); }),
+      send: send ? send.disabled : null
+    };
+  })()`);
+  check("the share dialog opens on a track", shareDialog && shareDialog.open === true, JSON.stringify(shareDialog));
+  check("it says which track is going", /All In/.test(String(shareDialog && shareDialog.label)),
+    String(shareDialog && shareDialog.label).slice(0, 80));
+  check("it offers the chats and friends to send it to",
+    shareDialog && Number(shareDialog.rows) >= 2, String(shareDialog && shareDialog.rows));
+  check("its rows are not conversation links", shareDialog && shareDialog.hijacked === false, JSON.stringify(shareDialog));
+  check("nothing is picked yet, so Send stays off", shareDialog && shareDialog.send === true, JSON.stringify(shareDialog));
+
+  /* Pick one, send it, and the card has to be in the thread it went to. */
+  const shareSent = await cdp.evalJson(`(async function () {
+    var boxes = [...document.querySelectorAll('#thw-social-share-people input[type=radio]')];
+    if (!boxes.length) return { error: "nobody to send it to" };
+    boxes[0].checked = true;
+    document.getElementById('thw-social-share-people').dispatchEvent(new Event('change', { bubbles: true }));
+    var send = document.getElementById('thw-social-share-send');
+    var armed = !send.disabled;
+    send.click();
+    await new Promise(function (r) { setTimeout(r, 4000); });
+    var card = document.querySelector('#thw-social-root .thw-social-track');
+    var title = card && card.querySelector('.thw-social-track-title');
+    var artist = card && card.querySelector('.thw-social-track-artist');
+    var play = card && card.querySelector('.thw-social-track-play');
+    return {
+      armed: armed,
+      closed: document.getElementById('thw-social-share').hidden === true,
+      card: !!card,
+      title: title ? title.textContent : "",
+      artist: artist ? artist.textContent : "",
+      play: play ? play.textContent : "",
+      words: (document.getElementById('thw-social-thread-body') || {}).innerText || ""
+    };
+  })()`);
+  check("picking someone arms the send", shareSent && shareSent.armed === true, JSON.stringify(shareSent).slice(0, 90));
+  check("the dialog closes once it is sent", shareSent && shareSent.closed === true, JSON.stringify(shareSent).slice(0, 140));
+  check("the card is in the thread it went to",
+    shareSent && shareSent.card === true && shareSent.title === "All In" && shareSent.artist === "Juice WRLD",
+    JSON.stringify(shareSent).slice(0, 170));
+  check("the card offers a way to play it",
+    shareSent && /play/i.test(String(shareSent.play)), String(shareSent && shareSent.play));
+
+  /* And the point of it: tapping the card plays that track, in the receiver's
+     own player, with the panel stepping aside so the player can be seen. */
+  const played = await cdp.evalJson(`(async function () {
+    var card = document.querySelector('#thw-social-root .thw-social-track');
+    if (!card) return { error: "no card to play" };
+    var now = document.getElementById('track-title');
+    var before = {
+      index: (typeof currentTrackIndex !== 'undefined') ? currentTrackIndex : null,
+      now: now ? now.textContent.trim() : ""
+    };
+    var err = null;
+    try { card.querySelector('.thw-social-track-play').click(); } catch (e) { err = String(e); }
+    await new Promise(function (r) { setTimeout(r, 3000); });
+    return {
+      err: err,
+      before: before,
+      index: (typeof currentTrackIndex !== 'undefined') ? currentTrackIndex : null,
+      playing: (typeof trackList !== 'undefined' && currentTrackIndex >= 0)
+        ? (trackList[currentTrackIndex] || {}).title : "",
+      now: now ? now.textContent.trim() : "",
+      panel: document.getElementById('thw-social-overlay').hidden === true
+    };
+  })()`);
+  check("tapping the card plays that track",
+    played && played.err === null && played.before.index !== played.index && played.playing === "All In",
+    JSON.stringify(played).slice(0, 200));
+  check("the player now says what is playing",
+    played && /All In/i.test(String(played.now)), String(played && played.now));
+  check("the panel steps aside so the player is visible",
+    played && played.panel === true, JSON.stringify(played));
+
+  /* The notification names the track, because a card that arrives with no
+     words would otherwise say nothing at all in the bell. */
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: "gallinked1token", domain: "127.0.0.1", path: "/",
+  });
+  const trackNotice = await cdp.evalJson(`fetch("/api/notifications", { credentials: "same-origin" })
+    .then(function (r) { return r.json().catch(function () { return {}; }); })
+    .then(function (d) { return JSON.stringify(d).slice(0, 4000); })`);
+  check("the person who got it is told which track",
+    /sent you a track/i.test(String(trackNotice)) && /All In/.test(String(trackNotice)),
+    String(trackNotice).slice(0, 200));
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: "notifontoken1", domain: "127.0.0.1", path: "/",
+  });
+  await cdp.evalJson("window.THWSocial && window.THWSocial.open()");
 
   /* ---- the friend's name takes you to their profile ---- */
   /* The name in the Friends row is a link: it carries the address the

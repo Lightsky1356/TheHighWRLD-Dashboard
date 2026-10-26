@@ -547,3 +547,11 @@ html.thw-social-scrolllock body {
 html.thw-social-wide{--thw-panel-w:clamp(360px, calc(100vw - 612px), 720px)}
 html.thw-social-wide #thw-social-panel{max-height:calc(100vh - 98px)}
 }
+/* A track shared into a chat - the card the message carries. */
+.thw-social-track{display:flex;align-items:center;gap:10px;margin-top:6px;padding:8px 9px;border:1px solid rgba(34,211,238,.28);border-radius:11px;background:linear-gradient(135deg,rgba(34,211,238,.12),rgba(148,163,184,.05))}
+.thw-social-track-body{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.thw-social-track-title{color:#e2e8f0;font:700 12px/1.3 system-ui;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thw-social-track-artist{color:#94a3b8;font:500 10px/1.2 system-ui;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thw-social-track-play{flex:none;border:0;border-radius:8px;padding:6px 11px;background:#22d3ee;color:#04121b;font:800 10px/1 system-ui;cursor:pointer}
+.thw-social-track-play:hover{background:#67e8f9}
+.thw-social-track-play:focus-visible{outline:2px solid rgba(103,232,249,.7);outline-offset:2px}

@@ -34,6 +34,11 @@
     /* Whether the new-group dialog is open, and who said what in the open
        thread (a group has to name its senders; a one-to-one already knows). */
     groupOpen: false,
+    /* The track waiting to be sent somewhere, and whether the send dialog is
+       open. The track is held rather than read from the DOM at send time so
+       the dialog always sends what it was opened with. */
+    shareOpen: false,
+    shareTrack: null,
     senders: {},
     /* Whether the friends list is folded away. Desktop only - see the toggle. */
     friendsCollapsed: false,
@@ -165,7 +170,7 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v35";
+    css.href = "/social.css?v=thw-v36";
     document.head.appendChild(css);
 
     var root = el("div");
@@ -244,6 +249,27 @@
             '</div>' +
           '</form>' +
         '</div>' +
+      '</div>' +
+      /* Sending a track: what it is, an optional line to say something about
+         it, and who should get it. It is built from the same pieces as the
+         group dialog because it is the same kind of choice - people to send
+         something to - and it closes the same three ways. */
+      '<div class="thw-social-group" id="thw-social-share" role="dialog" aria-modal="true" aria-labelledby="thw-social-share-title" hidden>' +
+        '<div class="thw-social-group-card">' +
+          '<header class="thw-social-group-head"><h3 class="thw-social-group-title" id="thw-social-share-title">Send this track</h3>' +
+            '<button class="thw-social-group-close" type="button" aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button></header>' +
+          '<form class="thw-social-group-form" id="thw-social-share-form">' +
+            '<span class="thw-social-group-label" id="thw-social-share-track"></span>' +
+            '<label class="thw-social-group-label" for="thw-social-share-note">Note</label>' +
+            '<input class="thw-social-group-name" id="thw-social-share-note" type="text" maxlength="300" autocomplete="off" placeholder="Add a note (optional)">' +
+            '<span class="thw-social-group-label">To</span>' +
+            '<div class="thw-social-group-people" id="thw-social-share-people"></div>' +
+            '<div class="thw-social-group-foot">' +
+              '<span class="thw-social-group-hint" id="thw-social-share-hint">Pick who gets it.</span>' +
+              '<button class="thw-social-group-create" id="thw-social-share-send" type="submit" disabled>Send</button>' +
+            '</div>' +
+          '</form>' +
+        '</div>' +
       '</div>';
     document.body.appendChild(root);
 
@@ -300,6 +326,14 @@
     /* The count of picked people, and whether that is enough, follow the
        checkboxes rather than being decided when the form is sent. */
     document.getElementById("thw-social-group-people").addEventListener("change", syncGroupCount);
+    document.getElementById("thw-social-share").addEventListener("click", function (event) {
+      /* Backdrop click closes; clicks inside the card must not. */
+      if (event.target === event.currentTarget) closeShareDialog();
+    });
+    document.querySelector("#thw-social-share .thw-social-group-close").addEventListener("click", closeShareDialog);
+    document.getElementById("thw-social-share-form").addEventListener("submit", sendShare);
+    /* One target at a time, so the count is a count of one. */
+    document.getElementById("thw-social-share-people").addEventListener("change", syncShareCount);
     document.addEventListener("keydown", function (event) {
       if (!state.open) return;
       /* The rules dialog sits above the panel, so Escape unwinds one level at a
@@ -307,6 +341,7 @@
       if (event.key === "Escape") {
         event.preventDefault();
         if (state.rulesOpen) closeRules();
+        else if (state.shareOpen) closeShareDialog();
         else if (state.groupOpen) closeGroupDialog();
         else if (state.grammarOpen) closeGrammarResult();
         else if (state.menuOpen) closeMessageMenu();
@@ -512,6 +547,7 @@
        one too high and the page would stay frozen after the panel is gone. */
     if (!state.open && state.rulesOpen) closeRules();
     if (!state.open && state.groupOpen) closeGroupDialog();
+    if (!state.open && state.shareOpen) closeShareDialog();
     if (state.open) {
       /* A Community menu left hovering would sit straight over the panel the
          moment focus moved into it, so it is closed once on open. It is not
@@ -649,6 +685,154 @@
     }).catch(function (error) {
       showStatus(describeError(error), "error");
       if (create) create.disabled = false;
+    });
+  }
+
+  /* Sending a track.
+   *
+   * The track travels as a message, like anything else said in the thread: it
+   * has a sender, a time, and can be replied to. Two columns on the message
+   * say which track it carries, and both ends draw the same card from that -
+   * the title being the track's identity everywhere else on the site, from the
+   * player to the listens table, so the card needs no id of its own.
+   */
+  function openShareDialog(track) {
+    var dialog = document.getElementById("thw-social-share");
+    if (!dialog || !track || !track.title) return;
+    state.shareTrack = { title: String(track.title), artist: String(track.artist || "") };
+    var label = document.getElementById("thw-social-share-track");
+    if (label) label.textContent = state.shareTrack.artist
+      ? "\u201C" + state.shareTrack.title + "\u201D by " + state.shareTrack.artist
+      : "\u201C" + state.shareTrack.title + "\u201D";
+    var note = document.getElementById("thw-social-share-note");
+    if (note) note.value = "";
+    var people = document.getElementById("thw-social-share-people");
+    var friends = (state.boot && state.boot.friends) || [];
+    var convos = (state.boot && state.boot.conversations) || [];
+    if (people) {
+      people.replaceChildren();
+      /* Conversations first: the chat already going is the likeliest place for
+         it to go, and a friend with no chat yet sits right below. These rows
+         are plain labels on purpose - no data-conversation-id, which the
+         panel's click handler would read as a request to open that chat and
+         act on before the form ever sends. */
+      convos.forEach(function (conversation) {
+        people.appendChild(shareRow("c:" + conversation.id, conversation.name || "Conversation", conversation));
+      });
+      friends.forEach(function (friend) {
+        if (convos.some(function (c) { return c.uid === friend.uid; })) return;
+        people.appendChild(shareRow("u:" + friend.uid, friend.name, friend));
+      });
+      if (!people.childNodes.length) {
+        people.appendChild(el("div", "thw-social-empty",
+          "Add some friends first - a track goes to the people you already talk to."));
+      }
+    }
+    state.shareOpen = true;
+    dialog.hidden = false;
+    syncShareCount();
+    if (note) note.focus();
+  }
+
+  function shareRow(value, name, person) {
+    var label = el("label", "thw-social-group-person");
+    var box = document.createElement("input");
+    box.type = "radio";
+    box.name = "thw-social-share-target";
+    box.className = "thw-social-group-check";
+    box.value = value;
+    label.appendChild(box);
+    if (person) {
+      var face = el("span", "thw-social-face");
+      face.appendChild(avatarNode(person, 26));
+      label.appendChild(face);
+    }
+    label.appendChild(el("span", "thw-social-name", name || "Member"));
+    return label;
+  }
+
+  function closeShareDialog() {
+    var dialog = document.getElementById("thw-social-share");
+    state.shareOpen = false;
+    state.shareTrack = null;
+    if (dialog) dialog.hidden = true;
+  }
+
+  /* One place to send it to - a chat is either already there or made on the
+     spot, the same way messaging a friend from their row does. */
+  function shareConversation(value) {
+    var convos = (state.boot && state.boot.conversations) || [];
+    if (value.slice(0, 2) === "c:") {
+      var id = value.slice(2);
+      var found = convos.filter(function (c) { return c.id === id; })[0];
+      return Promise.resolve(found ? found.id : id);
+    }
+    var uid = value.slice(2);
+    var dm = convos.filter(function (c) { return c.uid === uid; })[0];
+    if (dm) return Promise.resolve(dm.id);
+    return api("/conversations", { method: "POST", body: { uid: uid } }).then(function (data) {
+      /* The list has to show it for everyone else too. */
+      refresh();
+      return data.conversationId;
+    });
+  }
+
+  function syncShareCount() {
+    var picked = document.querySelector("#thw-social-share-people input:checked");
+    var hint = document.getElementById("thw-social-share-hint");
+    if (hint) hint.textContent = picked ? "One chat, one track." : "Pick who gets it.";
+    var send = document.getElementById("thw-social-share-send");
+    if (send) send.disabled = !picked;
+  }
+
+  function sendShare(event) {
+    event.preventDefault();
+    var picked = document.querySelector("#thw-social-share-people input:checked");
+    if (!picked || !state.shareTrack) return;
+    var track = state.shareTrack;
+    var noteField = document.getElementById("thw-social-share-note");
+    var note = ((noteField && noteField.value) || "").trim();
+    var send = document.getElementById("thw-social-share-send");
+    if (send) send.disabled = true;
+    var conversationId = "";
+    shareConversation(picked.value).then(function (id) {
+      conversationId = id;
+      return api("/conversations/" + encodeURIComponent(id) + "/messages", {
+        method: "POST",
+        body: { body: note, track: track }
+      });
+    }).then(function (data) {
+      closeShareDialog();
+      showStatus("Track sent.");
+      /* Land in the thread it went to, with the card on screen, rather than
+         leaving the panel where it was with the send hidden behind it. */
+      var target = ((state.boot && state.boot.conversations) || []).filter(function (c) { return c.id === conversationId; })[0];
+      if (target) {
+        openConversation(target);
+        state.messages.push(data.message);
+        renderMessages();
+        var thread = document.getElementById("thw-social-thread-body");
+        thread.scrollTop = thread.scrollHeight;
+        scheduleRefresh();
+      } else refresh();
+    }).catch(function (error) {
+      showStatus(describeError(error), "error");
+      if (send) send.disabled = false;
+      /* If it was meant for the thread already open, the failure belongs in
+         that thread where Retry can reach it - the same treatment a typed
+         message that failed gets. */
+      if (state.conversation && conversationId && state.conversation.id === conversationId) {
+        state.messages.push({
+          id: "pending-" + Date.now(),
+          pending: true,
+          failed: true,
+          body: note,
+          track: track,
+          senderUid: state.boot && state.boot.me && state.boot.me.uid,
+          createdAt: new Date().toISOString()
+        });
+        renderMessages();
+      }
     });
   }
 
@@ -1635,7 +1819,27 @@
       if (message.replyBody && !message.deleted) {
         bubble.appendChild(el("div", "thw-social-reply-quote", message.replyBody));
       }
-      bubble.appendChild(el("p", "thw-social-message-text", message.deleted ? "Message deleted" : message.body));
+      /* The card, above the words. It is the message when there are no words,
+         which is how a shared track usually arrives - and the title under it
+         is the same title the player knows, so tapping Play finds the track
+         the same way a row in the list would. */
+      if (message.track && !message.deleted) {
+        var card = el("div", "thw-social-track");
+        var play = el("button", "thw-social-track-play", "Play");
+        play.type = "button";
+        play.dataset.action = "play-track";
+        play.dataset.trackTitle = message.track.title || "";
+        play.dataset.trackArtist = message.track.artist || "";
+        var cardText = el("span", "thw-social-track-body");
+        cardText.appendChild(el("span", "thw-social-track-title", message.track.title || ""));
+        if (message.track.artist) cardText.appendChild(el("span", "thw-social-track-artist", message.track.artist));
+        card.appendChild(cardText);
+        card.appendChild(play);
+        bubble.appendChild(card);
+      }
+      if (message.deleted || message.body) {
+        bubble.appendChild(el("p", "thw-social-message-text", message.deleted ? "Message deleted" : message.body));
+      }
       var tools = el("div", "thw-social-message-tools");
       if (message.failed) {
         /* The failed message offers exactly the two things you can do with it,
@@ -1821,7 +2025,7 @@
     renderMessages();
     api("/conversations/" + encodeURIComponent(state.conversation.id) + "/messages", {
       method: "POST",
-      body: { body: message.body, replyToId: null }
+      body: { body: message.body, replyToId: null, track: message.track || null }
     }).then(function (data) {
       state.messages.push(data.message);
       renderMessages();
@@ -1856,6 +2060,33 @@
         window.openProfile(uid);
         setOpen(false);
       }
+      return;
+    }
+    if (action === "play-track") {
+      /* The title is what the player indexes by, so the card plays by finding
+         it the way a click on a row does. No id travels with the message - the
+         title is already the track's identity everywhere else - and a track
+         that has since left the library says so rather than playing something
+         that merely resembles it. */
+      var wantTitle = String(node.dataset.trackTitle || "").toLowerCase();
+      var list = [];
+      try { if (typeof trackList !== "undefined" && trackList) list = trackList; } catch (e) {}
+      var at = -1;
+      var scan;
+      for (scan = 0; scan < list.length && at < 0; scan++) {
+        if (String((list[scan] && list[scan].title) || "").toLowerCase() === wantTitle) at = scan;
+      }
+      for (scan = 0; scan < list.length && at < 0; scan++) {
+        if (String((list[scan] && list[scan].tag) || "").toLowerCase() === wantTitle) at = scan;
+      }
+      if (at < 0 || typeof window.selectTrackFromList !== "function") {
+        showStatus("That track is not in the library any more.", "warn");
+        return;
+      }
+      /* The panel steps aside the same way it does for a profile: the player
+         is where the track is going, and it would otherwise be behind this. */
+      window.selectTrackFromList(at, true);
+      setOpen(false);
       return;
     }
     if (action === "toggle-panel-size") {
@@ -2289,6 +2520,22 @@
            panel has already been told - the settings, in particular - rather
            than asking for them a second time. */
         getBoot: function () { return state.boot; },
+        /* Send what is playing to a chat.
+           *
+           * The panel opens first because the picker lives inside it, and the
+           * lists have to be loaded before the picker can offer anybody - so
+           * if this is the first opening, wait for the bootstrap rather than
+           * showing an empty dialog that would look like having no friends. */
+        shareTrack: function (track) {
+          try {
+            this.open();
+            var ready = state.boot ? Promise.resolve() : refresh();
+            ready.then(function () {
+              if (!track || !track.title) { showStatus("Pick a track to send.", "warn"); return; }
+              openShareDialog(track);
+            }).catch(function () {});
+          } catch (e) {}
+        },
         /* The push payload carries a conversation id. Look it up in the
            already-loaded bootstrap so nothing is refetched or guessed; if it
            is not there yet, fall back to the Messages list rather than
