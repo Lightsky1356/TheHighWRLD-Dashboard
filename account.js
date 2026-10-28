@@ -1554,8 +1554,99 @@ function compactProfileViewHtml(d) {
     ["toxic", "Toxic Slime"], ["rose", "Rose Gold"], ["oled", "Pure OLED"],
     ["ultraviolet", "Ultraviolet"], ["pharaoh", "Pharaoh Sands"], ["dragon", "Dragon Fire"],
     ["mint", "Mint Fresh"], ["tangerine", "Tangerine Sky"],
-    ["grape", "Grape Soda"], ["pumpkin", "Pumpkin Spice"], ["silver", "Silver Lining"], ["midnight", "Midnight Blue"]
+    ["grape", "Grape Soda"], ["pumpkin", "Pumpkin Spice"], ["silver", "Silver Lining"], ["midnight", "Midnight Blue"],
+    /* Seasonal. On the list all year so a theme chosen in its own month still
+       names itself in the toast after it - the OFFER is gated by SEASONAL
+       below, never the recognition. */
+    ["newyear", "New Year"], ["valentines", "Valentine's Day"], ["stpatricks", "St. Patrick's Day"],
+    ["easter", "Easter"], ["july4", "Fourth of July"], ["halloween", "Halloween"], ["christmas", "Christmas"]
   ];
+  /* ---------- Seasonal themes ----------
+     *
+     * Seven themes anyone may pick, but only while their season is on:
+     * Halloween for the whole of October, Christmas for the whole of December,
+     * and so on. Easter moves every year, so its window is computed - Good
+     * Friday through Easter Monday - rather than written down.
+     *
+     * The gate lives entirely in the picker. The themes themselves are
+     * ordinary CSS blocks like every other theme, and the server recognises
+     * all seven the whole year, because a member who chose Halloween in
+     * October keeps it in July: nothing about their theme changes silently
+     * when the month does. */
+  var SEASONAL = [
+    { id: "newyear", months: [1], about: "Fireworks gold over midnight blue - January's night sky." },
+    { id: "valentines", months: [2], about: "Crimson and blush pink for Valentine's Day." },
+    { id: "stpatricks", months: [3], about: "Emerald green with a pot of found gold." },
+    { id: "easter", easter: true, about: "Soft spring pastels for the Easter weekend." },
+    { id: "july4", months: [7], about: "Stars-and-stripes red and blue for the Fourth of July." },
+    { id: "halloween", months: [10], about: "Pumpkin orange and violet - the darkest night of October." },
+    { id: "christmas", months: [12], about: "Holly red, pine green and gold for Christmas." }
+  ];
+
+  /* Meeus/Jones/Butcher - the standard Gregorian approximation, correct from
+     1583 into the 4000s, which covers every Easter this site will see. */
+  function easterSunday(year) {
+    var a = year % 19;
+    var b = Math.floor(year / 100);
+    var c = year % 100;
+    var d = Math.floor(b / 4);
+    var e = b % 4;
+    var f = Math.floor((b + 8) / 25);
+    var g = Math.floor((b - f + 1) / 3);
+    var h = (19 * a + b - d - g + 15) % 30;
+    var i = Math.floor(c / 4);
+    var k = c % 4;
+    var l = (32 + 2 * e + 2 * i - h - k) % 7;
+    var m = Math.floor((a + 11 * h + 22 * l) / 451);
+    var month = Math.floor((h + l - 7 * m + 114) / 31); /* 3 = March, 4 = April */
+    var day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
+  }
+
+  /* Whether a seasonal theme can be chosen at the given moment. `now` exists
+     for the browser suite, which holds the calendar still at a stated date
+     rather than waiting months for one; the picker only asks for right now. */
+  function seasonalOpen(entry, now) {
+    now = now || new Date();
+    if (entry.months) return entry.months.indexOf(now.getMonth() + 1) !== -1;
+    if (entry.easter) {
+      var easter = easterSunday(now.getFullYear());
+      /* The long weekend, not just the day: Good Friday morning through the
+         end of Easter Monday, so the season is more than a few hours wide. */
+      var from = new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() - 2);
+      var to = new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 1, 23, 59, 59);
+      return now >= from && now <= to;
+    }
+    return false;
+  }
+
+  /* Both pickers carry their options as static markup (they are data-filled,
+     so fillSelect never rebuilds them) - this is the only thing that shows or
+     hides a seasonal one. A theme that is out of season but currently CHOSEN
+     stays listed, so the select can still show what is on and offer a way
+     back to it; it just cannot be picked anywhere it is not already. */
+  function syncSeasonalThemes(current, now) {
+    current = current || document.documentElement.getAttribute("data-theme") || "";
+    var sels = [document.getElementById("setTheme"), document.getElementById("ftTheme")];
+    for (var s = 0; s < sels.length; s++) {
+      var sel = sels[s];
+      if (!sel) continue;
+      var opts = sel.querySelectorAll("option[data-seasonal]");
+      for (var o = 0; o < opts.length; o++) {
+        var id = opts[o].getAttribute("data-seasonal");
+        var entry = null;
+        for (var e = 0; e < SEASONAL.length; e++) if (SEASONAL[e].id === id) entry = SEASONAL[e];
+        var open = !!entry && (current === id || seasonalOpen(entry, now));
+        opts[o].hidden = !open;
+        opts[o].disabled = !open;
+      }
+    }
+  }
+
+  /* The window check, exposed so the browser suite can hold the calendar
+     still and see what the picker would offer on a date of its choosing. The
+     picker itself only ever asks for right now. */
+  window.thwSeasonal = { table: SEASONAL, easter: easterSunday, open: seasonalOpen, sync: syncSeasonalThemes };
   var LANGS = [["en", "English"], ["es", "Spanish"], ["fr", "French"], ["de", "German"], ["pt", "Portuguese"], ["it", "Italian"], ["nl", "Dutch"], ["pl", "Polish"], ["ru", "Russian"], ["uk", "Ukrainian"], ["sv", "Swedish"], ["no", "Norwegian"], ["da", "Danish"], ["fi", "Finnish"], ["cs", "Czech"], ["el", "Greek"], ["hu", "Hungarian"], ["ro", "Romanian"], ["tr", "Turkish"], ["ar", "Arabic"], ["hi", "Hindi"], ["th", "Thai"], ["vi", "Vietnamese"], ["id", "Indonesian"], ["ja", "Japanese"], ["ko", "Korean"], ["zh", "Chinese"]];
   var I18N = {
     en: { t1: "Quick Stats", t2: "Recent Activity", t3: "Notifications", t4: "Favorites", t6: "Personal Analytics", t7: "Download History", t8: "Settings", t9: "Security", t10: "Danger Zone", t11: "My Playlists", t12: "Owner Dashboard" },
@@ -1605,6 +1696,8 @@ function compactProfileViewHtml(d) {
     var flg = document.getElementById("ftLang");
     if (flg) flg.value = _lang;
     applyTheme(theme);
+    /* With the theme now known, so an out-of-season choice stays listed. */
+    syncSeasonalThemes(theme);
     var mode = _data && _data.site_mode ? _data.site_mode : (_cachedMode || "dark");
     syncMode(mode);
     applyMode(mode);
@@ -1627,6 +1720,7 @@ function compactProfileViewHtml(d) {
     try { mode = localStorage.getItem("wantedMode") || "dark"; } catch (e) {}
     _lang = lang;
     applyTheme(theme);
+    syncSeasonalThemes(theme);
     applyMode(mode);
     syncMode(mode);
     try { document.documentElement.lang = lang; } catch (e) {}
@@ -1704,6 +1798,9 @@ function compactProfileViewHtml(d) {
     var flg = document.getElementById("ftLang");
     fillSelect(th, THEMES); fillSelect(fth, THEMES);
     fillSelect(lg, LANGS); fillSelect(flg, LANGS);
+    /* First pass over the static markup: everything out of season is shut
+       until an applied theme says otherwise a moment later. */
+    syncSeasonalThemes();
     function syncTheme(v) { if (th) th.value = v; if (fth) fth.value = v; }
     function syncLang(v) { if (lg) lg.value = v; if (flg) flg.value = v; }
 
@@ -1793,6 +1890,196 @@ function compactProfileViewHtml(d) {
         toast((tt || "Language set to") + " " + (sel.options[sel.selectedIndex].textContent), "success");
       });
     }
+    /* ---------- Seasonal info + Community themes ----------
+       *
+       * Two doors onto the same list. The ⓘ beside the Theme field says what
+       * each seasonal theme IS - its window in this year's real dates, and
+       * whether it is on right now - because the picker only ever shows what
+       * is in season, so for most of the year a member cannot see that
+       * Halloween exists at all. The Community panel adds what everybody else
+       * is wearing, straight from the server's counts.
+       *
+       * Rows wear a theme through the select's own change handler - one path
+       * for picking, not a second one that could drift from it. */
+    var SEASON_NAMES = ["January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"];
+
+    function seasonalById(id) {
+      for (var i = 0; i < SEASONAL.length; i++) if (SEASONAL[i].id === id) return SEASONAL[i];
+      return null;
+    }
+    function fmtDay(d) { return SEASON_NAMES[d.getMonth()].slice(0, 3) + " " + d.getDate(); }
+
+    /* This year's actual window, as dates. Not the word "October": Easter
+       moves, so a fixed string would be wrong most years. */
+    function seasonWindow(entry) {
+      var now = new Date();
+      if (entry.months) {
+        var m = entry.months[0];
+        return SEASON_NAMES[m - 1] + " 1 - " + new Date(now.getFullYear(), m, 0).getDate();
+      }
+      var easter = easterSunday(now.getFullYear());
+      var from = new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() - 2);
+      var to = new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 1);
+      return fmtDay(from) + " - " + fmtDay(to) + ", " + now.getFullYear();
+    }
+
+    /* Open now, or when it comes back - a closed season says the date instead
+       of just being absent. */
+    function seasonStatus(entry) {
+      if (seasonalOpen(entry)) return "Open now";
+      var now = new Date();
+      if (entry.months) {
+        var m = entry.months[0];
+        return "Opens " + SEASON_NAMES[m - 1] + " 1, " +
+          (now.getMonth() + 1 >= m ? now.getFullYear() + 1 : now.getFullYear());
+      }
+      var easter = easterSunday(now.getFullYear());
+      var gf = new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() - 2);
+      if (now > gf) {
+        easter = easterSunday(now.getFullYear() + 1);
+        gf = new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() - 2);
+      }
+      return "Opens " + fmtDay(gf) + ", " + gf.getFullYear();
+    }
+
+    /* One row, shared by both panels. A shut row stays fully readable -
+       reading what exists in June is the point of the panel - only the
+       affordance is taken away. */
+    function themeRow(id, info) {
+      var row = document.createElement("button");
+      row.type = "button";
+      row.className = "thw-theme-row";
+      row.setAttribute("data-theme-id", id);
+      if (!info.open) row.disabled = true;
+
+      var head = document.createElement("span");
+      head.className = "thw-theme-row-head";
+      var name = document.createElement("strong");
+      name.className = "thw-theme-name";
+      name.textContent = themeName(id);
+      head.appendChild(name);
+      if (info.status) {
+        var chip = document.createElement("span");
+        chip.className = "thw-theme-chip" + (info.open ? " thw-theme-chip--open" : "");
+        chip.textContent = info.status;
+        head.appendChild(chip);
+      }
+      row.appendChild(head);
+
+      if (info.about) {
+        var about = document.createElement("span");
+        about.className = "thw-theme-about";
+        about.textContent = info.about;
+        row.appendChild(about);
+      }
+      if (info.when) {
+        var when = document.createElement("span");
+        when.className = "thw-theme-when";
+        when.textContent = info.when;
+        row.appendChild(when);
+      }
+      if (typeof info.pct === "number") {
+        var share = document.createElement("span");
+        share.className = "thw-theme-share";
+        var pct = document.createElement("span");
+        pct.className = "thw-theme-pct";
+        pct.textContent = info.pct + "%";
+        var bar = document.createElement("span");
+        bar.className = "thw-theme-bar";
+        var fill = document.createElement("i");
+        fill.style.width = Math.max(2, info.pct) + "%";
+        bar.appendChild(fill);
+        share.appendChild(pct);
+        share.appendChild(bar);
+        row.appendChild(share);
+      }
+      if (info.open) row.addEventListener("click", function () { wearFromList(id); });
+      return row;
+    }
+
+    /* Wearing a theme from a panel IS picking it in the select: the option is
+       set and its change event fired, so saving, toasting and syncing stay in
+       the one handler that already does all three. */
+    function wearFromList(id) {
+      var sel = document.getElementById("setTheme") || document.getElementById("ftTheme");
+      if (!sel) return;
+      var opt = sel.querySelector('option[value="' + id + '"]');
+      /* Out of season or unknown to the picker: not wearable, whatever built
+         the list. */
+      if (!opt || opt.disabled) return;
+      sel.value = id;
+      sel.dispatchEvent(new Event("change"));
+      closeModal("seasonalThemesModal");
+      closeModal("communityThemesModal");
+    }
+
+    function listMessage(host, text) {
+      host.textContent = "";
+      var p = document.createElement("p");
+      p.className = "thw-theme-empty";
+      p.textContent = text;
+      host.appendChild(p);
+    }
+
+    function fillSeasonalInfo() {
+      var host = document.getElementById("seasonal-themes-list");
+      if (!host) return;
+      host.textContent = "";
+      for (var i = 0; i < SEASONAL.length; i++) {
+        var entry = SEASONAL[i];
+        host.appendChild(themeRow(entry.id, {
+          about: entry.about,
+          when: seasonWindow(entry),
+          status: seasonStatus(entry),
+          open: seasonalOpen(entry),
+        }));
+      }
+    }
+    document.querySelectorAll(".thw-theme-info").forEach(function (btn) {
+      btn.addEventListener("click", function () { fillSeasonalInfo(); openModal("seasonalThemesModal"); });
+    });
+
+    function openCommunityThemes() {
+      var host = document.getElementById("community-themes-list");
+      if (!host) return;
+      openModal("communityThemesModal");
+      listMessage(host, "Loading...");
+      api({ action: "themeStats" }).then(function (d) {
+        if (d && d.error === "sign in required") {
+          listMessage(host, "Sign in to see what the community is wearing.");
+          return;
+        }
+        var list = (d && d.ok && d.themes) || [];
+        if (!list.length) {
+          listMessage(host, "No theme has been picked yet - yours could be the first.");
+          return;
+        }
+        var total = 0;
+        for (var i = 0; i < list.length; i++) total += list[i].count;
+        host.textContent = "";
+        for (var k = 0; k < list.length; k++) {
+          var t = list[k];
+          var entry = seasonalById(t.theme);
+          host.appendChild(themeRow(t.theme, {
+            about: entry ? entry.about : null,
+            when: entry ? seasonWindow(entry) : null,
+            status: entry ? seasonStatus(entry) : null,
+            /* A seasonal theme stays listed out of season - it is what people
+               are wearing - but stops being wearable here too, exactly as in
+               the picker. */
+            open: !entry || seasonalOpen(entry),
+            pct: total ? Math.round((t.count / total) * 100) : 0,
+          }));
+        }
+      }).catch(function () {
+        listMessage(host, "Couldn't reach the community's themes - try again in a moment.");
+      });
+    }
+    /* The dropdown's inline onclick calls this the way its siblings call
+       switchAppPage, so it has to live on the window. */
+    window.thwOpenCommunityThemes = openCommunityThemes;
+
     bindThemeSel(th); bindThemeSel(fth);
     console.log("DIAG init reached bind call");
     bindModeSel(document.getElementById("setMode")); bindModeSel(document.getElementById("ftMode"));

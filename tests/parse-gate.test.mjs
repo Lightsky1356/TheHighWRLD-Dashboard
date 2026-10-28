@@ -385,6 +385,144 @@ if (dupes.length) {
   }
 }
 
+/* ---- every theme is on every list that has to agree ----
+ *
+ * A theme is named in four places: the THEMES table in account.js (the name a
+ * member sees), the picker markup in index.html - TWICE, the settings page and
+ * the footer - the CSS block that draws it, and the server's allowlist that
+ * decides whether a save sticks. Missing from any one of them, a theme still
+ * half works, which is worse than not shipping: it can be applied and then
+ * cannot be named, or cannot be saved, or renders as the default palette with
+ * no error anywhere.
+ *
+ * The seasonal seven carry a fifth detail - a SEASONAL entry saying when they
+ * are offered - and that table is checked against the ids the pickers actually
+ * mark data-seasonal, so a season added to one file and not the other fails
+ * here rather than in July. */
+{
+  const acct = readFileSync(join(ROOT, "account.js"), "utf8");
+  const apiSrc = readFileSync(join(ROOT, "functions", "api", "account", "index.js"), "utf8");
+  const page = readFileSync(join(ROOT, "index.html"), "utf8");
+  const themesCss = readFileSync(join(ROOT, "themes.css"), "utf8");
+
+  const idsIn = (src, re) => [...src.matchAll(re)].map((m) => m[1]);
+
+  const themesBlock = /var THEMES = \[([\s\S]*?)\n  \];/.exec(acct);
+  const themeIds = themesBlock ? idsIn(themesBlock[1], /\["([a-z0-9-]+)"/g) : [];
+  const allowBlock = /KNOWN_THEMES = \[([\s\S]*?)\];/.exec(apiSrc);
+  const allowIds = allowBlock ? idsIn(allowBlock[1], /"([a-z0-9-]+)"/g) : [];
+  const seasonalBlock = /var SEASONAL = \[([\s\S]*?)\n  \];/.exec(acct);
+  const seasonalIds = seasonalBlock ? idsIn(seasonalBlock[1], /id: "([a-z0-9-]+)"/g) : [];
+
+  if (!themeIds.length) {
+    structureFail("account.js THEMES could not be read, nothing else here can be trusted");
+  } else {
+    const missingAllow = themeIds.filter((id) => !allowIds.includes(id));
+    const strayAllow = allowIds.filter((id) => !themeIds.includes(id));
+    if (!allowBlock) structureFail("the server's KNOWN_THEMES allowlist could not be read");
+    else if (missingAllow.length || strayAllow.length) {
+      structureFail(`THEMES and the server allowlist disagree: ${[...missingAllow, ...strayAllow].slice(0, 6).join(", ")}`);
+    } else {
+      structureOk(`the server accepts exactly the ${themeIds.length} themes the picker offers`);
+    }
+
+    const cssless = themeIds.filter((id) => !new RegExp("html\\[data-theme=" + id.replace(/-/g, "\\-") + "\\]\\s*\\{").test(themesCss));
+    if (cssless.length) structureFail(`themes with no CSS block of their own: ${cssless.join(", ")}`);
+    else structureOk(`all ${themeIds.length} themes have a CSS block`);
+
+    /* Both pickers, by extracting each <select> and looking inside it - a
+       bare search for value="default" would also match the mode picker. */
+    const pickerOptions = (id) => {
+      const m = new RegExp('<select id="' + id + '"[^>]*>([\\s\\S]*?)</select>').exec(page);
+      return m ? new Set(idsIn(m[1], /<option value="([a-z0-9-]+)"/g)) : null;
+    };
+    const optionless = [];
+    for (const id of themeIds) {
+      for (const picker of ["setTheme", "ftTheme"]) {
+        const opts = pickerOptions(picker);
+        if (!opts) { structureFail(`index.html has no #${picker} select`); break; }
+        if (!opts.has(id)) optionless.push(`${id} not in #${picker}`);
+      }
+    }
+    if (optionless.length) structureFail(`themes missing from a picker: ${optionless.slice(0, 6).join(", ")}`);
+    else structureOk(`all ${themeIds.length} themes are offered by both pickers`);
+
+    if (!seasonalBlock) structureFail("account.js SEASONAL table could not be read");
+    else {
+      const unknown = seasonalIds.filter((id) => !themeIds.includes(id));
+      const unseasoned = themeIds.filter((id) => {
+        const marked = idsIn(page, new RegExp('data-seasonal="' + id.replace(/-/g, "\\-") + '"', "g"));
+        return seasonalIds.includes(id) ? marked.length !== 2 : marked.length !== 0;
+      });
+      if (unknown.length) structureFail(`seasonal themes not in THEMES: ${unknown.join(", ")}`);
+      else if (unseasoned.length) structureFail(`data-seasonal and SEASONAL disagree: ${unseasoned.join(", ")}`);
+      else structureOk(`${seasonalIds.length} seasonal themes, each marked in both pickers and in SEASONAL`);
+    }
+  }
+}
+
+/* ---- the seasonal ⓘ and Community Themes are wired end to end ----
+ *
+ * Four files carry this feature: the markup (two info buttons, one dropdown
+ * entry, two panels), the stylesheet that draws their rows, the JS that fills
+ * them, and the endpoint that answers the community one. Each part is
+ * invisible on its own - an unbound button or an unfilled panel still opens
+ * and shows an empty box with no error - so the wiring is checked as a whole:
+ * the buttons and entry exist, the JS reaches for exactly the ids the markup
+ * provides, and the stats query never asks WHICH member. */
+{
+  const page = readFileSync(join(ROOT, "index.html"), "utf8");
+  const acct = readFileSync(join(ROOT, "account.js"), "utf8");
+  const apiSrc = readFileSync(join(ROOT, "functions", "api", "account", "index.js"), "utf8");
+
+  const need = ["seasonalThemesModal", "seasonal-themes-list", "communityThemesModal", "community-themes-list"];
+  const absent = need.filter((id) => !page.includes('id="' + id + '"'));
+  if (absent.length) structureFail(`markup missing for: ${absent.join(", ")}`);
+  else structureOk("both theme panels and both list containers are in the page");
+
+  const btnCount = (page.match(/class="thw-theme-info"/g) || []).length;
+  if (btnCount !== 2) structureFail(`expected the info button in both pickers, found ${btnCount}`);
+  else structureOk("both theme pickers carry the seasonal info button");
+
+  const entryOk = (/id="nav-comm-themes"[^>]*onclick="[^"]*thwOpenCommunityThemes\(\)/.test(page) ||
+    /onclick="[^"]*thwOpenCommunityThemes\(\)"[^>]*id="nav-comm-themes"/.test(page));
+  if (!entryOk) structureFail("the Community menu entry is missing or does not open the panel");
+  else structureOk("the Community menu entry opens Community Themes");
+
+  /* The panels' list ids the JS fills itself; nav-comm-themes is deliberately
+     NOT here - that entry is wired the way its siblings are, by inline onclick
+     -> window, which the two checks above and below already cover. */
+  const wiring = ["seasonal-themes-list", "community-themes-list"];
+  const unreached = wiring.filter((id) => !acct.includes('"' + id + '"'));
+  if (!/window\.thwOpenCommunityThemes\s*=\s*openCommunityThemes/.test(acct)) unreached.push("window.thwOpenCommunityThemes");
+  if (unreached.length) structureFail(`account.js never reaches ${unreached.join(", ")}`);
+  else structureOk("the JS reaches every id the two panels are wired by");
+
+  const seasonalBlock = /var SEASONAL = \[([\s\S]*?)\n  \];/.exec(acct);
+  if (seasonalBlock) {
+    const entries = (seasonalBlock[1].match(/\{[^}]+\}/g) || []);
+    const withoutAbout = entries.filter((e) => !/about: "[^"]+"/.test(e));
+    if (withoutAbout.length) structureFail(`${withoutAbout.length} seasonal themes have no about line for the panel`);
+    else structureOk(`all ${entries.length} seasonal themes describe themselves for the panel`);
+  }
+
+  const caseM = /case "themeStats": \{([\s\S]*?)\n      case /.exec(apiSrc);
+  if (!caseM) {
+    structureFail("the account API has no themeStats action");
+  } else {
+    /* Comments first: the answer to "does this read a member's identity" has
+       to come from the code, not from a sentence about identity. */
+    const code = caseM[1].replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    const sql = /SELECT ([\s\S]*?) FROM/.exec(code);
+    const aggregates = /GROUP BY theme/.test(code) && /COUNT\(\*\)/.test(code);
+    const identity = /\buid\b|site_uid|display_name|\bhandle\b|\bemail\b/.test(sql ? sql[1] : "SELECT-COULD-NOT-BE-READ");
+    if (!aggregates) structureFail("themeStats does not group a count per theme");
+    else if (!sql) structureFail("themeStats' query could not be read");
+    else if (identity) structureFail("themeStats counts a per-member column: " + sql[1].trim().slice(0, 60));
+    else structureOk("themeStats counts themes per group without touching a member's identity");
+  }
+}
+
 /* ---- the recent activity list lives on the account page ----
  *
  * It was on the profile page, where it sat next to a stranger's name and read

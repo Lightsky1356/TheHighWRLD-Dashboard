@@ -10,6 +10,21 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 const OWNER_DISCORD_ID_DEFAULT = "1016529053659967629";
+// Every theme the picker can offer, in the order account.js lists them
+// (THEMES) - the parse gate reads both and fails if they ever disagree.
+//
+// The seasonal seven are here the whole year on purpose. The calendar decides
+// which themes are OFFERED, never which are recognised: someone who chose
+// Halloween in October keeps it in July, and the save that puts it back must
+// still be accepted in July. Only membership is checked - never the season -
+// so a value with no stylesheet behind it can never sit in the table.
+const KNOWN_THEMES = [
+  "default", "violet", "embers", "obsidian", "aurora", "sakura", "ocean", "royal",
+  "neon", "blood", "storm", "forest", "sunset", "ice", "candy", "matrix", "cyber",
+  "gold", "galaxy", "lava", "toxic", "rose", "oled", "ultraviolet", "pharaoh",
+  "dragon", "mint", "tangerine", "grape", "pumpkin", "silver", "midnight",
+  "newyear", "valentines", "stpatricks", "easter", "july4", "halloween", "christmas",
+];
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -317,12 +332,36 @@ export async function onRequestPost(context) {
         break;
       }
       case "saveTheme": {
-        const theme = String(body.theme || "default").slice(0, 24);
+        // The same shape as saveMode below: an unknown value falls back to the
+        // default rather than being stored, so no typo - and no theme id from
+        // a future picker - can end up in the table with no stylesheet
+        // matching it. The seasonal themes are all accepted, in every month.
+        const theme = KNOWN_THEMES.includes(String(body.theme))
+          ? String(body.theme)
+          : "default";
         await db.prepare(
           `INSERT INTO user_profiles (site_uid, theme, updated_at) VALUES (?, ?, ?)
            ON CONFLICT(site_uid) DO UPDATE SET theme = excluded.theme, updated_at = excluded.updated_at`
         ).bind(uid, theme, nowIso()).run();
         break;
+      }
+      case "themeStats": {
+        // What the community is wearing, as one grouped count - never who is
+        // wearing it: no uid and no handle is read, so there is no way to ask
+        // the server who picked what. The IN list is the same KNOWN_THEMES the
+        // picker is held to, which keeps a stray or pre-allowlist value out of
+        // the panel as well. The share is of members who have chosen a theme;
+        // everyone who never has simply is not in the table yet.
+        const rows = await db.prepare(
+          `SELECT theme, COUNT(*) AS n FROM user_profiles
+           WHERE theme IS NOT NULL AND theme != '' AND theme IN (${KNOWN_THEMES.map(() => "?").join(",")})
+           GROUP BY theme ORDER BY n DESC, theme ASC`
+        ).bind(...KNOWN_THEMES).all();
+        const themes = (rows.results || []).map((r) => ({
+          theme: r.theme,
+          count: Number(r.n) || 0,
+        }));
+        return json({ ok: true, themes });
       }
       case "saveLanguage": {
         const language = String(body.language || "en").slice(0, 8);

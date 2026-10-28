@@ -177,14 +177,14 @@
     {
       id: "community-themes",
       title: "Community themes",
-      description: "Letting people publish and share theme presets - the site already ships 32 built-in themes.",
+      description: "Letting people publish and share theme presets - the site already ships 39 built-in themes (32 base plus 7 seasonal ones that open by season).",
       status: "considering",
       category: ["other"]
     },
     {
       id: "light-theme",
       title: "Light theme",
-      description: "The site is dark-first across all 32 themes. A proper light palette is being considered.",
+      description: "The site is dark-first across all 39 themes (32 base plus 7 seasonal). A proper light palette is being considered.",
       status: "considering",
       category: ["other"]
     },
@@ -390,7 +390,7 @@
     {
       id: "themes",
       title: "Themes",
-      description: "32 built-in themes, switchable per account and saved to your profile.",
+      description: "39 built-in themes - 32 base plus 7 month-gated seasonal ones - switchable per account and saved to your profile.",
       status: "completed",
       category: ["other"],
       lastUpdated: "2026-08-30"

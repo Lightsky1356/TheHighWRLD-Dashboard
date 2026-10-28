@@ -996,6 +996,219 @@ async function main() {
   const behind = await cdp.evalJson("(function(){ var t = document.createElement('div'); t.id = 'shortcuts-toast'; t.textContent = 'hint'; t.style.cssText = 'position:fixed;bottom:140px;right:30px;z-index:298'; document.body.appendChild(t); document.documentElement.classList.add('thw-social-open'); var z = getComputedStyle(t).zIndex; var root = document.getElementById('thw-social-root'); var pz = root ? getComputedStyle(root).zIndex : 'none'; t.remove(); document.documentElement.classList.remove('thw-social-open'); return { toast: z, panel: pz }; })()");
   check("the hint goes behind the panel", behind && Number(behind.toast) < Number(behind.panel), JSON.stringify(behind));
 
+  /* ---- the seasonal themes ---- */
+  /* The picker is walked through the calendar at stated dates, because "only
+     in October" is otherwise only testable in October. The theme in use is
+     carried through every step and put back at the end, so the page carries
+     on exactly as it was found. */
+  const seasonal = await cdp.evalJson(`(function () {
+    if (!window.thwSeasonal) return { error: "no window.thwSeasonal" };
+    var S = window.thwSeasonal;
+    function offered(id) {
+      var out = [];
+      ["setTheme", "ftTheme"].forEach(function (selId) {
+        var sel = document.getElementById(selId);
+        if (!sel) { out.push(selId + ":nopicker"); return; }
+        var o = sel.querySelector('option[data-seasonal="' + id + '"]');
+        if (!o) { out.push(selId + ":nooption"); return; }
+        out.push(selId + ":" + (o.hidden ? "hidden" : "shown") + "/" + (o.disabled ? "off" : "on"));
+      });
+      return out.join(",");
+    }
+    var wearing = document.documentElement.getAttribute("data-theme") || "default";
+    var out = {};
+    var easter2026 = S.easter(2026);
+    out.easter2026 = (easter2026.getMonth() + 1) + "-" + easter2026.getDate();
+
+    // Mid-October: Halloween is offered, Christmas is not.
+    S.sync("default", new Date(2026, 9, 15));
+    out.octHalloween = offered("halloween");
+    out.octChristmas = offered("christmas");
+
+    // Mid-July, still wearing Halloween: the season is over, but the theme in
+    // use stays listed - nothing changes under the member on its own.
+    S.sync("halloween", new Date(2026, 6, 15));
+    out.julWorn = offered("halloween");
+    out.julChristmas = offered("christmas");
+
+    // Mid-December: Christmas comes back.
+    S.sync("halloween", new Date(2026, 11, 25));
+    out.decChristmas = offered("christmas");
+
+    // Easter 2026 is April 5th, so the window is Good Friday April 3rd
+    // through Easter Monday April 6th - and neither neighbour is in it.
+    out.apr2 = S.open({ easter: true }, new Date(2026, 3, 2));
+    out.apr3 = S.open({ easter: true }, new Date(2026, 3, 3));
+    out.apr6 = S.open({ easter: true }, new Date(2026, 3, 6));
+    out.apr7 = S.open({ easter: true }, new Date(2026, 3, 7));
+
+    // The CSS is real, not merely listed: wearing Halloween changes a value a
+    // rule actually reads. Compared against the default theme rather than
+    // whatever happens to be on, so the check is the same in any month.
+    document.documentElement.setAttribute("data-theme", "default");
+    var base = getComputedStyle(document.documentElement).getPropertyValue("--th-accent").trim();
+    document.documentElement.setAttribute("data-theme", "halloween");
+    var dressed = getComputedStyle(document.documentElement).getPropertyValue("--th-accent").trim();
+    document.documentElement.setAttribute("data-theme", wearing);
+    out.paletteChanged = !!dressed && dressed !== base;
+
+    // Back the way it was found - an option left hidden here would be this
+    // test's own footprint, not the site's.
+    S.sync(wearing);
+    return out;
+  })()`);
+  check("the seasonal themes are loaded", seasonal && !seasonal.error, JSON.stringify(seasonal).slice(0, 120));
+  check("Easter 2026 falls on April 5th", seasonal && seasonal.easter2026 === "4-5", JSON.stringify(seasonal).slice(0, 200));
+  check("October offers Halloween in both pickers",
+    seasonal && seasonal.octHalloween === "setTheme:shown/on,ftTheme:shown/on", JSON.stringify(seasonal).slice(0, 200));
+  check("October keeps Christmas shut", seasonal && seasonal.octChristmas === "setTheme:hidden/off,ftTheme:hidden/off",
+    JSON.stringify(seasonal).slice(0, 200));
+  check("a Halloween in use stays listed through July",
+    seasonal && seasonal.julWorn === "setTheme:shown/on,ftTheme:shown/on", JSON.stringify(seasonal).slice(0, 200));
+  check("July still keeps Christmas shut", seasonal && seasonal.julChristmas === "setTheme:hidden/off,ftTheme:hidden/off",
+    JSON.stringify(seasonal).slice(0, 200));
+  check("December offers Christmas again",
+    seasonal && seasonal.decChristmas === "setTheme:shown/on,ftTheme:shown/on", JSON.stringify(seasonal).slice(0, 200));
+  check("Easter's window shuts the day before Good Friday", seasonal && seasonal.apr2 === false, JSON.stringify(seasonal).slice(0, 200));
+  check("Easter's window opens on Good Friday", seasonal && seasonal.apr3 === true, JSON.stringify(seasonal).slice(0, 200));
+  check("Easter's window runs through Easter Monday", seasonal && seasonal.apr6 === true, JSON.stringify(seasonal).slice(0, 200));
+  check("Easter's window shuts after Easter Monday", seasonal && seasonal.apr7 === false, JSON.stringify(seasonal).slice(0, 200));
+  check("wearing a seasonal theme really changes the palette",
+    seasonal && seasonal.paletteChanged === true, JSON.stringify(seasonal).slice(0, 200));
+
+  /* ---- the seasonal ⓘ panel and Community Themes ----
+     *
+     * Month-tolerant on purpose. The window itself was already walked at
+     * forced dates above; what is checked here is that the panels are built
+     * and wired the same way on whatever day the suite happens to run - so a
+     * row's open/shut state is derived from the month right here, never
+     * assumed. Two members are given a theme first, so the community counts
+     * have something real to count. */
+  const startTheme = await cdp.evalJson('document.documentElement.getAttribute("data-theme") || "default"');
+  await cdp.evalJson(`fetch("/api/account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "saveTheme", theme: "ocean" }) }).then(function (r) { return r.json(); })`);
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: "gallinked1token", domain: "127.0.0.1", path: "/",
+  });
+  await cdp.evalJson(`fetch("/api/account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "saveTheme", theme: "halloween" }) }).then(function (r) { return r.json(); })`);
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: "notifontoken1", domain: "127.0.0.1", path: "/",
+  });
+
+  const stats = await cdp.evalJson(`(async function () {
+    var r = await fetch("/api/account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "themeStats" }) });
+    var d = await r.json().catch(function () { return null; });
+    if (!d || !d.ok) return { error: JSON.stringify(d).slice(0, 140) };
+    return {
+      n: d.themes.length,
+      ids: d.themes.map(function (t) { return t.theme; }).join(","),
+      countsDesc: d.themes.every(function (t, i, a) { return i === 0 || a[i - 1].count >= t.count; }),
+      sum: d.themes.reduce(function (s, t) { return s + t.count; }, 0),
+      clean: !/"[^"]*(uid|site_uid|display_name|handle|email)[^"]*"/.test(JSON.stringify(d)),
+    };
+  })()`);
+  check("the community's theme counts come back", stats && !stats.error && stats.n >= 2, JSON.stringify(stats));
+  check("both members' picks are in the counts",
+    stats && /(^|,)ocean(,|$)/.test(stats.ids || "") && /(^|,)halloween(,|$)/.test(stats.ids || ""), JSON.stringify(stats).slice(0, 160));
+  check("the counts are ordered largest first", stats && stats.countsDesc === true, JSON.stringify(stats).slice(0, 160));
+  check("the counts carry no member's identity", stats && stats.clean === true, JSON.stringify(stats).slice(0, 160));
+
+  const seasonalPanel = await cdp.evalJson(`(function () {
+    var out = {};
+    out.buttons = document.querySelectorAll(".thw-theme-info").length;
+    var first = document.querySelector(".thw-theme-info");
+    if (first) first.click();
+    var m = document.getElementById("seasonalThemesModal");
+    out.opened = !!(m && m.classList.contains("open"));
+    var rows = m ? Array.prototype.slice.call(m.querySelectorAll(".thw-theme-row")) : [];
+    out.count = rows.length;
+    out.order = rows.map(function (r) { return r.getAttribute("data-theme-id"); }).join(",");
+    out.everyRow = rows.every(function (r) {
+      var chip = r.querySelector(".thw-theme-chip");
+      var when = r.querySelector(".thw-theme-when");
+      return !!r.querySelector(".thw-theme-about") && !!chip && !!when &&
+        /^(Open now|Opens [A-Z][a-z]+ [0-9]+, [0-9]{4})$/.test(chip.textContent) &&
+        /^([A-Z][a-z]+ 1 - [0-9]+|[A-Z][a-z]{2} [0-9]+ - [A-Z][a-z]{2} [0-9]+, [0-9]{4})$/.test(when.textContent);
+    });
+    // Whichever of these two is out of season today - always at least one is.
+    var month = new Date().getMonth() + 1;
+    var shutId = month === 10 ? "christmas" : "halloween";
+    var shut = m && m.querySelector('[data-theme-id="' + shutId + '"]');
+    out.shut = { id: shutId, disabled: !!(shut && shut.disabled) };
+    out.before = document.documentElement.getAttribute("data-theme");
+    if (shut) shut.click();
+    out.after = document.documentElement.getAttribute("data-theme");
+    var close = m && m.querySelector("[data-close]");
+    if (close) close.click();
+    out.closed = !(m && m.classList.contains("open"));
+    return out;
+  })()`);
+  check("the info button opens the seasonal panel",
+    seasonalPanel && seasonalPanel.buttons === 2 && seasonalPanel.opened === true, JSON.stringify(seasonalPanel).slice(0, 160));
+  check("it lists all seven seasonal themes in season order",
+    seasonalPanel && seasonalPanel.count === 7 &&
+    seasonalPanel.order === "newyear,valentines,stpatricks,easter,july4,halloween,christmas",
+    JSON.stringify(seasonalPanel).slice(0, 200));
+  check("every row tells what it is, its window and its status",
+    seasonalPanel && seasonalPanel.everyRow === true, JSON.stringify(seasonalPanel).slice(0, 200));
+  check("a theme out of season is listed but cannot be worn, and clicks do nothing",
+    seasonalPanel && seasonalPanel.shut.disabled === true && seasonalPanel.after === seasonalPanel.before,
+    JSON.stringify(seasonalPanel).slice(0, 200));
+  check("the panel's close button closes it", seasonalPanel && seasonalPanel.closed === true,
+    JSON.stringify(seasonalPanel).slice(0, 200));
+
+  const commOpened = await cdp.evalJson(`(function () {
+    var item = document.getElementById("nav-comm-themes");
+    if (!item) return { error: "no #nav-comm-themes" };
+    item.click();
+    var m = document.getElementById("communityThemesModal");
+    return { opened: !!(m && m.classList.contains("open")) };
+  })()`);
+  check("the Community menu's entry opens Community Themes",
+    commOpened && commOpened.opened === true, JSON.stringify(commOpened).slice(0, 160));
+  await sleep(1200); // the counts arrive over fetch after the panel is up
+
+  const commRows = await cdp.evalJson(`(function () {
+    var m = document.getElementById("communityThemesModal");
+    var rows = m ? Array.prototype.slice.call(m.querySelectorAll(".thw-theme-row")) : [];
+    return {
+      count: rows.length,
+      shares: rows.every(function (r) {
+        var pct = r.querySelector(".thw-theme-pct");
+        return !!r.querySelector(".thw-theme-share") && /^[0-9]+%$/.test(pct ? pct.textContent : "");
+      }),
+      hasOcean: rows.some(function (r) { return r.getAttribute("data-theme-id") === "ocean" && !r.disabled; }),
+      stillOpen: !!(m && m.classList.contains("open")),
+    };
+  })()`);
+  check("the panel lists what the community is wearing",
+    commRows && commRows.count >= 2 && commRows.stillOpen === true, JSON.stringify(commRows).slice(0, 160));
+  check("every row shows its share of the community",
+    commRows && commRows.shares === true, JSON.stringify(commRows).slice(0, 160));
+  check("a theme that is not seasonal is always wearable from the list",
+    commRows && commRows.hasOcean === true, JSON.stringify(commRows).slice(0, 160));
+
+  const worn = await cdp.evalJson(`(function () {
+    var m = document.getElementById("communityThemesModal");
+    var row = m && m.querySelector('[data-theme-id="ocean"]');
+    if (!row || row.disabled) return { error: "the ocean row is not wearable" };
+    row.click();
+    var after = document.documentElement.getAttribute("data-theme");
+    var sel = document.getElementById("setTheme");
+    var selAt = sel ? sel.value : "";
+    var closed = !(m && m.classList.contains("open"));
+    // Put it back exactly as found - this suite shares its account with the
+    // checks that run after it.
+    if (sel) { sel.value = "${startTheme}"; sel.dispatchEvent(new Event("change")); }
+    return { after: after, selAt: selAt, closed: closed, restored: document.documentElement.getAttribute("data-theme") };
+  })()`);
+  check("clicking a theme in the panel wears it",
+    worn && worn.after === "ocean", JSON.stringify(worn).slice(0, 160));
+  check("it went through the picker itself, so it saves like any other pick",
+    worn && worn.selAt === "ocean", JSON.stringify(worn).slice(0, 160));
+  check("the panel closes once its theme is worn", worn && worn.closed === true, JSON.stringify(worn).slice(0, 160));
+  check("the theme is put back the way it was found",
+    worn && worn.restored === startTheme, JSON.stringify(worn) + " vs " + startTheme);
+
   console.log("");
   const failed = results.filter((r) => !r.pass);
   console.log(`  ${results.length - failed.length}/${results.length} passed, ${failed.length} failed`);

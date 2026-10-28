@@ -305,6 +305,151 @@ html[data-theme=default]{
 }
 
 /* ============================================================================
+   Seasonal themes
+   ---------------------------------------------------------------------------
+   Seven ordinary themes - same structure, same four base colours so the
+   gradient fallback above keeps working - that the picker only offers while
+   their season is on. The calendar lives in account.js (SEASONAL); here they
+   are just palettes, which is what keeps a chosen one rendering all year with
+   nothing special-cased. Slugs stay [a-z0-9-]: they become a data-theme
+   attribute and an HTML option value, neither of which likes anything else. */
+
+/* New Year's - fireworks gold and ice over midnight, January */
+html[data-theme=newyear]{
+  --ac-bg0:#04061a;--ac-bg1:#0b1233;
+  --ac-purple:#facc15;--ac-pink:#f472b6;--ac-gold:#fde68a;--ac-orange:#fbbf24;--ac-cyan:#93c5fd;
+  --ac-grad-brand:linear-gradient(120deg,#facc15,#f472b6,#93c5fd,#facc15);
+  --ac-grad-purple:linear-gradient(135deg,#ca8a04,#db2777);
+  --ac-grad-pink:linear-gradient(135deg,#f472b6,#93c5fd);
+  --th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(250,204,21,.22),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(244,114,182,.18),transparent 55%),radial-gradient(800px 600px at 50% 110%,rgba(147,197,253,.10),transparent 55%),linear-gradient(180deg,#04061a,#0b1233 45%,#050a20 100%);
+  --th-accent:#facc15;--th-accent2:#93c5fd;--th-glow:rgba(250,204,21,.16);--th-glow2:rgba(147,197,253,.10);
+}
+
+/* Valentine's Day - crimson and blush, February */
+html[data-theme=valentines]{
+  --ac-bg0:#150308;--ac-bg1:#2c0716;
+  --ac-purple:#f43f5e;--ac-pink:#fb7185;--ac-gold:#fda4af;--ac-orange:#f472b6;--ac-cyan:#f9a8d4;
+  --ac-grad-brand:linear-gradient(120deg,#f43f5e,#fb7185,#f9a8d4,#f43f5e);
+  --ac-grad-purple:linear-gradient(135deg,#be123c,#e11d48);
+  --ac-grad-pink:linear-gradient(135deg,#fb7185,#f9a8d4);
+  --th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(244,63,94,.24),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(251,113,133,.20),transparent 55%),radial-gradient(800px 600px at 50% 110%,rgba(249,168,212,.10),transparent 55%),linear-gradient(180deg,#150308,#2c0716 45%,#1a040c 100%);
+  --th-accent:#fb7185;--th-accent2:#f9a8d4;--th-glow:rgba(251,113,133,.16);--th-glow2:rgba(249,168,212,.10);
+}
+
+/* St. Patrick's Day - emerald and found gold, March */
+html[data-theme=stpatricks]{
+  --ac-bg0:#02120a;--ac-bg1:#062712;
+  --ac-purple:#4ade80;--ac-pink:#22c55e;--ac-gold:#fbbf24;--ac-orange:#a3e635;--ac-cyan:#86efac;
+  --ac-grad-brand:linear-gradient(120deg,#22c55e,#4ade80,#fbbf24,#22c55e);
+  --ac-grad-purple:linear-gradient(135deg,#15803d,#16a34a);
+  --ac-grad-pink:linear-gradient(135deg,#4ade80,#fbbf24);
+  --th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(34,197,94,.22),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(74,222,128,.18),transparent 55%),radial-gradient(800px 600px at 50% 110%,rgba(251,191,36,.12),transparent 55%),linear-gradient(180deg,#02120a,#062712 45%,#03160c 100%);
+  --th-accent:#4ade80;--th-accent2:#fbbf24;--th-glow:rgba(74,222,128,.16);--th-glow2:rgba(251,191,36,.10);
+}
+
+/* Easter - the spring pastels, Good Friday through Easter Monday */
+html[data-theme=easter]{
+  --ac-bg0:#0d0a1e;--ac-bg1:#1b1136;
+  --ac-purple:#c4b5fd;--ac-pink:#f9a8d4;--ac-gold:#fde68a;--ac-orange:#a7f3d0;--ac-cyan:#93c5fd;
+  --ac-grad-brand:linear-gradient(120deg,#c4b5fd,#f9a8d4,#a7f3d0,#c4b5fd);
+  --ac-grad-purple:linear-gradient(135deg,#8b5cf6,#db2777);
+  --ac-grad-pink:linear-gradient(135deg,#f9a8d4,#93c5fd);
+  --th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(196,181,253,.20),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(249,168,212,.18),transparent 55%),radial-gradient(800px 600px at 50% 110%,rgba(167,243,208,.10),transparent 55%),linear-gradient(180deg,#0d0a1e,#1b1136 45%,#120c28 100%);
+  --th-accent:#c4b5fd;--th-accent2:#a7f3d0;--th-glow:rgba(196,181,253,.16);--th-glow2:rgba(167,243,208,.10);
+}
+
+/* Fourth of July - the flag's own red on navy, July */
+html[data-theme=july4]{
+  --ac-bg0:#040616;--ac-bg1:#0a1030;
+  --ac-purple:#60a5fa;--ac-pink:#f87171;--ac-gold:#fca5a5;--ac-orange:#ef4444;--ac-cyan:#93c5fd;
+  --ac-grad-brand:linear-gradient(120deg,#3b82f6,#ef4444,#fca5a5,#3b82f6);
+  --ac-grad-purple:linear-gradient(135deg,#1d4ed8,#3b82f6);
+  --ac-grad-pink:linear-gradient(135deg,#ef4444,#93c5fd);
+  --th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(59,130,246,.22),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(239,68,68,.20),transparent 55%),radial-gradient(800px 600px at 50% 110%,rgba(147,197,253,.10),transparent 55%),linear-gradient(180deg,#040616,#0a1030 45,#060b22 100%);
+  --th-accent:#60a5fa;--th-accent2:#f87171;--th-glow:rgba(96,165,250,.16);--th-glow2:rgba(248,113,113,.10);
+}
+
+/* Halloween - pumpkin and violet on the darkest night, October */
+html[data-theme=halloween]{
+  --ac-bg0:#0a0402;--ac-bg1:#1c0a04;
+  --ac-purple:#a855f7;--ac-pink:#f59e0b;--ac-gold:#fbbf24;--ac-orange:#fb923c;--ac-cyan:#c084fc;
+  --ac-grad-brand:linear-gradient(120deg,#fb923c,#a855f7,#fbbf24,#fb923c);
+  --ac-grad-purple:linear-gradient(135deg,#7c3aed,#c026d3);
+  --ac-grad-pink:linear-gradient(135deg,#f59e0b,#a855f7);
+  --th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(251,146,60,.24),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(168,85,247,.24),transparent 55%),radial-gradient(800px 600px at 50% 110%,rgba(251,191,36,.10),transparent 55%),linear-gradient(180deg,#0a0402,#1c0a04 45%,#120508 100%);
+  --th-accent:#fb923c;--th-accent2:#a855f7;--th-glow:rgba(251,146,60,.18);--th-glow2:rgba(168,85,247,.12);
+}
+
+/* Christmas - holly red and pine with gold, December */
+html[data-theme=christmas]{
+  --ac-bg0:#04100a;--ac-bg1:#0a2412;
+  --ac-purple:#22c55e;--ac-pink:#ef4444;--ac-gold:#fbbf24;--ac-orange:#f87171;--ac-cyan:#86efac;
+  --ac-grad-brand:linear-gradient(120deg,#ef4444,#22c55e,#fbbf24,#ef4444);
+  --ac-grad-purple:linear-gradient(135deg,#15803d,#16a34a);
+  --ac-grad-pink:linear-gradient(135deg,#ef4444,#f87171);
+  --th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(239,68,68,.22),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(34,197,94,.20),transparent 55%),radial-gradient(800px 600px at 50% 110%,rgba(251,191,36,.12),transparent 55%),linear-gradient(180deg,#04100a,#0a2412 45%,#06170c 100%);
+  --th-accent:#ef4444;--th-accent2:#22c55e;--th-glow:rgba(239,68,68,.16);--th-glow2:rgba(34,197,94,.10);
+}
+
+/* ============================================================================
+   The two panels that list themes: the seasonal ⓘ and Community Themes.
+   Both are ordinary modals - the classes they share with the rest of the site
+   (modal-overlay / modal / m-head) come from there - so only their own rows
+   and the info button are styled here, next to the themes they describe. */
+
+.thw-theme-info{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:6px;padding:5px 10px;
+  border-radius:999px;border:1px solid var(--ac-border,rgba(255,255,255,.1));
+  background:rgba(255,255,255,.05);color:var(--ac-muted,#a295c9);
+  font-size:10px;font-weight:700;letter-spacing:.04em;cursor:pointer;
+  transition:background .18s var(--ac-ease,cubic-bezier(.16,1,.3,1)),color .18s,border-color .18s;
+}
+.thw-theme-info:hover{background:rgba(255,255,255,.1);color:var(--ac-text,#f2edff);border-color:var(--ac-border2,rgba(255,255,255,.2))}
+.thw-theme-info i{font-size:11px}
+
+.thw-modal-hint{
+  font-size:11.5px;line-height:1.55;color:var(--ac-muted,#a295c9);
+  margin:0 0 12px;padding-right:26px;
+}
+.thw-theme-list{
+  display:flex;flex-direction:column;gap:8px;
+  max-height:min(56vh,440px);overflow-y:auto;overscroll-behavior:contain;
+  padding-right:4px;
+}
+.thw-theme-row{
+  display:flex;flex-direction:column;gap:4px;
+  padding:11px 13px;border-radius:14px;text-align:left;
+  background:rgba(255,255,255,.045);
+  border:1px solid var(--ac-border,rgba(255,255,255,.1));
+  color:inherit;cursor:pointer;
+  transition:background .16s,border-color .16s,transform .16s var(--ac-ease,cubic-bezier(.16,1,.3,1));
+}
+.thw-theme-row:not(:disabled):hover{
+  background:rgba(255,255,255,.09);
+  border-color:var(--ac-border2,rgba(255,255,255,.22));
+  transform:translateY(-1px);
+}
+/* A theme out of season still gets read - that is what the panel is for - so
+   the row stays fully legible and only the affordance is taken away. */
+.thw-theme-row:disabled{cursor:default;opacity:.8}
+.thw-theme-row-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.thw-theme-name{font-size:13px;font-weight:800;color:var(--ac-text,#f2edff)}
+.thw-theme-chip{
+  flex:none;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;
+  background:rgba(255,255,255,.09);color:var(--ac-dim,#6f6692);
+}
+.thw-theme-chip--open{background:rgba(74,222,128,.16);color:#4ade80}
+.thw-theme-about{font-size:11px;line-height:1.5;color:var(--ac-muted,#a295c9)}
+.thw-theme-when{font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--ac-dim,#6f6692)}
+.thw-theme-share{display:flex;align-items:center;gap:8px;margin-top:2px}
+.thw-theme-pct{font-size:11px;font-weight:800;color:var(--ac-text,#f2edff);min-width:34px}
+.thw-theme-bar{flex:1;height:5px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
+.thw-theme-bar i{display:block;height:100%;border-radius:99px;background:var(--ac-grad-brand,linear-gradient(120deg,#a855f7,#ec4899,#f59e0b,#a855f7))}
+.thw-theme-empty{font-size:12px;color:var(--ac-muted,#a295c9);padding:14px 4px;margin:0}
+
+/* ============================================================================
    The gradients every theme must have
    ---------------------------------------------------------------------------
    Three gradient variables are used across the site: --ac-grad-brand,
