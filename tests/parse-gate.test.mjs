@@ -1,4 +1,4 @@
-// PARSE GATE
+﻿// PARSE GATE
 //
 // This exists because sw.js shipped six times with a syntax error inside its
 // PRECACHE array - stray "(" characters injected by a token-bump helper of mine.
@@ -461,7 +461,7 @@ if (dupes.length) {
   }
 }
 
-/* ---- the seasonal ⓘ panel and the Community Themes page are wired end to end ----
+/* ---- the seasonal â“˜ panel and the Community Themes page are wired end to end ----
  *
  * The seasonal panel keeps its markup. Community Themes was promoted from a
  * popup to a real page where members submit their own themes, so seven files
@@ -659,6 +659,31 @@ if (dupes.length) {
     if (!/theme LIKE 'u-%'/.test(caseM[1])) structureFail("themeStats does not count member themes (u- namespace)");
     else structureOk("themeStats counts member themes by their u- namespace");
   }
+
+  /* The builder's preview shows the shape of the theme, not just the swatch
+     list: a mini mock of the site (nav, hero, cards) painted from the slots,
+     plus the hex codes themselves. */
+  if (!/ct-mini-nav/.test(ctJs) || !/ct-mini-hero/.test(ctJs) ||
+      !/ct-mini-card/.test(ctJs) || !/ct-mini-hex/.test(ctJs)) {
+    structureFail("the builder's preview is not a mini mockup of the site");
+  } else structureOk("the builder previews a mini mockup of the site from the slots");
+
+  if (!/\.ct-mini\s*\{/.test(ctCss) || !/\.ct-mini-nav\s*\{/.test(ctCss) || !/\.ct-mini-hero\s*\{/.test(ctCss)) {
+    structureFail("the preview mockup has no stylesheet chrome");
+  } else structureOk("the preview mockup is styled");
+
+  /* Going back: every theme switch funnels through the picker's change
+     handler (Wear sets the select and fires change), so the handler puts the
+     previous theme away, and the gallery offers a one-click wear-back chip. */
+  if (!/window\.thwPrevTheme = function/.test(acct) ||
+      !/localStorage\.setItem\("thwPrevTheme", wasWearing\)/.test(acct)) {
+    structureFail("theme switches do not remember the previous theme");
+  } else structureOk("every theme switch remembers what the member was wearing before");
+
+  if (!/function backChip/.test(ctJs) || !/thwPrevTheme/.test(ctJs) ||
+      !/ct-btn-back/.test(ctJs)) {
+    structureFail("the gallery does not offer a go-back chip for the previous theme");
+  } else structureOk("the gallery offers a one-click wear-back of the previous theme");
 }
 
 /* ---- the recent activity list lives on the account page ----

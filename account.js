@@ -1879,6 +1879,15 @@ function compactProfileViewHtml(d) {
       if (!sel) return;
       sel.addEventListener("change", function () {
         var v = sel.value;
+        /* Every theme switch - the picker, a seasonal row, a Community
+           gallery row - funnels through here (Wear sets the select and
+           fires change), so this is where "what the member was wearing
+           before" is put away. thwPrevTheme hands it out for the Community
+           Themes page's go-back chip. */
+        var wasWearing = document.documentElement.getAttribute("data-theme") || "";
+        if (wasWearing && wasWearing !== v) {
+          try { localStorage.setItem("thwPrevTheme", wasWearing); } catch (_) {}
+        }
         /* Member themes load their generated sheet before or with the paint. */
         ensureMemberThemeCss(v);
         /* Captured before applyTheme, so a failed save has something to go back
@@ -2085,6 +2094,11 @@ function compactProfileViewHtml(d) {
     }
     /* The Community Themes page wears through the same path. */
     window.thwWearTheme = wearFromList;
+    /* The slug of the theme the member put off before the latest wear, or
+       "" when there is nothing to go back to (or it has worn everything). */
+    window.thwPrevTheme = function () {
+      try { return localStorage.getItem("thwPrevTheme") || ""; } catch (_) { return ""; }
+    };
 
     bindThemeSel(th); bindThemeSel(fth);
     console.log("DIAG init reached bind call");

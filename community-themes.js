@@ -164,7 +164,7 @@
     parts.push('<div class="ct-slots">' + slotsHtml + "</div>");
     parts.push('<div class="ct-preview-shell"><div class="ct-label">Preview</div>' +
       '<div class="ct-preview"><div class="ct-preview-card"></div>' +
-      '<span class="ct-preview-note">updates live - the real thing lands the moment you submit</span></div></div>');
+      '<span class="ct-preview-note">updates live - the mockup and the hex codes change as you pick</span></div></div>');
     parts.push('<button type="submit" class="ct-btn ct-btn-gold" id="ct-submit">' +
       '<i class="fas fa-paper-plane"></i> Submit theme</button>' +
       '<p class="ct-form-msg" id="ct-form-msg"></p>');
@@ -212,16 +212,40 @@
     var c = slotsFromForm();
     var pv = formEl.querySelector(".ct-preview-card");
     if (!pv) return;
-    pv.style.background = "linear-gradient(135deg," + (c.accent || "#333") + "," + (c.accent2 || "#333") + ")";
-    pv.style.borderColor = c.card || "#222";
-    /* The slot labels sit on the card, so the text color is theirs to set. */
-    pv.style.setProperty("color", c.text || "#eee");
-    /* Cheat the trailing separator off by putting one between pairs only. */
-    var bits = [];
-    for (var i = 0; i < SLOTS.length; i++) {
-      bits.push('<i style="background:' + (c[SLOTS[i].key] || "#555") + '"></i>' + SLOTS[i].label);
-    }
-    pv.innerHTML = bits.join('<span class="ct-preview-sep"></span>');
+    var accent = c.accent || "#555";
+    var accent2 = c.accent2 || "#555";
+    var bg = c.bg || "#111";
+    var card = c.card || "#181818";
+    var text = c.text || "#eee";
+    /* A tiny mock of the site itself - nav, hero, cards, a play button -
+       painted from the five slots, so the member sees the shape of the
+       theme, not just five strips. Every value here came through HEX_OK or
+       is a fixed default, and the only variable text is the (escaped) name. */
+    var name = (formEl.querySelector("#ct-name").value || "").trim();
+    pv.innerHTML =
+      '<span class="ct-mini" style="background:' + bg + ';color:' + text + '">' +
+        '<span class="ct-mini-nav" style="background:' + card + '">' +
+          '<b style="color:' + accent + '">' + esc(name || "Your theme") + "</b>" +
+          '<span class="ct-mini-links">Home&nbsp;&nbsp;Queue&nbsp;&nbsp;Vault</span>' +
+        "</span>" +
+        '<span class="ct-mini-hero" style="background:linear-gradient(135deg,' + accent + "," + accent2 + ')"></span>' +
+        '<span class="ct-mini-main">' +
+          '<span class="ct-mini-card" style="background:' + card + ';border-top-color:' + accent + '">' +
+            '<b>Now playing</b><span class="ct-mini-sub">a track by someone</span>' +
+            '<span class="ct-mini-btnrow">' +
+              '<i class="ct-mini-btn" style="background:' + accent + '"></i>' +
+              '<i class="ct-mini-btn" style="background:' + card + ';border:2px solid ' + accent2 + '"></i>' +
+            "</span>" +
+          "</span>" +
+          '<span class="ct-mini-card" style="background:' + card + ';border-top-color:' + accent2 + '">' +
+            "<b>Community</b><span class=\"ct-mini-sub\">three themes live</span>" +
+            '<span class="ct-mini-wear" style="color:' + text + ';border:1px solid ' + text + '">Wear it</span>' +
+          "</span>" +
+        "</span>" +
+        '<span class="ct-mini-foot">' +
+          '<span class="ct-mini-hex" style="color:' + text + '">accent ' + accent + " &#183; accents " + accent2 + " &#183; bg " + bg + " &#183; card " + card + " &#183; text " + text + "</span>" +
+        "</span>" +
+      "</span>";
   }
 
   function submit() {
@@ -398,11 +422,39 @@
     galleryEl.textContent = "";
     galleryEl.appendChild(el("h2", "ct-card-title", '<i class="fas fa-images"></i> The gallery'));
     galleryEl.appendChild(el("p", "ct-rule-note", "Every theme the community has submitted - newest first."));
+    var back = backChip();
+    if (back) galleryEl.appendChild(back); else if (prevEl) { prevEl.remove(); prevEl = null; }
     if (!list.length) {
       galleryEl.appendChild(el("p", "ct-empty", "No themes yet - yours could be the first."));
       return;
     }
     for (var i = 0; i < list.length; i++) galleryEl.appendChild(themeCard(list[i]));
+  }
+
+  /* The chip that takes a member back to whatever theme they were wearing
+     before the latest wear. It only lives while that older theme is still a
+     different one from what is on - running back is one click. */
+  var prevEl = null;
+  function backChip() {
+    if (!window.thwPrevTheme) return null;
+    var prev = window.thwPrevTheme();
+    var cur = document.documentElement.getAttribute("data-theme") || "";
+    if (!prev || prev === cur) return null;
+    var name = prev;
+    var sel = document.getElementById("setTheme");
+    var opt = sel && sel.querySelector('option[value="' + prev + '"]');
+    if (opt) name = opt.textContent || prev;
+    var chip = el("button", "ct-btn ct-btn-back",
+      '<i class="fas fa-rotate-left"></i> Back to what you were wearing: <b>' + esc(name) + "</b>");
+    chip.type = "button";
+    chip.addEventListener("click", function () {
+      if (window.thwWearTheme) window.thwWearTheme(prev);
+      /* The chip now flaps the other way - take it off (the member is wearing
+         what they put off, so there is nothing to go back to) and let the
+         gallery stand until the next refresh. */
+      if (prevEl) { prevEl.remove(); prevEl = null; }
+    });
+    return chip;
   }
 
   function renderStats() {

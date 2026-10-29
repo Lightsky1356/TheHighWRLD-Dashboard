@@ -1265,12 +1265,24 @@ async function main() {
     sec.querySelector("#ct-submit").click();
     await new Promise(function (res) { setTimeout(res, 900); });
     return { slots: slots,
+      mock: !!(sec.querySelector(".ct-mini-nav") && sec.querySelector(".ct-mini-hex")),
       slug: document.documentElement.getAttribute("data-theme") };
   })()`);
   check("a signed-in member gets the five-slot builder and it published",
     submit && submit.slots === 5 && typeof submit.slug === "string" && submit.slug.indexOf("u-") === 0,
     JSON.stringify(submit).slice(0, 160));
+  check("the builder previews a mini mockup of the site",
+    submit && submit.mock === true, String(submit && submit.mock));
   await sleep(1200); // the gallery refill and the generated stylesheet land
+
+  /* The submit was a wear, so the theme on before it (the seasonal/built-in
+     one the account booted with) is remembered for a one-click go-back. */
+  const back = await cdp.evalJson(
+    "(function(){ return { prev: (window.thwPrevTheme && window.thwPrevTheme()) || \"\"," +
+    " cur: document.documentElement.getAttribute(\"data-theme\") || \"\"," +
+    " chip: !!document.querySelector(\".ct-btn-back\") }; })()");
+  check("submitting remembers the theme worn before it",
+    back && back.prev && back.prev !== back.cur, JSON.stringify(back));
 
   const ACTUAL = submit && submit.slug;
   const live = await cdp.evalJson(`(async function () {

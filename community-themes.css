@@ -202,27 +202,39 @@ textarea.ct-input { resize: vertical; min-height: 66px; }
   padding: 10px 12px;
 }
 .ct-preview-card {
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  padding: 10px 12px;
-  font-size: 12px;
-  font-weight: 700;
+  display: block;
+}
+/* The mini mockup: a nav bar, a hero band and two cards, all painted from
+   the same five slots the server will use to build the real stylesheet. */
+.ct-mini { display: block; border-radius: 10px; overflow: hidden; max-width: 340px; }
+.ct-mini-nav {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  min-height: 44px;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  font-size: 11px;
 }
-.ct-preview-card i {
-  display: inline-block;
-  width: 13px;
-  height: 13px;
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.25);
-  vertical-align: -2px;
-  margin-right: 2px;
+.ct-mini-nav > b { font-size: 12px; letter-spacing: 0.3px; }
+.ct-mini-links { font-size: 10px; opacity: 0.85; }
+.ct-mini-hero { display: block; height: 26px; }
+.ct-mini-main { display: flex; gap: 8px; padding: 10px; }
+.ct-mini-card {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  border-radius: 8px;
+  border-top: 3px solid rgba(0, 0, 0, 0.2);
+  padding: 8px 9px;
+  font-size: 11px;
 }
-.ct-preview-sep { opacity: 0.4; }
+.ct-mini-card > b { display: block; font-size: 11px; }
+.ct-mini-sub { display: block; opacity: 0.8; font-size: 10px; margin: 2px 0 7px; }
+.ct-mini-btnrow { display: flex; gap: 6px; }
+.ct-mini-btn { display: inline-block; width: 22px; height: 12px; border-radius: 4px; }
+.ct-mini-wear { display: inline-block; font-size: 10px; font-weight: 700; padding: 4px 9px; border-radius: 999px; }
+.ct-mini-foot { display: block; padding: 0 10px 9px; }
+.ct-mini-hex { font-size: 9px; opacity: 0.72; letter-spacing: 0.2px; }
 .ct-preview-note { display: block; font-size: 10px; color: var(--ac-dim, #6f6692); margin-top: 7px; }
 
 /* ------------------------------------------------------------------- buttons */
