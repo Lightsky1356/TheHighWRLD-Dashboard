@@ -423,7 +423,7 @@
     galleryEl.appendChild(el("h2", "ct-card-title", '<i class="fas fa-images"></i> The gallery'));
     galleryEl.appendChild(el("p", "ct-rule-note", "Every theme the community has submitted - newest first."));
     var back = backChip();
-    if (back) galleryEl.appendChild(back); else if (prevEl) { prevEl.remove(); prevEl = null; }
+    if (back) galleryEl.appendChild(back);
     if (!list.length) {
       galleryEl.appendChild(el("p", "ct-empty", "No themes yet - yours could be the first."));
       return;
@@ -439,7 +439,11 @@
     if (!window.thwPrevTheme) return null;
     var prev = window.thwPrevTheme();
     var cur = document.documentElement.getAttribute("data-theme") || "";
-    if (!prev || prev === cur) return null;
+    if (!prev || prev === cur) {
+      /* Nothing to go back to: take any chip off the page and forget it. */
+      if (prevEl) { prevEl.remove(); prevEl = null; }
+      return null;
+    }
     var name = prev;
     var sel = document.getElementById("setTheme");
     var opt = sel && sel.querySelector('option[value="' + prev + '"]');
@@ -447,6 +451,7 @@
     var chip = el("button", "ct-btn ct-btn-back",
       '<i class="fas fa-rotate-left"></i> Back to what you were wearing: <b>' + esc(name) + "</b>");
     chip.type = "button";
+    prevEl = chip;
     chip.addEventListener("click", function () {
       if (window.thwWearTheme) window.thwWearTheme(prev);
       /* The chip now flaps the other way - take it off (the member is wearing
