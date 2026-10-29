@@ -1585,7 +1585,7 @@ function compactProfileViewHtml(d) {
 
   /* ---------- Themes + languages ---------- */
   var THEMES = [
-    ["default", "Cyan"], ["violet", "Deep Violet"], ["embers", "Ember Nights"],
+    ["default", "Default"], ["violet", "Deep Violet"], ["embers", "Ember Nights"],
     ["obsidian", "Dark Obsidian"], ["aurora", "Aurora"], ["sakura", "Sakura Dream"],
     ["ocean", "Ocean Deep"], ["royal", "Royal Gold"],
     ["neon", "Neon Nights"], ["blood", "Blood Moon"], ["storm", "Midnight Storm"],
@@ -1888,6 +1888,12 @@ function compactProfileViewHtml(d) {
         if (wasWearing && wasWearing !== v) {
           try { localStorage.setItem("thwPrevTheme", wasWearing); } catch (_) {}
         }
+        /* The Community Themes page listens for this and re-renders its
+           wear-back chip at once, instead of waiting for the next gallery
+           refresh. */
+        document.dispatchEvent(new CustomEvent("thw-theme-change", {
+          detail: { from: wasWearing, to: v },
+        }));
         /* Member themes load their generated sheet before or with the paint. */
         ensureMemberThemeCss(v);
         /* Captured before applyTheme, so a failed save has something to go back

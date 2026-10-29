@@ -520,6 +520,11 @@
           ROOT.textContent = "";
           formEl = null;
           build();
+        } else {
+          /* Coming back to a built page: the member may have worn a different
+             theme or another device may have changed the gallery - refill,
+             which also re-decides the wear-back chip. */
+          refresh();
         }
       }
     });
@@ -531,6 +536,12 @@
     if (!ROOT) return;
     build();
     watchVisibility();
+    /* A theme switch (picker, seasonal row, gallery Wear) can land any time -
+       the wear-back chip follows the current pair of "what I put off" and
+       "what is on", so re-render the gallery when it changes. */
+    document.addEventListener("thw-theme-change", function () {
+      if (ROOT && ROOT.dataset.ctBuilt) renderGallery();
+    });
   }
 
   if (document.readyState === "loading") {
