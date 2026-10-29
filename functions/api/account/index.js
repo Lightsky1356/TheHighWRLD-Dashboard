@@ -26,6 +26,85 @@ const KNOWN_THEMES = [
   "newyear", "valentines", "stpatricks", "easter", "july4", "halloween", "christmas",
 ];
 
+/* ---------- Community Themes: the color-slot builder ----------
+ *
+ * Members pick colors, the site generates the stylesheet. Five slots, each
+ * strictly #rrggbb; anything else - words, semicolons, urls, anything - is
+ * rejected here, which is what lets the generator further down interpolate
+ * a slot value without escaping: there is nothing left to escape.
+ * The member never types a byte of CSS.
+ */
+
+const MEMBER_THEME_SLOTS = ["accent", "accent2", "bg", "card", "text"];
+const MEMBER_SLUG_RE = /^u-[a-z0-9-]{2,40}$/;
+const HEX_SHAPED_RE = /^#[0-9a-fA-F]{6}$/;
+
+function hexSlot(value) {
+  const s = String(typeof value === "string" ? value : "");
+  return HEX_SHAPED_RE.test(s) ? s.toLowerCase() : null;
+}
+
+function hexToRgb(hex) {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+function rgbaStr(hex, alpha) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function hexScaled(hex, factor) {
+  const [r, g, b] = hexToRgb(hex).map((v) =>
+    Math.max(0, Math.min(255, Math.round(v * factor)))
+  );
+  return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+/* The muted/dim text steps are the text tone blended toward the page's
+   background, the same relationship the built-in themes keep by hand. */
+function hexMix(a, b, t) {
+  const ca = hexToRgb(a);
+  const cb = hexToRgb(b);
+  const mixed = ca.map((v, i) => Math.round(v + (cb[i] - v) * t));
+  return "#" + mixed.map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+/* The ONLY shape a member theme is allowed to arrive in. Every value this
+   puts in a stylesheet was either produced by this file (the slug) or came
+   through hexSlot (the colors) - the member's own strings (name,
+   description) are stored but never styled. */
+function memberThemeCss(slug, colors) {
+  const A = colors.accent;
+  const B = colors.accent2;
+  const C = colors.card;
+  const T = colors.text;
+  const bg0 = hexScaled(colors.bg, 0.55);
+  const bg2 = hexScaled(colors.bg, 0.8);
+  const muted = hexMix(T, bg0, 0.72);
+  const dim = hexMix(T, bg0, 0.5);
+  return [
+    `html[data-theme=${slug}]{`,
+    `  --ac-bg0:${bg0};--ac-bg1:${colors.bg};`,
+    `  --ac-purple:${A};--ac-pink:${B};--ac-gold:${A};--ac-orange:${A};--ac-cyan:${B};`,
+    `  --ac-glass:${rgbaStr(C, 0.5)};--ac-glass2:${rgbaStr(C, 0.75)};`,
+    `  --ac-grad-brand:linear-gradient(120deg,${A},${B},${A},${A});`,
+    `  --ac-grad-purple:linear-gradient(135deg,${A},${B});`,
+    `  --ac-grad-pink:linear-gradient(135deg,${B},${A});`,
+    `  --th-bg:radial-gradient(1000px 700px at 85% -10%,${rgbaStr(A, 0.22)},transparent 60%),radial-gradient(900px 650px at -10% 20%,${rgbaStr(B, 0.18)},transparent 55%),linear-gradient(180deg,${bg0},${colors.bg} 40%,${bg2} 100%);`,
+    `  --th-accent:${A};--th-accent2:${B};--th-glow:${rgbaStr(A, 0.16)};--th-glow2:${rgbaStr(B, 0.10)};`,
+    `  --th-glass:${rgbaStr(C, 0.4)};--th-glass2:${rgbaStr(C, 0.6)};`,
+    `  --ac-text:${T};--ac-muted:${muted};--ac-dim:${dim};`,
+    `  --th-radius:18px;`,
+    `}`,
+    "",
+  ].join("\n");
+}
+
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -266,6 +345,61 @@ export async function onRequestPost(context) {
   const body = await context.request.json().catch(() => null);
   if (!body || !body.action) return json({ error: "missing action" }, 400);
   const db = context.env.wanted_vault;
+  /* Two Community Themes reads run before the sign-in gate on purpose: a
+     guest can look through the gallery and pull one theme's stylesheet but
+     can never change anything from here. Everything after this block keeps
+     the sign-in requirement the rest of the actions share. */
+  if (body.action === "memberThemes") {
+    try {
+      const rows = await db.prepare(
+        `SELECT t.slug, t.name, t.description, t.colors, t.created_at, t.uid, p.name AS author
+         FROM member_themes t LEFT JOIN user_profiles p ON p.site_uid = t.uid
+         WHERE t.hidden = 0 ORDER BY t.id DESC LIMIT 200`
+      ).all();
+      /* Who is looking decides whose rows are theirs to take down - read
+         best-effort, since a guest may look as well. The session's uid never
+         leaves this function: rows carry only the "owned" boolean. */
+      let viewerUid = "";
+      try {
+        const s = await getSessionUser(db, context.request);
+        if (s && s.uid) viewerUid = s.uid;
+      } catch (_) {}
+      const themes = (rows.results || []).map((r) => {
+        let colors = {};
+        try { colors = JSON.parse(r.colors || "{}"); } catch (_) { colors = {}; }
+        if (colors && typeof colors === "object") {
+          for (const k of Object.keys(colors)) {
+            if (!hexSlot(colors[k])) delete colors[k];
+          }
+        }
+        return {
+          slug: r.slug,
+          name: r.name,
+          description: r.description,
+          colors,
+          author: r.author || "Member",
+          createdAt: r.created_at,
+          owned: !!viewerUid && r.uid === viewerUid,
+        };
+      });
+      return json({ ok: true, themes });
+    } catch (err) {
+      return json({ error: String(err && err.message || err) }, 500);
+    }
+  }
+  if (body.action === "themeCss") {
+    try {
+      const theme = String(body.theme || "");
+      if (!MEMBER_SLUG_RE.test(theme)) return json({ error: "unknown theme" }, 404);
+      /* hidden themes keep serving their stylesheet: members already wearing
+         it should not lose their page just because the gallery row is gone. */
+      const row = await db.prepare("SELECT slug, css FROM member_themes WHERE slug = ?").bind(theme).first();
+      if (!row) return json({ error: "unknown theme" }, 404);
+      return json({ ok: true, theme: row.slug, css: String(row.css || "") });
+    } catch (err) {
+      return json({ error: String(err && err.message || err) }, 500);
+    }
+  }
   let uid = String(body.user || "").slice(0, 40);
   // IDOR hardening: a valid session always pins identity to itself; the
   // browser-supplied uid is only honored for signed-out linked devices.
@@ -295,7 +429,7 @@ export async function onRequestPost(context) {
   const BAN_GATED = new Set(["updateProfile", "toggleFavorite", "addBookmark",
     "removeBookmark", "createPlaylist", "deletePlaylist", "renamePlaylist",
     "addPlaylistTrack", "removePlaylistTrack", "saveLinks", "addSuggestion",
-    "deleteSuggestion", "setVisibility"]);
+    "deleteSuggestion", "setVisibility", "submitTheme"]);
   if (BAN_GATED.has(body.action)) {
     try {
       const rej = await banRejection(db, uid);
@@ -336,9 +470,16 @@ export async function onRequestPost(context) {
         // default rather than being stored, so no typo - and no theme id from
         // a future picker - can end up in the table with no stylesheet
         // matching it. The seasonal themes are all accepted, in every month.
-        const theme = KNOWN_THEMES.includes(String(body.theme))
-          ? String(body.theme)
-          : "default";
+        // Anything outside KNOWN_THEMES that carries the u- prefix is a member
+        // theme and is only accepted while the community actually still has
+        // one by that slug - a removed slug cannot be signed in by id alone.
+        let theme = String(body.theme || "");
+        if (!KNOWN_THEMES.includes(theme)) {
+          theme = MEMBER_SLUG_RE.test(theme) &&
+            (await db.prepare("SELECT 1 FROM member_themes WHERE slug = ?").bind(theme).first())
+            ? theme
+            : "default";
+        }
         await db.prepare(
           `INSERT INTO user_profiles (site_uid, theme, updated_at) VALUES (?, ?, ?)
            ON CONFLICT(site_uid) DO UPDATE SET theme = excluded.theme, updated_at = excluded.updated_at`
@@ -354,7 +495,8 @@ export async function onRequestPost(context) {
         // everyone who never has simply is not in the table yet.
         const rows = await db.prepare(
           `SELECT theme, COUNT(*) AS n FROM user_profiles
-           WHERE theme IS NOT NULL AND theme != '' AND theme IN (${KNOWN_THEMES.map(() => "?").join(",")})
+           WHERE theme IS NOT NULL AND theme != ''
+             AND (theme IN (${KNOWN_THEMES.map(() => "?").join(",")}) OR theme LIKE 'u-%')
            GROUP BY theme ORDER BY n DESC, theme ASC`
         ).bind(...KNOWN_THEMES).all();
         const themes = (rows.results || []).map((r) => ({
@@ -362,6 +504,63 @@ export async function onRequestPost(context) {
           count: Number(r.n) || 0,
         }));
         return json({ ok: true, themes });
+      }
+      case "submitTheme": {
+        // Community Themes: instant publish, with the validate-first rules
+        // doing the moderation the queue otherwise would. The name and the
+        // description are stored for the gallery, but never reach a
+        // stylesheet; the colors cannot get past hexSlot.
+        const name = String(body.name || "").trim().slice(0, 24);
+        const description = String(body.description || "").trim().slice(0, 280);
+        if (name.length < 2) return json({ error: "invalid theme name" }, 400);
+        const slots = {};
+        for (const slot of MEMBER_THEME_SLOTS) {
+          const v = hexSlot(body.colors && body.colors[slot]);
+          if (!v) return json({ error: "invalid color: " + slot }, 400);
+          slots[slot] = v;
+        }
+        const mine = await db.prepare("SELECT COUNT(*) AS n FROM member_themes WHERE uid = ?").bind(uid).first();
+        if ((mine && Number(mine.n) || 0) >= 20) {
+          return json({ error: "theme limit reached" }, 429);
+        }
+        /* The slug is shaped out of the name and no more: lower-case, only
+           [a-z0-9-], u- prefixed. A name-collision walks a -2, -3... suffix
+           instead of asking the member to rename anything. */
+        let base = "u-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "").slice(0, 38);
+        if (base.length < 4) base = "u-theme";
+        let slug = base;
+        for (let n = 2; n <= 20; n++) {
+          const taken = await db.prepare("SELECT 1 FROM member_themes WHERE slug = ?").bind(slug).first();
+          if (!taken) break;
+          slug = base + "-" + n;
+        }
+        const css = memberThemeCss(slug, slots);
+        await db.prepare(
+          `INSERT INTO member_themes (uid, slug, name, description, colors, css)
+           VALUES (?, ?, ?, ?, ?, ?)`
+        ).bind(uid, slug, name, description, JSON.stringify(slots), css).run();
+        return json({ ok: true, theme: slug });
+      }
+      case "removeTheme": {
+        // A take-down is soft and never destructive: hidden rows stop
+        // appearing in the gallery and cannot be picked newly, while the
+        // stylesheet stays servable for the members who already wear it.
+        const theme = String(body.theme || "");
+        if (!MEMBER_SLUG_RE.test(theme)) return json({ error: "unknown theme" }, 400);
+        const row = await db.prepare("SELECT id, uid FROM member_themes WHERE slug = ?").bind(theme).first();
+        if (!row) return json({ error: "unknown theme" }, 404);
+        /* The author can take their own down; a member wearing yours cannot.
+           The owner can take any of them down. */
+        let isOwner = false;
+        try {
+          const link = await getDiscordLink(db, uid);
+          const ownerDiscordId = context.env.OWNER_DISCORD_ID || OWNER_DISCORD_ID_DEFAULT;
+          isOwner = !!link && !!link.discord_id && link.discord_id === ownerDiscordId;
+        } catch (_) {}
+        if (row.uid !== uid && !isOwner) return json({ error: "not allowed" }, 403);
+        await db.prepare("UPDATE member_themes SET hidden = 1 WHERE id = ?").bind(row.id).run();
+        break;
       }
       case "saveLanguage": {
         const language = String(body.language || "en").slice(0, 8);

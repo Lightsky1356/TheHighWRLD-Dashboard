@@ -265,6 +265,26 @@ async function main() {
   })()`);
   check("a conversation was made for the menu check", typeof made === "string" && made.length > 10, String(made).slice(0, 60));
 
+  /* A message from the other member lands in the same thread: the tools a
+     message of ANOTHER person's gets (Report) are what the menu check asks
+     for, while the thread's own messages show Edit and Delete instead. */
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: "gallinked1token", domain: "127.0.0.1", path: "/",
+  });
+  const friendMsg = await cdp.evalJson(`(async function () {
+    var r = await fetch("/api/social/conversations/" + "${made}" + "/messages", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body: "hello from the other side of the menu" }),
+    });
+    return r.status;
+  })()`);
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: token, domain: "127.0.0.1", path: "/",
+  });
+  check("the other member's message lands in the same thread",
+    friendMsg === 200 || friendMsg === 201, String(friendMsg));
+
   await cdp.evalJson("window.THWSocial.goMessages()");
   await sleep(1200);
   await cdp.evalJson(`(function(){
@@ -279,7 +299,8 @@ async function main() {
 
   /* The menu opens on a right-click, and holds the reactions and the tools. */
   const menu = await cdp.evalJson(`(function(){
-    var bubble = document.querySelector('#thw-social-root .thw-social-message');
+    var bubble = document.querySelector(
+      '#thw-social-root .thw-social-message:not(.mine)');
     if (!bubble) return { error: "no message" };
     var box = bubble.getBoundingClientRect();
     bubble.dispatchEvent(new MouseEvent("contextmenu", {
@@ -1156,58 +1177,203 @@ async function main() {
   check("the panel's close button closes it", seasonalPanel && seasonalPanel.closed === true,
     JSON.stringify(seasonalPanel).slice(0, 200));
 
-  const commOpened = await cdp.evalJson(`(function () {
+  /* ---- Community Themes: the page where members submit their own ---- */
+
+  /* A signed-out visitor first: the page still opens - the gallery is public
+     - but the builder shows the sign-in card instead of a form, and a direct
+     submit is refused by the server, not merely hidden. The slugs must be
+     free: this block is expected to run against a freshly seeded database,
+     like the rest of the suites. */
+  const NAME = "Midnight Bloom Test";
+  const SLUG = "u-midnight-bloom-test";
+  await cdp.send("Network.clearBrowserCookies", {});
+  await cdp.send("Page.navigate", { url: BASE + "/" });
+  for (let i = 0; i < 60; i++) {
+    const ready = await cdp.evalJson(
+      "!!(window.THWGrammar && window.THWSocial)"
+    ).catch(() => false);
+    if (ready === true) break;
+    await sleep(500);
+  }
+  await sleep(1200);
+
+  const guest = await cdp.evalJson(`(async function () {
     var item = document.getElementById("nav-comm-themes");
     if (!item) return { error: "no #nav-comm-themes" };
     item.click();
-    var m = document.getElementById("communityThemesModal");
-    return { opened: !!(m && m.classList.contains("open")) };
+    var sec = document.getElementById("page-section-community-themes");
+    var active = !!(sec && sec.classList.contains("active"));
+    var signin = !!document.getElementById("ct-signin-btn");
+    var rules = !!Array.prototype.find.call(
+      (sec && sec.querySelectorAll(".ct-rules-list li") || []),
+      function (li) { return li.textContent.indexOf("Colors only") >= 0; }
+    );
+    var direct = await fetch("/api/account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "submitTheme", user: "u-not-a-real-uid",
+        name: "Sneaky Theme", description: "this is never allowed in",
+        colors: { accent: "#a855f7", accent2: "#22d3ee", bg: "#120a26",
+          card: "#1a1138", text: "#f2edff" } }),
+    });
+    var d = await direct.json().catch(function () { return null; });
+    return { active: active, signin: signin, rules: rules,
+      status: direct.status, error: d && d.error };
   })()`);
-  check("the Community menu's entry opens Community Themes",
-    commOpened && commOpened.opened === true, JSON.stringify(commOpened).slice(0, 160));
-  await sleep(1200); // the counts arrive over fetch after the panel is up
+  check("a signed-out visitor opens the page to the rules and the sign-in card",
+    guest && guest.active === true && guest.signin === true && guest.rules === true,
+    JSON.stringify(guest).slice(0, 200));
+  check("the server refuses a guest's submission outright",
+    guest && guest.status === 401, JSON.stringify(guest).slice(0, 160));
 
-  const commRows = await cdp.evalJson(`(function () {
-    var m = document.getElementById("communityThemesModal");
-    var rows = m ? Array.prototype.slice.call(m.querySelectorAll(".thw-theme-row")) : [];
+  /* The session cookie goes back, and the page is loaded the way a member's
+     is: a fresh navigation with the session already in place. */
+  await cdp.send("Network.setCookie", {
+    name: "thw_session", value: token, domain: "127.0.0.1", path: "/",
+  });
+  await cdp.send("Page.navigate", { url: BASE + "/" });
+  for (let i = 0; i < 60; i++) {
+    const ready = await cdp.evalJson(
+      "!!(window.THWGrammar && window.THWSocial)"
+    ).catch(() => false);
+    if (ready === true) break;
+    await sleep(500);
+  }
+  await sleep(1200);
+
+  /* The click opens the page; the mismatch-driven rebuild (see
+     community-themes.js) needs one macrotask turn before the builder exists. */
+  const built = await cdp.evalJson(`(function () {
+    var item = document.getElementById("nav-comm-themes");
+    if (!item) return { error: "no #nav-comm-themes" };
+    item.click();
+    return { clicked: true };
+  })()`);
+  check("the Community menu entry opens the Community Themes page",
+    built && built.clicked === true, JSON.stringify(built).slice(0, 160));
+  await sleep(700);
+
+  const submit = await cdp.evalJson(`(async function () {
+    var sec = document.getElementById("page-section-community-themes");
+    var nameEl = sec && sec.querySelector("#ct-name");
+    if (!nameEl) return { error: "the member has no builder" };
+    var slots = sec.querySelectorAll(".ct-slot input[type=color]").length;
+    sec.querySelector("#ct-name").value = "${NAME}";
+    sec.querySelector("#ct-desc").value = "A violet night garden for slow listening.";
+    sec.querySelector("#ct-t-accent").value = "#ff0055";
+    sec.querySelector("#ct-c-accent").value = "#ff0055";
+    sec.querySelector("#ct-submit").click();
+    await new Promise(function (res) { setTimeout(res, 900); });
+    return { slots: slots,
+      slug: document.documentElement.getAttribute("data-theme") };
+  })()`);
+  check("a signed-in member gets the five-slot builder and it published",
+    submit && submit.slots === 5 && typeof submit.slug === "string" && submit.slug.indexOf("u-") === 0,
+    JSON.stringify(submit).slice(0, 160));
+  await sleep(1200); // the gallery refill and the generated stylesheet land
+
+  const ACTUAL = submit && submit.slug;
+  const live = await cdp.evalJson(`(async function () {
+    var sec = document.getElementById("page-section-community-themes");
+    var row = sec && sec.querySelector('[data-theme-ct="${ACTUAL}"]');
+    var desc = row && row.querySelector(".ct-row-desc");
+    var author = row && row.querySelector(".ct-row-author");
+    var sheet = document.getElementById("member-theme-css-" + "${ACTUAL}".slice(2));
+    var opt = document.querySelector(
+      '#setTheme optgroup[data-member-group] option[value="${ACTUAL}"]');
+    var stats = await fetch("/api/account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "themeStats",
+        user: localStorage.getItem("wantedUserId") || "" }),
+    });
+    var sd = await stats.json().catch(function () { return null; });
     return {
-      count: rows.length,
-      shares: rows.every(function (r) {
-        var pct = r.querySelector(".thw-theme-pct");
-        return !!r.querySelector(".thw-theme-share") && /^[0-9]+%$/.test(pct ? pct.textContent : "");
-      }),
-      hasOcean: rows.some(function (r) { return r.getAttribute("data-theme-id") === "ocean" && !r.disabled; }),
-      stillOpen: !!(m && m.classList.contains("open")),
+      row: !!row,
+      desc: desc ? desc.textContent.slice(0, 60) : "",
+      author: author ? author.textContent.slice(0, 40) : "",
+      removable: !!(row && row.querySelector(".ct-remove")),
+      pickers: opt ? 1 : 0,
+      theme: document.documentElement.getAttribute("data-theme"),
+      sheetScoped: sheet ? new RegExp("html\\\\[data-theme=" + "${ACTUAL}" + "\\\\]").test(sheet.textContent) : false,
+      sheetAccent: sheet ? /--ac-purple:#ff0055/.test(sheet.textContent) : false,
+      counted: !!(sd && sd.ok && (sd.themes || []).some(function (t) {
+        return t.theme === "${ACTUAL}";
+      })),
     };
   })()`);
-  check("the panel lists what the community is wearing",
-    commRows && commRows.count >= 2 && commRows.stillOpen === true, JSON.stringify(commRows).slice(0, 160));
-  check("every row shows its share of the community",
-    commRows && commRows.shares === true, JSON.stringify(commRows).slice(0, 160));
-  check("a theme that is not seasonal is always wearable from the list",
-    commRows && commRows.hasOcean === true, JSON.stringify(commRows).slice(0, 160));
+  check("the submitted theme publishes into the gallery at once",
+    live && live.row === true, JSON.stringify(live).slice(0, 200));
+  check("it carries the description and shows its author",
+    live && /violet night garden/.test(live.desc) && /^by .+/.test(live.author),
+    JSON.stringify(live).slice(0, 200));
+  check("the author sees their own take-down button",
+    live && live.removable === true, JSON.stringify(live).slice(0, 200));
+  check("it has an option in the pickers under a Community group",
+    live && live.pickers === 1, JSON.stringify(live).slice(0, 200));
+  check("submitting wears it at once", live && live.theme === ACTUAL,
+    JSON.stringify(live).slice(0, 200));
+  check("the server generated its stylesheet from the chosen colors",
+    live && live.sheetScoped === true && live.sheetAccent === true,
+    JSON.stringify(live).slice(0, 200));
+  check("the community counts carry it, aggregate only",
+    live && live.counted === true, JSON.stringify(live).slice(0, 160));
 
-  const worn = await cdp.evalJson(`(function () {
-    var m = document.getElementById("communityThemesModal");
-    var row = m && m.querySelector('[data-theme-id="ocean"]');
-    if (!row || row.disabled) return { error: "the ocean row is not wearable" };
-    row.click();
-    var after = document.documentElement.getAttribute("data-theme");
+  /* Wear it once more from the gallery row itself - the row button is not the
+     auto-wear that submit did - then put the account's theme back. */
+  const worn = await cdp.evalJson(`(async function () {
     var sel = document.getElementById("setTheme");
-    var selAt = sel ? sel.value : "";
-    var closed = !(m && m.classList.contains("open"));
+    if (!sel) return { error: "no picker" };
+    sel.value = "${startTheme}";
+    sel.dispatchEvent(new Event("change"));
+    var sec = document.getElementById("page-section-community-themes");
+    var row = sec && sec.querySelector('[data-theme-ct="${ACTUAL}"]');
+    var wear = row && row.querySelector(".ct-btn-wear");
+    if (!wear) return { error: "no wear button" };
+    wear.click();
+    await new Promise(function (res) { setTimeout(res, 400); });
+    var after = document.documentElement.getAttribute("data-theme");
+    var selAt = sel.value;
     // Put it back exactly as found - this suite shares its account with the
     // checks that run after it.
-    if (sel) { sel.value = "${startTheme}"; sel.dispatchEvent(new Event("change")); }
-    return { after: after, selAt: selAt, closed: closed, restored: document.documentElement.getAttribute("data-theme") };
+    sel.value = "${startTheme}";
+    sel.dispatchEvent(new Event("change"));
+    return { after: after, selAt: selAt,
+      restored: document.documentElement.getAttribute("data-theme") };
   })()`);
-  check("clicking a theme in the panel wears it",
-    worn && worn.after === "ocean", JSON.stringify(worn).slice(0, 160));
+  check("the gallery row's Wear it dresses the member",
+    worn && worn.after === ACTUAL, JSON.stringify(worn).slice(0, 160));
   check("it went through the picker itself, so it saves like any other pick",
-    worn && worn.selAt === "ocean", JSON.stringify(worn).slice(0, 160));
-  check("the panel closes once its theme is worn", worn && worn.closed === true, JSON.stringify(worn).slice(0, 160));
+    worn && worn.selAt === ACTUAL, JSON.stringify(worn).slice(0, 160));
   check("the theme is put back the way it was found",
     worn && worn.restored === startTheme, JSON.stringify(worn) + " vs " + startTheme);
+
+  /* The take-down: confirm() is answered programmatically, the row leaves the
+     gallery, and the stylesheet still serves - a wearer keeps the theme until
+     they switch, which is the whole point of a hide over a delete. */
+  const taken = await cdp.evalJson(`(async function () {
+    var realConfirm = window.confirm;
+    window.confirm = function () { return true; };
+    var sec = document.getElementById("page-section-community-themes");
+    var row = sec.querySelector('[data-theme-ct="${ACTUAL}"]');
+    var rm = row && row.querySelector(".ct-remove");
+    if (!rm) return { error: "no take-down button" };
+    rm.click();
+    await new Promise(function (res) { setTimeout(res, 1500); });
+    window.confirm = realConfirm;
+    var gone = !sec.querySelector('[data-theme-ct="${ACTUAL}"]');
+    var css = await fetch("/api/account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "themeCss", theme: "${ACTUAL}" }),
+    });
+    var cd = await css.json().catch(function () { return null; });
+    return { gone: gone, stillServed: css.status === 200 && !!cd && cd.ok === true && !!cd.css };
+  })()`);
+  check("the author can take their own theme down",
+    taken && taken.gone === true, JSON.stringify(taken).slice(0, 160));
+  check("the take-down is soft - its stylesheet still serves the wearers",
+    taken && taken.stillServed === true, JSON.stringify(taken).slice(0, 160));
 
   console.log("");
   const failed = results.filter((r) => !r.pass);

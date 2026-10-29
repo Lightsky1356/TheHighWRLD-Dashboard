@@ -461,42 +461,177 @@ if (dupes.length) {
   }
 }
 
-/* ---- the seasonal ⓘ and Community Themes are wired end to end ----
+/* ---- the seasonal ⓘ panel and the Community Themes page are wired end to end ----
  *
- * Four files carry this feature: the markup (two info buttons, one dropdown
- * entry, two panels), the stylesheet that draws their rows, the JS that fills
- * them, and the endpoint that answers the community one. Each part is
- * invisible on its own - an unbound button or an unfilled panel still opens
- * and shows an empty box with no error - so the wiring is checked as a whole:
- * the buttons and entry exist, the JS reaches for exactly the ids the markup
- * provides, and the stats query never asks WHICH member. */
+ * The seasonal panel keeps its markup. Community Themes was promoted from a
+ * popup to a real page where members submit their own themes, so seven files
+ * now carry this feature: the page section, the two assets (js + css), the
+ * sw precache, the account hooks, the server actions, and the migration.
+ * Each part is invisible on its own - an unbound entry or an unfilled gallery
+ * still opens and shows an empty box with no error - so the wiring is checked
+ * as a whole: the menu opens the page, the page's ids exist, the JS reaches
+ * exactly those ids, the server takes signed-in members and validated hex
+ * colors only, and the gallery never leaks who wears what. */
 {
   const page = readFileSync(join(ROOT, "index.html"), "utf8");
   const acct = readFileSync(join(ROOT, "account.js"), "utf8");
+  const ctJs = readFileSync(join(ROOT, "community-themes.js"), "utf8");
+  const ctCss = readFileSync(join(ROOT, "community-themes.css"), "utf8");
+  const swJs = readFileSync(join(ROOT, "sw.js"), "utf8");
   const apiSrc = readFileSync(join(ROOT, "functions", "api", "account", "index.js"), "utf8");
+  const migration = readFileSync(join(ROOT, "migrations", "0052_member_themes.sql"), "utf8");
 
-  const need = ["seasonalThemesModal", "seasonal-themes-list", "communityThemesModal", "community-themes-list"];
+  const need = ["seasonalThemesModal", "seasonal-themes-list"];
   const absent = need.filter((id) => !page.includes('id="' + id + '"'));
   if (absent.length) structureFail(`markup missing for: ${absent.join(", ")}`);
-  else structureOk("both theme panels and both list containers are in the page");
+  else structureOk("the seasonal panel and its list container are in the page");
 
   const btnCount = (page.match(/class="thw-theme-info"/g) || []).length;
   if (btnCount !== 2) structureFail(`expected the info button in both pickers, found ${btnCount}`);
   else structureOk("both theme pickers carry the seasonal info button");
 
-  const entryOk = (/id="nav-comm-themes"[^>]*onclick="[^"]*thwOpenCommunityThemes\(\)/.test(page) ||
-    /onclick="[^"]*thwOpenCommunityThemes\(\)"[^>]*id="nav-comm-themes"/.test(page));
-  if (!entryOk) structureFail("the Community menu entry is missing or does not open the panel");
-  else structureOk("the Community menu entry opens Community Themes");
+  /* The popup is gone twice over: no markup left in the page, no handler left
+     in account.js - a surviving half would open into a void. */
+  if (!page.includes('id="page-section-community-themes" class="app-page"')) {
+    structureFail("the Community Themes page section is missing (it is a page now, not a popup)");
+  } else if (!page.includes('<div class="ct-mount"></div>')) {
+    structureFail("the Community Themes page section has no mount for its script");
+  } else if (/communityThemesModal|community-themes-list|thwOpenCommunityThemes/.test(page + acct)) {
+    structureFail("the deleted Community Themes popup is still wired somewhere");
+  } else {
+    structureOk("the Community Themes page replaced the popup, with no popup wiring left");
+  }
 
-  /* The panels' list ids the JS fills itself; nav-comm-themes is deliberately
-     NOT here - that entry is wired the way its siblings are, by inline onclick
-     -> window, which the two checks above and below already cover. */
-  const wiring = ["seasonal-themes-list", "community-themes-list"];
-  const unreached = wiring.filter((id) => !acct.includes('"' + id + '"'));
-  if (!/window\.thwOpenCommunityThemes\s*=\s*openCommunityThemes/.test(acct)) unreached.push("window.thwOpenCommunityThemes");
-  if (unreached.length) structureFail(`account.js never reaches ${unreached.join(", ")}`);
-  else structureOk("the JS reaches every id the two panels are wired by");
+  /* The menu entry opens the page the way its siblings (Suggestions, Wanted
+     Vault) do: real switchAppPage pages, desktop dropdown and mobile popup. */
+  const entryOk = (/switchAppPage\(&#39;community-themes&#39;\)" id="nav-comm-themes"/.test(page) &&
+    /switchAppPage\(&#39;community-themes&#39;\)" class="mobile-popup-item"/.test(page));
+  if (!entryOk) structureFail("a Community Themes menu entry does not open the page");
+  else structureOk("the Community Themes menu entry opens the page (desktop and mobile)");
+
+  if (!page.includes('<script src="./community-themes.js?v=thw-v') ||
+      !page.includes('community-themes.css?v=thw-v')) {
+    structureFail("index.html does not load the Community Themes page assets");
+  } else if (!swJs.includes("'./community-themes.js?v=thw-v") ||
+             !swJs.includes("'./community-themes.css?v=thw-v")) {
+    structureFail("the service worker does not precache the Community Themes assets");
+  } else {
+    structureOk("the Community Themes assets are tagged in the page and precached");
+  }
+
+  /* What a signed-out visitor is told, and the rules the instant publish
+     leans on - these are read from the script that draws the page. */
+  const rules = ["Colors only", "Kind names and descriptions", "Be yourself",
+    "Original work", "Twenty per member", "The owner can remove"];
+  const missingRules = rules.filter((r) => !ctJs.includes(r));
+  if (missingRules.length) structureFail(`the rules card is missing: ${missingRules.join(", ")}`);
+  else if (!ctJs.includes("Sign in to submit a theme")) {
+    structureFail("the submit form does not tell a signed-out visitor to sign in");
+  } else structureOk("the page carries the rules and the sign-in gate");
+
+  /* account.js hooks: the page wears through the picker's own change path,
+     generated stylesheets are fetched wherever a u- slug can appear, and a
+     member theme's real name is what the toast reads. */
+  if (!/window\.thwWearTheme\s*=\s*wearFromList/.test(acct)) {
+    structureFail("account.js does not expose the shared wear path for the page");
+  } else if ((acct.match(/ensureMemberThemeCss\(theme\)/g) || []).length < 3 ||
+             !/ensureMemberThemeCss\(v\)/.test(acct)) {
+    structureFail("member-theme stylesheets are not fetched on every theme-apply path");
+  } else if (!/#setTheme option\[value/.test(acct) || !/#ftTheme option\[value/.test(acct)) {
+    structureFail("a member theme's name is not read from its picker option");
+  } else {
+    structureOk("account.js wears, fetches CSS for, and names member themes");
+  }
+
+  /* The page script: every server action, client-side hex validation that
+     mirrors the server's, and one picker group member themes land in. */
+  const actions = ["submitTheme", "memberThemes", "themeStats", "removeTheme"];
+  const missingActions = actions.filter((a) => !ctJs.includes('action: "' + a + '"'));
+  if (missingActions.length) structureFail(`the page never calls: ${missingActions.join(", ")}`);
+  else if (!/var HEX_OK = \/\^#\[0-9a-fA-F\]\{6\}\$\//.test(ctJs)) {
+    structureFail("the builder does not validate hex values the server's way");
+  } else if (!/"data-member-group"/.test(ctJs) || !/group\.label = "Community"/.test(ctJs)) {
+    structureFail("member themes have no Community group in the pickers");
+  } else if (!ctJs.includes('.replace(/&/g, AMP + "amp;")')) {
+    structureFail("esc() no longer escapes an ampersand first");
+  } else {
+    structureOk("the page script draws, validates, and submits the theme");
+  }
+
+  if (!/#page-section-community-themes/.test(ctCss) ||
+      !/\.ct-theme-row\s*\{/.test(ctCss) || !/\.ct-stat-bar\s*\{/.test(ctCss)) {
+    structureFail("the Community Themes stylesheet is missing its page chrome");
+  } else structureOk("the Community Themes stylesheet styles the page");
+
+  /* The server's side: five validated slots, the u- namespace, a CSS template
+     the site owns, and reads/writes that stay on the right side of the gate. */
+  const slots = /const MEMBER_THEME_SLOTS = \[([^\]]+)\]/.exec(apiSrc);
+  if (!slots || slots[1].split(",").filter((s) => s.trim()).length !== 5) {
+    structureFail("the server does not define exactly five member theme slots");
+  } else if (!/const HEX_SHAPED_RE = \/\^#\[0-9a-fA-F\]\{6\}\$\//.test(apiSrc) ||
+             !/for \(const slot of MEMBER_THEME_SLOTS\)/.test(apiSrc)) {
+    structureFail("submitTheme does not validate every slot through the strict hex shape");
+  } else {
+    structureOk("the server validates all five slots as strict hex");
+  }
+
+  if (!/const MEMBER_SLUG_RE = \/\^u-\[a-z0-9-\]\{2,40\}\$\//.test(apiSrc)) {
+    structureFail("member slugs do not live in the u- namespace");
+  } else structureOk("member slugs live in the u- namespace");
+
+  /* The generated stylesheet is the only CSS a member theme gets: built from
+     the site's own template out of validated colors - no url() into it. */
+  const tpl = /function memberThemeCss\(([\s\S]*?)\n\}/.exec(apiSrc);
+  if (!tpl) structureFail("the server does not own the member CSS generation");
+  else if (/url\(/.test(tpl[0])) structureFail("the member CSS template could carry a url()");
+  else if (!/html\[data-theme=/.test(tpl[0])) structureFail("the member CSS template does not scope to its slug");
+  else structureOk("member CSS is generated from the site's color-only template");
+
+  /* Ordering: the two reads are public (a guest browses the gallery and pulls
+     a stylesheet), every write sits after the sign-in gate, and the gallery
+     response exposes authorship as an owned boolean - never the uid itself. */
+  const iPost = apiSrc.indexOf("export async function onRequestPost(");
+  const iThemes = apiSrc.indexOf('body.action === "memberThemes"', iPost);
+  const iCss = apiSrc.indexOf('body.action === "themeCss"', iPost);
+  const iGate = apiSrc.indexOf('if (!uid) return json({ error: "missing user" }, 400)', iPost);
+  const iSubmit = apiSrc.indexOf('case "submitTheme"', iPost);
+  const galleryBlock = iCss > iThemes ? apiSrc.slice(iThemes, iCss) : "";
+  if (!(iPost >= 0 && iThemes > iPost && iCss > iThemes && iGate > iCss && iSubmit > iGate)) {
+    structureFail("the public reads and the authed writes are ordered wrong");
+  } else if (!/owned: !!viewerUid && r\.uid === viewerUid/.test(galleryBlock)) {
+    structureFail("the gallery does not mark which rows the viewer owns");
+  } else if (/\buid\s*:/.test(galleryBlock)) {
+    structureFail("the public gallery response leaks a uid");
+  } else {
+    structureOk("the gallery is public, writes are gated, and no uid is exposed");
+  }
+
+  /* Twenty per member, banned members out, and a save that only trusts a u-
+     slug the community still has. */
+  if (!/>= 20/.test(apiSrc) || !/"theme limit reached"/.test(apiSrc)) {
+    structureFail("the 20-per-member limit is not enforced");
+  } else if (!/"setVisibility", "submitTheme"\]/.test(apiSrc)) {
+    structureFail("submitTheme is not behind the ban gate");
+  } else if (!/SELECT 1 FROM member_themes WHERE slug = \?/.test(apiSrc)) {
+    structureFail("saveTheme accepts u- slugs without checking the row still exists");
+  } else {
+    structureOk("submit amounts, bans, and saving member themes are enforced");
+  }
+
+  /* A take-down hides, it never deletes: wearers keep the theme. */
+  const iRemove = apiSrc.indexOf('case "removeTheme"');
+  const removeBlock = apiSrc.slice(iRemove, apiSrc.indexOf('case "saveLanguage"'));
+  if (iRemove < 0) structureFail("there is no removeTheme action");
+  else if (!/hidden = 1/.test(removeBlock)) structureFail("removeTheme is not a soft hide");
+  else if (!/OWNER_DISCORD_ID/.test(removeBlock)) structureFail("removeTheme forgot the owner");
+  else if (/DELETE FROM member_themes/.test(apiSrc)) structureFail("member themes get deleted, not hidden");
+  else structureOk("removeTheme hides softly (author or owner), never a hard delete");
+
+  if (!/CREATE TABLE IF NOT EXISTS member_themes/.test(migration) ||
+      !/slug TEXT NOT NULL UNIQUE/.test(migration) ||
+      !/hidden INTEGER/.test(migration)) {
+    structureFail("the member_themes migration is not a unique-slug, soft-hide table");
+  } else structureOk("the migration holds member themes: unique slug, soft hide");
 
   const seasonalBlock = /var SEASONAL = \[([\s\S]*?)\n  \];/.exec(acct);
   if (seasonalBlock) {
@@ -520,6 +655,9 @@ if (dupes.length) {
     else if (!sql) structureFail("themeStats' query could not be read");
     else if (identity) structureFail("themeStats counts a per-member column: " + sql[1].trim().slice(0, 60));
     else structureOk("themeStats counts themes per group without touching a member's identity");
+    /* Member themes are counted too - by the u- namespace, aggregate-only. */
+    if (!/theme LIKE 'u-%'/.test(caseM[1])) structureFail("themeStats does not count member themes (u- namespace)");
+    else structureOk("themeStats counts member themes by their u- namespace");
   }
 }
 

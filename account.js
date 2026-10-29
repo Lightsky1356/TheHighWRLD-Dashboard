@@ -20,6 +20,47 @@
   } catch (e) {}
   var _profile = { name: "999_" + uidSuffix, bio: "", status: "Online", avatar: "", banner: "" };
 
+  /* ---------- Member themes: the stylesheet behind a u- slug ----------
+     *
+     * A member theme's CSS is not shipped in themes.css: the server generates
+     * it from validated slots at submit time. This pulls that sheet once per
+     * slug per page-load and plants it as a style tag the other sheets sit
+     * beside, exactly like themes.css reaching html[data-theme=u-...]. */
+  var _memberCssLoaded = {};
+  function ensureMemberThemeCss(theme) {
+    if (!theme || typeof theme !== "string") return;
+    if (!/^u-[a-z0-9-]{2,40}$/.test(theme)) return;
+    if (_memberCssLoaded[theme]) return;
+    _memberCssLoaded[theme] = true;
+    fetch("/api/account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "themeCss", theme: theme }),
+    }).then(function (r) { return r.json().catch(function () { return null; }); })
+      .then(function (d) {
+        if (!d || !d.ok || !d.css) return;
+        var id = "member-theme-css-" + theme.slice(2);
+        var el = document.getElementById(id);
+        if (!el) {
+          el = document.createElement("style");
+          el.id = id;
+          document.head.appendChild(el);
+        }
+        el.textContent = d.css;
+      })
+      .catch(function () {});
+  }
+
+  /* The Community Themes page needs who is looking, to decide whether the
+     take-down buttons are theirs to press. The uid only counts as signed
+     in when the account GET has actually succeeded - a remembered
+     localStorage uid from a lapsed session is not a verified account, and
+     the page must show the sign-in card, not a form the server would
+     refuse anyway. */
+  window.thwViewer = function () {
+    return { uid: (_data && uid) || "", isOwner: !!(_data && _data.isOwner) };
+  };
+
   /* ---------- Appearance overrides (accent + ambient glow) ---------- */
   var _ap = { accent: "", glow: "" };
   try {
@@ -1696,6 +1737,9 @@ function compactProfileViewHtml(d) {
     var flg = document.getElementById("ftLang");
     if (flg) flg.value = _lang;
     applyTheme(theme);
+    /* Member themes carry their own generated stylesheet, not one from
+       themes.css - fetch it whenever the slug is in the u- namespace. */
+    ensureMemberThemeCss(theme);
     /* With the theme now known, so an out-of-season choice stays listed. */
     syncSeasonalThemes(theme);
     var mode = _data && _data.site_mode ? _data.site_mode : (_cachedMode || "dark");
@@ -1720,6 +1764,7 @@ function compactProfileViewHtml(d) {
     try { mode = localStorage.getItem("wantedMode") || "dark"; } catch (e) {}
     _lang = lang;
     applyTheme(theme);
+    ensureMemberThemeCss(theme);
     syncSeasonalThemes(theme);
     applyMode(mode);
     syncMode(mode);
@@ -1807,9 +1852,15 @@ function compactProfileViewHtml(d) {
     /* The slug ("deep-violet" style value) is what gets stored; the name
        ("Deep Violet") is what a person recognises. An unknown slug falls back
        to itself rather than to nothing, so a theme added without updating
-       THEMES still reports which one it picked. */
+       THEMES still reports which one it picked. Member themes in the pickers
+       carry their real name on their option, so the toast reads the name the
+       author gave - not "u-my-cool-theme". */
     function themeName(slug) {
       for (var i = 0; i < THEMES.length; i++) if (THEMES[i][0] === slug) return THEMES[i][1];
+      try {
+        var opt = document.querySelector('#setTheme option[value="' + slug + '"],#ftTheme option[value="' + slug + '"]');
+        if (opt && opt.textContent) return opt.textContent;
+      } catch (e) {}
       return String(slug || "");
     }
 
@@ -1828,6 +1879,8 @@ function compactProfileViewHtml(d) {
       if (!sel) return;
       sel.addEventListener("change", function () {
         var v = sel.value;
+        /* Member themes load their generated sheet before or with the paint. */
+        ensureMemberThemeCss(v);
         /* Captured before applyTheme, so a failed save has something to go back
            to. */
         var prev = _themeTarget.getAttribute("data-theme") || "default";
@@ -1998,30 +2051,6 @@ function compactProfileViewHtml(d) {
       return row;
     }
 
-    /* Wearing a theme from a panel IS picking it in the select: the option is
-       set and its change event fired, so saving, toasting and syncing stay in
-       the one handler that already does all three. */
-    function wearFromList(id) {
-      var sel = document.getElementById("setTheme") || document.getElementById("ftTheme");
-      if (!sel) return;
-      var opt = sel.querySelector('option[value="' + id + '"]');
-      /* Out of season or unknown to the picker: not wearable, whatever built
-         the list. */
-      if (!opt || opt.disabled) return;
-      sel.value = id;
-      sel.dispatchEvent(new Event("change"));
-      closeModal("seasonalThemesModal");
-      closeModal("communityThemesModal");
-    }
-
-    function listMessage(host, text) {
-      host.textContent = "";
-      var p = document.createElement("p");
-      p.className = "thw-theme-empty";
-      p.textContent = text;
-      host.appendChild(p);
-    }
-
     function fillSeasonalInfo() {
       var host = document.getElementById("seasonal-themes-list");
       if (!host) return;
@@ -2040,45 +2069,22 @@ function compactProfileViewHtml(d) {
       btn.addEventListener("click", function () { fillSeasonalInfo(); openModal("seasonalThemesModal"); });
     });
 
-    function openCommunityThemes() {
-      var host = document.getElementById("community-themes-list");
-      if (!host) return;
-      openModal("communityThemesModal");
-      listMessage(host, "Loading...");
-      api({ action: "themeStats" }).then(function (d) {
-        if (d && d.error === "sign in required") {
-          listMessage(host, "Sign in to see what the community is wearing.");
-          return;
-        }
-        var list = (d && d.ok && d.themes) || [];
-        if (!list.length) {
-          listMessage(host, "No theme has been picked yet - yours could be the first.");
-          return;
-        }
-        var total = 0;
-        for (var i = 0; i < list.length; i++) total += list[i].count;
-        host.textContent = "";
-        for (var k = 0; k < list.length; k++) {
-          var t = list[k];
-          var entry = seasonalById(t.theme);
-          host.appendChild(themeRow(t.theme, {
-            about: entry ? entry.about : null,
-            when: entry ? seasonWindow(entry) : null,
-            status: entry ? seasonStatus(entry) : null,
-            /* A seasonal theme stays listed out of season - it is what people
-               are wearing - but stops being wearable here too, exactly as in
-               the picker. */
-            open: !entry || seasonalOpen(entry),
-            pct: total ? Math.round((t.count / total) * 100) : 0,
-          }));
-        }
-      }).catch(function () {
-        listMessage(host, "Couldn't reach the community's themes - try again in a moment.");
-      });
+    /* Wearing a theme from a panel or page IS picking it in the select: the
+       option is set and its change event fired, so saving, toasting and
+       syncing stay in the one handler that already does all three. */
+    function wearFromList(id) {
+      var sel = document.getElementById("setTheme") || document.getElementById("ftTheme");
+      if (!sel) return;
+      var opt = sel.querySelector('option[value="' + id + '"]');
+      /* Out of season or unknown to the picker: not wearable, whatever built
+         the list. */
+      if (!opt || opt.disabled) return;
+      sel.value = id;
+      sel.dispatchEvent(new Event("change"));
+      closeModal("seasonalThemesModal");
     }
-    /* The dropdown's inline onclick calls this the way its siblings call
-       switchAppPage, so it has to live on the window. */
-    window.thwOpenCommunityThemes = openCommunityThemes;
+    /* The Community Themes page wears through the same path. */
+    window.thwWearTheme = wearFromList;
 
     bindThemeSel(th); bindThemeSel(fth);
     console.log("DIAG init reached bind call");
