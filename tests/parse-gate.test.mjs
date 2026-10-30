@@ -486,6 +486,27 @@ if (dupes.length) {
   if (absent.length) structureFail(`markup missing for: ${absent.join(", ")}`);
   else structureOk("the seasonal panel and its list container are in the page");
 
+  /* The seasonal list also lives as its own foldable block under the
+     Appearance grid in Account Settings. Both hosts are filled by one loop in
+     account.js and the fold choice is remembered, so a member does not have
+     to re-fold what they folded last visit. */
+  const blockNeed = ["seasonalBlock", "seasonalFold", "seasonal-themes-block"];
+  const blockAbsent = blockNeed.filter((id) => !page.includes('id="' + id + '"'));
+  if (blockAbsent.length) structureFail(`seasonal block markup missing: ${blockAbsent.join(", ")}`);
+  else if (!page.includes('aria-controls="seasonal-themes-block"'))
+    structureFail("the seasonal fold button does not point at its list");
+  else structureOk("the seasonal block sits in the Appearance grid with its fold button");
+
+  const themesCss = readFileSync(join(ROOT, "themes.css"), "utf8");
+  if (!acct.includes("#seasonal-themes-list, #seasonal-themes-block") ||
+      !acct.includes("thwSeasonalBlock")) {
+    structureFail("account.js does not fill both seasonal hosts or persist the fold");
+  } else if (!themesCss.includes(".seasonal-block.folded #seasonal-themes-block{display:none}")) {
+    structureFail("themes.css has no folded state for the seasonal block");
+  } else {
+    structureOk("both seasonal hosts are filled from one loop, and the fold is styled");
+  }
+
   const btnCount = (page.match(/class="thw-theme-info"/g) || []).length;
   if (btnCount !== 2) structureFail(`expected the info button in both pickers, found ${btnCount}`);
   else structureOk("both theme pickers carry the seasonal info button");

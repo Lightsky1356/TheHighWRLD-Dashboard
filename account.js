@@ -2066,23 +2066,55 @@ function compactProfileViewHtml(d) {
       return row;
     }
 
+    /* Two hosts show the same seasonal list: the modal opened by the ⓘ
+       button and the block under the Appearance grid. One fill keeps them
+       identical. */
     function fillSeasonalInfo() {
-      var host = document.getElementById("seasonal-themes-list");
-      if (!host) return;
-      host.textContent = "";
-      for (var i = 0; i < SEASONAL.length; i++) {
-        var entry = SEASONAL[i];
-        host.appendChild(themeRow(entry.id, {
-          about: entry.about,
-          when: seasonWindow(entry),
-          status: seasonStatus(entry),
-          open: seasonalOpen(entry),
-        }));
+      var hosts = document.querySelectorAll("#seasonal-themes-list, #seasonal-themes-block");
+      for (var h = 0; h < hosts.length; h++) {
+        hosts[h].textContent = "";
+        for (var i = 0; i < SEASONAL.length; i++) {
+          var entry = SEASONAL[i];
+          hosts[h].appendChild(themeRow(entry.id, {
+            about: entry.about,
+            when: seasonWindow(entry),
+            status: seasonStatus(entry),
+            open: seasonalOpen(entry),
+          }));
+        }
       }
     }
     document.querySelectorAll(".thw-theme-info").forEach(function (btn) {
       btn.addEventListener("click", function () { fillSeasonalInfo(); openModal("seasonalThemesModal"); });
     });
+
+    /* The Account Settings block folds so the grid stays at the top when a
+       member is not browsing seasons. The choice is remembered. */
+    var SEASONAL_BLOCK_KEY = "thwSeasonalBlock";
+    function applySeasonalFold() {
+      var blk = document.getElementById("seasonalBlock");
+      var btn = document.getElementById("seasonalFold");
+      if (!blk || !btn) return;
+      var folded = "";
+      try { folded = localStorage.getItem(SEASONAL_BLOCK_KEY) || ""; } catch (_) {}
+      var isFolded = folded === "folded";
+      blk.classList.toggle("folded", isFolded);
+      btn.setAttribute("aria-expanded", isFolded ? "false" : "true");
+    }
+    (function () {
+      var btn = document.getElementById("seasonalFold");
+      var blk = document.getElementById("seasonalBlock");
+      if (!btn || !blk) return;
+      applySeasonalFold();
+      fillSeasonalInfo();
+      btn.addEventListener("click", function () {
+        var folded = "";
+        try { folded = localStorage.getItem(SEASONAL_BLOCK_KEY) || ""; } catch (_) {}
+        folded = folded === "folded" ? "open" : "folded";
+        try { localStorage.setItem(SEASONAL_BLOCK_KEY, folded); } catch (_) {}
+        applySeasonalFold();
+      });
+    })();
 
     /* Wearing a theme from a panel or page IS picking it in the select: the
        option is set and its change event fired, so saving, toasting and

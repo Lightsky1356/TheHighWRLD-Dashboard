@@ -450,6 +450,47 @@ html[data-theme=christmas]{
 .thw-theme-empty{font-size:12px;color:var(--ac-muted,#a295c9);padding:14px 4px;margin:0}
 
 /* ============================================================================
+   The Seasonal themes block in Account Settings
+   ---------------------------------------------------------------------------
+   The same seven rows the seasonal ⓘ modal lists, inline under the Appearance
+   grid, with a fold button of its own. The modal stays as the "read what
+   Halloween IS" door; this block is the "just wear it" door. */
+
+.seasonal-block{
+  margin-top:14px;
+  padding:14px 16px 16px;
+  border-radius:16px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--ac-border,rgba(255,255,255,.1));
+}
+.seasonal-block-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.seasonal-block-title{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--ac-text,#f2edff);
+}
+.seasonal-block-title i{color:var(--ac-muted,#a295c9)}
+.seasonal-block-sub{
+  margin:6px 0 12px;
+  font-size:11px;line-height:1.55;color:var(--ac-muted,#a295c9);
+}
+.seasonal-fold{
+  flex:none;display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:999px;
+  border:1px solid var(--ac-border,rgba(255,255,255,.1));
+  background:rgba(255,255,255,.05);color:var(--ac-muted,#a295c9);
+  cursor:pointer;font-size:11px;
+  transition:background .18s,color .18s,border-color .18s,transform .18s var(--ac-ease,cubic-bezier(.16,1,.3,1));
+}
+.seasonal-fold:hover{background:rgba(255,255,255,.1);color:var(--ac-text,#f2edff);border-color:var(--ac-border2,rgba(255,255,255,.22))}
+/* Folded: the list disappears, the chip points the way back down. */
+.seasonal-block.folded .seasonal-fold i{transform:rotate(-90deg)}
+.seasonal-block.folded #seasonal-themes-block{display:none}
+.seasonal-block.folded{padding-bottom:14px}
+/* The block list is shorter than the modal's - it sits inside a page, not a
+   dialog that owns the screen. */
+#seasonal-themes-block{max-height:min(46vh,360px)}
+
+/* ============================================================================
    The gradients every theme must have
    ---------------------------------------------------------------------------
    Three gradient variables are used across the site: --ac-grad-brand,
