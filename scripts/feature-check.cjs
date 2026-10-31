@@ -1164,17 +1164,48 @@ async function main() {
     var close = m && m.querySelector("[data-close]");
     if (close) close.click();
     out.closed = !(m && m.classList.contains("open"));
-    /* Each row carries a history ⓘ; it opens the season's story even on a
-       shut row, and the wear button inside the same card stays disabled. */
+    /* Each row carries a history ⓘ; clicking it opens the holiday panel -
+       the #seasonalHistoryModal overlay - with the holiday's picture, its
+       name, its window and its story. No inline text is left on the card. */
     out.histBtns = m ? m.querySelectorAll(".thw-theme-hist").length : 0;
-    var hb = m ? m.querySelector(".thw-theme-hist") : null;
+    out.inlineHist = m ? m.querySelectorAll(".thw-theme-history").length : 0;
+    var hb = m ? m.querySelector('[data-theme-id="' + shutId + '"] .thw-theme-hist') : null;
     if (hb) hb.click();
-    var histOpen = m ? m.querySelector(".thw-theme-cell.hist-open .thw-theme-history") : null;
-    out.histOpen = !!histOpen;
-    out.histLen = histOpen ? histOpen.textContent.length : 0;
-    out.histStillShut = shut && shut.disabled && document.documentElement.getAttribute("data-theme") === out.before;
-    if (hb) hb.click();
-    return out;
+    var hp = document.getElementById("seasonalHistoryModal");
+    out.histOpen = !!(hp && hp.classList.contains("open"));
+    var hArt = document.getElementById("holidayArt");
+    out.art = hArt ? hArt.getAttribute("src") : "";
+    /* The art was just pointed at a file it may not have held before, so the
+       readouts wait a beat for the download (or, cached, the decode) to
+       settle before they are taken. */
+    return new Promise(function (resolve) {
+      setTimeout(function () {
+        out.artReady = hArt ? (hArt.complete && hArt.naturalWidth > 300) : false;
+        out.hName = (document.getElementById("holidayName") || { textContent: "" }).textContent;
+        var hHist = document.getElementById("holidayHistory");
+        out.histLen = hHist ? hHist.textContent.length : 0;
+        var hWhen = document.getElementById("holidayWhen");
+        out.hWhen = hWhen ? hWhen.textContent : "";
+        var hw = document.getElementById("holidayWear");
+        out.wearHidden = hw ? hw.hidden === true : null;
+        var hClose = hp ? hp.querySelector("[data-close]") : null;
+        if (hClose) hClose.click();
+        out.histClosed = !(hp && hp.classList.contains("open"));
+        /* A season that is on offers its wear button from the same panel. The
+           wear itself is not clicked here - the picker's own checks cover it -
+           so the member's saved profile is untouched. */
+        var ob = m ? m.querySelector('[data-theme-id="halloween"] .thw-theme-hist') : null;
+        if (ob) ob.click();
+        var oWear = document.getElementById("holidayWear");
+        out.openWearVisible = hw ? oWear.hidden === false && !oWear.disabled : null;
+        hClose = document.getElementById("seasonalHistoryModal").querySelector("[data-close]");
+        if (hClose) hClose.click();
+        /* The theme stays whatever it was through all of this - the panel only
+            tells and offers; wearing needs the row or the button. */
+        out.histStillShut = out.before === document.documentElement.getAttribute("data-theme");
+        resolve(out);
+      }, 500);
+    });
   })()`);
   check("the info button opens the seasonal panel",
     seasonalPanel && seasonalPanel.buttons === 2 && seasonalPanel.opened === true, JSON.stringify(seasonalPanel).slice(0, 160));
@@ -1189,11 +1220,21 @@ async function main() {
     JSON.stringify(seasonalPanel).slice(0, 200));
   check("the panel's close button closes it", seasonalPanel && seasonalPanel.closed === true,
     JSON.stringify(seasonalPanel).slice(0, 200));
-  check("every seasonal row carries a history ⓘ that opens its story",
-    seasonalPanel && seasonalPanel.histBtns === 8 && seasonalPanel.histOpen === true && seasonalPanel.histLen > 60,
-    JSON.stringify({ histBtns: seasonalPanel && seasonalPanel.histBtns, histOpen: seasonalPanel && seasonalPanel.histOpen, histLen: seasonalPanel && seasonalPanel.histLen }));
-  check("opening a shut row's history still leaves it unwearable",
-    seasonalPanel && seasonalPanel.histStillShut === true, JSON.stringify(seasonalPanel).slice(0, 160));
+  check("every seasonal row carries a history ⓘ that opens the holiday's picture panel",
+    seasonalPanel && seasonalPanel.histBtns === 8 && seasonalPanel.histOpen === true &&
+    seasonalPanel.inlineHist === 0 && /^\.\/holiday-art\/[a-z0-9-]+\.svg$/.test(seasonalPanel.art) &&
+    seasonalPanel.artReady === true && seasonalPanel.hName.length > 2 &&
+    seasonalPanel.histLen > 60 && /[A-Z][a-z]+ 1 - [0-9]+/.test(seasonalPanel.hWhen),
+    JSON.stringify({ histBtns: seasonalPanel && seasonalPanel.histBtns, histOpen: seasonalPanel && seasonalPanel.histOpen,
+      inlineHist: seasonalPanel && seasonalPanel.inlineHist, art: seasonalPanel && seasonalPanel.art,
+      artReady: seasonalPanel && seasonalPanel.artReady, hName: seasonalPanel && seasonalPanel.hName,
+      histLen: seasonalPanel && seasonalPanel.histLen, hWhen: seasonalPanel && seasonalPanel.hWhen }));
+  check("a shut holiday's panel hides its wear button and the theme stays unworn",
+    seasonalPanel && seasonalPanel.wearHidden === true && seasonalPanel.histStillShut === true,
+    JSON.stringify({ wearHidden: seasonalPanel && seasonalPanel.wearHidden, histStillShut: seasonalPanel && seasonalPanel.histStillShut }));
+  check("an open holiday's panel offers its wear button, and closes on the ✕",
+    seasonalPanel && seasonalPanel.openWearVisible === true && seasonalPanel.histClosed === true,
+    JSON.stringify({ openWearVisible: seasonalPanel && seasonalPanel.openWearVisible, histClosed: seasonalPanel && seasonalPanel.histClosed }));
 
   /* ---- Theme effects: the decals the worn season paints ---- */
 

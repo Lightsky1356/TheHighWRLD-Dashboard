@@ -471,7 +471,8 @@ html[data-theme=christmas]{
 
 /* The season's history - the ⓘ in the top-right corner of the card opens it.
    It lives outside the wear button (see account.js), so it works even when
-   the theme itself is out of season. */
+   the theme itself is out of season. The ⓘ opens the holiday panel (the
+   #seasonalHistoryModal overlay in index.html). */
 .thw-theme-hist{
   position:absolute;top:9px;right:9px;z-index:1;
   display:inline-flex;align-items:center;justify-content:center;
@@ -481,14 +482,35 @@ html[data-theme=christmas]{
   transition:background .15s,color .15s;
 }
 .thw-theme-hist:hover{background:rgba(255,255,255,.13);color:var(--ac-text,#f2edff)}
-.thw-theme-history{
-  display:none;
-  font-size:11px;line-height:1.6;color:var(--ac-muted,#a295c9);
-  border-top:1px dashed var(--ac-border,rgba(255,255,255,.16));
-  padding-top:7px;cursor:default;
-}
-.thw-theme-cell.hist-open .thw-theme-history{display:block}
-.thw-theme-cell.hist-open .thw-theme-hist{color:var(--ac-text,#f2edff);background:rgba(255,255,255,.13)}
+.thw-theme-hist:focus-visible{outline:2px solid var(--ac-pink,#ec4899);outline-offset:1px}
+
+/* The holiday panel itself: full-bleed art on top, the story beneath. */
+.thw-hist-modal{padding:0;overflow:hidden;max-width:520px}
+.thw-hist-modal .m-close{position:absolute;top:10px;right:10px;z-index:2;
+  background:rgba(0,0,0,.45);color:#fff;border:0;border-radius:999px;
+  width:30px;height:30px;cursor:pointer;font-size:13px}
+.thw-hist-art{display:block;width:100%;height:190px;object-fit:cover;background:#0b0714}
+.thw-hist-pad{padding:16px 18px 18px}
+.thw-hist-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.thw-hist-head h3{margin:0;font-size:17px;font-weight:800;color:var(--ac-text,#f2edff)}
+.thw-hist-chip{font-size:10px;font-weight:700;letter-spacing:.05em;
+  padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.08);
+  color:var(--ac-muted,#a295c9)}
+.thw-hist-chip--open{background:rgba(74,222,128,.16);color:#4ade80}
+.thw-hist-when{margin:6px 0 0;font-size:10px;font-weight:700;letter-spacing:.05em;
+  color:var(--ac-dim,#6f6692)}
+.thw-hist-about{margin:8px 0 0;font-size:12px;line-height:1.55;
+  color:var(--ac-text,#f2edff)}
+.thw-hist-storyhead{margin:13px 0 0;font-size:10px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ac-muted,#a295c9)}
+.thw-hist-body{margin:6px 0 0;font-size:11px;line-height:1.65;
+  color:var(--ac-muted,#a295c9);max-height:150px;overflow-y:auto}
+.thw-hist-wear{margin:14px 0 0;width:100%;padding:9px 14px;border:0;border-radius:10px;
+  background:var(--ac-grad-brand,linear-gradient(120deg,#a855f7,#ec4899,#f59e0b,#a855f7));
+  color:#fff;font-size:12px;font-weight:800;letter-spacing:.03em;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.thw-hist-wear:hover{filter:brightness(1.1)}
+.thw-hist-wear[hidden]{display:none}
 
 /* ============================================================================
    Theme effects - the seasonal decals

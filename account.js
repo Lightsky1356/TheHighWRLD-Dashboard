@@ -2090,29 +2090,27 @@ function compactProfileViewHtml(d) {
       if (info.open) row.addEventListener("click", function () { wearFromList(id); });
       cell.appendChild(row);
 
-      /* The season's story. The ⓘ opens it; the row below keeps wearing. */
+      /* The season's story: the ⓘ opens a panel with the holiday's picture
+         and its fuller history, so a season out of reach still tells its
+         tale. Enter and Space open it too, since the ⓘ is keyboard reachable. */
       if (info.history) {
         var histBtn = document.createElement("span");
         histBtn.className = "thw-theme-hist";
         histBtn.setAttribute("role", "button");
+        histBtn.setAttribute("tabindex", "0");
         histBtn.setAttribute("aria-label", "History of " + themeName(id));
         histBtn.title = "Season history";
         histBtn.innerHTML = '<i class="fas fa-circle-info"></i>';
         cell.appendChild(histBtn);
 
-        var hist = document.createElement("span");
-        hist.className = "thw-theme-history";
-        hist.textContent = info.history;
-        cell.appendChild(hist);
-
-        function toggleHist(e) {
-          cell.classList.toggle("hist-open");
+        function openHist(e) {
+          openHolidayPanel(id);
           e.stopPropagation();
           if (e.preventDefault) e.preventDefault();
         }
-        histBtn.addEventListener("click", toggleHist);
+        histBtn.addEventListener("click", openHist);
         histBtn.addEventListener("keydown", function (e) {
-          if (e.key === "Enter" || e.key === " ") toggleHist(e);
+          if (e.key === "Enter" || e.key === " ") openHist(e);
         });
       }
       return cell;
@@ -2140,6 +2138,41 @@ function compactProfileViewHtml(d) {
     document.querySelectorAll(".thw-theme-info").forEach(function (btn) {
       btn.addEventListener("click", function () { fillSeasonalInfo(); openModal("seasonalThemesModal"); });
     });
+
+    /* The panel behind a row's ⓘ: the holiday's picture, when its season
+       runs, a word on its look and the fuller story. A season that is on
+       also offers its Wear button; one that is not simply tells its story.
+       The art files sit beside the page (sw.js precaches them), so the
+       picture is there before the button is even clicked. */
+    function openHolidayPanel(id) {
+      var entry = null;
+      for (var i = 0; i < SEASONAL.length; i++) {
+        if (SEASONAL[i].id === id) { entry = SEASONAL[i]; break; }
+      }
+      if (!entry) return;
+      var art = document.getElementById("holidayArt");
+      if (art) { art.src = "./holiday-art/" + id + ".svg"; art.alt = themeName(id); }
+      var nameEl = document.getElementById("holidayName");
+      if (nameEl) nameEl.textContent = themeName(id);
+      var chip = document.getElementById("holidayChip");
+      if (chip) {
+        chip.textContent = seasonStatus(entry);
+        chip.className = "thw-hist-chip" + (seasonalOpen(entry) ? " thw-hist-chip--open" : "");
+      }
+      var when = document.getElementById("holidayWhen");
+      if (when) when.textContent = seasonWindow(entry);
+      var about = document.getElementById("holidayAbout");
+      if (about) about.textContent = entry.about || "";
+      var story = document.getElementById("holidayHistory");
+      if (story) story.textContent = entry.history || "";
+      var wear = document.getElementById("holidayWear");
+      if (wear) {
+        var wearable = seasonalOpen(entry);
+        wear.hidden = !wearable;
+        wear.onclick = wearable ? function () { wearFromList(id); } : null;
+      }
+      openModal("seasonalHistoryModal");
+    }
 
     /* The Account Settings block folds so the grid stays at the top when a
        member is not browsing seasons. The choice is remembered. */
@@ -2198,6 +2231,8 @@ function compactProfileViewHtml(d) {
       sel.value = id;
       sel.dispatchEvent(new Event("change"));
       closeModal("seasonalThemesModal");
+      /* Wearing from the holiday's own panel closes that panel too. */
+      closeModal("seasonalHistoryModal");
     }
     /* The Community Themes page wears through the same path. */
     window.thwWearTheme = wearFromList;

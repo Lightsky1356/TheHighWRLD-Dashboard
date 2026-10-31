@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" width="800" height="300" role="img" aria-label="Halloween jack-o-lanterns under a huge orange moon">
+  <defs>
+    <linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a0416"/><stop offset=".6" stop-color="#231038"/><stop offset="1" stop-color="#140921"/>
+    </linearGradient>
+    <radialGradient id="moonGlow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fbbf24" stop-opacity=".65"/><stop offset=".4" stop-color="#f97316" stop-opacity=".25"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="moonFace" cx=".38" cy=".32" r=".9">
+      <stop offset="0" stop-color="#fde68a"/><stop offset=".6" stop-color="#fbbf24"/><stop offset="1" stop-color="#f59e0b"/>
+    </radialGradient>
+    <g id="bat">
+      <path d="M0 0 Q-3 -4 -9 -3 Q-6 -1 -6 2 Q-3 1 0 3 Q3 1 6 2 Q6 -1 9 -3 Q3 -4 0 0 Z" fill="#0d0618"/>
+    </g>
+  </defs>
+  <rect width="800" height="300" fill="url(#hsky)"/>
+  <circle cx="590" cy="96" r="150" fill="url(#moonGlow)"/>
+  <circle cx="590" cy="96" r="72" fill="url(#moonFace)"/>
+  <g fill="#f59e0b" opacity=".35">
+    <circle cx="566" cy="80" r="9"/><circle cx="620" cy="112" r="12"/><circle cx="600" cy="60" r="6"/>
+  </g>
+  <g fill="#dbeafe" opacity=".5">
+    <circle cx="80" cy="40" r="1.4"/><circle cx="180" cy="24" r="1.2"/><circle cx="300" cy="46" r="1.3"/><circle cx="420" cy="30" r="1.4"/>
+  </g>
+  <use href="#bat" transform="translate(360 78) scale(1.5)"/>
+  <use href="#bat" transform="translate(430 58) scale(1.1)"/>
+  <use href="#bat" transform="translate(300 108) scale(.9)"/>
+  <use href="#bat" transform="translate(500 104) scale(1.2)"/>
+  <use href="#bat" transform="translate(240 66) scale(.8)"/>
+  <path d="M700 240 L704 130 Q706 110 690 104 Q712 100 718 88 Q720 104 736 108 Q718 112 720 132 L722 240 Z" fill="#160a08"/>
+  <path d="M0 300 L0 236 Q120 216 250 236 Q380 252 520 234 Q660 216 800 240 L800 300 Z" fill="#0d0616"/>
+  <path d="M0 300 L0 262 Q200 248 400 264 L400 268 Q200 254 0 268 Z" fill="#160a1e" opacity=".8"/>
+  <g>
+    <path d="M96 264 Q66 268 62 244 Q60 226 84 220 Q92 206 112 210 Q134 214 132 236 Q130 260 108 264 Q100 266 96 264 Z" fill="#ea580c"/>
+    <path d="M92 220 Q98 208 106 204 L110 214 Z" fill="#166534"/>
+    <rect x="86" y="274" width="30" height="10" rx="2" fill="#431407" opacity=".55"/>
+  </g>
+  <g>
+    <ellipse cx="104" cy="240" rx="11" ry="13" fill="#0a0505"/>
+    <polygon points="93,231 99,236 95,241" fill="#fbbf24"/>
+    <polygon points="115,231 109,236 113,241" fill="#fbbf24"/>
+    <path d="M93 246 Q98 252 96 258 Q100 254 102 258 Q104 254 108 258 Q107 252 115 246 Q104 242 93 246 Z" fill="#fbbf24"/>
+  </g>
+  <g>
+    <path d="M196 280 Q162 284 158 252 Q156 230 184 224 Q192 208 216 212 Q242 216 240 244 Q238 274 212 280 Q202 282 196 280 Z" fill="#f97316"/>
+    <path d="M192 224 Q198 210 208 206 L212 218 Z" fill="#166534"/>
+    <rect x="182" y="290" width="38" height="12" rx="2" fill="#431407" opacity=".55"/>
+  </g>
+  <g>
+    <ellipse cx="196" cy="244" rx="13" ry="16" fill="#0a0505"/>
+    <polygon points="183,233 190,239 185,245" fill="#fde047"/>
+    <polygon points="209,233 202,239 207,245" fill="#fde047"/>
+    <path d="M182 250 Q188 258 185 266 Q190 260 193 266 Q196 260 199 266 Q202 260 208 266 Q210 258 210 250 Q196 245 182 250 Z" fill="#fde047"/>
+  </g>
+</svg>

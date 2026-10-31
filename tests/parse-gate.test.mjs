@@ -511,7 +511,9 @@ if (dupes.length) {
      the story can open even on a row whose wear button is disabled - and a
      decal layer (effects.js) paints the worn season: snow at Christmas and
      friends. A settings switch remembers if a member would rather sit
-     quietly. */
+     quietly. The ⓘ is no longer an inline reveal: it opens a panel
+     (#seasonalHistoryModal) that carries the holiday's picture, its season
+     and its story, with the art precached by the service worker. */
   const effects = readFileSync(join(ROOT, "effects.js"), "utf8");
   const fxNeed = ["id=\"seasonalFxRow\"", "id=\"seasonalFxToggle\"", "effects.js?v=thw-v"];
   const fxAbsent = fxNeed.filter((x) => !page.includes(x));
@@ -523,9 +525,19 @@ if (dupes.length) {
     structureFail("themes.css has no falling animation for the decals");
   else if (!acct.includes("thwThemeFx") || !acct.includes("entry.history"))
     structureFail("account.js does not remember the effects choice or hand the rows their history");
-  else if (!themesCss.includes(".thw-theme-hist") || !themesCss.includes(".thw-theme-cell.hist-open .thw-theme-history{display:block}"))
-    structureFail("themes.css has no history reveal behind the row's ⓘ");
-  else structureOk("each row has a history ⓘ, and effects.js paints the worn season");
+  else if (!themesCss.includes(".thw-theme-hist") || !themesCss.includes(".thw-hist-modal") ||
+    !themesCss.includes(".thw-hist-art") || !themesCss.includes(".thw-hist-wear[hidden]"))
+    structureFail("themes.css has no panel styling for the history ⓘ or its hidden wear button");
+  else if (themesCss.includes(".thw-theme-history") || themesCss.includes("hist-open"))
+    structureFail("themes.css still styles the removed inline history reveal");
+  else if (!page.includes('id="seasonalHistoryModal"') || !page.includes('id="holidayArt"') ||
+    !page.includes('id="holidayHistory"') || !page.includes('id="holidayWear"'))
+    structureFail("index.html has no holiday panel markup behind the modal");
+  else if (!swJs.includes("./holiday-art/")) structureFail("the service worker does not precache the holiday art");
+  else if (!acct.includes("openHolidayPanel") || !acct.includes('holiday-art/" + id + ".svg"') ||
+    !acct.includes("seasonalHistoryModal"))
+    structureFail("account.js does not open the holiday panel or point the art at holiday-art/");
+  else structureOk("each row's ⓘ opens a picture panel with its story, and effects.js paints the worn season");
 
   const btnCount = (page.match(/class="thw-theme-info"/g) || []).length;
   if (btnCount !== 2) structureFail(`expected the info button in both pickers, found ${btnCount}`);
