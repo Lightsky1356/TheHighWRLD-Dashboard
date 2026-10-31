@@ -417,22 +417,31 @@ html[data-theme=christmas]{
   max-height:min(56vh,440px);overflow-y:auto;overscroll-behavior:contain;
   padding-right:4px;
 }
-.thw-theme-row{
-  display:flex;flex-direction:column;gap:4px;
-  padding:11px 13px;border-radius:14px;text-align:left;
+/* One row-card: the span wrapper carries the card look, the button inside
+   does the wearing - which leaves room beside it for the history ⓘ, and
+   keeps off-season rows (is-shut) clickable for their ⓘ while their wear
+   button is disabled. */
+.thw-theme-cell{
+  position:relative;display:flex;flex-direction:column;gap:4px;
+  padding:11px 40px 13px 13px;border-radius:14px;text-align:left;cursor:default;
   background:rgba(255,255,255,.045);
   border:1px solid var(--ac-border,rgba(255,255,255,.1));
-  color:inherit;cursor:pointer;
-  transition:background .16s,border-color .16s,transform .16s var(--ac-ease,cubic-bezier(.16,1,.3,1));
+  transition:background .16s,border-color .16s,transform .16s var(--ac-ease,cubic-bezier(.16,1,.3,1)),opacity .16s;
 }
-.thw-theme-row:not(:disabled):hover{
+.thw-theme-cell:not(.is-shut):hover{
   background:rgba(255,255,255,.09);
   border-color:var(--ac-border2,rgba(255,255,255,.22));
   transform:translateY(-1px);
 }
 /* A theme out of season still gets read - that is what the panel is for - so
-   the row stays fully legible and only the affordance is taken away. */
-.thw-theme-row:disabled{cursor:default;opacity:.8}
+   the card stays fully legible and only the affordance is taken away. */
+.thw-theme-cell.is-shut{opacity:.8}
+.thw-theme-row{
+  display:flex;flex-direction:column;gap:4px;
+  padding:0;margin:0;background:none;border:0;text-align:left;
+  color:inherit;font:inherit;cursor:pointer;
+}
+.thw-theme-cell.is-shut .thw-theme-row{cursor:default}
 .thw-theme-row-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .thw-theme-name{font-size:13px;font-weight:800;color:var(--ac-text,#f2edff)}
 .thw-theme-chip{
@@ -448,6 +457,54 @@ html[data-theme=christmas]{
 .thw-theme-bar{flex:1;height:5px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
 .thw-theme-bar i{display:block;height:100%;border-radius:99px;background:var(--ac-grad-brand,linear-gradient(120deg,#a855f7,#ec4899,#f59e0b,#a855f7))}
 .thw-theme-empty{font-size:12px;color:var(--ac-muted,#a295c9);padding:14px 4px;margin:0}
+
+/* The season's history - the ⓘ in the top-right corner of the card opens it.
+   It lives outside the wear button (see account.js), so it works even when
+   the theme itself is out of season. */
+.thw-theme-hist{
+  position:absolute;top:9px;right:9px;z-index:1;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:999px;
+  background:rgba(255,255,255,.06);color:var(--ac-muted,#a295c9);
+  cursor:pointer;font-size:11px;line-height:1;
+  transition:background .15s,color .15s;
+}
+.thw-theme-hist:hover{background:rgba(255,255,255,.13);color:var(--ac-text,#f2edff)}
+.thw-theme-history{
+  display:none;
+  font-size:11px;line-height:1.6;color:var(--ac-muted,#a295c9);
+  border-top:1px dashed var(--ac-border,rgba(255,255,255,.16));
+  padding-top:7px;cursor:default;
+}
+.thw-theme-cell.hist-open .thw-theme-history{display:block}
+.thw-theme-cell.hist-open .thw-theme-hist{color:var(--ac-text,#f2edff);background:rgba(255,255,255,.13)}
+
+/* ============================================================================
+   Theme effects - the seasonal decals
+   ---------------------------------------------------------------------------
+   effects.js builds a fixed layer of glyphs for the seasons that have them;
+   this is what they look like as they fall. The layer is invisible to mice
+   and to screen readers, and the whole thing stands down for anyone whose
+   system asks for reduced motion. */
+.thw-fx{
+  position:fixed;inset:0;z-index:240;overflow:hidden;
+  pointer-events:none;
+}
+.thw-fx .thw-fx-i{
+  position:absolute;top:-8vh;display:block;font-style:normal;line-height:1;
+  animation:thw-fx-fall 12s linear infinite;
+  will-change:transform;
+}
+@keyframes thw-fx-fall{
+  from{transform:translate3d(0,0,0) rotate(0deg)}
+  to{transform:translate3d(var(--fx-drift,40px),116vh,0) rotate(300deg)}
+}
+@media (prefers-reduced-motion: reduce){
+  .thw-fx{display:none}
+}
+
+/* ============================================================================
+   The Seasonal themes block in Account Settings
 
 /* ============================================================================
    The Seasonal themes block in Account Settings

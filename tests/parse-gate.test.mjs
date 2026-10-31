@@ -507,6 +507,26 @@ if (dupes.length) {
     structureOk("both seasonal hosts are filled from one loop, and the fold is styled");
   }
 
+  /* Every seasonal row carries a history ⓘ - the card is a wrapper span so
+     the story can open even on a row whose wear button is disabled - and a
+     decal layer (effects.js) paints the worn season: snow at Christmas and
+     friends. A settings switch remembers if a member would rather sit
+     quietly. */
+  const effects = readFileSync(join(ROOT, "effects.js"), "utf8");
+  const fxNeed = ["id=\"seasonalFxRow\"", "id=\"seasonalFxToggle\"", "effects.js?v=thw-v"];
+  const fxAbsent = fxNeed.filter((x) => !page.includes(x));
+  if (fxAbsent.length) structureFail(`effects markup/tokens missing: ${fxAbsent.join(", ")}`);
+  else if (!swJs.includes("'./effects.js?v=thw-v")) structureFail("the service worker does not precache effects.js");
+  else if (!effects.includes("christmas") || !effects.includes("thw-fx-toggle") || !effects.includes("thw-fx"))
+    structureFail("effects.js does not carry the seasonal glyph table or the toggle hook");
+  else if (!themesCss.includes(".thw-fx{") || !themesCss.includes("@keyframes thw-fx-fall"))
+    structureFail("themes.css has no falling animation for the decals");
+  else if (!acct.includes("thwThemeFx") || !acct.includes("entry.history"))
+    structureFail("account.js does not remember the effects choice or hand the rows their history");
+  else if (!themesCss.includes(".thw-theme-hist") || !themesCss.includes(".thw-theme-cell.hist-open .thw-theme-history{display:block}"))
+    structureFail("themes.css has no history reveal behind the row's ⓘ");
+  else structureOk("each row has a history ⓘ, and effects.js paints the worn season");
+
   const btnCount = (page.match(/class="thw-theme-info"/g) || []).length;
   if (btnCount !== 2) structureFail(`expected the info button in both pickers, found ${btnCount}`);
   else structureOk("both theme pickers carry the seasonal info button");

@@ -1151,9 +1151,12 @@ async function main() {
         /^([A-Z][a-z]+ 1 - [0-9]+|[A-Z][a-z]{2} [0-9]+ - [A-Z][a-z]{2} [0-9]+, [0-9]{4})$/.test(when.textContent);
     });
     // Whichever of these two is out of season today - always at least one is.
+    // A row card is a span wrapper holding the wear button, so the disabled
+    // button is one level down.
     var month = new Date().getMonth() + 1;
     var shutId = month === 10 ? "christmas" : "halloween";
-    var shut = m && m.querySelector('[data-theme-id="' + shutId + '"]');
+    var shutWrap = m && m.querySelector('[data-theme-id="' + shutId + '"]');
+    var shut = shutWrap && (shutWrap.classList.contains("thw-theme-row") ? shutWrap : shutWrap.querySelector(".thw-theme-row"));
     out.shut = { id: shutId, disabled: !!(shut && shut.disabled) };
     out.before = document.documentElement.getAttribute("data-theme");
     if (shut) shut.click();
@@ -1161,6 +1164,16 @@ async function main() {
     var close = m && m.querySelector("[data-close]");
     if (close) close.click();
     out.closed = !(m && m.classList.contains("open"));
+    /* Each row carries a history ⓘ; it opens the season's story even on a
+       shut row, and the wear button inside the same card stays disabled. */
+    out.histBtns = m ? m.querySelectorAll(".thw-theme-hist").length : 0;
+    var hb = m ? m.querySelector(".thw-theme-hist") : null;
+    if (hb) hb.click();
+    var histOpen = m ? m.querySelector(".thw-theme-cell.hist-open .thw-theme-history") : null;
+    out.histOpen = !!histOpen;
+    out.histLen = histOpen ? histOpen.textContent.length : 0;
+    out.histStillShut = shut && shut.disabled && document.documentElement.getAttribute("data-theme") === out.before;
+    if (hb) hb.click();
     return out;
   })()`);
   check("the info button opens the seasonal panel",
@@ -1176,6 +1189,43 @@ async function main() {
     JSON.stringify(seasonalPanel).slice(0, 200));
   check("the panel's close button closes it", seasonalPanel && seasonalPanel.closed === true,
     JSON.stringify(seasonalPanel).slice(0, 200));
+  check("every seasonal row carries a history ⓘ that opens its story",
+    seasonalPanel && seasonalPanel.histBtns === 7 && seasonalPanel.histOpen === true && seasonalPanel.histLen > 60,
+    JSON.stringify({ histBtns: seasonalPanel && seasonalPanel.histBtns, histOpen: seasonalPanel && seasonalPanel.histOpen, histLen: seasonalPanel && seasonalPanel.histLen }));
+  check("opening a shut row's history still leaves it unwearable",
+    seasonalPanel && seasonalPanel.histStillShut === true, JSON.stringify(seasonalPanel).slice(0, 160));
+
+  /* ---- Theme effects: the decals the worn season paints ---- */
+
+  const fx = await cdp.evalJson(`(function () {
+    return new Promise(function (resolve) {
+      var root = document.documentElement;
+      var prev = root.getAttribute("data-theme");
+      var fxStored = "on";
+      try { fxStored = localStorage.getItem("thwThemeFx") || "on"; } catch (e) {}
+      var out2 = { row: !!document.getElementById("seasonalFxRow"), wasOn: fxStored !== "off" };
+      root.setAttribute("data-theme", "halloween");
+      setTimeout(function () {
+        var layer = document.querySelector(".thw-fx");
+        out2.layer = !!layer;
+        out2.items = layer ? layer.children.length : 0;
+        out2.nonInteractive = layer ? getComputedStyle(layer).pointerEvents === "none" : false;
+        out2.fromObserver = true;
+        root.setAttribute("data-theme", "default");
+        setTimeout(function () {
+          out2.goneOnDefault = !document.querySelector(".thw-fx");
+          root.setAttribute("data-theme", prev);
+          resolve(out2);
+        }, 140);
+      }, 160);
+    });
+  })()`);
+  check("the switches for seasonal effects sit in the seasonal block",
+    fx && fx.row === true && fx.wasOn === true, JSON.stringify(fx));
+  check("a worn season paints the page and the decals fall without stealing clicks",
+    fx && fx.layer === true && fx.items >= 10 && fx.nonInteractive === true, JSON.stringify(fx));
+  check("leaving the season clears the decals",
+    fx && fx.goneOnDefault === true, JSON.stringify(fx));
 
   /* ---- Community Themes: the page where members submit their own ---- */
 

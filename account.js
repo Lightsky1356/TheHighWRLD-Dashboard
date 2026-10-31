@@ -1614,14 +1614,25 @@ function compactProfileViewHtml(d) {
      * all seven the whole year, because a member who chose Halloween in
      * October keeps it in July: nothing about their theme changes silently
      * when the month does. */
+  /* Each entry knows three things: when it opens, what it looks like (the
+     `about` line the rows show), and its history - the story the row's own
+     ⓘ opens. The eighth thing, `fx`, is not stored here: effects.js keeps
+     the decals and matches on the theme id. */
   var SEASONAL = [
-    { id: "newyear", months: [1], about: "Fireworks gold over midnight blue - January's night sky." },
-    { id: "valentines", months: [2], about: "Crimson and blush pink for Valentine's Day." },
-    { id: "stpatricks", months: [3], about: "Emerald green with a pot of found gold." },
-    { id: "easter", easter: true, about: "Soft spring pastels for the Easter weekend." },
-    { id: "july4", months: [7], about: "Stars-and-stripes red and blue for the Fourth of July." },
-    { id: "halloween", months: [10], about: "Pumpkin orange and violet - the darkest night of October." },
-    { id: "christmas", months: [12], about: "Holly red, pine green and gold for Christmas." }
+    { id: "newyear", months: [1], about: "Fireworks gold over midnight blue - January's night sky.",
+      history: "January 1 became the year's first day with the Gregorian calendar reform of 1582; before that Europe rang in the year in March or at Easter. Midnight fireworks and noise are descendants of old customs meant to bang the old year out and scare the bad luck away." },
+    { id: "valentines", months: [2], about: "Crimson and blush pink for Valentine's Day.",
+      history: "The day keeps the name of Saint Valentine, a priest of 3rd-century Rome who, the stories go, kept marrying soldiers in secret when the empire forbade it. Chaucer tied the date to romance in the 1300s, and the Victorians added the cards, roses and heart-shaped chocolates." },
+    { id: "stpatricks", months: [3], about: "Emerald green with a pot of found gold.",
+      history: "March 17 is the traditional death day of Saint Patrick, the 5th-century missionary who became Ireland's patron saint; legend says he used the shamrock to explain the Trinity. Irish emigrant cities turned a quiet church feast into the parades and green floods of today." },
+    { id: "easter", easter: true, about: "Soft spring pastels for the Easter weekend.",
+      history: "Easter is the oldest Christian feast, marking the resurrection of Jesus. The Council of Nicaea fixed its date in 325 AD - the first Sunday after the first full moon of spring - which is why it wanders the year. Eggs and hares are older spring symbols of new life the feast absorbed." },
+    { id: "july4", months: [7], about: "Stars-and-stripes red and blue for the Fourth of July.",
+      history: "July 4, 1776 is the day the Continental Congress adopted the Declaration of Independence. Philadelphia fired fireworks on the first anniversary and the habit stuck; Congress made it an official holiday in 1870. The red-white-and-blue dress code is newer still, mostly 20th-century." },
+    { id: "halloween", months: [10], about: "Pumpkin orange and violet - the darkest night of October.",
+      history: "October 31 grew out of Samhain, the Celtic turning of the year into winter, when the veil between the living and the dead stood thinnest. Wearing disguises and lighting lanterns began as warding off wandering spirits; Irish arrivals carried the customs to America in the 1800s, where trick-or-treat took shape." },
+    { id: "christmas", months: [12], about: "Holly red, pine green and gold for Christmas.",
+      history: "December 25 was fixed as Christmas in the 4th century, likely to sit beside the Roman midwinter feasts. Germany's decorated trees spread through the 1800s, and the Victorian era gave the holiday its cards, crackers, carols and family gift-giving." }
   ];
 
   /* Meeus/Jones/Butcher - the standard Gregorian approximation, correct from
@@ -2014,12 +2025,24 @@ function compactProfileViewHtml(d) {
     /* One row, shared by both panels. A shut row stays fully readable -
        reading what exists in June is the point of the panel - only the
        affordance is taken away. */
+    /* One card: a span wrapper (the cell) holding the wear button, the row.
+       The history ⓘ has to sit beside the button rather than inside it - a
+       button cannot carry another button, and a row out of season is
+       disabled, which swallows clicks meant for anything inside it. This way
+       a theme the member cannot wear right now still tells its history. */
     function themeRow(id, info) {
+      var cell = document.createElement("span");
+      cell.className = "thw-theme-cell";
+      cell.setAttribute("data-theme-id", id);
+
       var row = document.createElement("button");
       row.type = "button";
       row.className = "thw-theme-row";
       row.setAttribute("data-theme-id", id);
-      if (!info.open) row.disabled = true;
+      if (!info.open) {
+        row.disabled = true;
+        cell.classList.add("is-shut");
+      }
 
       var head = document.createElement("span");
       head.className = "thw-theme-row-head";
@@ -2063,7 +2086,34 @@ function compactProfileViewHtml(d) {
         row.appendChild(share);
       }
       if (info.open) row.addEventListener("click", function () { wearFromList(id); });
-      return row;
+      cell.appendChild(row);
+
+      /* The season's story. The ⓘ opens it; the row below keeps wearing. */
+      if (info.history) {
+        var histBtn = document.createElement("span");
+        histBtn.className = "thw-theme-hist";
+        histBtn.setAttribute("role", "button");
+        histBtn.setAttribute("aria-label", "History of " + themeName(id));
+        histBtn.title = "Season history";
+        histBtn.innerHTML = '<i class="fas fa-circle-info"></i>';
+        cell.appendChild(histBtn);
+
+        var hist = document.createElement("span");
+        hist.className = "thw-theme-history";
+        hist.textContent = info.history;
+        cell.appendChild(hist);
+
+        function toggleHist(e) {
+          cell.classList.toggle("hist-open");
+          e.stopPropagation();
+          if (e.preventDefault) e.preventDefault();
+        }
+        histBtn.addEventListener("click", toggleHist);
+        histBtn.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") toggleHist(e);
+        });
+      }
+      return cell;
     }
 
     /* Two hosts show the same seasonal list: the modal opened by the ⓘ
@@ -2080,6 +2130,7 @@ function compactProfileViewHtml(d) {
             when: seasonWindow(entry),
             status: seasonStatus(entry),
             open: seasonalOpen(entry),
+            history: entry.history,
           }));
         }
       }
@@ -2113,6 +2164,22 @@ function compactProfileViewHtml(d) {
         folded = folded === "folded" ? "open" : "folded";
         try { localStorage.setItem(SEASONAL_BLOCK_KEY, folded); } catch (_) {}
         applySeasonalFold();
+      });
+    })();
+
+    /* A switch to turn the decals off - snow is charming until it is not.
+       effects.js owns the layer; this only remembers the choice and tells it
+       to decide again. */
+    (function () {
+      var fxToggle = document.getElementById("seasonalFxToggle");
+      var fxRow = document.getElementById("seasonalFxRow");
+      if (!fxToggle || !fxRow) return;
+      var stored = "";
+      try { stored = localStorage.getItem("thwThemeFx") || "on"; } catch (_) {}
+      fxToggle.checked = stored !== "off";
+      fxToggle.addEventListener("change", function () {
+        try { localStorage.setItem("thwThemeFx", fxToggle.checked ? "on" : "off"); } catch (_) {}
+        try { document.dispatchEvent(new CustomEvent("thw-fx-toggle")); } catch (_) {}
       });
     })();
 
