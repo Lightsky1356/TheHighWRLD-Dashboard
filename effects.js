@@ -25,6 +25,7 @@
     easter: [{ t: "\uD83E\uDD5A" }, { t: "\uD83C\uDF37" }, { t: "\uD83D\uDC23" }],
     july4: [{ t: "\uD83C\uDF86" }, { t: "\uD83C\uDF87" }, { t: "\u2B50", c: "#ffd75e" }],
     halloween: [{ t: "\uD83C\uDF83" }, { t: "\uD83D\uDC7B" }, { t: "\uD83E\uDE87" }],
+    thanksgiving: [{ t: "\uD83C\uDF41" }, { t: "\uD83E\uDD83" }, { t: "\uD83C\uDF42" }],
     christmas: [
       { t: "\u2744", c: "#e0f2ff" }, { t: "\u2745", c: "#e0f2ff" },
       { t: "\u2746", c: "#cfe8ff" }, { t: "\uD83C\uDF84" }

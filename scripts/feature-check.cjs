@@ -1178,9 +1178,9 @@ async function main() {
   })()`);
   check("the info button opens the seasonal panel",
     seasonalPanel && seasonalPanel.buttons === 2 && seasonalPanel.opened === true, JSON.stringify(seasonalPanel).slice(0, 160));
-  check("it lists all seven seasonal themes in season order",
-    seasonalPanel && seasonalPanel.count === 7 &&
-    seasonalPanel.order === "newyear,valentines,stpatricks,easter,july4,halloween,christmas",
+  check("it lists all eight seasonal themes in season order",
+    seasonalPanel && seasonalPanel.count === 8 &&
+    seasonalPanel.order === "newyear,valentines,stpatricks,easter,july4,halloween,thanksgiving,christmas",
     JSON.stringify(seasonalPanel).slice(0, 200));
   check("every row tells what it is, its window and its status",
     seasonalPanel && seasonalPanel.everyRow === true, JSON.stringify(seasonalPanel).slice(0, 200));
@@ -1190,7 +1190,7 @@ async function main() {
   check("the panel's close button closes it", seasonalPanel && seasonalPanel.closed === true,
     JSON.stringify(seasonalPanel).slice(0, 200));
   check("every seasonal row carries a history ⓘ that opens its story",
-    seasonalPanel && seasonalPanel.histBtns === 7 && seasonalPanel.histOpen === true && seasonalPanel.histLen > 60,
+    seasonalPanel && seasonalPanel.histBtns === 8 && seasonalPanel.histOpen === true && seasonalPanel.histLen > 60,
     JSON.stringify({ histBtns: seasonalPanel && seasonalPanel.histBtns, histOpen: seasonalPanel && seasonalPanel.histOpen, histLen: seasonalPanel && seasonalPanel.histLen }));
   check("opening a shut row's history still leaves it unwearable",
     seasonalPanel && seasonalPanel.histStillShut === true, JSON.stringify(seasonalPanel).slice(0, 160));

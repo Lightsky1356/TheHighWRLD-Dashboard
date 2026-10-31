@@ -395,7 +395,7 @@ if (dupes.length) {
  * cannot be named, or cannot be saved, or renders as the default palette with
  * no error anywhere.
  *
- * The seasonal seven carry a fifth detail - a SEASONAL entry saying when they
+ * The seasonal eight carry a fifth detail - a SEASONAL entry saying when they
  * are offered - and that table is checked against the ids the pickers actually
  * mark data-seasonal, so a season added to one file and not the other fails
  * here rather than in July. */
@@ -461,7 +461,7 @@ if (dupes.length) {
   }
 }
 
-/* ---- the seasonal â“˜ panel and the Community Themes page are wired end to end ----
+/* ---- the seasonal ⓘ panel and the Community Themes page are wired end to end ----
  *
  * The seasonal panel keeps its markup. Community Themes was promoted from a
  * popup to a real page where members submit their own themes, so seven files

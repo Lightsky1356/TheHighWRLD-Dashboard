@@ -307,7 +307,7 @@ html[data-theme=default]{
 /* ============================================================================
    Seasonal themes
    ---------------------------------------------------------------------------
-   Seven ordinary themes - same structure, same four base colours so the
+   Eight ordinary themes - same structure, same four base colours so the
    gradient fallback above keeps working - that the picker only offers while
    their season is on. The calendar lives in account.js (SEASONAL); here they
    are just palettes, which is what keeps a chosen one rendering all year with
@@ -378,6 +378,17 @@ html[data-theme=halloween]{
   --ac-grad-pink:linear-gradient(135deg,#f59e0b,#a855f7);
   --th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(251,146,60,.24),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(168,85,247,.24),transparent 55%),radial-gradient(800px 600px at 50% 110%,rgba(251,191,36,.10),transparent 55%),linear-gradient(180deg,#0a0402,#1c0a04 45%,#120508 100%);
   --th-accent:#fb923c;--th-accent2:#a855f7;--th-glow:rgba(251,146,60,.18);--th-glow2:rgba(168,85,247,.12);
+}
+
+/* Thanksgiving - harvest amber and cranberry on November's hearth brown */
+html[data-theme=thanksgiving]{
+  --ac-bg0:#140a02;--ac-bg1:#241304;
+  --ac-purple:#d97706;--ac-pink:#dc2626;--ac-gold:#fbbf24;--ac-orange:#ea580c;--ac-cyan:#fde68a;
+  --ac-grad-brand:linear-gradient(120deg,#ea580c,#d97706,#fde68a,#ea580c);
+  --ac-grad-purple:linear-gradient(135deg,#92400e,#c2410c);
+  --ac-grad-pink:linear-gradient(135deg,#dc2626,#fbbf24);
+  --th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(234,88,12,.22),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(217,119,6,.20),transparent 55%),radial-gradient(800px 600px at 50% 110%,rgba(251,191,36,.12),transparent 55%),linear-gradient(180deg,#140a02,#241304 45%,#1a0e06 100%);
+  --th-accent:#ea580c;--th-accent2:#fbbf24;--th-glow:rgba(234,88,12,.18);--th-glow2:rgba(251,191,36,.12);
 }
 
 /* Christmas - holly red and pine with gold, December */

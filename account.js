@@ -1600,11 +1600,11 @@ function compactProfileViewHtml(d) {
        names itself in the toast after it - the OFFER is gated by SEASONAL
        below, never the recognition. */
     ["newyear", "New Year"], ["valentines", "Valentine's Day"], ["stpatricks", "St. Patrick's Day"],
-    ["easter", "Easter"], ["july4", "Fourth of July"], ["halloween", "Halloween"], ["christmas", "Christmas"]
+    ["easter", "Easter"], ["july4", "Fourth of July"], ["halloween", "Halloween"], ["thanksgiving", "Thanksgiving"], ["christmas", "Christmas"]
   ];
   /* ---------- Seasonal themes ----------
      *
-     * Seven themes anyone may pick, but only while their season is on:
+     * Eight themes anyone may pick, but only while their season is on:
      * Halloween for the whole of October, Christmas for the whole of December,
      * and so on. Easter moves every year, so its window is computed - Good
      * Friday through Easter Monday - rather than written down.
@@ -1631,6 +1631,8 @@ function compactProfileViewHtml(d) {
       history: "July 4, 1776 is the day the Continental Congress adopted the Declaration of Independence. Philadelphia fired fireworks on the first anniversary and the habit stuck; Congress made it an official holiday in 1870. The red-white-and-blue dress code is newer still, mostly 20th-century." },
     { id: "halloween", months: [10], about: "Pumpkin orange and violet - the darkest night of October.",
       history: "October 31 grew out of Samhain, the Celtic turning of the year into winter, when the veil between the living and the dead stood thinnest. Wearing disguises and lighting lanterns began as warding off wandering spirits; Irish arrivals carried the customs to America in the 1800s, where trick-or-treat took shape." },
+    { id: "thanksgiving", months: [11], about: "Harvest amber and deep cranberry for the November feast.",
+      history: "Thanksgiving traces to the 1621 harvest meal at Plymouth, shared between the Wampanoag people and the Mayflower's survivors after their first terrible winter. Presidents Washington and Lincoln each proclaimed days of thanks; Lincoln fixed the last Thursday of November in 1863, and Congress made the fourth Thursday federal law in 1941. Turkey, cranberries and the parade tradition grew from the 19th century onward." },
     { id: "christmas", months: [12], about: "Holly red, pine green and gold for Christmas.",
       history: "December 25 was fixed as Christmas in the 4th century, likely to sit beside the Roman midwinter feasts. Germany's decorated trees spread through the 1800s, and the Victorian era gave the holiday its cards, crackers, carols and family gift-giving." }
   ];

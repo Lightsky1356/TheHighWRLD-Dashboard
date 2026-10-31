@@ -23,7 +23,7 @@ const KNOWN_THEMES = [
   "neon", "blood", "storm", "forest", "sunset", "ice", "candy", "matrix", "cyber",
   "gold", "galaxy", "lava", "toxic", "rose", "oled", "ultraviolet", "pharaoh",
   "dragon", "mint", "tangerine", "grape", "pumpkin", "silver", "midnight",
-  "newyear", "valentines", "stpatricks", "easter", "july4", "halloween", "christmas",
+  "newyear", "valentines", "stpatricks", "easter", "july4", "halloween", "thanksgiving", "christmas",
 ];
 
 /* ---------- Community Themes: the color-slot builder ----------
