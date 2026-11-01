@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v159';
+const VERSION = 'thw-v160';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -54,7 +54,7 @@ const PRECACHE = [
   './tracks.js?v=thw-v10',
   './browser-id3-writer.js?v=thw-v2',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v33',
+  './account.js?v=thw-v34',
   './effects.js?v=thw-v2',
   './i18n.js?v=9',
   './script.js?v=thw-v56',
@@ -72,7 +72,7 @@ const PRECACHE = [
   './style.css?v=thw-v32',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
-  './themes.css?v=thw-v8',
+  './themes.css?v=thw-v9',
   './css2.css?v=thw-v2',
   './about.css?v=thw-v4',
   './fonts/0-Sora-300.woff2',
@@ -153,14 +153,14 @@ const PRECACHE = [
   './community-themes.css?v=thw-v2',
   /* The seasonal holiday art for the panels - precached so the picture is on
      the glass the moment its ⓘ is clicked. Files are tiny SVGs. */
-  './holiday-art/newyear.svg',
-  './holiday-art/valentines.svg',
-  './holiday-art/stpatricks.svg',
-  './holiday-art/easter.svg',
-  './holiday-art/july4.svg',
-  './holiday-art/halloween.svg',
-  './holiday-art/thanksgiving.svg',
-  './holiday-art/christmas.svg',
+  './holiday-art/newyear.jpg',
+  './holiday-art/valentines.jpg',
+  './holiday-art/stpatricks.jpg',
+  './holiday-art/easter.jpg',
+  './holiday-art/july4.jpg',
+  './holiday-art/halloween.jpg',
+  './holiday-art/thanksgiving.jpg',
+  './holiday-art/christmas.jpg',
   './presets.js?v=thw-v3',
   './mobile-player.js?v=thw-v4',
   './follows.js?v=thw-v3',

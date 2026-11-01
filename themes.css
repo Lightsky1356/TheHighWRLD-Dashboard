@@ -490,6 +490,19 @@ html[data-theme=christmas]{
   background:rgba(0,0,0,.45);color:#fff;border:0;border-radius:999px;
   width:30px;height:30px;cursor:pointer;font-size:13px}
 .thw-hist-art{display:block;width:100%;height:190px;object-fit:cover;background:#0b0714}
+/* The photo's credit line sits in the corner of the picture it names.
+   Several of the photos are CC BY / CC BY-SA, which ask to be credited -
+   this is where the credit lives, on the photo itself. */
+.thw-hist-credit{
+  position:absolute;left:0;right:0;bottom:12px;z-index:1;text-align:right;padding:0 14px;pointer-events:none;
+}
+.thw-hist-credit a{
+  display:inline-block;font-size:10px;font-weight:600;letter-spacing:.02em;
+  color:rgba(255,255,255,.92);text-decoration:none;
+  background:rgba(8,5,16,.62);border-radius:999px;padding:3px 9px;
+  pointer-events:auto;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+}
+.thw-hist-credit a:hover{background:rgba(8,5,16,.82)}
 .thw-hist-pad{padding:16px 18px 18px}
 .thw-hist-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .thw-hist-head h3{margin:0;font-size:17px;font-weight:800;color:var(--ac-text,#f2edff)}

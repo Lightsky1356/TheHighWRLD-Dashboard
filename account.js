@@ -2143,7 +2143,21 @@ function compactProfileViewHtml(d) {
        runs, a word on its look and the fuller story. A season that is on
        also offers its Wear button; one that is not simply tells its story.
        The art files sit beside the page (sw.js precaches them), so the
-       picture is there before the button is even clicked. */
+       picture is there before the button is even clicked.
+
+       The pictures are real photos from Wikimedia Commons, not drawings.
+       Their licences let us use them, but several ask to be credited, so
+       every photo carries its credit line in the corner of the panel. */
+    var PHOTO_CREDITS = {
+      newyear:      { author: "Tony Hisgett",     lic: "CC BY 2.0",    page: "https://commons.wikimedia.org/wiki/File:London_New_Year_2016_Fireworks_4_(23521219043).jpg" },
+      valentines:   { author: "Janine",           lic: "CC BY 2.0",    page: "https://commons.wikimedia.org/wiki/File:Red_and_white_bouquet.jpg" },
+      stpatricks:   { author: "Amy Wilson, CSIRO", lic: "CC BY 3.0",    page: "https://commons.wikimedia.org/wiki/File:CSIRO_ScienceImage_3328_White_Clover_Trifolium_repens.jpg" },
+      easter:       { author: "Radka Kapuciánová", lic: "CC BY-SA 3.0", page: "https://commons.wikimedia.org/wiki/File:Vaj%C3%AD%C4%8Dka_zdoben%C3%A1_voskovou_technikou.jpg" },
+      july4:        { author: "Jeremy Nicholson", lic: "CC BY 2.0",    page: "https://commons.wikimedia.org/wiki/File:Fourth_of_July_Fireworks_(3691472851).jpg" },
+      halloween:    { author: "Beth Teutschmann", lic: "CC0 (Unsplash)", page: "https://commons.wikimedia.org/wiki/File:Carved_pumpkin_as_face_(Unsplash).jpg" },
+      thanksgiving: { author: "Patrick Fitzgerald", lic: "CC BY 2.0",  page: "https://commons.wikimedia.org/wiki/File:Thanksgiving_Turkey.jpg" },
+      christmas:    { author: "John Morgan",      lic: "CC BY 2.0",    page: "https://commons.wikimedia.org/wiki/File:Boy_decorating_Christmas_tree.jpg" },
+    };
     function openHolidayPanel(id) {
       var entry = null;
       for (var i = 0; i < SEASONAL.length; i++) {
@@ -2151,7 +2165,14 @@ function compactProfileViewHtml(d) {
       }
       if (!entry) return;
       var art = document.getElementById("holidayArt");
-      if (art) { art.src = "./holiday-art/" + id + ".svg"; art.alt = themeName(id); }
+      if (art) { art.src = "./holiday-art/" + id + ".jpg"; art.alt = themeName(id); }
+      var credit = document.getElementById("holidayCredit");
+      if (credit) {
+        var c = PHOTO_CREDITS[id];
+        credit.innerHTML = c
+          ? "<a href=\"" + c.page + "\" target=\"_blank\" rel=\"noopener\">Photo: " + c.author + " - " + c.lic + "</a>"
+          : "";
+      }
       var nameEl = document.getElementById("holidayName");
       if (nameEl) nameEl.textContent = themeName(id);
       var chip = document.getElementById("holidayChip");
@@ -2204,7 +2225,8 @@ function compactProfileViewHtml(d) {
 
     /* A switch to turn the decals off - snow is charming until it is not.
        effects.js owns the layer; this only remembers the choice and tells it
-       to decide again. */
+       to decide again - and says so, since the layer is at the far edge of
+       the screen and easy to miss either way. */
     (function () {
       var fxToggle = document.getElementById("seasonalFxToggle");
       var fxRow = document.getElementById("seasonalFxRow");
@@ -2215,6 +2237,10 @@ function compactProfileViewHtml(d) {
       fxToggle.addEventListener("change", function () {
         try { localStorage.setItem("thwThemeFx", fxToggle.checked ? "on" : "off"); } catch (_) {}
         try { document.dispatchEvent(new CustomEvent("thw-fx-toggle")); } catch (_) {}
+        toast(fxToggle.checked
+          ? _tt("toastFxOn", "Seasonal effects on - the worn season falls.")
+          : _tt("toastFxOff", "Seasonal effects off - the seasons stay quiet."),
+          fxToggle.checked ? "success" : "info");
       });
     })();
 

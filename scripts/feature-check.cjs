@@ -1222,7 +1222,7 @@ async function main() {
     JSON.stringify(seasonalPanel).slice(0, 200));
   check("every seasonal row carries a history ⓘ that opens the holiday's picture panel",
     seasonalPanel && seasonalPanel.histBtns === 8 && seasonalPanel.histOpen === true &&
-    seasonalPanel.inlineHist === 0 && /^\.\/holiday-art\/[a-z0-9-]+\.svg$/.test(seasonalPanel.art) &&
+    seasonalPanel.inlineHist === 0 && /^\.\/holiday-art\/[a-z0-9-]+\.jpg$/.test(seasonalPanel.art) &&
     seasonalPanel.artReady === true && seasonalPanel.hName.length > 2 &&
     seasonalPanel.histLen > 60 && /[A-Z][a-z]+ 1 - [0-9]+/.test(seasonalPanel.hWhen),
     JSON.stringify({ histBtns: seasonalPanel && seasonalPanel.histBtns, histOpen: seasonalPanel && seasonalPanel.histOpen,
@@ -1267,6 +1267,93 @@ async function main() {
     fx && fx.layer === true && fx.items >= 10 && fx.nonInteractive === true, JSON.stringify(fx));
   check("leaving the season clears the decals",
     fx && fx.goneOnDefault === true, JSON.stringify(fx));
+
+  /* ---- The effects switch says what it did ----
+     Each turn of the switch speaks: on falls, off stays quiet. The switch's
+     own listener writes the choice and tells effects.js; this only reads the
+     toast that speech produced, and puts the switch back as it started. */
+  const fxToast = await cdp.evalJson(`(async function () {
+    var tog = document.getElementById("seasonalFxToggle");
+    if (!tog) return { error: "no fx toggle" };
+    var wasOn = tog.checked;
+    var capture = function () {
+      var nodes = document.querySelectorAll(".gtoast");
+      var n = nodes[nodes.length - 1];
+      if (!n) return { text: "", cls: "" };
+      var t = n.querySelector(".gtoast-text");
+      return { text: t ? t.textContent : "", cls: n.className };
+    };
+    var out3 = {};
+    tog.checked = false;
+    tog.dispatchEvent(new Event("change"));
+    await new Promise(function (r) { setTimeout(r, 120); });
+    out3.off = capture();
+    tog.checked = true;
+    tog.dispatchEvent(new Event("change"));
+    await new Promise(function (r) { setTimeout(r, 120); });
+    out3.on = capture();
+    out3.restored = tog.checked === true;
+    void wasOn;
+    return out3;
+  })()`);
+  check("turning the effects switch off says so in a info toast",
+    fxToast && /Seasonal effects off/i.test(fxToast.off && fxToast.off.text) &&
+    /gtoast--info/.test(fxToast.off.cls), JSON.stringify(fxToast).slice(0, 220));
+  check("turning the effects switch back on says so in a success toast",
+    fxToast && /Seasonal effects on/i.test(fxToast.on && fxToast.on.text) &&
+    /gtoast--success/.test(fxToast.on.cls) && fxToast.restored === true,
+    JSON.stringify(fxToast).slice(0, 220));
+
+  /* ---- Seasonal effects on a phone ----
+     The decals and the seasonal block are not a desktop flourish: on a
+     narrow hand-held viewport the block, its switch and its falling glyphs
+     all still have to be there. This overrides the metrics to a phone, wears
+     a season and reads the same elements the desktop pass did. */
+  await cdp.send("Emulation.setDeviceMetricsOverride", {
+    width: 390, height: 844, deviceScaleFactor: 3, mobile: true,
+  });
+  const fxMobile = await cdp.evalJson(`(function () {
+    return new Promise(function (resolve) {
+      /* The page sections are shown one at a time; the account page has to be
+         the one on screen before its block counts as visible. */
+      try { if (typeof switchAppPage === "function") switchAppPage("account"); } catch (e) {}
+      setTimeout(function () {
+      var root = document.documentElement;
+      var prev = root.getAttribute("data-theme");
+      var blk = document.getElementById("seasonalBlock");
+      var row = document.getElementById("seasonalFxRow");
+      var tog = document.getElementById("seasonalFxToggle");
+      var vis = function (el) {
+        if (!el) return false;
+        var cs = getComputedStyle(el);
+        var r = el.getBoundingClientRect();
+        return cs.display !== "none" && cs.visibility !== "hidden" && r.width > 100 && r.height > 10;
+      };
+      var out4 = {
+        block: vis(blk), row: vis(row), toggle: !!tog,
+        listRows: (document.getElementById("seasonal-themes-list") || document.getElementById("seasonal-themes-block") || { children: [] }).children.length,
+      };
+      root.setAttribute("data-theme", "halloween");
+      setTimeout(function () {
+        var layer = document.querySelector(".thw-fx");
+        out4.layer = !!layer;
+        out4.items = layer ? layer.children.length : 0;
+        root.setAttribute("data-theme", prev);
+        setTimeout(function () {
+          out4.goneOnDefault = !document.querySelector(".thw-fx");
+          resolve(out4);
+        }, 160);
+      }, 160);
+      }, 160);
+    });
+  })()`);
+  check("on a phone the seasonal block, its switch and the decals all appear",
+    fxMobile && fxMobile.block === true && fxMobile.row === true && fxMobile.toggle === true &&
+    fxMobile.layer === true && fxMobile.items >= 10 && fxMobile.goneOnDefault === true,
+    JSON.stringify(fxMobile).slice(0, 200));
+  await cdp.send("Emulation.setDeviceMetricsOverride", {
+    width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+  });
 
   /* ---- Community Themes: the page where members submit their own ---- */
 

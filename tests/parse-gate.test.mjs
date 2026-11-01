@@ -534,9 +534,11 @@ if (dupes.length) {
     !page.includes('id="holidayHistory"') || !page.includes('id="holidayWear"'))
     structureFail("index.html has no holiday panel markup behind the modal");
   else if (!swJs.includes("./holiday-art/")) structureFail("the service worker does not precache the holiday art");
-  else if (!acct.includes("openHolidayPanel") || !acct.includes('holiday-art/" + id + ".svg"') ||
-    !acct.includes("seasonalHistoryModal"))
-    structureFail("account.js does not open the holiday panel or point the art at holiday-art/");
+  else if (!themesCss.includes(".thw-hist-credit") || !page.includes('id="holidayCredit"'))
+    structureFail("the holiday photo credit line has no markup or no styling");
+  else if (!acct.includes("openHolidayPanel") || !acct.includes('holiday-art/" + id + ".jpg"') ||
+    !acct.includes("seasonalHistoryModal") || !acct.includes("PHOTO_CREDITS"))
+    structureFail("account.js does not open the holiday panel, point the art at holiday-art/ or credit the photos");
   else structureOk("each row's ⓘ opens a picture panel with its story, and effects.js paints the worn season");
 
   const btnCount = (page.match(/class="thw-theme-info"/g) || []).length;
