@@ -166,7 +166,7 @@
        (a real Pages Function page) are deliberately left alone so they still
        perform a genuine navigation. */
     var SPROUTES = {
-      "/TOS": "tos", "/PP": "pp", "/DMCA": "dmca",
+      "/TOS": "tos", "/PP": "pp", "/DMCA": "dmca", "/Copyright": "copyright",
       "/wanted": "wanted", "/suggestions": "suggestions",
       "/account": "account", "/roadmap": "roadmap"
     };

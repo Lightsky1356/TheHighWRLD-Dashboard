@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v160';
+const VERSION = 'thw-v161';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -51,13 +51,13 @@ const PRECACHE = [
   './crypto-js.min.js?v=thw-v2',
   './qrcode.min.js?v=thw-v2',
   './toast.js?v=thw-v1',
-  './tracks.js?v=thw-v10',
+  './tracks.js?v=thw-v11',
   './browser-id3-writer.js?v=thw-v2',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v34',
+  './account.js?v=thw-v35',
   './effects.js?v=thw-v2',
   './i18n.js?v=9',
-  './script.js?v=thw-v56',
+  './script.js?v=thw-v57',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v8',
@@ -115,7 +115,7 @@ const PRECACHE = [
   /* --- page stylesheets --- */
   './roadmap.css?v=thw-v25',
   './failed-projects.css?v=thw-v5',
-  './legal-info.css?v=thw-v4',
+  './legal-info.css?v=thw-v5',
   './simple-toast.css?v=thw-v3',
   './cover-preview.css?v=thw-v5',
 
@@ -167,7 +167,7 @@ const PRECACHE = [
   './privacy.js?v=thw-v4',
   './playlists-ui.js?v=thw-v6',
   './drops.js?v=thw-v4',
-  './legal-info.js?v=thw-v5',
+  './legal-info.js?v=thw-v6',
   './grammar-check.js?v=thw-v2',
   './social-panel.js?v=thw-v43',
   './push-client.js?v=thw-v23',

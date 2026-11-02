@@ -150,6 +150,7 @@
 .legal-info-link[data-accent="tos"]        { --accent: 245, 158, 11; }
 .legal-info-link[data-accent="privacy"]    { --accent: 34, 211, 238; }
 .legal-info-link[data-accent="dmca"]       { --accent: 167, 139, 250; }
+.legal-info-link[data-accent="copyright"]  { --accent: 249, 115, 22; }
 .legal-info-link[data-accent="wanted"]     { --accent: 52, 211, 153; }
 .legal-info-link[data-accent="suggestions"]{ --accent: 250, 204, 21; }
 .legal-info-link[data-accent="discord"]    { --accent: 129, 140, 248; }
