@@ -13,5 +13,8 @@
     "dev:all": "wrangler pages dev . --port 8789 & node scripts/dev-server.cjs",
     "tokens:check": "node scripts/check-tokens.mjs",
     "tokens:bump": "node scripts/bump-token.mjs"
+  },
+  "devDependencies": {
+    "jimp": "^0.22.12"
   }
 }

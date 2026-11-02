@@ -3188,5 +3188,41 @@ const trackList=[
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Cheat%20Code.png",
     producer: "Marshmello & Southside",
     year: "2018"
+  },
+  {
+    title: "Militia",
+    tag: "Militia (One)",
+    artist: "Juice WRLD",
+    altnames: [".40 On My Hip","One","Outside"],
+    category: "leaks",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Militia%20(One).mp3",
+    duration: 166,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Militia.png",
+    producer: "Pi'erre Bourne",
+    year: "2018"
+  },
+  {
+    title: "Eye Contact, Mind Control (Sessions)",
+    tag: "Eye Contact (Mind Control) (Sessions) (GB&GR)",
+    artist: "Juice WRLD",
+    altnames: ["Eye Contact, Mind Control (v1)"],
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Eye%20Contact%20(Mind%20Control)%20(Sessions)%20(GB%26GR).mp3",
+    duration: 1055,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Eye%20Contact.png",
+    producer: "Edsclusive & iBeatz",
+    year: "2018"
+  },
+  {
+    title: "Calm Down (Sessions)",
+    tag: "Calm Down (Murciélago) (Sessions) (OUT)",
+    artist: "Juice WRLD",
+    altnames: ["Murciélago"],
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Calm%20Down%20(Murci%C3%A9lago)%20(Sessions)%20(OUT).mp3",
+    duration: 369,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Calm%20Down.png",
+    producer: "CuBeatz & Gezin",
+    year: "2019"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});

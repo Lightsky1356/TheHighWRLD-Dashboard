@@ -1,0 +1,48 @@
+# Auto-sync: watches the audio repo for new songs and mirrors them into
+# tracks.js + the cover gradient table. Runs blind, so the script is dry-run
+# by default and this workflow only enables writes through its inputs.
+name: Track Sync
+
+on:
+  schedule:
+    # every 30 minutes
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (logs what it would add, writes nothing)"
+        type: boolean
+        default: false
+
+# the script pushes commits itself, so it needs write access
+permissions:
+  contents: write
+
+# never let two runs race on the same files; the latest run supersedes
+concurrency:
+  group: track-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # jimp is only used to decode the JPEG-in-png-name covers; install it
+      # without touching package.json
+      - name: Install jimp
+        run: npm install --no-save jimp --no-audit --no-fund
+
+      - name: Run track sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTO_SYNC_WRITE: "1"
+          AUTO_SYNC_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true && '0' || '1' }}
+        run: node scripts/auto-sync-tracks.cjs
