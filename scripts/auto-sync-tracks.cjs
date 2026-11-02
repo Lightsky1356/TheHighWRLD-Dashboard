@@ -40,6 +40,7 @@ const { execFileSync } = require("child_process");
 const ROOT = path.join(__dirname, "..");
 const TRACKS_JS = path.join(ROOT, "tracks.js");
 const SCRIPT_JS = path.join(ROOT, "script.js");
+const WRLDLOG_JS = path.join(ROOT, "wrldlog-data.js");
 /* The songs and the covers live in a repo of their own - the dashboard repo
    only references them by raw.githubusercontent URL. */
 const AUDIO_REPO = process.env.SYNC_AUDIO_REPO || "Lightsky1356/TheHighWRLD";
@@ -49,6 +50,10 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 const COMMIT = process.env.AUTO_SYNC_COMMIT === "1";
 const DRY = !COMMIT && process.env.AUTO_SYNC_WRITE !== "1";
 const BRANCH = process.env.SYNC_BRANCH || "main";
+/* How many new songs in one run turn into a WRLD LOG release note. One quiet
+   addition ships silently; a batch gets its own version entry (set it to 0 to
+   log every single addition). */
+const LOG_MIN = Math.max(0, parseInt(process.env.AUTO_SYNC_LOG_MIN || "2", 10) || 0);
 
 const RAW = "https://raw.githubusercontent.com/" + AUDIO_REPO + "/" + BRANCH + "/";
 const API = "https://api.github.com/repos/" + AUDIO_REPO + "/contents/";
@@ -486,6 +491,7 @@ function coverFor(stem, coverFiles) {
   else if (!COMMIT) log("WRITE MODE - files are changed, nothing is committed.");
 
   let added = 0, missingMeta = 0, missingCover = 0;
+  const addedTitles = [];
 
   for (const file of newFiles) {
     log("- " + file);
@@ -578,6 +584,14 @@ function coverFor(stem, coverFiles) {
       log(entry.split("\n").map((l) => "     " + l.trim()).join("\n"));
     }
     added++;
+    addedTitles.push(title);
+  }
+
+  /* a batch of new songs is a release: add its WRLD LOG entry, in the same
+     notes style as earlier "N new tracks" notes (see v3.0 / v4.5). */
+  let loggedEntryVersion = "";
+  if (addedTitles.length >= LOG_MIN) {
+    loggedEntryVersion = ensureLogEntry(addedTitles);
   }
 
   /* self-heal: an existing track can still be missing its gradient key - a
@@ -613,7 +627,7 @@ function coverFor(stem, coverFiles) {
   log("summary: " + added + " new song(s) processed (" + missingMeta + " without metadata, " + missingCover + " without a cover)" + (backfilled ? "; " + backfilled + " gradient key(s) backfilled" : ""));
 
   if (COMMIT && (added > 0 || backfilled > 0)) {
-    commitAndPush(["tracks.js", "script.js"]);
+    commitAndPush(["tracks.js", "script.js", "wrldlog-data.js"]);
   }
 })().catch(function (err) {
   warn("fatal: " + (err && err.message ? err.message : err));
@@ -621,6 +635,57 @@ function coverFor(stem, coverFiles) {
 });
 
 /* ----------------------------------------------------------- file surgery */
+
+/* A batch of songs added by the pipeline is itself a release. wrldlog-data.js
+   holds every version, newest first, and wrldlog.js renders whatever is in
+   there - so the log entry is appended to the data, never to the DOM. Format
+   matched to the older "N new tracks" notes (v3.0 / v4.5). Returns the new
+   version tag, or "" when nothing was written (dry run, threshold, or a
+   wrldlog-data.js that someone has since renumbered unexpectedly). */
+function ensureLogEntry(titles) {
+  var src;
+  try {
+    src = fs.readFileSync(WRLDLOG_JS, "utf8");
+  } catch (e) {
+    warn("wrldlog-data.js is unreadable; no release noted");
+    return "";
+  }
+  var start = src.indexOf("window.THW_WRLDLOG = [");
+  if (start < 0) { warn("no window.THW_WRLDLOG array; no release noted"); return ""; }
+  var bracket = start + "window.THW_WRLDLOG = [".length;
+  var newest = /^\s+version: "(v\d+\.\d)"/m.exec(src.slice(bracket));
+  if (!newest) { warn("could not read the newest WRLD LOG version; no release noted"); return ""; }
+  var next = nextLogVersion(newest[1]);
+  if (next === "" || src.indexOf('version: "' + next + '"') >= 0) {
+    warn("WRLD LOG version " + next + " is unavailable; skipping the release note");
+    return "";
+  }
+  if (DRY) {
+    log("(dry run) would note release " + next + ": " + titles.length + " new track(s)");
+    return "";
+  }
+  var names = titles.join(", ");
+  var notes = titles.length + " new tracks: " + names +
+    " - added by the vault auto-sync, each with its own cover & gradient";
+  var entry = "  {\n" +
+    "    version: " + JSON.stringify(next) + ",\n" +
+    "    title: \"" + titles.length + " new tracks, added by the vault auto-sync\",\n" +
+    "    notes: " + JSON.stringify(notes) + ",\n" +
+    "  },";
+  src = src.slice(0, bracket + 1) + "\n" + entry + src.slice(bracket + 1);
+  fs.writeFileSync(WRLDLOG_JS, src);
+  log("wrldlog: added release note " + next + " (" + titles.length + " new track(s))");
+  return next;
+}
+
+/* v4.6 -> v4.7; at v4.9 the next release becomes v5.0, so the sequence
+   never leaves a hole. "" when the label cannot be parsed. */
+function nextLogVersion(v) {
+  var m = /^v(\d+)\.(\d)$/.exec(String(v));
+  if (!m) return "";
+  var a = Number(m[1]), b = Number(m[2]);
+  return b >= 9 ? "v" + (a + 1) + ".0" : "v" + a + "." + (b + 1);
+}
 
 /* tracks.js ends with the array close ("];") and then the sort call. New
    entries go before the close, with a comma after the previous entry. */
