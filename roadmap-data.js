@@ -94,10 +94,26 @@
     {
       id: "discord-rich-presence",
       title: "Discord Rich Presence",
-      description: "The desktop app reports what you are listening to to your Discord profile: a locked-down preload, the Discord IPC connection in the main process, and the player pushing the current track. Presence keeps trying when Discord is closed, and the settings panel says whether it is really connected.",
+      description: "The desktop app reports what you are listening to to your Discord profile: a locked-down preload, the Discord IPC connection in the main process, and the player pushing the current track. Presence keeps trying when Discord is closed, and the settings panel says whether it is really connected. It now reports on every track switch and re-reports after a seek so the progress line on your profile matches the player.",
       status: "completed",
       category: ["desktop"],
-      lastUpdated: "2026-10-04"
+      lastUpdated: "2026-11-02"
+    },
+    {
+      id: "vault-auto-sync",
+      title: "Vault auto-sync",
+      description: "A GitHub Actions job checks the audio repository every 30 minutes and adds any new song to the vault on its own - producer, alt names and year from metadata sources, duration decoded from the MP3 frames, plus a gradient computed from the cover art. A backfill pass repairs missing gradient keys for tracks that are already in the vault.",
+      status: "completed",
+      category: ["other"],
+      lastUpdated: "2026-11-02"
+    },
+    {
+      id: "copyright-information",
+      title: "IFPI / RIAA Copyright Information",
+      description: "A dedicated /Copyright page inside Legal & Info: what IFPI and the RIAA are, the site's non-affiliation with rights holders, what a valid rights-holder request must identify, and how enforcement is handled. Linked from the DMCA policy too.",
+      status: "completed",
+      category: ["other"],
+      lastUpdated: "2026-11-02"
     },
     {
       id: "roadmap-system",

@@ -198,10 +198,16 @@
     var audio = document.querySelector('audio');
     if(audio){
       /* loadstart and emptied catch a track change that never touches the title,
-         and durationchange fires when a real length finally arrives */
-      ['play','pause','ended','loadstart','emptied','loadedmetadata','durationchange'].forEach(function(ev){
+         and durationchange fires when a real length finally arrives; seeked
+         catches a scrub, which rewinds the position without touching the title
+         - without it the start timestamp stops matching the player */
+      ['play','pause','ended','loadstart','emptied','loadedmetadata','durationchange','seeked'].forEach(function(ev){
         audio.addEventListener(ev, scheduleDrpReport);
       });
+      /* Discord rate-limits updates (the main process retries and dedupes), so a
+         slow beat is enough here: this catches a switch whose event lands after
+         one of the bursts above, plus any drift the observers miss entirely. */
+      setInterval(scheduleDrpReport, 4000);
     }
     if(typeof window.highwrld.onDrpEvent === 'function'){
       var drpUnavailable = 'Discord Rich Presence needs the Discord desktop app running, and this build has no Discord client id yet.';

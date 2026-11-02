@@ -33,6 +33,12 @@
 
 window.THW_WRLDLOG = [
   {
+    version: "v4.7",
+    title: "Auto Sync, 10 New Tracks & the IFPI / RIAA Copyright Page",
+    chips: ["10 new tracks added — Floating, Heart Racing, Hop Out, Smith & Wesson, Royer (Sessions), The Party Never Ends (Sessions), Spanglish (Sessions), Cheat Code (Sessions), Time (Sessions) & Calm Down (Sessions), each with its own cover & gradient", "Auto Sync — a GitHub Actions job now checks the audio repo every 30 minutes, adds new songs to the vault on its own (producer, alt names & year from metadata, gradient computed from the artwork), and repairs missing gradient keys on existing tracks", "IFPI / RIAA Copyright Information — a new /Copyright page inside Legal & Info covering rights-holder requests, ownership and non-affiliation", "Discord Rich Presence reports every track switch and keeps its progress honest after you scrub"],
+    notes: "Auto Sync, 10 New Tracks & the IFPI / RIAA Copyright Page · 10 new tracks added — Floating, Heart Racing, Hop Out, Smith & Wesson, Royer (Sessions), The Party Never Ends (Sessions), Spanglish (Sessions), Cheat Code (Sessions), Time (Sessions) & Calm Down (Sessions), each with its own cover & gradient · Auto Sync — a GitHub Actions job now checks the audio repo every 30 minutes, adds new songs to the vault on its own (producer, alt names & year from metadata, gradient computed from the artwork), and repairs missing gradient keys on existing tracks · IFPI / RIAA Copyright Information — a new /Copyright page inside Legal & Info covering rights-holder requests, ownership and non-affiliation · Discord Rich Presence reports every track switch and keeps its progress honest after you scrub",
+  },
+  {
     version: "v4.6",
     title: "Friends & Messages, House Rules & Failed Projects",
     chips: ["Friends & Messages — add friends, see who is around, and hold private conversations, from a panel beside the Community menu", "House Rules — a Rules panel inside Friends & Messages: what is allowed, what to do if something goes wrong, and how to block or report someone", "Failed Projects — a new Community page collecting the features that were built and then dropped, and why each one went away, so the same dead ends do not get picked up twice", "The Rules panel locks the page behind it, and on phones the Friends & Messages panel does too, so neither can scroll out from under you"],
