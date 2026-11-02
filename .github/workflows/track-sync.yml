@@ -43,6 +43,8 @@ jobs:
       - name: Run track sync
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AUTO_SYNC_WRITE: "1"
-          AUTO_SYNC_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true && '0' || '1' }}
+          # dry dispatch: neither flag is set, so the script logs its finds
+          # and writes nothing; everything else runs write+commit+push
+          AUTO_SYNC_WRITE: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '' || '1' }}
+          AUTO_SYNC_COMMIT: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '' || '1' }}
         run: node scripts/auto-sync-tracks.cjs
