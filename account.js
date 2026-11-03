@@ -2837,16 +2837,39 @@ function compactProfileViewHtml(d) {
       else window.location.href = "/api/auth/logout";
     });
     if (!includeSections) return;
+    /* The saved view is applied BEFORE the grid is filled, in the same
+       synchronous task as the innerHTML swap - the browser cannot paint in
+       between, so a re-render (realtime profile updates re-run this) starts
+       in the view the user chose and never flashes the other layout. */
     var tg = host.querySelector("[data-fav-toggle]");
+    applySavedFavView(host, tg);
     if (tg) tg.addEventListener("click", function () {
-      host.classList.toggle("cmp-list");
+      var list = host.classList.toggle("cmp-list");
+      try { localStorage.setItem(FAV_VIEW_KEY, list ? "list" : "grid"); } catch (e) {}
       var ic = tg.querySelector("i");
-      if (ic) ic.className = host.classList.contains("cmp-list") ? "fas fa-list" : "fas fa-table-cells-large";
+      if (ic) ic.className = list ? "fas fa-list" : "fas fa-table-cells-large";
     });
     var fg = host.querySelector(".cmp-fav-grid");
     if (fg) { renderFavRows((_data && _data.favorites) || [], true, fg); bindFavGrid(fg); }
     var pg = host.querySelector(".cmp-pl-grid");
     if (pg) { renderPlaylistsRows((_data && _data.playlists) || [], true, pg); bindPlGrid(pg); }
+  }
+  /* Favourites grid vs list: the choice lives for the whole site and survives
+     reloads. "grid" is the default; a corrupt or odd value falls back to it. */
+  var FAV_VIEW_KEY = "thwFavView";
+  function readSavedFavView() {
+    try {
+      var v = localStorage.getItem(FAV_VIEW_KEY);
+      return v === "list" ? "list" : "grid";
+    } catch (e) { return "grid"; }
+  }
+  function applySavedFavView(host, tg) {
+    var list = readSavedFavView() === "list";
+    host.classList.toggle("cmp-list", list);
+    if (tg) {
+      var ic = tg.querySelector("i");
+      if (ic) ic.className = list ? "fas fa-list" : "fas fa-table-cells-large";
+    }
   }
   function renderSelfProfilePage() {
     var body = document.getElementById("profilePageBody");

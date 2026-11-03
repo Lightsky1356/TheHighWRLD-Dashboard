@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v163';
+const VERSION = 'thw-v164';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -54,7 +54,7 @@ const PRECACHE = [
   './tracks.js?v=thw-v11',
   './browser-id3-writer.js?v=thw-v2',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v35',
+  './account.js?v=thw-v36',
   './effects.js?v=thw-v2',
   './i18n.js?v=9',
   './script.js?v=thw-v57',
@@ -68,8 +68,8 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v4',
-  'player-settings.css?v=thw-v67',
-  './style.css?v=thw-v32',
+  'player-settings.css?v=thw-v68',
+  './style.css?v=thw-v33',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
   './themes.css?v=thw-v9',

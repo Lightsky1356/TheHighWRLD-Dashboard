@@ -338,10 +338,12 @@ footer .hub-panel select{border-color:var(--th-border2)}
    row that has to give way, not the text. */
 .cmp-profile-host .fav-card{min-width:0}
 .cmp-profile-host .fav-info{min-width:0}
-.cmp-profile-host .fav-art{aspect-ratio:auto;width:62px;height:62px;border-radius:12px;flex-shrink:0}
+/* The small-art row shape belongs to the compact LIST only; the card grid
+   keeps its full-width square art. */
+.cmp-profile-host.cmp-list .fav-art{aspect-ratio:auto;width:72px;height:72px;border-radius:12px;flex-shrink:0}
 .cmp-profile-host.cmp-list .fav-zoom{display:none}
 .cmp-profile-host.cmp-list .fav-info{flex:1;min-width:0;padding:8px 12px 8px 0}
-.cmp-profile-host.cmp-list .fav-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cmp-profile-host .pl-card{padding:16px;display:flex;gap:14px;align-items:center;background:var(--ac-glass);border:1px solid var(--ac-border);border-radius:var(--ac-radius);transition:border-color .2s,transform .2s}
+.cmp-profile-host.cmp-list .fav-name{font-size:13px}.cmp-profile-host .pl-card{padding:16px;display:flex;gap:14px;align-items:center;background:var(--ac-glass);border:1px solid var(--ac-border);border-radius:var(--ac-radius);transition:border-color .2s,transform .2s}
 .cmp-profile-host .pl-card:hover{border-color:var(--ac-border2);transform:translateY(-1px)}
 .cmp-profile-host .pl-cover{width:68px;height:68px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;color:rgba(255,255,255,.85);background:linear-gradient(135deg,#7c3aed,#db2777);box-shadow:0 8px 22px rgba(124,58,237,.35);position:relative;overflow:hidden}
 .cmp-profile-host .pl-cover .play-hover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);opacity:0;transition:opacity .2s;font-size:18px;color:#fff}
