@@ -7,9 +7,9 @@
    For every new mp3 that is not already in tracks.js (judged by its core
    title - the stem with the era, version and alias parens stripped; v3
    copies of a song that already has an entry are deliberately skipped):
-     1. it looks up the Producer(s), Alt Name(s) and Year from JuiceWRLDAPI
-        (juicewrldapi.com) - JuiceVault (juicevault.xyz) is tried when the
-        first source answers nothing;
+     1. it looks up the Producer(s), Alt Name(s) and Year from juicewrld.io's
+        tracker (NEW, /api/index - cached for a day) - juicewrldapi.com is
+        tried next, and JuiceVault (juicevault.xyz) when both answer nothing;
      2. it downloads the mp3 and reads its real duration straight from the
         frame headers (no dependencies - the parser is about a page of code);
      3. it finds the cover png for it in Covers/; when there is one, it decodes
@@ -35,6 +35,7 @@ const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 const https = require("https");
+const os = require("os");
 const { execFileSync } = require("child_process");
 
 const ROOT = path.join(__dirname, "..");
@@ -153,8 +154,101 @@ const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 /* ------------------------------------------------------------- JuiceWRLDAPI */
 
 function firstYear(text) {
-  const m = (text || "").match(/\b(?:19|20)\d{2}\b/);
+  const m = (String(text || "")).match(/\b(?:19|20)\d{2}\b/);
   return m ? m[0] : "";
+}
+
+/* --------------------------------------------------- juicewrld.io (NEW) */
+
+/* juicewrld.io publishes the whole tracker as one JSON document at /api/index:
+   every entry carries the producer (pr), the aka/alt title (alt), the recorded
+   and released dates (rec / pv / out) and the era. 2,853 entries / ~1.8 MB, so
+   it is fetched once and cached for a day in the OS temp dir - the 30-minute
+   cron then never re-downloads it between runs. */
+const JIO_URL = "https://juicewrld.io/api/index";
+const JIO_CACHE = path.join(os.tmpdir(), "juicewrld-io-index.json");
+const JIO_TTL = 24 * 60 * 60 * 1000;
+let jioIndexPromise = null;
+
+function jioBuildIndex(songs) {
+  const map = new Map();
+  const put = (key, entry) => {
+    if (!key) return;
+    /* prefer entries that actually know their producer when a title key is
+       shared by several versions */
+    const existing = map.get(key);
+    if (existing && existing.pr && !entry.pr) return;
+    map.set(key, entry);
+  };
+  for (const s of songs) {
+    put(norm(s.t || ""), s);
+    put(norm(String(s.alt || s.alts || "").toString()), s);
+    put(norm((s.t || "").replace(/\([^()]*\)/g, " ")), s);
+    put(norm((s.alt || s.alts || "").toString().replace(/\([^()]*\)/g, " ")), s);
+  }
+  return map;
+}
+
+function jioIndex() {
+  if (jioIndexPromise) return jioIndexPromise;
+  jioIndexPromise = new Promise(function (resolve) {
+    try {
+      const cached = JSON.parse(fs.readFileSync(JIO_CACHE, "utf8"));
+      if (cached && Array.isArray(cached.songs) && cached.songs.length &&
+          Date.now() - Number(cached.fetchedAt || 0) < JIO_TTL) {
+        return resolve(jioBuildIndex(cached.songs));
+      }
+    } catch (_) { /* no cache yet */ }
+    resolve(null);
+  }).then(function (fromCache) {
+    if (fromCache) return fromCache;
+    return get(JIO_URL, { timeout: 60000 }).then(function (r) {
+      if (r.status !== 200) return null;
+      let raw;
+      try { raw = JSON.parse(r.body.toString("utf8")); } catch (_) { return null; }
+      if (!raw || !Array.isArray(raw.songs) || !raw.songs.length) return null;
+      try { fs.writeFileSync(JIO_CACHE, JSON.stringify({ fetchedAt: Date.now(), songs: raw.songs })); } catch (_) {}
+      return jioBuildIndex(raw.songs);
+    });
+  });
+  return jioIndexPromise;
+}
+
+function metadataFromJuiceIO(core, bare) {
+  return jioIndex().then(function (map) {
+    if (!map) return null;
+    /* the tracker indexes songs both by their main title and their aka; the
+       searchless lookup tries every shape the filename can produce. */
+    const keys = [
+      norm(bare), norm(core),
+      norm((core || "").replace(VERSION_RE, " ")),
+      bareKey(core), bareKey(bare),
+    ];
+    let entry = null;
+    for (const k of keys) {
+      if (k && map.has(k)) { entry = map.get(k); break; }
+    }
+    if (!entry) {
+      /* containment: the shortest tracker title the filename starts with wins */
+      const bareTarget = bareKey(core);
+      let bestLen = 0;
+      for (const [key, e] of map) {
+        if (!key || key.length < 4 || !bareTarget.startsWith(key)) continue;
+        if (key.length > bestLen && e.pr) { bestLen = key.length; entry = e; }
+      }
+    }
+    if (!entry) return null;
+    const pr = Array.isArray(entry.pr) ? entry.pr.join(", ") : String(entry.pr || "");
+    const alts = [].concat(String(entry.alt || entry.alts || "").toString()).filter(Boolean);
+    return {
+      source: "juicewrld.io",
+      name: entry.t || "",
+      producers: pr,
+      trackTitles: alts,
+      year: firstYear(entry.rec) || firstYear(entry.pv) ||
+        firstYear(entry.recT) || firstYear(entry.out) || "",
+    };
+  });
 }
 
 function metadataFromJuiceAPI(core, bare) {
@@ -229,9 +323,14 @@ function bareTitle(s) {
 function metadataFor(core, bare) {
   /* q: the readable title - "Calm Down", not "calmdown". */
   const q = bare ? bareTitle(bare) : bareTitle(core);
-  return metadataFromJuiceAPI(core, q).then(function (a) {
+  /* juicewrld.io's tracker data first (newest, keeps aka titles and recorded
+     dates), then the older API sites when the tracker has not heard of it. */
+  return metadataFromJuiceIO(core, q).then(function (a) {
     if (a) return a;
-    return metadataFromJuiceVault(q);
+    return metadataFromJuiceAPI(core, q).then(function (b) {
+      if (b) return b;
+      return metadataFromJuiceVault(q);
+    });
   });
 }
 

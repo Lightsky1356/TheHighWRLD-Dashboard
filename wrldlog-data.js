@@ -39,6 +39,12 @@
 
 window.THW_WRLDLOG = [
   {
+    version: "v4.7",
+    title: "Owner Vault Sync",
+    chips: ["New Owner Dashboard tab scans the audio repo","Shows the exact diff the next track-sync writes to tracks.js","Producer, year and alt names preview for every new song","Auto-rescan timer and next-sync countdown"],
+    notes: "Owner Vault Sync · New Owner Dashboard tab scans the audio repo · Shows the exact diff the next track-sync writes to tracks.js · Producer, year and alt names preview for every new song · Auto-rescan timer and next-sync countdown",
+  },
+  {
     version: "v4.6",
     title: "Auto Sync, 10 New Tracks & the IFPI / RIAA Copyright Page",
     chips: ["10 new tracks added — Floating, Heart Racing, Hop Out, Smith & Wesson, Royer (Sessions), The Party Never Ends (Sessions), Spanglish (Sessions), Cheat Code (Sessions), Time (Sessions) & Calm Down (Sessions), each with its own cover & gradient", "Auto Sync — a GitHub Actions job now checks the audio repo every 30 minutes, adds new songs to the vault on its own (producer, alt names & year from metadata, gradient computed from the artwork), and repairs missing gradient keys on existing tracks", "IFPI / RIAA Copyright Information — a new /Copyright page inside Legal & Info covering rights-holder requests, ownership and non-affiliation", "Discord Rich Presence reports every track switch and keeps its progress honest after you scrub"],
