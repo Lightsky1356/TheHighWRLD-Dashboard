@@ -30,6 +30,7 @@
   var lastTreeTs = 0;      /* timestamp of the last successful repo fetch */
   var timer = null;
   var scanning = false;
+  var AUTOSYNC_URL = "/api/autosync";
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -324,6 +325,54 @@
     });
   }
 
+  /* --------------------------------------------------- Auto Sync switch */
+
+  function ownerCode() {
+    try { return localStorage.getItem("ownerCode") || ""; } catch (e) { return ""; }
+  }
+  function syncStatus(txt) {
+    if (els.masterStatus) els.masterStatus.textContent = txt;
+  }
+  function loadAutoSyncState() {
+    if (!els.master) return;
+    els.master.disabled = true;
+    fetch(AUTOSYNC_URL).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+      .then(function (d) {
+        els.master.disabled = false;
+        if (!d || d.ok === false) { syncStatus("state unreadable right now"); return; }
+        els.master.checked = d.enabled !== false;
+        if (d.updated_at) {
+          var dt = new Date(d.updated_at);
+          if (!isNaN(dt.getTime())) {
+            syncStatus("changed " + (dt.getMonth() + 1) + "/" + dt.getDate() + " " +
+              String(dt.getHours()).padStart(2, "0") + ":" + String(dt.getMinutes()).padStart(2, "0"));
+            return;
+          }
+        }
+        syncStatus("");
+      });
+  }
+  function setAutoSync(enabled) {
+    if (!els.master) return;
+    els.master.disabled = true;
+    syncStatus("saving...");
+    fetch(AUTOSYNC_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: ownerCode(), enabled: !!enabled }),
+    }).then(function (r) { return r.json(); }).catch(function () { return null; })
+      .then(function (d) {
+        els.master.disabled = false;
+        if (d && d.ok) {
+          syncStatus(enabled ? "the pipeline will write again" : "the pipeline now does nothing on its own");
+        } else {
+          /* wrong/missing passcode or the network: put the switch back */
+          els.master.checked = !enabled;
+          syncStatus((d && d.error === "forbidden") ? "unlock the dashboard first" : "could not reach the switch");
+        }
+      });
+  }
+
   /* ------------------------------------------------------------------ timer */
 
   function tick() {
@@ -350,12 +399,22 @@
     els.panel.innerHTML =
       '<div class="vs-head">' +
       '<div class="vs-title">Scan for New Songs/Covers</div>' +
-      '<div class="vs-sub">Reads the audio repo and compares it to the vault with the same rules the track-sync pipeline uses, so this list is exactly what the next sync writes into tracks.js. The pipeline runs every 30 minutes.</div>' +
+      '<div class="vs-sub">Reads the audio repo and compares it to the vault with the same rules the track-sync pipeline uses, so this list is exactly what the next sync writes into tracks.js. The pipeline runs every 30 minutes when Auto Sync is ON.</div>' +
       '</div>' +
       '<div class="vs-actions">' +
       '<button type="button" id="vs-scan-btn" class="vs-btn"><i class="fas fa-magnifying-glass"></i> Scan for New Songs/Covers</button>' +
-      '<label class="vs-auto"><input type="checkbox" id="vs-auto-toggle"> auto-rescan every ' + AUTO_MIN + ' min</label>' +
-      '<span class="vs-next" id="vs-next"></span>' +
+      '</div>' +
+      '<div class="vs-switchrow">' +
+      '<label class="vs-switch"><input type="checkbox" id="vs-auto-toggle"><span class="vs-slider"></span></label>' +
+      '<div class="vs-switchtext"><span class="vs-switch-title">Auto-rescan timer</span>' +
+      '<span class="vs-switch-sub">rescans the repo every ' + AUTO_MIN + ' minutes while this tab is open</span></div>' +
+      '<span class="vs-status" id="vs-next"></span>' +
+      '</div>' +
+      '<div class="vs-switchrow">' +
+      '<label class="vs-switch"><input type="checkbox" id="vs-master-toggle"><span class="vs-slider"></span></label>' +
+      '<div class="vs-switchtext"><span class="vs-switch-title">Auto Sync - the pipeline that writes tracks.js</span>' +
+      '<span class="vs-switch-sub">OFF stops the every-30-minute GitHub workflow from adding songs on its own; a manual "Run workflow" always works</span></div>' +
+      '<span class="vs-status" id="vs-master-status"></span>' +
       '</div>' +
       '<div id="vs-summary" class="vs-summary"></div>' +
       '<div id="vs-results"><p class="vs-empty">Press the button - or switch this tab on again later, it rescans automatically when the timer is on.</p></div>';
@@ -364,6 +423,8 @@
     els.scanBtn = $("vs-scan-btn");
     els.nextEl = $("vs-next");
     els.auto = $("vs-auto-toggle");
+    els.master = $("vs-master-toggle");
+    els.masterStatus = $("vs-master-status");
     if (els.scanBtn) els.scanBtn.addEventListener("click", function () { scan(true); });
     try {
       els.auto.checked = localStorage.getItem(AUTO_KEY) === "1";
@@ -371,6 +432,10 @@
         localStorage.setItem(AUTO_KEY, els.auto.checked ? "1" : "0");
       });
     } catch (e) {}
+    if (els.master) {
+      els.master.addEventListener("change", function () { setAutoSync(els.master.checked); });
+      loadAutoSyncState();
+    }
   }
 
   function init() {
@@ -381,7 +446,37 @@
     buildSkeleton();
     tick(); timer = setInterval(tick, 1000);
     setInterval(maybeAutoRescan, 30 * 1000);
+    watchUnlock();
     if (autoOn()) scan(false);
+  }
+
+  /* ---------------------------------------------------- passcode gate */
+
+  /* The dashboard is not unlocked while the passcode box is up. The Vault
+     Sync panel must not be visible underneath it - playback of a locked
+     dashboard answered "enter your passcode" while the scan list showed
+     through, which is exactly the broken look this fixes. */
+  function ownerUnlocked() {
+    var box = document.getElementById("owner-login-box");
+    return !box || box.style.display === "none";
+  }
+  function activeTabName() {
+    var on = document.querySelector("[data-otab].on");
+    return on ? on.getAttribute("data-otab") : "stats";
+  }
+  function watchUnlock() {
+    var box = document.getElementById("owner-login-box");
+    if (!box || typeof MutationObserver === "undefined") return;
+    new MutationObserver(function () {
+      if (!ownerUnlocked()) return;
+      /* ownerUnlock always shows the Stats panel, whichever tab is active -
+         on any other tab that lands two panels on the screen at once. Push
+         the active tab's own click through so the right panel wins. */
+      var name = activeTabName();
+      if (name === "stats") return;
+      var on = document.querySelector('[data-otab].on');
+      if (on) on.click();
+    }).observe(box, { attributes: true, attributeFilter: ["style"] });
   }
 
   /* the panel starts empty and hidden until the Owner Dashboard's unlock -
@@ -393,11 +488,13 @@
 
   /* Tab visibility. reports.js owns the shared switch (it hides every other
      panel on any tab click) but knows nothing about this one, so we show and
-     hide our own panel here - listener order on document gives both a turn. */
+     hide our own panel here - listener order on document gives both a turn.
+     While the passcode box is up, the panel stays hidden behind the gate. */
   document.addEventListener("click", function (e) {
     var tab = e.target && e.target.closest ? e.target.closest('[data-otab]') : null;
     if (!tab || !els.panel) return;
     if (tab.getAttribute("data-otab") !== "vaultsync") { els.panel.style.display = "none"; return; }
+    if (!ownerUnlocked()) return;
     els.panel.style.display = "";
     /* entering the tab: rescan when the auto timer is due (or first time) */
     if (!window.__vsRunTime || Date.now() - window.__vsRunTime > AUTO_MIN * 60 * 1000) {

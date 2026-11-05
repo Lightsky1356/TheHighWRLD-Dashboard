@@ -30,7 +30,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # The owner's Auto Sync switch, read from the site's own API. A
+      # scheduled run walks up to the public endpoint and stops here if the
+      # owner turned the switch off - no commit, no jimp, nothing. A manual
+      # dispatch is deliberately EXEMPT: the owner pressing "Run workflow"
+      # is a decision in its own right. If the endpoint cannot be reached the
+      # default stays ON, so an outage of the check never silently stops the
+      # songs from syncing.
+      - name: Owner Auto Sync switch
+        if: github.event_name == 'schedule'
+        id: autosync
+        run: |
+          enabled=true
+          body=$(curl -sf --max-time 20 https://thehighwrlddashboard.pages.dev/api/autosync || true)
+          if [ -n "$body" ]; then
+            enabled=$(echo "$body" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(JSON.parse(d).enabled===false?"false":"true")}catch(_){console.log("true")}})')
+          fi
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+          if [ "$enabled" = "false" ]; then echo "Auto Sync is OFF - the owner turned the pipeline switch off. Doing nothing."; fi
+
       - name: Set up Node
+        if: steps.autosync.outputs.enabled != 'false'
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -38,9 +58,11 @@ jobs:
       # jimp is only used to decode the JPEG-in-png-name covers; install it
       # without touching package.json
       - name: Install jimp
+        if: steps.autosync.outputs.enabled != 'false'
         run: npm install --no-save jimp --no-audit --no-fund
 
       - name: Run track sync
+        if: steps.autosync.outputs.enabled != 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # dry dispatch: neither flag is set, so the script logs its finds

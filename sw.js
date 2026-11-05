@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v166';
+const VERSION = 'thw-v167';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -68,7 +68,7 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v4',
-  'player-settings.css?v=thw-v69',
+  'player-settings.css?v=thw-v70',
   './style.css?v=thw-v34',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
@@ -124,7 +124,7 @@ const PRECACHE = [
   './user-menu.js?v=thw-v6',
   './player-settings.js?v=thw-v11',
   './reports.js?v=thw-v3',
-  './owner-vault-sync.js?v=thw-v2',
+  './owner-vault-sync.js?v=thw-v3',
   './player-performance.js?v=thw-v7',
     './queue-ui.js?v=thw-v17',
   './vault-discography.js?v=thw-v4',
@@ -145,7 +145,7 @@ const PRECACHE = [
   './roadmap.js?v=thw-v26',
   './timeline.js?v=thw-v5',
   './wrldlog.css?v=thw-v3',
-  './wrldlog-data.js?v=thw-v5',
+  './wrldlog-data.js?v=thw-v6',
   './wrldlog.js?v=thw-v6',
   './gallery.js?v=thw-v11',
   './failed-projects-data.js?v=thw-v13',

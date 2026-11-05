@@ -50,6 +50,11 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
    and stops there. AUTO_SYNC_COMMIT=1 writes, commits and pushes. */
 const COMMIT = process.env.AUTO_SYNC_COMMIT === "1";
 const DRY = !COMMIT && process.env.AUTO_SYNC_WRITE !== "1";
+/* The owner's off-switch also exists as an env flag, for whoever sets the sync
+   up by hand: AUTO_SYNC_DISABLED=1 turns any run - cron or manual - into a
+   no-op that touches nothing. The scheduled workflow instead reads the
+   switch from the site itself (/api/autosync) and skips this script entirely. */
+const DISABLED = process.env.AUTO_SYNC_DISABLED === "1";
 const BRANCH = process.env.SYNC_BRANCH || "main";
 /* How many new songs in one run turn into a WRLD LOG release note. One quiet
    addition ships silently; a batch gets its own version entry (set it to 0 to
@@ -552,6 +557,10 @@ function coverFor(stem, coverFiles) {
 /* ------------------------------------------------------------------ main */
 
 (async function main() {
+  if (DISABLED) {
+    log("auto sync is DISABLED (AUTO_SYNC_DISABLED=1) - nothing was read, nothing was written.");
+    return;
+  }
   const { list: trackList, src: tracksSrc } = readTrackList();
   log("tracks.js: " + trackList.length + " entries");
 
