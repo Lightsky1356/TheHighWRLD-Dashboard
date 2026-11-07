@@ -12,9 +12,12 @@
 // has zero npm dependencies and no root package.json, so pulling in `web-push`
 // would change the build; this keeps the deployment shape untouched.
 //
-// WHY THIS EXISTS AT ALL: message bodies must never travel in a push payload.
-// Push endpoints are push-service infrastructure and a notification is visible
-// on a lock screen, so every call site is expected to pass a generic summary.
+// WHY THIS EXISTS AT ALL: a notification is visible on a lock screen, and the
+// push service only ever sees ciphertext - none of the plaintext is exposed to
+// the transport. What the plaintext may CONTAIN is the recipient's choice: the
+// wording that goes in is built by functions/_lib/notifications.js, which
+// honours that user's message_previews preference before anything personably
+// written is allowed into a payload.
 
 const enc = new TextEncoder();
 

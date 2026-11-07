@@ -895,6 +895,23 @@ function compactProfileViewHtml(d) {
   function bindNotifications() {
     var list = document.getElementById("navNotifList");
     if (list) list.addEventListener("click", function (e) {
+      /* The X comes FIRST, before the row navigation. This handler sits on the
+         LIST - an ancestor of the row - so it ran after nothing: dismissing was
+         carried out by a document-level listener that only saw the event later,
+         while this one had already called gotoNotif and sent the reader to the
+         Wanted Vault with a "track not found" toast. Checking the control here
+         means a click on it never becomes a row click. */
+      var x = e.target.closest ? e.target.closest(".nni-x") : null;
+      if (x) {
+        var xrow = x.closest(".nav-notif-item");
+        if (xrow) {
+          e.stopPropagation();
+          e.preventDefault();
+          dismissNotifRow(xrow.getAttribute("data-nid"), xrow.getAttribute("data-ntype"));
+          applyNotifications();
+        }
+        return;
+      }
       var row = e.target.closest(".nav-notif-item");
       if (!row) return;
       var nid = row.getAttribute("data-nid");

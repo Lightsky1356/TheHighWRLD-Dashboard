@@ -114,17 +114,19 @@ async function notify(db, env, recipientUid, actor, type, message, ctx) {
      every direct message and friend request TWICE - two lock-screen
      notifications for one message.
 
-     What this function keeps is the wording. The social API has always sent a
-     summary naming the sender, and the shared helper's default is a generic
-     "you have a new notification", so the summary is passed through as an
-     override rather than being silently downgraded. */
+     What this function keeps is the wording. Every push opens with the site's
+     name - "TheHighWRLD Dashboard" - and under it, the sender's name and what
+     they said, the shape a chat app's preview takes. The summary strings below
+     already start with the sender's name, so the body carries them as-is.
+     Without a display name the app name stays in the title, which is an honest
+     fallback. */
   const created = await createNotification(db, env, recipientUid, {
     type,
     actorUid: actor.uid,
     actorName: actor.name || "Member",
     message,
     private: true,
-    pushTitle: "TheHighWRLD",
+    pushTitle: "TheHighWRLD Dashboard",
     pushBody: message,
     /* One tag per message, so two DMs are two notifications rather than one
        replacing the other. Supplied as a function because the new row's id is

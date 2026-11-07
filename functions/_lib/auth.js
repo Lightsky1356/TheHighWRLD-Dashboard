@@ -98,12 +98,25 @@ function clearSessionCookie() {
   return SESSION_COOKIE + "=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0";
 }
 
+/* A sign-in keeps every other device signed in.
+ *
+ * This used to DELETE every session for the uid first, which made the account
+ * single-seat: signing in on the phone signed the desktop out, and the other
+ * way round. "Stay signed in on mobile and desktop" is the same request as
+ * "sign in on both at once", so the wipe is gone. What remains is a cap on how
+ * many live sessions one account may hold, deleting the OLDEST when it is
+ * passed, so the table cannot grow without bound. */
+const SESSIONS_PER_UID = 8;
+
 async function createSession(db, uid, request) {
   const token = randomHex(32);
   const expires = new Date(Date.now() + SESSION_DAYS * 86400000).toISOString();
   const ip = (request.headers.get("CF-Connecting-IP") || "").slice(0, 45);
   const ua = String(request.headers.get("User-Agent") || "").slice(0, 300);
-  await db.prepare("DELETE FROM sessions WHERE uid = ?").bind(uid).run();
+  await db.prepare(
+    "DELETE FROM sessions WHERE uid = ? AND rowid NOT IN " +
+      "(SELECT rowid FROM sessions WHERE uid = ? ORDER BY rowid DESC LIMIT ?2 - 1)"
+  ).bind(uid, uid, SESSIONS_PER_UID - 1).run();
   await db.prepare("INSERT INTO sessions (token, uid, ip, ua, expires_at) VALUES (?, ?, ?, ?, ?)").bind(token, uid, ip, ua, expires).run();
   await db.prepare("DELETE FROM sessions WHERE expires_at < ?").bind(nowIso()).run();
   return token;
@@ -129,6 +142,20 @@ function pruneSessions(db) {
   } catch (_) {}
 }
 
+/* Sessions slide while they are used.
+ *
+ * A fixed 30-day expiry meant a daily user was signed out on day 30 no matter
+ * how active they had been - "stay signed in" failed for the people who used
+ * the site the most. The row now lives on: when it is LESS than half spent
+ * (under fifteen days left) and a request arrives, it is extended to a fresh
+ * thirty days. Someone who visits at least twice a month, on any of their
+ * devices, simply never hits the wall.
+ *
+ * The browser's own cookie countdown is restarted by the boot session check
+ * (/api/auth/session) re-issuing the cookie alongside this extension - see
+ * that endpoint. */
+const SESSION_REFRESH_LEFT_MS = (SESSION_DAYS / 2) * 86400000;
+
 async function getSessionUser(db, request) {
   const token = getCookie(request, SESSION_COOKIE);
   if (!token) return null;
@@ -141,6 +168,18 @@ async function getSessionUser(db, request) {
   if (row.expires_at && row.expires_at < nowIso()) {
     await db.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
     return null;
+  }
+  /* The slide itself (comment above). Cheap: at most one UPDATE per request,
+     and only when the row is more than half spent. */
+  const left = Date.parse(row.expires_at || "") - Date.now();
+  if (row.expires_at && (isNaN(left) || left < SESSION_REFRESH_LEFT_MS)) {
+    try {
+      const next = new Date(Date.now() + SESSION_DAYS * 86400000).toISOString();
+      await db.prepare("UPDATE sessions SET expires_at = ? WHERE token = ?").bind(next, token).run();
+    } catch (_) {
+      /* A failed slide changes nothing about this request - the session is
+         still within its current term. */
+    }
   }
   return { uid: row.uid, email: row.email || "", name: row.name || "", avatar: row.avatar || "", provider: row.provider || "" };
 }

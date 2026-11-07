@@ -291,7 +291,7 @@ html[data-theme=midnight]{
   --th-accent:#93c5fd;--th-accent2:#60a5fa;--th-glow:rgba(147,197,253,.16);--th-glow2:rgba(96,165,250,.12);
 }
 
-/* Site-wide default theme: Cyan */
+/* Site-wide default theme: Default (was labelled Cyan before - a comment, aesthetically the same cyan palette) */
 html[data-theme=default]{
   --ac-bg0:#02060d;--ac-bg1:#061430;
   --ac-purple:#22d3ee;--ac-pink:#38bdf8;--ac-gold:#22d3ee;--ac-orange:#0ea5e9;--ac-cyan:#67e8f9;

@@ -49,12 +49,17 @@ import { sendPushToUser } from "./webpush.js";
  * physically cannot forget to push.
  */
 
-/* Push text is generic ON PURPOSE.
+/* Push text comes in two grades, chosen by the RECIPIENT's own preference.
  *
- * A push payload is handled by push-service infrastructure and the result is
- * visible on a lock screen, so the message body must never travel in one. These
- * summaries name the KIND of event and nothing else - no post title, no reply
- * text, no display name. The notification opens the app to see the detail. */
+ * Generic is the fallback: these summaries name the KIND of event and nothing
+ * else - no post title, no reply text, no display name. They are what ships
+ * when the recipient has message previews turned OFF.
+ *
+ * With previews ON - the default, and what a chat-app-style lock screen needs -
+ * pushPreview() below words the payload instead: the site name on top, the
+ * sender's name, and what they said. Drawing it from the recipient's own
+ * preference, not from the sender's, is the privacy boundary: nobody can turn
+ * their outgoing message into a preview for someone who asked not to see one. */
 const PUSH_SUMMARY = {
   reply: { title: "New reply", body: "Someone replied to your post." },
   wanted_reply: { title: "New reply", body: "Someone replied to your wanted post." },
@@ -158,6 +163,45 @@ export function pushPayloadFor(opts, id) {
  * Never throws. A push failure must not be able to fail the action that
  * caused it - the reply is already stored and the row already exists by the
  * time this runs. */
+
+/* The Discord-style wording for a preview: WHO and WHAT, under the site name.
+ *
+ * The shape the owner asked for, exactly:
+ *      TheHighWRLD Dashboard   <- the title, always
+ *      Username                <- the person
+ *      message that they said  <- what they wrote
+ *
+ * A push can only show title + body, so the split below the title goes in the
+ * body as "Username: what they said". A caller's own pushTitle/pushBody wins
+ * untouched - the social API already words its DMs and friend requests. The
+ * notification strings often already begin with the sender's name
+ * ("Lightsky replied to you on ..."), so the name is not repeated when the
+ * text starts with it - a doubled "Lightsky: Lightsky replied..." defeats the
+ * point. When no message text arrives, the sender's name and the kind of
+ * event fill the body instead.
+ *
+ * Only a caller that actually carries an actorName gets a preview - system
+ * notices (moderation, appeal, drop) keep their generic summaries. Text is
+ * capped: a push body has finite room on a lock screen and the service worker
+ * would cut a longer one anyway. */
+const PREVIEW_BODY_MAX = 140;
+const PUSH_SITE_TITLE = "TheHighWRLD Dashboard";
+
+function pushPreview(opts) {
+  const o = opts || {};
+  if (o.pushTitle || o.pushBody) return o;
+  const actor = String(o.actorName || "").trim();
+  if (!actor || actor === "Staff") return o;
+  const summary = PUSH_SUMMARY[String(o.type || "")] || PUSH_DEFAULT;
+  const raw = String(o.message || "").trim();
+  const startsWithActor = raw.toLowerCase().indexOf(actor.toLowerCase()) === 0;
+  const said = raw ? (startsWithActor ? raw : actor + ": " + raw) : actor + " \u00b7 " + summary.title;
+  return Object.assign({}, o, {
+    pushTitle: PUSH_SITE_TITLE,
+    pushBody: said.slice(0, PREVIEW_BODY_MAX + actor.length + 2),
+  });
+}
+
 async function dispatchPush(env, db, recipientUid, opts, ctx, id, prefs) {
   try {
     /* The push toggle is separate from the notification switches. The master
@@ -174,15 +218,16 @@ async function dispatchPush(env, db, recipientUid, opts, ctx, id, prefs) {
        summary, because a post title or a reply body must not travel in a push
        payload.
      *
-     * Unless previews are off, in which case the caller's body is dropped and
-       the generic summary is used instead. The body is the message text - the
-       social API puts the whole message there - so it is exactly the thing
-       this setting is about. The title is not: it is the app name, and it
-       leaks nothing. */
+      * Unless the recipient's message previews are ON - which is the default,
+        and what gives a push the chat-app shape the owner asked for:
+        "TheHighWRLD Dashboard" on top, the sender's name under it, and below
+        that what they said. The recipient's own preference governs. When
+        previews are off, the kind of event is passed and nothing else - the
+        same wording the bell shows for the same notification. */
     const previewOff = p.message_previews === 0;
     const pushOpts = previewOff
       ? Object.assign({}, opts, { pushBody: undefined })
-      : opts;
+      : pushPreview(opts);
     const payload = pushPayloadFor(pushOpts, id);
 
     const sending = sendPushToUser(env, db, recipientUid, payload)
