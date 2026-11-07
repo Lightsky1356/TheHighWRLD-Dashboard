@@ -268,6 +268,15 @@
     return !!(v && v.style.display !== 'none');
   }
 
+  /* The Owner Dashboard is not open for business while the passcode box is up.
+     The same check owner-vault-sync.js makes against owner-login-box's style -
+     one shared notion of "unlocked", read rather than stored, so the two stay
+     in step however the unlock happens. */
+  function ownerUnlocked() {
+    var box = document.getElementById('owner-login-box');
+    return !box || box.style.display === 'none';
+  }
+
   function statusBadge(st) {
     var cls = { OPEN: 'rep-st-open', REVIEWING: 'rep-st-reviewing', RESOLVED: 'rep-st-resolved', DISMISSED: 'rep-st-dismissed' }[st] || 'rep-st-open';
     return '<span class="report-status-badge ' + cls + '">' + esc(st) + '</span>';
@@ -379,6 +388,14 @@
   async function updateBadge() {
     var badge = document.getElementById('owner-report-badge');
     if (!badge) return;
+    /* The badge sits on the tab itself, so a locked dashboard would be handing
+       over "how many reports are open right now" before the passcode was in.
+       Hidden until the unlock: the tab watcher above re-arms it on the way to
+       a panel, and a further load path refreshes it from there. */
+    if (!ownerUnlocked()) {
+      badge.style.display = 'none';
+      return;
+    }
     try {
       const q = new URLSearchParams({ status: 'OPEN', limit: '1', user: getUid() });
       const r = await fetch(API + '?' + q.toString(), { cache: 'no-store' });
@@ -406,10 +423,19 @@
         var rp = document.getElementById('owner-reports');
         var bn = document.getElementById('owner-bans');
         var am = document.getElementById('owner-automod');
-        if (st) st.style.display = which === 'stats' ? '' : 'none';
-        if (rp) rp.style.display = which === 'reports' ? '' : 'none';
-        if (bn) bn.style.display = which === 'bans' ? '' : 'none';
-        if (am) am.style.display = which === 'automod' ? '' : 'none';
+        /* The passcode box must be the only thing on the dashboard while it is
+           up. The panels used to render underneath it and answer politely - the
+           Reports filter bar, "Loading reports...", "No active bans", the
+           Automod list - about data nobody had unlocked. While the lock is on,
+           the panels stay hidden and nothing loads; when the passcode lands,
+           owner-vault-sync.js's unlock watcher re-clicks the active tab, which
+           comes back here and reveals exactly the panel the owner is on. */
+        var locked = !ownerUnlocked();
+        if (st) st.style.display = which === 'stats' && !locked ? '' : 'none';
+        if (rp) rp.style.display = which === 'reports' && !locked ? '' : 'none';
+        if (bn) bn.style.display = which === 'bans' && !locked ? '' : 'none';
+        if (am) am.style.display = which === 'automod' && !locked ? '' : 'none';
+        if (locked) return;
         if (which === 'reports') loadReports(1);
         if (which === 'bans' && window.loadBansView) { try { window.loadBansView(1); } catch (e) {} }
         if (which === 'automod' && window.loadAutomodView) { try { window.loadAutomodView(1); } catch (e) {} }
@@ -466,10 +492,20 @@
   }
   bindStaff();
 
-  function isReportsView() {
-    var v = document.getElementById('owner-reports');
-    return !!(v && v.style.display !== 'none');
-  }
+  /* The unlock watcher for the badge: the counts come back the moment the
+     passcode lands, whichever tab the owner happens to be on. The panels
+     themselves rise on owner-vault-sync.js's watcher, which re-clicks the
+     active tab through the handler above. */
+  (function watchUnlockForBadge() {
+    var box = document.getElementById('owner-login-box');
+    if (!box || typeof MutationObserver === 'undefined') return;
+    var wasLocked = !ownerUnlocked();
+    new MutationObserver(function () {
+      var locked = !ownerUnlocked();
+      if (wasLocked && !locked) updateBadge();
+      wasLocked = locked;
+    }).observe(box, { attributes: true, attributeFilter: ['style'] });
+  })();
 
   window.ownerReportsRefresh = function () { if (isReportsView()) loadReports(staff.page); else updateBadge(); };
 })();

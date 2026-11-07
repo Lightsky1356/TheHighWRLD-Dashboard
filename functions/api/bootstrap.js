@@ -63,7 +63,26 @@ async function sharedParts(env) {
     const rows = await db.prepare(
       "SELECT id, title, message, created_at, rev FROM announcements ORDER BY id DESC LIMIT 5"
     ).all();
-    announcements = rows.results || [];
+    /* The exact shape /api/announcements answers in (that endpoint maps them
+       identically). The raw rows used to travel as-is, so every bootstrapped
+       announcement reached the bell without a type, a seenKey or a ts: the row
+       rendered untyped, clicking it fell through gotoNotif into the
+       wanted-vault fallback ("Track not found in the vault"), and the badge /
+       seen logic fell back to its own guesses. */
+    announcements = (rows.results || []).map((r) => ({
+      id: "a" + r.id,
+      type: "announcement",
+      actor: "Staff",
+      message: (r.title ? r.title + " — " : "") + (r.message || ""),
+      title: r.title || "",
+      body: r.message || "",
+      seenKey: "a" + r.id + "r" + (Number(r.rev) || 1),
+      rev: Number(r.rev) || 1,
+      post_id: null,
+      reply_id: null,
+      read: true,
+      ts: r.created_at || "",
+    }));
   } catch (_) {}
 
   /* The drops, in the shape the client reads them in: the ones that
