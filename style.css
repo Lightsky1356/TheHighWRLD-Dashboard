@@ -406,6 +406,8 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
 .app-boot-core{display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}
 .app-boot-logo{font-family:"Unbounded",sans-serif;font-size:44px;font-weight:900;letter-spacing:.16em;color:#f2edff;text-shadow:0 0 34px rgba(168,85,247,.55)}
 .app-boot-logo span{color:#a855f7}
+.boot-text{margin-left:8px;font-family:"Unbounded",sans-serif;font-size:28px;font-weight:700;color:#f2edff;letter-spacing:.1em;text-shadow:0 0 24px rgba(168,85,247,.7)}
+.app-boot-logo img{width:48px;height:48px;object-fit:contain;background:#111;padding:2px;border-radius:6px}
 .app-boot-spin{width:30px;height:30px;border-radius:50%;border:3px solid rgba(255,255,255,.12);border-top-color:#a855f7;border-right-color:#ec4899;animation:thw-boot-spin .9s linear infinite}
 @keyframes thw-boot-spin{to{transform:rotate(360deg)}}
 .app-boot-note{font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:rgba(242,237,255,.5);min-height:1.6em}
