@@ -3469,21 +3469,21 @@ var NAV_URL = { home: "/", player: "/player", hub: "/vault", wanted: "/wanted", 
   function _navTabFor(page) {
     if (page === "player") return "player";
     if (page === "hub") return "vault";
-    if (page === "wanted" || page === "suggestions") return "community"; if (page === "roadmap") return "roadmap"; if (page === "credits") return "credits";
+    if (page === "wanted" || page === "suggestions") return "community"; if (page === "roadmap") return "roadmap"; if (page === "credits") return "community";
     if (page === "account") return "settings";
     if (page === "profile") return "profile";
     if (page === "owner") return "owner";
     return "lobby";
   }
   function _navPillFor(page) {
-    if (page === "wanted" || page === "suggestions") return "page-nav-wanted"; if (page === "credits") return "page-nav-credits";
+    if (page === "wanted" || page === "suggestions") return "page-nav-wanted";
     if (page === "profile" || page === "account" || page === "owner") return "";
     /* These have no button in the nav bar at all - Gallery and Downloads are
        reached from elsewhere in the vault, Failed Projects from its own card, and
        the sign-in button is navPillAuthBtn rather than a page-nav-* id. Returning
        "" hides the pill deliberately, instead of relying on getElementById
        returning null for a button that was never there. */
-    if (page === "gallery" || page === "downloads" || page === "failed" || page === "login" || page === "register") return "";
+    if (page === "gallery" || page === "credits" || page === "downloads" || page === "failed" || page === "login" || page === "register") return "";
     if (page === "tos" || page === "pp" || page === "dmca" || page === "copyright") return "page-nav-home";
     return "page-nav-" + page;
   }

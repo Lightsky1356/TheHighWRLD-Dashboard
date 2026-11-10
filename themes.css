@@ -632,21 +632,21 @@ html:where([data-theme]){
    looks like a loop. The themes' own static gradients keep running under
    it - the aura adds, it does not replace.
    Reduced-motion users get the still background only. */
-#th-aura{position:fixed;inset:-18%;z-index:-1;pointer-events:none;overflow:hidden;contain:strict}
+#th-aura{position:fixed;inset:-22%;z-index:-1;pointer-events:none;overflow:hidden;contain:strict}
 #th-aura,#th-aura::before,#th-aura::after{will-change:transform}
 #th-aura{
   width:100%;height:100%;
-  background:radial-gradient(46% 40% at 26% 18%,color-mix(in srgb,var(--th-accent,#a855f7) 30%,transparent) 0%,transparent 70%);
+  background:radial-gradient(circle 300px at 26% 22%,color-mix(in srgb,var(--th-accent,#a855f7) 32%,transparent) 0%,transparent 70%);
   animation:thw-drift-a 26s ease-in-out infinite alternate;
 }
 #th-aura::before{
   content:"";position:absolute;inset:0;
-  background:radial-gradient(40% 42% at 78% 74%,color-mix(in srgb,var(--th-accent2,#22d3ee) 24%,transparent) 0%,transparent 70%);
+  background:radial-gradient(circle 260px at 74% 76%,color-mix(in srgb,var(--th-accent2,#22d3ee) 26%,transparent) 0%,transparent 70%);
   animation:thw-drift-b 34s ease-in-out infinite alternate;
 }
 #th-aura::after{
   content:"";position:absolute;inset:0;
-  background:radial-gradient(30% 30% at 64% 26%,color-mix(in srgb,var(--ac-pink,#ec4899) 20%,transparent) 0%,transparent 70%);
+  background:radial-gradient(circle 220px at 62% 28%,color-mix(in srgb,var(--ac-pink,#ec4899) 22%,transparent) 0%,transparent 70%);
   animation:thw-drift-c 44s ease-in-out infinite alternate;
 }
 @keyframes thw-drift-a{

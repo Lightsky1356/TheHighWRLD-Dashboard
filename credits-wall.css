@@ -62,16 +62,16 @@
 .cw-modal{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:24px}
 .cw-modal[hidden]{display:none}
 .cw-modal-backdrop{position:absolute;inset:0;background:rgba(4,2,10,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:cw-fade .2s ease both}
-.cw-modal-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:0;max-width:min(780px,94vw);max-height:94vh;padding:26px;border-radius:22px;background:linear-gradient(180deg,rgba(27,21,48,.97),rgba(12,10,26,.97));border:1px solid rgba(168,85,247,.3);box-shadow:0 40px 100px rgba(0,0,0,.72);animation:cw-rise .24s cubic-bezier(.16,1,.3,1) both}
+.cw-modal-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:0;max-width:min(920px,96vw);max-height:96vh;padding:52px 26px 26px;border-radius:22px;background:linear-gradient(180deg,rgba(27,21,48,.97),rgba(12,10,26,.97));border:1px solid rgba(168,85,247,.3);box-shadow:0 40px 100px rgba(0,0,0,.72);animation:cw-rise .24s cubic-bezier(.16,1,.3,1) both}
 /* The artwork is the point of the view, so it is as large as the screen
    allows and sits on its own light, the way a picture is looked at. */
-.cw-modal-art{position:relative;width:min(560px,80vw);max-width:100%;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:#1c1530;box-shadow:0 22px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06)}
+.cw-modal-art{position:relative;width:min(700px,88vw);max-width:100%;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:#1c1530;box-shadow:0 22px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06)}
 .cw-modal-art img{width:100%;height:100%;object-fit:contain;display:block}
 .cw-modal-meta{margin:20px 0 0;text-align:center;max-width:100%}
 .cw-modal-eyebrow{display:block;font-size:9.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.38)}
 .cw-modal-title{margin:7px 0 0;font-size:clamp(18px,3.4vw,26px);font-weight:800;line-height:1.2;color:#fff;overflow-wrap:anywhere}
 .cw-modal-credit{display:inline-flex;align-items:center;gap:7px;margin:12px 0 0;padding:5px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.82);font-size:12px;font-weight:600}
-.cw-modal-x{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(10,7,20,.9);color:rgba(255,255,255,.8);font-size:17px;line-height:1;cursor:pointer;transition:background .15s ease,color .15s ease,transform .15s ease;z-index:3;display:flex;align-items:center;justify-content:center}
+.cw-modal-x{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:rgba(255,255,255,.75);font-size:18px;line-height:1;cursor:pointer;transition:background .15s ease,color .15s ease,transform .15s ease;z-index:3;display:flex;align-items:center;justify-content:center}
 .cw-modal-x:hover{background:rgba(30,22,50,.96);color:#fff;transform:scale(1.06)}
 .cw-modal-x:focus-visible{outline:2px solid #a855f7;outline-offset:2px}
 
@@ -131,3 +131,9 @@ body.cw-modal-open{overflow:hidden}
   .cw-links-bar{gap:10px;padding:11px 12px}
   .cw-links-list{order:3;width:100%}
 }
+
+/* The name in the view picks that artist in the wall's filter, so it
+   has to look like a control and say so. */
+.cw-modal-credit-link{cursor:pointer;transition:background .15s ease,color .15s ease,border-color .15s ease}
+.cw-modal-credit-link:hover{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}
+.cw-modal-credit-link:focus-visible{outline:2px solid #a855f7;outline-offset:2px}

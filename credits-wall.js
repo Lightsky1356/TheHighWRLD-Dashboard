@@ -53,6 +53,38 @@
     return (BRAND_ICONS[i] ? "fab fa-" : "fas fa-") + i;
   }
 
+
+  /* ---------- Scroll lock ----------
+     A view over the wall must not let the wall scroll underneath it.
+     The class is only removed when every view is closed, so opening one
+     while another is open cannot unlock the page by accident. */
+  var scrollLocked = 0;
+  var savedScroll = 0;
+  function lockScroll() {
+    if (scrollLocked++ === 0) {
+      savedScroll = window.scrollY || window.pageYOffset || 0;
+      document.body.style.position = "fixed";
+      document.body.style.top = "-" + savedScroll + "px";
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+      document.body.style.width = "100%";
+      document.body.classList.add("cw-modal-open");
+    }
+  }
+  function unlockScroll() {
+    if (scrollLocked > 0) scrollLocked--;
+    if (scrollLocked === 0) {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.width = "";
+      document.body.classList.remove("cw-modal-open");
+      /* Put the page back where it was, not at the top. */
+      window.scrollTo(0, savedScroll);
+    }
+  }
+
   /* ---------- The cover view ---------- */
   var modal = null;
   var lastFocus = null;
@@ -86,10 +118,27 @@
     img.src = coverUrl(entry.file);
     img.alt = entry.title + " cover art";
     el.querySelector(".cw-modal-title").textContent = entry.title;
-    el.querySelector("[data-cw-credit-name]").textContent = entry.artist;
+    var nameEl = el.querySelector("[data-cw-credit-name]");
+    nameEl.textContent = entry.artist;
+    /* The name is a control: it picks that artist in the wall's filter,
+       so the view closes onto just their covers. */
+    nameEl.classList.add("cw-modal-credit-link");
+    nameEl.setAttribute("role", "button");
+    nameEl.setAttribute("tabindex", "0");
+    nameEl.title = "Show only " + entry.artist + "'s covers";
+    nameEl.onclick = function () {
+      closeModal();
+      if (typeof window.__cwFilter === "function") window.__cwFilter(entry.artist);
+    };
+    nameEl.onkeydown = function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        nameEl.onclick();
+      }
+    };
     el.querySelector(".cw-dot").style.setProperty("--cw-color", entry.color || "#a855f7");
     el.hidden = false;
-    document.body.classList.add("cw-modal-open");
+    lockScroll();
     lastFocus = document.activeElement;
     var x = el.querySelector(".cw-modal-x");
     if (x) x.focus();
@@ -98,7 +147,7 @@
   function closeModal() {
     if (!modal) return;
     modal.hidden = true;
-    document.body.classList.remove("cw-modal-open");
+    unlockScroll();
     if (lastFocus && lastFocus.focus) lastFocus.focus();
     lastFocus = null;
   }
@@ -106,6 +155,32 @@
   document.addEventListener("keydown", function (ev) {
     if (ev.key === "Escape" && modal && !modal.hidden) closeModal();
   });
+
+
+  /* How many covers are fetched at once when the page opens. */
+  var EAGER = 24;
+
+  /* The rest are warmed in the browser's cache while it is idle, so a
+     member who scrolls never waits for a picture to arrive. */
+  function prefetchCovers(list) {
+    var i = 0;
+    function batch(deadline) {
+      var time = deadline && deadline.timeRemaining ? deadline.timeRemaining() : 8;
+      while (i < list.length && (time > 4 || (deadline && deadline.didTimeout))) {
+        var im = new Image();
+        im.decoding = "async";
+        im.src = list[i++];
+        if (deadline && deadline.timeRemaining) time = deadline.timeRemaining();
+        else time--;
+      }
+      if (i < list.length) {
+        if (window.requestIdleCallback) window.requestIdleCallback(batch, { timeout: 2500 });
+        else setTimeout(function () { batch(null); }, 400);
+      }
+    }
+    if (window.requestIdleCallback) window.requestIdleCallback(batch, { timeout: 2500 });
+    else setTimeout(function () { batch(null); }, 1200);
+  }
 
   /* ---------- The wall ---------- */
   var artistsByName = {};
@@ -187,11 +262,15 @@
       '</div>';
 
     html += '<div class="cw-grid">';
-    entries.forEach(function (e) {
+    entries.forEach(function (e, i) {
       html += '<article class="cw-card" data-cw-card data-cw-artist="' + esc(e.artist) + '" ' +
         'tabindex="0" role="button" aria-label="View ' + esc(e.title) + ' cover art">';
       html += '<div class="cw-cover">';
-      html += '<img loading="lazy" decoding="async" src="' + esc(coverUrl(e.file)) +
+      /* The first row is loaded at once - it is what is on screen when
+         the page opens. The rest are prefetched while the browser is idle
+         further down, so scrolling to them never waits for a fetch. */
+      html += '<img loading="' + (i < EAGER ? "eager" : "lazy") + '" decoding="async" ' +
+        'fetchpriority="' + (i < EAGER ? "high" : "low") + '" src="' + esc(coverUrl(e.file)) +
         '" alt="' + esc(e.title) + ' cover art" onerror="this.closest(\'.cw-cover\')' +
         '.classList.add(\'is-missing\');this.remove();">';
       html += '</div>';
@@ -241,7 +320,7 @@
           linksPfp.innerHTML = '<i class="fas fa-user"></i>';
         });
         linksPfp.appendChild(pfp);
-        pfp.src = "./" + artist.pfp;
+        pfp.src = "/Credits/" + artist.pfp;
       } else {
         linksPfp.innerHTML = '<i class="fas fa-user"></i>';
       }
@@ -296,6 +375,10 @@
       });
     });
 
+    /* The cover view asks the wall to pick an artist, so the filter is
+       reachable from outside the page's own code. */
+    window.__cwFilter = applyFilter;
+
     /* Clicking a name on a card picks that artist in the filter. It does
        not open a panel - the wall shows their covers and their links. */
     root.querySelectorAll("[data-cw-open]").forEach(function (btn) {
@@ -326,6 +409,9 @@
         if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); open(); }
       });
     });
+
+    /* Warm the rest of the covers while the browser is idle. */
+    prefetchCovers(entries.map(function (e) { return coverUrl(e.file); }));
 
     /* A small count in the corner, so the filter knows what it did. */
     var count = document.createElement("p");
