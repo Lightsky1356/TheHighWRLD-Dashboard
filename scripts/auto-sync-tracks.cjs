@@ -734,13 +734,58 @@ function coverFor(stem, coverFiles) {
   log("");
   log("summary: " + added + " new song(s) processed (" + missingMeta + " without metadata, " + missingCover + " without a cover)" + (backfilled ? "; " + backfilled + " gradient key(s) backfilled" : ""));
 
+  /* Hand the run's numbers to the workflow, which posts them to the site so
+     the Vault Sync tab shows what the pipeline last did. Only when
+     SYNC_REPORT_PATH is set - a local run with no workflow around it writes
+     nothing. A failed write is a warning, never an abort: the sync itself
+     already succeeded, and a lost report is not worth a red Actions cross. */
+  writeRunReport({
+    outcome: "ok",
+    note: added + " new song(s) processed (" + missingMeta + " without metadata, " + missingCover + " without a cover)" +
+      (backfilled ? "; " + backfilled + " gradient key(s) backfilled" : ""),
+    added: added,
+    missing_meta: missingMeta,
+    missing_cover: missingCover,
+    backfilled: backfilled,
+    dry_run: DRY,
+    ref: BRANCH,
+  });
+
   if (COMMIT && (added > 0 || backfilled > 0)) {
     commitAndPush(["tracks.js", "script.js", "wrldlog-data.js"]);
   }
 })().catch(function (err) {
   warn("fatal: " + (err && err.message ? err.message : err));
+  writeRunReport({
+    outcome: "error",
+    note: "fatal: " + String(err && err.message ? err.message : err).slice(0, 300),
+  });
   process.exit(1);
 });
+
+/* ------------------------------------------------------- workflow reporting */
+
+/* The workflow sets SYNC_REPORT_PATH to a workspace file it deletes itself on
+   the next run; this script drops the run's numbers there as JSON. Kept
+   best-effort: the file is only written when the workflow asks for it, and
+   any error is printed without failing the run. */
+function writeRunReport(r) {
+  const p = process.env.SYNC_REPORT_PATH;
+  if (!p) return;
+  try {
+    fs.writeFileSync(
+      p,
+      JSON.stringify(
+        Object.assign(
+          { event: process.env.GITHUB_EVENT_NAME || "", outcome: "ok", note: "", added: 0, missing_meta: 0, missing_cover: 0, backfilled: 0, dry_run: false, ref: "" },
+          r
+        )
+      )
+    );
+  } catch (e) {
+    warn("run report not written: " + (e && e.message ? e.message : e));
+  }
+}
 
 /* ----------------------------------------------------------- file surgery */
 

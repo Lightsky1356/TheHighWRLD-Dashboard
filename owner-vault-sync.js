@@ -31,6 +31,7 @@
   var timer = null;
   var scanning = false;
   var AUTOSYNC_URL = "/api/autosync";
+  var SYNC_REPORT_URL = "/api/sync-report";
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -416,6 +417,7 @@
       '<span class="vs-switch-sub">OFF stops the every-30-minute GitHub workflow from adding songs on its own; a manual "Run workflow" always works</span></div>' +
       '<span class="vs-status" id="vs-master-status"></span>' +
       '</div>' +
+      '<div class="vs-run" id="vs-lastrun"></div>' +
       '<div id="vs-summary" class="vs-summary"></div>' +
       '<div id="vs-results"><p class="vs-empty">Press the button - or switch this tab on again later, it rescans automatically when the timer is on.</p></div>';
     els.results = $("vs-results");
@@ -435,7 +437,43 @@
     if (els.master) {
       els.master.addEventListener("change", function () { setAutoSync(els.master.checked); });
       loadAutoSyncState();
+      loadLastRun();
     }
+  }
+
+  /* ------------------------------------------------- what the pipeline did */
+
+  /* The workflow posts every run to /api/sync-report with its own token, and
+     this reads the newest rows back: when the pipeline last ran and what it
+     changed. Until the owner wires SYNC_REPORT_TOKEN up on both sides the
+     endpoint still answers - with an empty, ready:false list that renders as
+     a hint rather than an error. */
+  function loadLastRun() {
+    var box = $("vs-lastrun");
+    if (!box) return;
+    fetch(SYNC_REPORT_URL, { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
+      .then(function (d) {
+        if (!d || d.ok === false) { box.textContent = "Last pipeline run: could not read right now"; return; }
+        var run = (d.runs || [])[0];
+        if (!run) {
+          box.textContent = "Last pipeline run: no reports yet" +
+            (d.ready === false ? " - reporting needs the SYNC_REPORT_TOKEN secret on GitHub and on the worker" : "");
+          return;
+        }
+        var dt = new Date(run.reported_at);
+        var when = isNaN(dt.getTime())
+          ? ""
+          : (dt.getMonth() + 1) + "/" + dt.getDate() + " " + String(dt.getHours()).padStart(2, "0") + ":" + String(dt.getMinutes()).padStart(2, "0") + " (local)";
+        var head = run.outcome === "ok" ? "added " + (run.added || 0) + " song(s)"
+          : run.outcome === "error" ? "FAILED - " + (run.note || "see Action logs")
+          : run.outcome === "skipped" ? "did nothing - " + (run.note || "switch off")
+          : (run.outcome || "ran");
+        var bits = [when, head];
+        if (run.dry_run) bits.push("DRY RUN");
+        box.textContent = "Last pipeline run" + (run.event === "schedule" ? " (schedule)" : "") + ": " + bits.join(" - ");
+      });
   }
 
   function init() {

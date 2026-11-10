@@ -155,7 +155,7 @@
     if (wrap) wrap.style.display = "flex";
     if (navBtn) navBtn.style.display = "none";
     if (menu) menu.style.display = "block";
-    if (signedInGroup) signedInGroup.style.display = "flex";
+    if (signedInGroup) signedInGroup.style.display = "block";
     if (sUp) sUp.style.display = "none";
     if (sIn) sIn.style.display = "none";
     if (sOut) sOut.style.display = "flex";

@@ -62,6 +62,7 @@ jobs:
         run: npm install --no-save jimp --no-audit --no-fund
 
       - name: Run track sync
+        id: sync
         if: steps.autosync.outputs.enabled != 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -69,4 +70,54 @@ jobs:
           # and writes nothing; everything else runs write+commit+push
           AUTO_SYNC_WRITE: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '' || '1' }}
           AUTO_SYNC_COMMIT: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '' || '1' }}
+          # the script drops this run's numbers into a file here; the report
+          # step below reads it back and posts it to the site
+          SYNC_REPORT_PATH: ${{ github.workspace }}/sync-report.json
         run: node scripts/auto-sync-tracks.cjs
+
+      # Tell the site what this run actually did, so the Vault Sync tab can
+      # show it without anyone opening Action logs on this private repo.
+      # Best effort in both directions: no SYNC_REPORT_TOKEN (set the SAME
+      # value as a GitHub secret and as a Pages worker variable to turn
+      # reporting on) or an unreachable endpoint never fails a run, and a
+      # skipped run is still reported - "the switch is OFF and that is why
+      # nothing happened" is exactly what the owner wants to see.
+      - name: Report the run to the site
+        if: always()
+        env:
+          SYNC_REPORT_TOKEN: ${{ secrets.SYNC_REPORT_TOKEN }}
+          REPORT_URL: https://thehighwrlddashboard.pages.dev/api/sync-report
+          GH_EVENT: ${{ github.event_name }}
+          GH_RUN_ID: ${{ github.run_id }}
+          GH_REF: ${{ github.ref_name }}
+          SYNC_OUTCOME: ${{ steps.sync.outcome }}
+          REPORT_PATH: ${{ github.workspace }}/sync-report.json
+        run: |
+          if [ -z "$SYNC_REPORT_TOKEN" ]; then
+            echo "SYNC_REPORT_TOKEN is not set - no site report (set the same value as a GitHub Actions secret and as a Pages worker variable to enable it)."
+            exit 0
+          fi
+          node -e '
+            const fs = require("fs");
+            let report = null;
+            try { report = JSON.parse(fs.readFileSync(process.env.REPORT_PATH, "utf8")); } catch (_) {}
+            if (!report) {
+              const oc = process.env.SYNC_OUTCOME || "unknown";
+              report = oc === "skipped"
+                ? { outcome: "skipped", note: "Auto Sync switch is OFF - this scheduled run did nothing (by the owner switch)." }
+                : { outcome: oc === "success" ? "ok" : oc, note: oc === "success" ? "" : "runner outcome: " + oc };
+            }
+            report.event = process.env.GH_EVENT || "";
+            report.run_id = process.env.GH_RUN_ID || "";
+            report.ref = process.env.GH_REF || "";
+            fetch(process.env.REPORT_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "X-Sync-Token": process.env.SYNC_REPORT_TOKEN },
+              body: JSON.stringify(report),
+            }).then(function (r) {
+              return r.text().then(function (t) { console.log("report " + r.status + " " + t.slice(0, 200)); });
+            }).catch(function (e) {
+              console.log("report could not reach the site (non-fatal): " + (e && e.message ? e.message : e));
+            });
+          '
+          exit 0

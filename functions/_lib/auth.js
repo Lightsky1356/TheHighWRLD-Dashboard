@@ -113,10 +113,16 @@ async function createSession(db, uid, request) {
   const expires = new Date(Date.now() + SESSION_DAYS * 86400000).toISOString();
   const ip = (request.headers.get("CF-Connecting-IP") || "").slice(0, 45);
   const ua = String(request.headers.get("User-Agent") || "").slice(0, 300);
+  /* Keep only the newest SESSIONS_PER_UID - 1 before the insert, so the INSERT
+     itself lands inside the cap. A mixed "?"/"?2" placeholder list used to be
+     bound three values against two slots and D1 refused every sign-in with
+     "wrong number of parameter bindings" - the cap math is a trusted internal
+     constant, so it is inlined rather than carried through the binder. */
+  const keep = SESSIONS_PER_UID - 1;
   await db.prepare(
     "DELETE FROM sessions WHERE uid = ? AND rowid NOT IN " +
-      "(SELECT rowid FROM sessions WHERE uid = ? ORDER BY rowid DESC LIMIT ?2 - 1)"
-  ).bind(uid, uid, SESSIONS_PER_UID - 1).run();
+      "(SELECT rowid FROM sessions WHERE uid = ? ORDER BY rowid DESC LIMIT " + keep + ")"
+  ).bind(uid, uid).run();
   await db.prepare("INSERT INTO sessions (token, uid, ip, ua, expires_at) VALUES (?, ?, ?, ?, ?)").bind(token, uid, ip, ua, expires).run();
   await db.prepare("DELETE FROM sessions WHERE expires_at < ?").bind(nowIso()).run();
   return token;

@@ -26,17 +26,13 @@ html{background:var(--th-bg);background-color:var(--ac-bg0,#07040f);background-a
 .wanted-vote-btn:hover{background:var(--th-glow2)}
 
 /* ===== Wanted reply -> profile view ===== */
-
-/* ===== Wanted reply -> profile view ===== */
 .wanted-reply-user-btn{display:inline-flex;align-items:center;background:none;border:none;padding:0;margin:0;margin-right:auto;cursor:pointer;font:inherit;color:inherit;max-width:100%}
 .wanted-reply-user-btn:hover .wanted-reply-user{color:#fff;text-shadow:0 0 8px rgba(34,211,238,.35)}
-.modal-overlay#profileViewModal{position:fixed;inset:0;z-index:300;background:rgba(5,2,12,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px}
-.modal-overlay#profileViewModal.open{display:flex;animation:pvFadeIn .2s ease}
-#profileViewModal .pv-modal{width:100%;max-width:560px;background:var(--ac-glass2);border:1px solid var(--ac-border2);border-radius:var(--ac-radius);box-shadow:var(--ac-shadow);max-height:88vh;overflow:hidden;display:flex;flex-direction:column;animation:pvPopIn .28s var(--ac-ease)}
-#profileViewModal .m-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--ac-border);flex-shrink:0}
-#profileViewModal .m-head h3{font-family:"Unbounded",sans-serif;font-size:15px;color:var(--ac-text);margin:0}
-#profileViewModal .m-close{width:34px;height:34px;border-radius:10px;border:1px solid var(--ac-border);background:rgba(255,255,255,.05);color:var(--ac-muted);cursor:pointer;font-size:14px}
-#profileViewModal .m-close:hover{color:#fff}
+/* The old #profileViewModal stylesheet is gone: the modal markup no longer
+   exists in index.html and no script opens it - profiles render as the page
+   board now. The pv* classes below are kept because the live profile page
+   still uses them. The pvPopIn keyframe is shared with style.css
+   (.player-settings-panel). */
 #pvBody{overflow-y:auto;overflow-x:hidden}
 .pv-banner-wrap{height:140px;flex-shrink:0}
 .pv-banner{height:100%;width:100%}
@@ -73,7 +69,6 @@ html{background:var(--th-bg);background-color:var(--ac-bg0,#07040f);background-a
 .pv-state i{font-size:26px;color:var(--th-accent)}
 .pv-error i{color:#f87171}
 .pv-none{font-size:11px;color:var(--ac-dim);margin:0}
-@keyframes pvFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pvPopIn{from{opacity:0;transform:scale(.94) translateY(12px)}to{opacity:1;transform:none}}
 /* ===== Compact account button + collapsible nav menu ===== */
 .nav-account-wrap{position:relative;display:flex;align-items:center}.nav-account-wrap[style*="display: none"] #nav-account-menu{display:none!important}
@@ -305,12 +300,13 @@ footer .hub-panel select{border-color:var(--th-border2)}
 .fav-like.off{color:#fff;opacity:.9;cursor:default}
 .fav-like.off:hover{transform:none}
 .fav-info{padding:10px 12px 12px}
-.fav-name{font-size:12.5px;font-weight:800;color:var(--ac-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The response to "the names are cut to a couple of letters": the title gets
+   two lines before it ellipsises, and long words wrap instead of clipping
+   mid-letter on a narrow phone card. */
+.fav-name{font-size:12.5px;font-weight:800;color:var(--ac-text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word;word-break:break-word;line-height:1.3;max-height:calc(12.5px*1.3*2)}
 .fav-sub{font-size:10px;color:var(--ac-dim);margin-top:2px}
 
-/* ===== Compact profile viewer modal redesign ===== */
-#profileViewModal .pv-banner-wrap{position:relative;height:150px;flex-shrink:0}
-#profileViewModal .pv-banner-wrap:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,10,20,.2),rgba(8,10,20,.85) 78%);pointer-events:none}
+/* ===== Compact profile page (the board that lives in #profilePageBody) ===== */
 #profile-page .ac-main{max-width:56rem;margin:0 auto;padding:5rem 1rem 2rem 1rem}
 #profile-page .cmp-card-page{max-width:56rem;margin:0 auto;background:transparent;border:0;box-shadow:none;overflow:visible;border-radius:0}
 #profile-page .cmp-card-page .pv-avatar{width:88px;height:88px;border-radius:50%;padding:3px;border:2px solid #22d3ee;background:#0d1220;box-shadow:0 0 15px rgba(34,211,238,.3);position:relative}
@@ -338,6 +334,15 @@ footer .hub-panel select{border-color:var(--th-border2)}
    row that has to give way, not the text. */
 .cmp-profile-host .fav-card{min-width:0}
 .cmp-profile-host .fav-info{min-width:0}
+/* List mode is marked with .cmp-list on #profilePageBody itself (account.js
+   toggles the host class, it does not wrap the panels in a .cmp-list element),
+   so the guard has to sit ON the page id: a "descendant" .cmp-list selector
+   would never match anything. In a half-width shelf column a LIST row cannot
+   fit two 164px columns: 72px art + 12px gap + 32px heart leaves 24px, which
+   is how names got clipped to "C..." / "Fl...". List rows therefore get ONE
+   card per panel width (~200px of text); table-cover cards keep their two
+   columns - the name reads across two lines from the .fav-name rule above. */
+#profilePageBody.cmp-list .pp-shelf .cmp-fav-grid{grid-template-columns:minmax(0,1fr)}
 /* The small-art row shape belongs to the compact LIST only; the card grid
    keeps its full-width square art. */
 .cmp-profile-host.cmp-list .fav-art{aspect-ratio:auto;width:72px;height:72px;border-radius:12px;flex-shrink:0}
