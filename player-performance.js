@@ -488,3 +488,49 @@
     }, 140);
   }, { passive: true, capture: true });
 })();
+/* ===== Idle pause =====
+   The decorative background keeps moving until the page is closed. It is
+   paused while the member scrolls, but at REST - which is most of the
+   time - sixty-four layers are still animating, each promoted to its own
+   compositor layer. That is the site burning a phone's battery for
+   decoration nobody is looking at.
+
+   So it is paused when there is nothing happening: a few seconds after
+   the last touch, and whenever the tab is not on screen. Any movement
+   brings it straight back, so it is never caught out. */
+(function () {
+  if (window.__thwIdlePause) return;
+  window.__thwIdlePause = true;
+
+  var IDLE_MS = 4000;
+  var timer = null;
+  var root = document.documentElement;
+
+  function wake() {
+    root.classList.remove("is-idle");
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(sleep, IDLE_MS);
+  }
+
+  function sleep() {
+    root.classList.add("is-idle");
+  }
+
+  /* Any sign of life wakes it. All passive: none of these may hold up
+     the thing that fired them. */
+  ["pointermove", "pointerdown", "keydown", "wheel", "touchstart", "scroll"].forEach(function (ev) {
+    window.addEventListener(ev, wake, { passive: true });
+  });
+
+  /* A tab nobody is looking at does not need to animate. */
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) {
+      root.classList.add("is-idle");
+      if (timer) clearTimeout(timer);
+    } else {
+      wake();
+    }
+  });
+
+  wake();
+})();

@@ -99,6 +99,8 @@
       '<div class="cw-modal-card" role="dialog" aria-modal="true" aria-labelledby="cw-modal-title">' +
       '<button type="button" class="cw-modal-x" data-cw-close aria-label="Close">&times;</button>' +
       '<figure class="cw-modal-art"><img alt=""></figure>' +
+      '<button type="button" class="cw-modal-download" data-cw-download>' +
+      '<i class="fas fa-download"></i><span>Download the cover</span></button>' +
       '<figcaption class="cw-modal-meta">' +
       '<span class="cw-modal-eyebrow">Cover art</span>' +
       '<h2 class="cw-modal-title" id="cw-modal-title"></h2>' +
@@ -137,6 +139,34 @@
       }
     };
     el.querySelector(".cw-dot").style.setProperty("--cw-color", entry.color || "#a855f7");
+    /* The download button takes the picture itself. */
+    var dlBtn = el.querySelector("[data-cw-download]");
+    if (dlBtn) {
+      dlBtn.onclick = function (ev) {
+        ev.stopPropagation();
+        var src = coverUrl(entry.file);
+        dlBtn.disabled = true;
+        fetch(src)
+          .then(function (r) { if (!r.ok) throw new Error("failed"); return r.blob(); })
+          .then(function (blob) {
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = (entry.title || "cover") + ".png";
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function () {
+              document.body.removeChild(a);
+              URL.revokeObjectURL(a.href);
+            }, 1200);
+          })
+          .catch(function () {
+            /* No picture to fetch: open it instead of doing nothing. */
+            window.open(src, "_blank", "noopener");
+          })
+          .then(function () { dlBtn.disabled = false; });
+      };
+    }
     el.hidden = false;
     lockScroll();
     lastFocus = document.activeElement;
@@ -285,11 +315,22 @@
     });
     html += '</div>';
 
+    /* The count is made with the markup, not after it, so the filter can
+       always find it - the wall can open already filtered to one artist,
+       and the count has to be right from the first paint. */
+    html += '<p class="cw-count">' + credited + " cover" + (credited === 1 ? "" : "s") + '</p>';
+
     if (!entries.length) {
       html = '<p class="cw-empty">No cover art is credited yet.</p>';
     }
 
     root.innerHTML = html;
+
+    /* The count sits under the filters, where the filter's own doing is
+       read. */
+    var filtersEl = root.querySelector(".cw-filters");
+    var countEl = root.querySelector(".cw-count");
+    if (filtersEl && countEl) filtersEl.insertAdjacentElement("afterend", countEl);
 
     /* ---------- The filter ---------- */
     var chips = root.querySelectorAll(".cw-chip");
@@ -410,15 +451,22 @@
       });
     });
 
+    /* The Info Panel can send a member here to one artist, so the
+       wall opens already filtered to them. */
+    var wanted = window.__cwArtistWanted || "";
+    try {
+      if (!wanted) wanted = sessionStorage.getItem("thwCreditsArtist") || "";
+      if (wanted) sessionStorage.removeItem("thwCreditsArtist");
+    } catch (_) {}
+    if (wanted) {
+      window.__cwArtistWanted = "";
+      applyFilter(wanted);
+    }
+
     /* Warm the rest of the covers while the browser is idle. */
     prefetchCovers(entries.map(function (e) { return coverUrl(e.file); }));
 
-    /* A small count in the corner, so the filter knows what it did. */
-    var count = document.createElement("p");
-    count.className = "cw-count";
-    count.textContent = credited + " cover" + (credited === 1 ? "" : "s");
-    var filters = root.querySelector(".cw-filters");
-    if (filters) filters.insertAdjacentElement("afterend", count);
+    /* The count is already in the markup - see above. */
   }
 
   function mount() {

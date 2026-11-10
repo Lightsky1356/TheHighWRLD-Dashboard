@@ -58,6 +58,7 @@ const GROUPS = [
   { name: "wanted-vault", file: "./wanted-vault.test.mjs", needsServer: true },
   { name: "playlists", file: "./playlists.test.mjs", needsServer: true },
   { name: "gallery-publish", file: "./gallery-publish.test.mjs", needsServer: true },
+  { name: "autosync", file: "./autosync.test.mjs", needsServer: true },
 ];
 
 const SERVER_BOOT_TIMEOUT_MS = 120_000;
@@ -87,10 +88,18 @@ function startServer() {
   /* The address is named outright: without it wrangler listens on
      "localhost", which can resolve to the IPv6 address, and the suite -
      which asks for 127.0.0.1 - cannot reach a server that is up. */
-  return spawn(process.execPath, [entry, "pages", "dev", ".", "--port", String(PORT), "--ip", "127.0.0.1"], {
+  /* The owner's two secrets, for the local test server only. The switch
+     and the run reports cannot be reached without them, so the suite could
+     not check them. These are not the real ones - those live in the Pages
+     project's settings and in GitHub's secrets. */
+  const env = { ...process.env, OWNER_PASSCODE: "test-owner-passcode", SYNC_REPORT_TOKEN: "test-sync-token" };
+return spawn(process.execPath, [entry, "pages", "dev", ".", "--port", String(PORT), "--ip", "127.0.0.1",
+    "--binding", "OWNER_PASSCODE=test-owner-passcode",
+    "--binding", "SYNC_REPORT_TOKEN=test-sync-token"], {
     cwd: ROOT,
     stdio: "ignore",
     windowsHide: true,
+    env,
   });
 }
 

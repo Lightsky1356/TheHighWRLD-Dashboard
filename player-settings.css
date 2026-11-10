@@ -1752,3 +1752,43 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
 @media (max-width:680px){
 .psp-row-desktop-only{display:none!important}
 }
+
+/* ===== The cover credit in the Info Panel =====
+   It is a button now - it goes to the Covers page, filtered to the
+   artist who made this picture - so it looks like one. */
+.info-cover-credit{background:none;border:0;padding:2px 8px;border-radius:8px;font-family:inherit;cursor:default;transition:background .15s ease,color .15s ease}
+.info-cover-credit.is-link{cursor:pointer}
+.info-cover-credit.is-link:hover{background:rgba(255,255,255,.09);color:rgba(255,255,255,.88)}
+.info-cover-credit.is-link:focus-visible{outline:2px solid #a855f7;outline-offset:2px}
+.info-cover-credit:disabled{cursor:default;opacity:.6}
+
+/* ===== Idle =====
+   The decorative background stops when nothing is happening, and the
+   heavy glass surfaces soften the same way they do while scrolling. The
+   look is unchanged - the motion is slow enough that a pause is not
+   something a person notices - and the site stops doing work for a page
+   nobody is looking at. */
+html.is-idle #bg-motion,
+html.is-idle #bg-motion *,
+html.is-idle::before,
+html.is-idle::after,
+html.is-idle .player-lightning,
+html.is-idle .player-lightning *,
+html.is-idle .player-sun,
+html.is-idle .player-sun *,
+html.is-idle .join-bg-gradient,
+html.is-idle .ap-ambient,
+html.is-idle .bm-el{animation-play-state:paused!important}
+
+/* While the page is idle the glass is softened once, and the blur is
+   re-rasterised only when something actually changes on screen. */
+html.is-idle #nav-pill,
+html.is-idle .mobile-bottom-nav,
+html.is-idle #scrollTopBtn,
+html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important;-webkit-backdrop-filter:blur(6px) saturate(1.1)!important}
+
+/* The page sections that are not on screen are not painted at all. The
+   browser skips their layout and paint until they are looked at, which
+   on a site with twenty-two of them is a large saving. */
+.app-page{content-visibility:auto;contain-intrinsic-size:auto 900px}
+.app-page.active{content-visibility:visible}

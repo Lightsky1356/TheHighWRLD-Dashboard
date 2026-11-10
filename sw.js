@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v194';
+const VERSION = 'thw-v200';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -57,7 +57,7 @@ const PRECACHE = [
   './account.js?v=thw-v40',
   './effects.js?v=thw-v2',
   './i18n.js?v=9',
-  './script.js?v=thw-v61',
+  './script.js?v=thw-v63',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v10',
@@ -68,7 +68,7 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v6',
-  'player-settings.css?v=thw-v75',
+  'player-settings.css?v=thw-v78',
   './style.css?v=thw-v43',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
@@ -126,7 +126,7 @@ const PRECACHE = [
   './reports.js?v=thw-v4',
   './owner-vault-sync.js?v=thw-v4',
   './owner-live.js?v=thw-v2',
-  './player-performance.js?v=thw-v7',
+  './player-performance.js?v=thw-v8',
     './queue-ui.js?v=thw-v17',
   './vault-discography.js?v=thw-v4',
   './global-search.js?v=thw-v4',
@@ -188,8 +188,8 @@ const PRECACHE = [
   './AlbumArt/party.jpg',
   './AlbumArt/preparty.jpg',
   './cover-artists.js?v=thw-v92',
-  './credits-wall.js?v=thw-v11',
-  './credits-wall.css?v=thw-v9',
+  './credits-wall.js?v=thw-v13',
+  './credits-wall.css?v=thw-v10',
 ];
 
 /* Requests that must NEVER be served from cache (privacy / correctness). */

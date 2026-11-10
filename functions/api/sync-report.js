@@ -60,7 +60,12 @@ export async function onRequestPost(context) {
     }
     const header = context.request.headers.get("X-Sync-Token") || "";
     const body = await context.request.json().catch(() => ({}));
-    if (header !== secret || String(body.code || "") !== secret) {
+    /* One secret, one place. The runner posts with the header and nothing
+       else - requiring the same secret a second time in the body meant
+       every report it sent was refused, so the Vault Sync tab never saw a
+       run however correctly the secrets were set. The body field is kept
+       as an alternative for a caller that cannot set a header. */
+    if (header !== secret && String(body.code || "") !== secret) {
       return json({ ok: false, error: "forbidden" }, 403);
     }
 

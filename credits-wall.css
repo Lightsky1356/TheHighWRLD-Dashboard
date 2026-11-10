@@ -137,3 +137,10 @@ body.cw-modal-open{overflow:hidden}
 .cw-modal-credit-link{cursor:pointer;transition:background .15s ease,color .15s ease,border-color .15s ease}
 .cw-modal-credit-link:hover{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}
 .cw-modal-credit-link:focus-visible{outline:2px solid #a855f7;outline-offset:2px}
+
+/* The download button in the cover view. */
+.cw-modal-download{display:inline-flex;align-items:center;gap:8px;margin-top:18px;padding:9px 18px;border-radius:11px;border:1px solid rgba(168,85,247,.45);background:rgba(168,85,247,.16);color:#f2edff;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s ease,transform .15s ease}
+.cw-modal-download:hover{background:rgba(168,85,247,.3);transform:translateY(-1px)}
+.cw-modal-download:disabled{opacity:.5;cursor:default;transform:none}
+.cw-modal-download:focus-visible{outline:2px solid #a855f7;outline-offset:2px}
+.cw-modal-download i{font-size:12px}
