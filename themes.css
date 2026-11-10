@@ -683,3 +683,15 @@ html[data-theme=gold] #th-aura,
 html[data-theme=silver] #th-aura,
 html[data-theme=rose] #th-aura{opacity:.6} /* metallic themes: keep the light subtle */
 
+
+/* ===== Theme switch =====
+   The aura is driven by the theme's own colours, so when the theme
+   changes the blobs change colour too. Without a transition that is a
+   snap; the fade below lets one theme sink into the next. It animates
+   opacity only, so it never forces a repaint of the page behind it. */
+html[data-theme] #th-aura{opacity:1;transition:opacity .45s ease,background .45s ease}
+body.theme-switching #th-aura{opacity:.15}
+@media (prefers-reduced-motion:reduce){
+  html[data-theme] #th-aura{transition:none}
+  body.theme-switching #th-aura{opacity:1}
+}

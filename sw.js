@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v175';
+const VERSION = 'thw-v188';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -54,10 +54,10 @@ const PRECACHE = [
   './tracks.js?v=thw-v11',
   './browser-id3-writer.js?v=thw-v2',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v38',
+  './account.js?v=thw-v39',
   './effects.js?v=thw-v2',
   './i18n.js?v=9',
-  './script.js?v=thw-v59',
+  './script.js?v=thw-v61',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v10',
@@ -69,10 +69,10 @@ const PRECACHE = [
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v6',
   'player-settings.css?v=thw-v75',
-  './style.css?v=thw-v35',
+  './style.css?v=thw-v37',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
-  './themes.css?v=thw-v11',
+  './themes.css?v=thw-v12',
   './css2.css?v=thw-v2',
   './about.css?v=thw-v4',
   './fonts/0-Sora-300.woff2',
@@ -187,7 +187,9 @@ const PRECACHE = [
   './AlbumArt/legends.jpg',
   './AlbumArt/party.jpg',
   './AlbumArt/preparty.jpg',
-  './cover-artists.js?v=thw-v91',
+  './cover-artists.js?v=thw-v92',
+  './credits-wall.js?v=thw-v9',
+  './credits-wall.css?v=thw-v8',
 ];
 
 /* Requests that must NEVER be served from cache (privacy / correctness). */

@@ -1,0 +1,133 @@
+/* ===== Cover-art Credits Wall =====
+   A wall of the cover art that ships with the catalogue, with the name
+   of the person who made it. The Fan Art Gallery shows what the community
+   uploaded; this is the ART that came with the songs, credited.
+
+   The grid is CSS grid with auto-fill, so it reflows on its own and the
+   wall costs the home page nothing - it is built the first time the page
+   is opened, not at load. */
+
+.cw-mount{max-width:78rem;margin:0 auto;width:100%;padding:56px 24px 72px}
+.cw-mount:empty{display:none}
+
+.cw-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:22px}
+.cw-eyebrow{display:block;font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:6px}
+.cw-title{font-size:clamp(22px,4vw,34px);font-weight:800;letter-spacing:-.02em;margin:0;color:#fff}
+.cw-lede{font-size:13px;line-height:1.65;color:rgba(255,255,255,.55);max-width:52ch;margin:8px 0 0}
+
+.cw-stats{display:flex;gap:10px;flex-shrink:0}
+.cw-stat{min-width:104px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);text-align:center}
+.cw-stat b{display:block;font-size:22px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}
+.cw-stat span{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-top:3px}
+
+/* Filters */
+.cw-filters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px}
+.cw-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.65);font-size:11px;font-weight:600;cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease}
+.cw-chip:hover{background:rgba(255,255,255,.09);color:#fff}
+.cw-chip.is-on{background:rgba(168,85,247,.18);border-color:rgba(168,85,247,.5);color:#f2edff}
+.cw-chip-n{font-size:9px;opacity:.6;font-variant-numeric:tabular-nums}
+
+.cw-count{font-size:11px;color:rgba(255,255,255,.4);margin:0 0 16px}
+
+/* The wall */
+.cw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+
+.cw-card{border-radius:14px;overflow:hidden;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.cw-card:hover{transform:translateY(-3px);border-color:rgba(168,85,247,.45);box-shadow:0 14px 30px rgba(0,0,0,.45)}
+
+.cw-cover{position:relative;aspect-ratio:1/1;background:#1c1530;overflow:hidden}
+.cw-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s ease,filter .25s ease}
+.cw-card:hover .cw-cover img{transform:scale(1.05);filter:brightness(1.08)}
+.cw-cover.is-missing{display:flex;align-items:center;justify-content:center}
+.cw-cover.is-missing::after{content:"no cover";font-size:10px;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase}
+
+.cw-meta{padding:9px 10px 11px}
+.cw-track{margin:0;font-size:12px;font-weight:700;line-height:1.35;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cw-dot{width:7px;height:7px;border-radius:50%;background:var(--cw-color,#a855f7);flex-shrink:0;box-shadow:0 0 8px var(--cw-color,#a855f7)}
+
+.cw-empty{font-size:13px;color:rgba(255,255,255,.4);font-style:italic}
+
+@media (max-width:640px){
+  .cw-mount{padding:32px 14px 56px}
+  .cw-stats{width:100%}
+  .cw-stat{flex:1}
+  .cw-grid{grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:10px}
+}
+
+/* ===== The cover-art modal =====
+   Clicking a cover opens it full size beside its credit. It is a plain
+   overlay, not a filter: the backdrop is a real overlay and the artwork
+   is an <img>, so nothing in the page behind it has to be re-laid-out
+   while it is open. */
+.cw-modal{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:24px}
+.cw-modal[hidden]{display:none}
+.cw-modal-backdrop{position:absolute;inset:0;background:rgba(4,2,10,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:cw-fade .2s ease both}
+.cw-modal-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:0;max-width:min(780px,94vw);max-height:94vh;padding:26px;border-radius:22px;background:linear-gradient(180deg,rgba(27,21,48,.97),rgba(12,10,26,.97));border:1px solid rgba(168,85,247,.3);box-shadow:0 40px 100px rgba(0,0,0,.72);animation:cw-rise .24s cubic-bezier(.16,1,.3,1) both}
+/* The artwork is the point of the view, so it is as large as the screen
+   allows and sits on its own light, the way a picture is looked at. */
+.cw-modal-art{position:relative;width:min(560px,80vw);max-width:100%;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:#1c1530;box-shadow:0 22px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06)}
+.cw-modal-art img{width:100%;height:100%;object-fit:contain;display:block}
+.cw-modal-meta{margin:20px 0 0;text-align:center;max-width:100%}
+.cw-modal-eyebrow{display:block;font-size:9.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.38)}
+.cw-modal-title{margin:7px 0 0;font-size:clamp(18px,3.4vw,26px);font-weight:800;line-height:1.2;color:#fff;overflow-wrap:anywhere}
+.cw-modal-credit{display:inline-flex;align-items:center;gap:7px;margin:12px 0 0;padding:5px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.82);font-size:12px;font-weight:600}
+.cw-modal-x{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(10,7,20,.9);color:rgba(255,255,255,.8);font-size:17px;line-height:1;cursor:pointer;transition:background .15s ease,color .15s ease,transform .15s ease;z-index:3;display:flex;align-items:center;justify-content:center}
+.cw-modal-x:hover{background:rgba(30,22,50,.96);color:#fff;transform:scale(1.06)}
+.cw-modal-x:focus-visible{outline:2px solid #a855f7;outline-offset:2px}
+
+/* The page behind must not scroll while the modal is up. */
+body.cw-modal-open{overflow:hidden}
+
+@keyframes cw-fade{from{opacity:0}to{opacity:1}}
+@keyframes cw-rise{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+
+@media (max-width:720px){
+  .cw-modal{padding:14px}
+  .cw-modal-card{padding:14px;max-height:96vh;overflow-y:auto}
+  .cw-modal-art{width:100%;border-radius:12px}
+  .cw-modal-meta{margin-top:14px}
+}
+
+/* The credit line under a card is a label now, not a button - the artist
+   panel is not opened from the wall. */
+.cw-credit{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.03);color:rgba(255,255,255,.62);font-size:10px;font-weight:600}
+
+
+/* ===== The picked artist =====
+   When one artist is picked in the filter, a bar slides in under it with
+   who they are, how many covers they made, and the links they left. It is
+   the same spot the filter is doing its work in, so the page reads as one
+   thing rather than two. */
+.cw-links-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 18px;padding:12px 14px;border-radius:14px;background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.22);animation:cw-rise .22s cubic-bezier(.16,1,.3,1) both}
+.cw-links-bar[hidden]{display:none}
+.cw-links-who{display:flex;align-items:center;gap:9px;min-width:0}
+.cw-links-pfp{width:34px;height:34px;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);flex-shrink:0}
+.cw-links-pfp img{width:100%;height:100%;object-fit:cover;display:block}
+.cw-links-name{font-size:13px;font-weight:800;color:#fff;white-space:nowrap}
+.cw-links-count{font-size:11px;color:rgba(255,255,255,.5)}
+.cw-links-list{display:flex;flex-wrap:wrap;gap:7px;flex:1 1 auto;min-width:0}
+.cw-links-none{font-size:11px;color:rgba(255,255,255,.35);font-style:italic}
+.cw-links-clear{padding:6px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);font-size:11px;font-weight:700;cursor:pointer;transition:background .15s ease,color .15s ease}
+.cw-links-clear:hover{background:rgba(255,255,255,.12);color:#fff}
+
+/* The links an artist left, in the same shape as the artist panel uses. */
+.cw-artist-link{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:11.5px;font-weight:600;text-decoration:none;color:rgba(255,255,255,.8);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);transition:background .15s ease,color .15s ease,border-color .15s ease}
+.cw-artist-link i{font-size:12px;color:var(--cw-color,#a855f7)}
+.cw-artist-link:hover{background:rgba(255,255,255,.11);color:#fff;border-color:rgba(255,255,255,.26)}
+.cw-artist-link:focus-visible{outline:2px solid #a855f7;outline-offset:2px}
+
+/* ===== The name on a card =====
+   It is a control now - it picks that artist in the filter - so it looks
+   like one: it lifts on hover, takes the artist's own colour, and says
+   what it will do in its title. */
+.cw-credit{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:rgba(255,255,255,.62);font-size:10px;font-weight:600;cursor:pointer;transition:background .15s ease,color .15s ease,border-color .15s ease,transform .15s ease}
+.cw-credit:hover{background:rgba(255,255,255,.12);color:#fff;border-color:var(--cw-color,#a855f7);transform:translateY(-1px)}
+.cw-credit:focus-visible{outline:2px solid var(--cw-color,#a855f7);outline-offset:2px}
+.cw-credit:active{transform:translateY(0)}
+.cw-credit .cw-dot{transition:box-shadow .15s ease}
+.cw-credit:hover .cw-dot{box-shadow:0 0 10px var(--cw-color,#a855f7)}
+
+@media (max-width:640px){
+  .cw-links-bar{gap:10px;padding:11px 12px}
+  .cw-links-list{order:3;width:100%}
+}

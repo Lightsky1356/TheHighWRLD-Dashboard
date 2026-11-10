@@ -1050,6 +1050,45 @@ window.showTrackInfo=function(idx){idx=parseInt(idx,10);if(isNaN(idx)||idx<0)ret
 
 Object.keys(coverGradientMap).forEach(function (cover) { if (typeof gradientCache !== "undefined") delete gradientCache[cover]; });
 window.__thwCoverGradients = coverGradientMap;
+
+/* ===== Theme switching =====
+   Changing the theme used to snap: the accent colours changed in one
+   frame and the aura behind the page changed colour with them. The class
+   below is added while the change is happening so the fade in style.css
+   and themes.css can run - it animates opacity only, so it stays on the
+   compositor and costs nothing on a weak phone.
+
+   A MutationObserver is used rather than a hook in account.js because the
+   theme can be changed from several places (the settings picker, the
+   seasonal row, the community themes gallery, a restored session) and
+   watching the attribute catches all of them. */
+(function () {
+  if (window.__thwThemeWatch) return;
+  window.__thwThemeWatch = true;
+  var root = document.documentElement;
+  var timer = null;
+  var last = root.getAttribute("data-theme") || "";
+  var start = Date.now();
+
+  function flash() {
+    root.classList.add("theme-switching");
+    document.body.classList.add("theme-switching");
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () {
+      root.classList.remove("theme-switching");
+      document.body.classList.remove("theme-switching");
+    }, 450);
+  }
+
+  new MutationObserver(function () {
+    var now = root.getAttribute("data-theme") || "";
+    if (now === last) return;   /* the same value written again */
+    last = now;
+    /* The restore that happens as the account loads is not a change. */
+    if (Date.now() - start < 2000) return;
+    flash();
+  }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+})();
 /* The heavy half of booting ends here - the track list, gradients and player
    are built. Release the boot screen (index.html's controller also holds a
    failsafe and a load-event trigger, in case execution never reaches this). */

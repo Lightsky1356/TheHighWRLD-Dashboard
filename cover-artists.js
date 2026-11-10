@@ -303,23 +303,41 @@
 // Generating it is what lets 120 artists be listed instead of 22, and it means the
 // roster has one home rather than two that must be kept in step by hand.
 function _renderCoverArtistFooter(artists, buckets, ambiguous) {
+  // The credited artists, and how many covers each one has.
+  var withCovers = [];
+  for (var i = 0; i < artists.length; i++) {
+    if (artists[i].tracks && artists[i].tracks.length) withCovers.push(artists[i]);
+  }
+  var coverCount = 0;
+  for (var c = 0; c < withCovers.length; c++) coverCount += withCovers[c].tracks.length;
+
+  /* The Vault's credits panel points at the Credits page rather than
+     repeating the roster. The wall is the better place for it: it shows
+     the covers themselves, the track each belongs to, and a filter per
+     artist - none of which a flat list of names can do. */
+  var pointer = document.getElementById("vault-cover-credit");
+  if (pointer) {
+    pointer.innerHTML =
+      '<span class="text-gray-400">' + withCovers.length + " artist" +
+      (withCovers.length === 1 ? "" : "s") + " made " + coverCount + " cover" +
+      (coverCount === 1 ? "" : "s") + ".</span> " +
+      '<button type="button" onclick="switchAppPage(\'credits\')" ' +
+      'class="underline underline-offset-2 transition-all bg-transparent border-none p-0 cursor-pointer font-inherit text-[10px] text-amber-300 hover:text-amber-200">' +
+      "See the credits wall</button>";
+    return;
+  }
+
+  /* The old list is gone, so there is nothing left to render here. The
+     function is kept because cover-artists.js calls it, and because the
+     Credits wall reads the same artistData table. */
   var btns = document.querySelectorAll('button[onclick*="toggleArtistPanel"]');
   if (!btns.length) return;
-
-  // The container is the parent that holds every one of those buttons.
   var host = btns[0].parentElement;
   if (!host) return;
   var all = host.querySelectorAll('button[onclick*="toggleArtistPanel"]').length;
   if (all < btns.length) host = document.body;
   if (host === document.body) return;
 
-  // Only artists with a credited cover get a button. The 98 comp artists whose work is
-  // not provably on the site stay in artistData but out of the list, because a
-  // button that opens an empty panel is worse than no button.
-  var withCovers = [];
-  for (var i = 0; i < artists.length; i++) {
-    if (artists[i].tracks && artists[i].tracks.length) withCovers.push(artists[i]);
-  }
   withCovers.sort(function (a, b) { return a.name.localeCompare(b.name); });
 
   var html = "";

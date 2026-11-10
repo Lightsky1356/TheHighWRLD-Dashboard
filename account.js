@@ -3463,20 +3463,20 @@ window.profileSectionShown = function () {
    meant two sources of truth for the same job. _navPillFor already resolves both
    to their real nav buttons (page-nav-about, page-nav-partner), so nothing else
    needed changing to highlight them. */
-var NAV_URL = { home: "/", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register" };
+var NAV_URL = { home: "/", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register" };
   var NAV_URL_REV = {};
   Object.keys(NAV_URL).forEach(function (k) { NAV_URL_REV[NAV_URL[k]] = k; });
   function _navTabFor(page) {
     if (page === "player") return "player";
     if (page === "hub") return "vault";
-    if (page === "wanted" || page === "suggestions") return "community"; if (page === "roadmap") return "roadmap";
+    if (page === "wanted" || page === "suggestions") return "community"; if (page === "roadmap") return "roadmap"; if (page === "credits") return "credits";
     if (page === "account") return "settings";
     if (page === "profile") return "profile";
     if (page === "owner") return "owner";
     return "lobby";
   }
   function _navPillFor(page) {
-    if (page === "wanted" || page === "suggestions") return "page-nav-wanted";
+    if (page === "wanted" || page === "suggestions") return "page-nav-wanted"; if (page === "credits") return "page-nav-credits";
     if (page === "profile" || page === "account" || page === "owner") return "";
     /* These have no button in the nav bar at all - Gallery and Downloads are
        reached from elsewhere in the vault, Failed Projects from its own card, and
