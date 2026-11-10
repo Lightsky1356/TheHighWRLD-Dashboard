@@ -618,3 +618,68 @@ html:where([data-theme]){
   --ac-grad-purple:linear-gradient(135deg,var(--ac-purple),var(--ac-pink));
   --ac-grad-gold:linear-gradient(135deg,var(--ac-orange),var(--ac-gold));
 }
+
+/* ===== Animated theme aura =====
+   Every theme gets a living background. The aura is a fixed, full-bleed
+   layer that sits BELOW all page content (z-index:-1 paints above the html
+   canvas' own --th-bg gradient but below everything else) and drifts three
+   soft light-stained blobs built from the current theme's own accents.
+
+   It is deliberately cheap: the blobs are plain radial gradients with no
+   blur filters, and they only ever animate transform, so the browser does
+   all three motions on the compositor thread and never re-paints a pixel.
+   Each layer gets its own duration and direction so the machine never
+   looks like a loop. The themes' own static gradients keep running under
+   it - the aura adds, it does not replace.
+   Reduced-motion users get the still background only. */
+#th-aura{position:fixed;inset:-18%;z-index:-1;pointer-events:none;overflow:hidden;contain:strict}
+#th-aura,#th-aura::before,#th-aura::after{will-change:transform}
+#th-aura{
+  width:100%;height:100%;
+  background:radial-gradient(46% 40% at 26% 18%,color-mix(in srgb,var(--th-accent,#a855f7) 30%,transparent) 0%,transparent 70%);
+  animation:thw-drift-a 26s ease-in-out infinite alternate;
+}
+#th-aura::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(40% 42% at 78% 74%,color-mix(in srgb,var(--th-accent2,#22d3ee) 24%,transparent) 0%,transparent 70%);
+  animation:thw-drift-b 34s ease-in-out infinite alternate;
+}
+#th-aura::after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(30% 30% at 64% 26%,color-mix(in srgb,var(--ac-pink,#ec4899) 20%,transparent) 0%,transparent 70%);
+  animation:thw-drift-c 44s ease-in-out infinite alternate;
+}
+@keyframes thw-drift-a{
+  0%{transform:translate3d(-4%,-3%,0) scale(1)}
+  50%{transform:translate3d(5%,4%,0) scale(1.14)}
+  100%{transform:translate3d(-2%,6%,0) scale(1.05)}
+}
+@keyframes thw-drift-b{
+  0%{transform:translate3d(5%,4%,0) scale(1.08)}
+  50%{transform:translate3d(-4%,-5%,0) scale(.96)}
+  100%{transform:translate3d(3%,-2%,0) scale(1.12)}
+}
+@keyframes thw-drift-c{
+  0%{transform:translate3d(0,0,0) scale(.9)}
+  50%{transform:translate3d(-6%,5%,0) scale(1.1)}
+  100%{transform:translate3d(5%,-4%,0) scale(.92)}
+}
+@media (prefers-reduced-motion:reduce){
+  #th-aura,#th-aura::before,#th-aura::after{animation:none}
+}
+
+/* ---- personalities: a few themes give the machine its own pace ----
+   Everything else inherits the shared 3-blob dance above; these just change
+   how FAST each "gases" move, so the mood matches the theme's name. */
+html[data-theme=aurora] #th-aura{animation-duration:38s}
+html[data-theme=lava] #th-aura{animation-duration:18s}
+html[data-theme=matrix] #th-aura{animation-duration:12s}
+html[data-theme=cyber] #th-aura{animation-duration:15s}
+html[data-theme=galaxy] #th-aura{animation-duration:52s}
+html[data-theme=ocean] #th-aura{animation-duration:30s}
+html[data-theme=storm] #th-aura{animation-duration:14s}
+html[data-theme=oled] #th-aura,
+html[data-theme=gold] #th-aura,
+html[data-theme=silver] #th-aura,
+html[data-theme=rose] #th-aura{opacity:.6} /* metallic themes: keep the light subtle */
+

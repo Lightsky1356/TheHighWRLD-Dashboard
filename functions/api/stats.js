@@ -82,10 +82,29 @@ export async function onRequestGet(context) {
     }
 
     const totals = { visits: visits.length, uniques: seenVisitors.size };
+    /* The days do more than just get sliced to fourteen: the visits span
+       ninety days, and the chart only shows recent days, so the plain
+       slice used to throw the older days' visits away - the days then no
+       longer added up to the total, which only showed with enough
+       accumulated history. The 13 newest days are shown as their own bars
+       and everything older is folded into one final "*older" row, so every
+       summary still adds up to the total no matter how long the site has
+       been taking visits. ("*older" sorts before any date, so it stays
+       last in newest-first order without a special case.) */
+    const allDays = [...days.values()].sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0));
+    const shownDays = allDays.slice(0, 13);
+    if (allDays.length > 13) {
+      const union = new Set();
+      let foldedVisits = 0;
+      for (const d of allDays.slice(13)) {
+        foldedVisits += d.visits;
+        for (const u of d.uniques) union.add(u);
+      }
+      shownDays.push({ day: "*older", visits: foldedVisits, uniques: union });
+    }
     const perDay = {
-      results: [...days.values()]
+      results: shownDays
         .sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0))
-        .slice(0, 14)
         .map((d) => ({ day: d.day, visits: d.visits, uniques: d.uniques.size })),
     };
     const perPage = {

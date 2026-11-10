@@ -393,3 +393,24 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
    apple-mobile-web-app-status-bar-style unless the app is installed to the Home
    Screen, and that chrome belongs to the browser. */
 :root{color-scheme:dark}
+
+/* ===== Boot screen =====
+   Covers the gap between the browser opening a tab and the app being
+   interactive: the follow-up scripts (tracks.js, script.js and friends) are
+   parsed and executed one by one, and without this the member stares at a
+   half-dressed page. The overlay is the first element in the body, paints
+   immediately, and index.html's boot controller removes it when the app is
+   ready - or a failsafe at 8 s, so it can never trap anyone. */
+#app-boot{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 90% at 50% 0%,rgba(124,58,237,.16),transparent 60%),radial-gradient(120% 100% at 50% 110%,rgba(236,72,153,.10),transparent 55%),linear-gradient(180deg,#07040f,#120a26 45%,#0a0616);opacity:1;transition:opacity .5s ease}
+#app-boot.gone{opacity:0;pointer-events:none}
+.app-boot-core{display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}
+.app-boot-logo{font-family:"Unbounded",sans-serif;font-size:44px;font-weight:900;letter-spacing:.16em;color:#f2edff;text-shadow:0 0 34px rgba(168,85,247,.55)}
+.app-boot-logo span{color:#a855f7}
+.app-boot-spin{width:30px;height:30px;border-radius:50%;border:3px solid rgba(255,255,255,.12);border-top-color:#a855f7;border-right-color:#ec4899;animation:thw-boot-spin .9s linear infinite}
+@keyframes thw-boot-spin{to{transform:rotate(360deg)}}
+.app-boot-note{font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:rgba(242,237,255,.5);min-height:1.6em}
+.app-boot-bar{width:210px;height:4px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.app-boot-bar i{display:block;height:100%;width:38%;border-radius:99px;background:linear-gradient(90deg,#a855f7,#ec4899,#f59e0b);box-shadow:0 0 12px rgba(168,85,247,.6);animation:thw-boot-sweep 1.4s ease-in-out infinite}
+@keyframes thw-boot-sweep{0%{transform:translateX(-104%)}100%{transform:translateX(360%)}}
+@media (prefers-reduced-motion:reduce){.app-boot-spin,.app-boot-bar i{animation:none}}
+

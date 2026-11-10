@@ -105,7 +105,10 @@
 
 /* ===== Owner dashboard overlay (outside account page) ===== */
 #owner-panel{display:none;padding:18px}
-#owner-panel.owner-active{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(720px,92vw);max-height:82vh;overflow-y:auto;z-index:96;display:block;background:var(--ac-glass2,rgba(16,14,32,.96));border:1px solid var(--ac-border2,rgba(255,255,255,.16));border-radius:22px;box-shadow:var(--ac-shadow,0 30px 80px rgba(0,0,0,.5));animation:ac-popIn .25s var(--ac-ease)}
+/* Sized after the Info panel (player-settings.css): min(860px,92vw) wide and
+   max-height:min(88vh,780px) tall, so the dashboard gets the same reading
+   width as the track sheet instead of the old 720px box. */
+#owner-panel.owner-active{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(860px,92vw);max-height:min(88vh,780px);overflow-y:auto;z-index:96;display:block;background:var(--ac-glass2,rgba(16,14,32,.96));border:1px solid var(--ac-border2,rgba(255,255,255,.16));border-radius:22px;box-shadow:var(--ac-shadow,0 30px 80px rgba(0,0,0,.5));animation:ac-popIn .25s var(--ac-ease)}
 #owner-panel .owner-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
 #owner-panel .owner-title{display:inline-flex;align-items:center;gap:8px;font-family:"Unbounded",sans-serif;font-size:15px;font-weight:800;color:var(--ac-text,#f2edff);letter-spacing:.3px}
 #owner-panel .owner-title i{color:var(--ac-gold,#fbbf24)}
@@ -1031,7 +1034,8 @@ body[data-accent="amber"] .hero-stat-value{background:linear-gradient(135deg,#f5
 @media (max-width:900px){#account-page .acv-sidebar{position:static}#account-page .ac-shell-header{padding:18px}}
 
 /* ===== Owner Dashboard revamp ===== */
-#owner-panel.owner-active{width:min(760px,94vw);background:linear-gradient(180deg,rgba(27,21,48,.98),rgba(12,10,26,.98));border:1px solid rgba(251,191,36,.22);border-radius:24px;box-shadow:0 40px 100px rgba(0,0,0,.65),0 0 70px rgba(251,191,36,.08);padding:22px}
+/* Width/height follow the Info panel shell (min(860px,92vw) / min(88vh,780px)). */
+#owner-panel.owner-active{width:min(860px,92vw);max-height:min(88vh,780px);background:linear-gradient(180deg,rgba(27,21,48,.98),rgba(12,10,26,.98));border:1px solid rgba(251,191,36,.22);border-radius:24px;box-shadow:0 40px 100px rgba(0,0,0,.65),0 0 70px rgba(251,191,36,.08);padding:22px}
 #owner-panel.owner-active::before{content:"";display:block;height:3px;margin:-22px -22px 16px;border-radius:24px 24px 0 0;background:linear-gradient(90deg,transparent,rgba(251,191,36,.7),rgba(236,72,153,.5),transparent)}
 #owner-panel .owner-top{margin-bottom:16px;padding-right:40px}
 #owner-panel .owner-title{font-size:17px}
@@ -1062,6 +1066,11 @@ body[data-accent="amber"] .hero-stat-value{background:linear-gradient(135deg,#f5
 #owner-panel .owner-day-bar{display:block;height:9px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
 #owner-panel .owner-day-fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#b98a3c,#e879a8);box-shadow:0 0 10px rgba(232,121,168,.35);transition:width .5s ease}
 #owner-panel .owner-day-num{font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;color:#fff;text-align:right;font-variant-numeric:tabular-nums}
+/* The folded "earlier" row (visits before the two weeks shown as bars) is
+   quieter on purpose: it is context, not a day of the trend. */
+#owner-panel .owner-day-older .owner-day-date{color:rgba(255,255,255,.3);font-style:italic}
+#owner-panel .owner-day-older .owner-day-fill{opacity:.4;box-shadow:none}
+#owner-panel .owner-day-older .owner-day-num{color:rgba(255,255,255,.55)}
 #owner-panel .owner-login-row input:focus{border-color:rgba(251,191,36,.6);box-shadow:0 0 0 3px rgba(251,191,36,.14)}
 #owner-panel .owner-login-row button{box-shadow:0 6px 20px rgba(245,158,11,.3)}
 #owner-panel::-webkit-scrollbar{width:10px}
@@ -1072,6 +1081,17 @@ body:has(#owner-backdrop.show)>*:not(#mini-player):not(#mini-shortcuts):not(#own
 
 #owner-panel.owner-active .owner-stat:nth-child(4){border-color:rgba(34,211,238,.3)}
 #owner-panel.owner-active .owner-stat:nth-child(4) .owner-stat-num{background:linear-gradient(135deg,#a5f3fc,#22d3ee);-webkit-background-clip:text;background-clip:text}
+
+/* ===== Owner Dashboard live chip =====
+   owner-live.js keeps the dashboard polling while it is open; this chip is
+   the visible proof: a pulse, the word LIVE, and when numbers last landed. */
+#owner-panel .owner-live-chip{display:inline-flex;align-items:center;gap:7px;margin-left:auto;padding:5px 11px;border-radius:999px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);font-size:10px;font-weight:800;letter-spacing:.14em;color:#86efac;flex-shrink:0}
+#owner-panel .owner-live-chip i{font-size:6px;animation:owner-live-pulse 1.6s ease-in-out infinite}
+#owner-panel .owner-live-chip span.owner-live-when{font-weight:600;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.55);font-size:9.5px;font-variant-numeric:tabular-nums}
+#owner-panel .owner-live-chip.stale{background:rgba(148,163,184,.07);border-color:rgba(148,163,184,.3);color:rgba(203,213,225,.8)}
+#owner-panel .owner-live-chip.stale i{animation:none}
+@keyframes owner-live-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.72)}}
+@media (max-width:560px){#owner-panel .owner-live-chip span.owner-live-when{display:none}}
 /* mobile duration restore (see player-settings single-line block) */
 @media (max-width:768px){.playlist-item .track-duration{display:inline-block !important;width:30px !important;font-size:8px !important;text-align:right;flex-shrink:0}}
 #page-section-profile .pl-empty-card .btn-gold,#account-page .pl-empty-card .btn-gold{background:var(--ac-grad-gold,linear-gradient(135deg,#f5c97b,#d4a574));color:#201000;border-color:rgba(245,158,11,.45);box-shadow:0 8px 22px rgba(245,158,11,.3)}

@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v173';
+const VERSION = 'thw-v175';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -57,7 +57,7 @@ const PRECACHE = [
   './account.js?v=thw-v38',
   './effects.js?v=thw-v2',
   './i18n.js?v=9',
-  './script.js?v=thw-v57',
+  './script.js?v=thw-v59',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v10',
@@ -67,12 +67,12 @@ const PRECACHE = [
   './pwa.js?v=thw-v3',
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
-  './account.css?v=thw-v4',
+  './account.css?v=thw-v6',
   'player-settings.css?v=thw-v75',
-  './style.css?v=thw-v34',
+  './style.css?v=thw-v35',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
-  './themes.css?v=thw-v10',
+  './themes.css?v=thw-v11',
   './css2.css?v=thw-v2',
   './about.css?v=thw-v4',
   './fonts/0-Sora-300.woff2',
@@ -125,6 +125,7 @@ const PRECACHE = [
   './player-settings.js?v=thw-v11',
   './reports.js?v=thw-v4',
   './owner-vault-sync.js?v=thw-v4',
+  './owner-live.js?v=thw-v2',
   './player-performance.js?v=thw-v7',
     './queue-ui.js?v=thw-v17',
   './vault-discography.js?v=thw-v4',
