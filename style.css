@@ -459,12 +459,12 @@ body.drp-desktop #ps-nav-drp{display:inline-flex}
    jump. Only opacity and transform are animated, so it stays on the
    compositor and costs nothing on a weak phone. */
 html[data-theme]{transition:background .45s ease,color .45s ease}
-html[data-theme] #th-aura{transition:opacity .45s ease,background .45s ease,filter .45s ease}
+html[data-theme] .th-blob{transition:opacity .45s ease}
 .theme-switching{animation:thw-theme-fade .45s ease both}
 @keyframes thw-theme-fade{from{opacity:.82}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){
   .theme-switching{animation:none}
-  html[data-theme],html[data-theme] #th-aura{transition:none}
+  html[data-theme],html[data-theme] .th-blob{transition:none}
 }
 
 /* The links in the Not Loading? box. */

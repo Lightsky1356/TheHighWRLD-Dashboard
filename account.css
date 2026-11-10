@@ -169,7 +169,7 @@
 #account-page .danger-unlock-row input{flex:1;min-width:200px;background:rgba(255,255,255,.05);border:1px solid rgba(239,68,68,.35);border-radius:12px;padding:11px 14px;font-size:13px;color:#fff;font-family:inherit;outline:none;transition:border .2s}
 #account-page .danger-unlock-row input:focus{border-color:#f87171;box-shadow:0 0 0 3px rgba(239,68,68,.15)}
 /* ============ PREMIUM ACCOUNT DASHBOARD — DESIGN SYSTEM ============ */
-#page-section-account{min-height:100vh;padding:0 24px 56px;background:var(--th-bg);background-attachment:fixed}
+#page-section-account{min-height:100vh;padding:0 24px 56px}
 #account-page{max-width:1400px;margin:0 auto;position:relative;z-index:1}
 #account-page .ac-shell-header{min-height:115px;height:auto;border-radius:20px;padding:26px 28px;background:linear-gradient(135deg,rgba(25,25,55,.84),rgba(11,20,34,.82));border:1px solid rgba(255,255,255,.055);margin-bottom:18px;box-shadow:none}
 #account-page .ac-shell-header:after{display:none}
