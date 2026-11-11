@@ -51,7 +51,10 @@ for tier_name, box in TIERS:
                 # A thumbnail never grows the picture.
                 if im.width > box or im.height > box:
                     im.thumbnail((box, box), Image.LANCZOS)
-                out_path = os.path.join(out_dir, os.path.splitext(name)[0] + ".webp")
+                # The extension stays in the name: Covers/Floating.jpg and
+                # Covers/Floating.png are two different pictures with the same
+                # name, and dropping the extension let one overwrite the other.
+                out_path = os.path.join(out_dir, name + ".webp")
                 im.save(out_path, "WEBP", quality=MAX_QUALITY, method=6)
             after = os.path.getsize(out_path)
             tier_bytes += after

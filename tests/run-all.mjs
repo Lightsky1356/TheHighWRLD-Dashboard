@@ -46,6 +46,7 @@ const GROUPS = [
   { name: "listens-rollup", file: "./listens-rollup.test.mjs", needsServer: false },
   { name: "friend-activity", file: "./friend-activity.test.mjs", needsServer: false },
   { name: "asset-tokens", file: "./asset-tokens.test.mjs", needsServer: false },
+  { name: "cover-thumbs", file: "./cover-thumbs.test.mjs", needsServer: false },
   { name: "social-modal", file: "./social-modal.test.mjs", needsServer: false },
   { name: "push-api", file: "./push-api.test.mjs", needsServer: true },
   { name: "notifications", file: "./notifications-optout.test.mjs", needsServer: true },

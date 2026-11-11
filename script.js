@@ -89,9 +89,13 @@ function _coverThumb(p, tier) {
   if (!m) return null;
   var name = src.slice(m[0].length);
   try { name = decodeURIComponent(name); } catch (e) {}
-  name = name.replace(/\.(png|jpe?g|webp)$/i, "");
   name = name.split("/").pop();
   if (!name) return null;
+  /* The extension stays in the name. Covers/Floating.jpg and
+     Covers/Floating.png are two different pictures with the same name, and
+     a thumbnail named after the file without its extension let one of them
+     write over the other - the wall showed the wrong art. */
+  if (!/\.(png|jpe?g|webp)$/i.test(name)) return null;
   return "Covers/thumbs/" + box + "/" + encodeURIComponent(name) + ".webp";
 }
 window._coverThumb = _coverThumb;
