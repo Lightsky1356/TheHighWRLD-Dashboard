@@ -10,6 +10,11 @@
    walk starts where the last one ended, so a circle is never put down
    somewhere else from where it was: it never teleports.
 
+   And the circles do not overlap. A new place is only taken if it is
+   clear of the others; where there is no clear place, the emptiest one
+   wins. The bend in the path is checked the same way, so a circle does
+   not swing through another one on its way.
+
    The movement is run by the browser's own animation engine rather than by
    a loop, so it costs nothing while it runs.
    ========================================================================== */
@@ -30,42 +35,107 @@
 
   var runs = [];
 
-  /* A place on the screen, with a margin so a circle is never entirely
-     off the edge and never covers the whole of it. */
+  /* The biggest a circle gets: the pulse takes it to 1.2 of its size, and
+     the circles must not touch even at their biggest. */
+  var MAX_SCALE = 1.2;
+
+  /* Where a circle is right now, and how big it is. */
+  function centre(el) {
+    var r = el.getBoundingClientRect();
+    var size = el.offsetWidth || 300;
+    return {
+      x: r.left + r.width / 2,
+      y: r.top + r.height / 2,
+      r: (size / 2) * MAX_SCALE
+    };
+  }
+
+  /* How much two circles would overlap. Zero is clear. */
+  function overlap(a, b) {
+    var dx = a.x - b.x;
+    var dy = a.y - b.y;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    var need = a.r + b.r;
+    if (d >= need) return 0;
+    var miss = need - d;
+    return miss * miss;
+  }
+
+  /* The other circles, where they are right now. */
+  function near(el) {
+    var list = [];
+    for (var i = 0; i < blobs.length; i++) {
+      if (blobs[i] === el) continue;
+      list.push(centre(blobs[i]));
+    }
+    return list;
+  }
+
+  /* A place on the screen that is clear of the others. Where there is no
+     clear place, the emptiest one wins - which is better than a place
+     that is completely covered. */
   function spot(el) {
     var w = el.offsetWidth || 300;
     var h = el.offsetHeight || 300;
-    var margin = Math.min(w, h) * 0.22;
-    var roomX = Math.max(1, window.innerWidth - w - margin * 2);
-    var roomY = Math.max(1, window.innerHeight - h - margin * 2);
-    return {
-      x: Math.round(margin + Math.random() * roomX),
-      y: Math.round(margin + Math.random() * roomY)
-    };
+    var r = (Math.max(w, h) / 2) * MAX_SCALE;
+    var pad = Math.min(w, h) * 0.08;
+
+    var minX = r + pad, maxX = window.innerWidth - r - pad;
+    var minY = r + pad, maxY = window.innerHeight - r - pad;
+    if (maxX < minX) { minX = maxX = window.innerWidth / 2; }
+    if (maxY < minY) { minY = maxY = window.innerHeight / 2; }
+
+    var others = near(el);
+    var best = null;
+    var bestCost = Infinity;
+    for (var i = 0; i < 60; i++) {
+      var cand = {
+        x: minX + Math.random() * (maxX - minX),
+        y: minY + Math.random() * (maxY - minY),
+        r: r
+      };
+      var cost = 0;
+      for (var j = 0; j < others.length; j++) cost += overlap(cand, others[j]);
+      if (cost < bestCost) { bestCost = cost; best = cand; }
+      if (cost === 0) break;
+    }
+    return best;
   }
 
   /* The circle's own place, as an offset from where the stylesheet puts
      it. */
   function offsetOf(el, at) {
+    var w = el.offsetWidth || 300;
+    var h = el.offsetHeight || 300;
     return {
-      x: Math.round(at.x - (el.offsetLeft || 0)),
-      y: Math.round(at.y - (el.offsetTop || 0))
+      x: Math.round(at.x - (el.offsetLeft || 0) - w / 2),
+      y: Math.round(at.y - (el.offsetTop || 0) - h / 2)
     };
   }
 
   function glide(el) {
-    var from = offsetOf(el, el.__thwSpot);
+    var from = offsetOf(el, centre(el));
     var to = spot(el);
     var off = offsetOf(el, to);
     var dur = 9000 + Math.random() * 9000;
     var reach = Math.min(window.innerWidth, window.innerHeight) * 0.4;
 
     /* The bend. A point off the straight line, halfway along, so the path
-       curves instead of running dead straight from one spot to the next. */
-    var mid = {
-      x: (from.x + off.x) / 2 + (Math.random() - 0.5) * reach,
-      y: (from.y + off.y) / 2 + (Math.random() - 0.5) * reach
-    };
+       curves instead of running dead straight. It is checked against the
+       others too, so a circle does not swing through one on its way. */
+    var others = near(el);
+    var mid = null;
+    for (var i = 0; i < 12; i++) {
+      var cand = {
+        x: (from.x + off.x) / 2 + (Math.random() - 0.5) * reach,
+        y: (from.y + off.y) / 2 + (Math.random() - 0.5) * reach,
+        r: (el.offsetWidth || 300) / 2
+      };
+      var cost = 0;
+      for (var j = 0; j < others.length; j++) cost += overlap(cand, others[j]);
+      if (!mid || cost < mid.cost) mid = { x: cand.x, y: cand.y, cost: cost };
+      if (cost === 0) break;
+    }
 
     var anim;
     try {
@@ -80,14 +150,12 @@
     } catch (e) {
       /* No Web Animations: put it in the new place and try again later. */
       el.style.translate = off.x + "px " + off.y + "px";
-      el.__thwSpot = to;
       setTimeout(function () { glide(el); }, dur);
       return;
     }
 
     runs.push(anim);
     anim.onfinish = function () {
-      el.__thwSpot = to;
       el.style.translate = off.x + "px " + off.y + "px";
       /* The finished walk steps out of the list, so the list stays short. */
       var at = runs.indexOf(anim);
@@ -97,17 +165,18 @@
     };
   }
 
-  /* The first walk. Every circle starts somewhere and starts moving. */
+  /* The first walk. Every circle starts somewhere clear of the others and
+     starts moving. */
   blobs.forEach(function (el) {
-    el.__thwSpot = spot(el);
-    var off = offsetOf(el, el.__thwSpot);
+    var at = spot(el);
+    var off = offsetOf(el, at);
     el.style.translate = off.x + "px " + off.y + "px";
     /* A short stagger, so they do not all set off at the same moment. */
     setTimeout(function () { glide(el); }, Math.random() * 2500);
   });
 
-  /* The window changed size: the circles are where they are, but the room
-     they have to move in has changed. The next walk sorts that out. */
+  /* The window changed size: the room the circles have to move in has
+     changed. The next walk sorts that out. */
   var resizeTimer = 0;
   window.addEventListener("resize", function () {
     if (document.hidden) return;
@@ -116,7 +185,7 @@
       for (var i = 0; i < blobs.length; i++) {
         var el = blobs[i];
         var off = offsetOf(el, spot(el));
-        el.__thwSpot = { x: el.offsetLeft + off.x, y: el.offsetTop + off.y };
+        el.style.translate = off.x + "px " + off.y + "px";
       }
     }, 400);
   }, { passive: true });
