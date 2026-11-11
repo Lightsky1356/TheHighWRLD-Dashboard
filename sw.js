@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v207';
+const VERSION = 'thw-v208';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -52,7 +52,7 @@ const PRECACHE = [
   './qrcode.min.js?v=thw-v2',
   './toast.js?v=thw-v1',
   './tracks.js?v=thw-v11',
-  './browser-id3-writer.js?v=thw-v2',
+  './browser-id3-writer.js?v=thw-v3',
   './bootstrap-client.js?v=thw-v3',
   './account.js?v=thw-v40',
   './effects.js?v=thw-v2',
