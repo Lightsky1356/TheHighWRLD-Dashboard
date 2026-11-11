@@ -1771,7 +1771,6 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
    nobody is looking at. */
 html.is-idle #bg-motion,
 html.is-idle #bg-motion *,
-html.is-idle .th-blob,
 html.is-idle::before,
 html.is-idle::after,
 html.is-idle .player-lightning,
