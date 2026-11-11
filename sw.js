@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v204';
+const VERSION = 'thw-v205';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -57,10 +57,10 @@ const PRECACHE = [
   './account.js?v=thw-v40',
   './effects.js?v=thw-v2',
   './i18n.js?v=9',
-  './script.js?v=thw-v63',
+  './script.js?v=thw-v64',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
-  './auth.js?v=thw-v10',
+  './auth.js?v=thw-v11',
   './wanted-realtime.js?v=thw-v4',
   './community-realtime.js?v=thw-v6',
   './presence.js?v=thw-v6',
@@ -126,25 +126,25 @@ const PRECACHE = [
   './reports.js?v=thw-v4',
   './owner-vault-sync.js?v=thw-v4',
   './owner-live.js?v=thw-v2',
-  './player-performance.js?v=thw-v8',
+  './player-performance.js?v=thw-v9',
     './queue-ui.js?v=thw-v17',
   './vault-discography.js?v=thw-v4',
   './global-search.js?v=thw-v4',
   './about-tabs.js?v=thw-v6',
-  './trending.js?v=thw-v6',
+  './trending.js?v=thw-v7',
   './owner-search.js?v=thw-v3',
   './owner-announce.js?v=thw-v3',
   './bans.js?v=thw-v3',
   './automod-ui.js?v=thw-v3',
   './report-status.js?v=thw-v2',
   './ban-screen.js?v=thw-v2',
-  './wrld-stats.js?v=thw-v9',
-  './recent.js?v=thw-v9',
+  './wrld-stats.js?v=thw-v10',
+  './recent.js?v=thw-v10',
   './trackinfo.js?v=thw-v3',
   './profile-enhancements.js?v=thw-v38',
   './roadmap-data.js?v=thw-v28',
   './roadmap.js?v=thw-v26',
-  './timeline.js?v=thw-v5',
+  './timeline.js?v=thw-v6',
   './wrldlog.css?v=thw-v3',
   './wrldlog-data.js?v=thw-v6',
   './wrldlog.js?v=thw-v6',
@@ -188,7 +188,7 @@ const PRECACHE = [
   './AlbumArt/party.jpg',
   './AlbumArt/preparty.jpg',
   './cover-artists.js?v=thw-v92',
-  './credits-wall.js?v=thw-v13',
+  './credits-wall.js?v=thw-v14',
   './credits-wall.css?v=thw-v10',
 ];
 

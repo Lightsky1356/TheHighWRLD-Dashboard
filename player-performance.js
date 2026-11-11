@@ -194,7 +194,13 @@
        but raw.githubusercontent.com URLs are owner/repo/branch/Covers/x.png -
        one deeper - so it silently matched nothing and every row fell back to
        the full-size PNG. */
-    var coverSrc = _coverWebpFor(cover) || cover;
+    /* The thumbnail first: 64px, which is 2x the 24-28 pixels the row
+       actually draws it at. The old build asked for the full-size cover - up to
+       11 MB of PNG - to paint a 24 pixel square, and one pass through the list
+       was 122 MB. The row falls back to the original if the thumbnail is not
+       deployed, so a missing tier costs nothing but the old behaviour. */
+    var thumb = _coverThumb(cover, "64");
+    var coverSrc = thumb || _coverWebpFor(cover) || cover;
     var coverFallback = "this.onerror=null;this.src='" + String(cover).replace(/'/g, "\\'") + "'";
     var tones = accentFor(cover);
     var accent = tones.accent;

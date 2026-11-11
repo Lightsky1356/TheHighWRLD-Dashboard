@@ -1,3 +1,8 @@
+/* Batch 27 - this square is drawn at 152 pixels, so it takes the 320px thumbnail instead of the full-size cover. */
+function _smallCoverTrending(src) {
+  var t = (typeof window !== "undefined" && window._coverThumb) ? window._coverThumb(src, "320") : null;
+  return t || src;
+}
 /* Trending in the WRLD + Surprise shuffle.
  * Fetches /api/trending (D1 listens aggregate) and docks a cover-art strip
  * under the WRLD Player playlist (#playlist-panel). Clicking a card plays
@@ -105,7 +110,7 @@
     var cover = hit.cover || FALLBACK_COVER;
     var rk = t.rank === 1 ? "trending-rank r1" : "trending-rank";
     return '<button type="button" class="trending-card" data-trending-title="' + esc(t.title) + '">' +
-      '<span class="trending-cover"><img decoding="async" src="' + esc(cover) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'' + FALLBACK_COVER + '\'">' +
+      '<span class="trending-cover"><img decoding="async" src="' + esc(_smallCoverTrending(cover)) + '" alt="" loading="lazy" onerror="this.onerror=function(){this.onerror=null;this.src=\'' + FALLBACK_COVER + '\'};this.src=\'' + esc(cover).replace(/'/g, "&#39;") + '\'">' +
       '<span class="trending-play-ov"><span><i class="fas fa-play"></i></span></span>' +
       '<span class="' + rk + '">#' + t.rank + '</span></span>' +
       '<span class="trending-meta"><span class="trending-name">' + esc(t.title) + '</span>' +

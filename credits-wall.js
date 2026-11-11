@@ -28,6 +28,16 @@
       encodeURIComponent(file);
   }
 
+  /* The wall draws each cover at 150px, so it wants the 320px tier - twice
+     that, for a retina screen. The full-size picture stays where it is: the
+     big view and the download button both want the original bytes, and a
+     download that handed over a thumbnail would be a different picture. */
+  function thumbUrl(file) {
+    if (!file) return "";
+    var t = window._coverThumb ? window._coverThumb("Covers/" + file, "320") : null;
+    return t || coverUrl(file);
+  }
+
   /* The track a cover belongs to, so the wall can name the song rather than
      a bare file name. trackList is the catalogue. */
   var trackCache = null;
@@ -300,7 +310,7 @@
          the page opens. The rest are prefetched while the browser is idle
          further down, so scrolling to them never waits for a fetch. */
       html += '<img loading="' + (i < EAGER ? "eager" : "lazy") + '" decoding="async" ' +
-        'fetchpriority="' + (i < EAGER ? "high" : "low") + '" src="' + esc(coverUrl(e.file)) +
+        'fetchpriority="' + (i < EAGER ? "high" : "low") + '" src="' + esc(thumbUrl(e.file)) +
         '" alt="' + esc(e.title) + ' cover art" onerror="this.closest(\'.cw-cover\')' +
         '.classList.add(\'is-missing\');this.remove();">';
       html += '</div>';
@@ -464,7 +474,7 @@
     }
 
     /* Warm the rest of the covers while the browser is idle. */
-    prefetchCovers(entries.map(function (e) { return coverUrl(e.file); }));
+    prefetchCovers(entries.map(function (e) { return thumbUrl(e.file); }));
 
     /* The count is already in the markup - see above. */
   }

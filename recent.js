@@ -1,3 +1,8 @@
+/* Batch 27 - this square is drawn at 32 pixels, so it takes the 64px thumbnail instead of the full-size cover. */
+function _smallCoverRecent(src) {
+  var t = (typeof window !== "undefined" && window._coverThumb) ? window._coverThumb(src, "64") : null;
+  return t || src;
+}
 /* Recently Played — self profile block only.
  *
  * It also used to render a compact strip inside the WRLD Player. That is gone:
@@ -94,7 +99,7 @@
     var cov = coverFor(r.title) || "Juice-WRLD.png";
     var when = ago(r.ts);
     return '<button type="button" class="ws-recent-row" data-recent-title="' + esc(r.title) + '">' +
-      '<img decoding="async" class="ws-recent-art" src="' + esc(cov) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+      '<img decoding="async" class="ws-recent-art" src="' + esc(_smallCoverRecent(cov)) + '" alt="" loading="lazy" onerror="this.onerror=function(){this.onerror=null;this.src=\'Juice-WRLD.png\'};this.src=\'' + esc(cov).replace(/'/g, "&#39;") + '\'">' +
       '<span class="ws-recent-tt"><b>' + esc(r.title) + '</b>' + (when ? '<span>' + esc(when) + '</span>' : "") + '</span>' +
       '<i class="fas fa-play" style="color:rgba(255,255,255,.3);font-size:10px"></i></button>';
   }

@@ -54,6 +54,34 @@
      the mobile profile popup; a hook on the wrong route would leave the weight
      loading for some visitors while looking fixed. "Has a layout box" is the one
      condition every route passes through. */
+  /* Can this element be seen? display:none, visibility:hidden and opacity:0
+     all count as hidden. The walk matters: visibility is inherited, and opacity
+     is not, so the iframe's own computed opacity reads 1 even when the
+     container that holds it is at 0. */
+  function reallyVisible(el) {
+    try {
+      if (typeof el.checkVisibility === "function") {
+        var seen = el.checkVisibility({
+          opacityProperty: true,
+          visibilityProperty: true,
+          checkOpacity: true,
+          checkVisibilityCSS: true
+        });
+        if (!seen) return false;
+      }
+    } catch (e) {}
+    var node = el;
+    while (node && node.nodeType === 1) {
+      var st = window.getComputedStyle(node);
+      if (!st) break;
+      if (st.display === "none") return false;
+      if (st.visibility === "hidden" || st.visibility === "collapse") return false;
+      if (st.opacity === "0") return false;
+      node = node.parentElement;
+    }
+    return true;
+  }
+
   (function armCaptchaFrames() {
     var pending = [];
     var queued = false;
@@ -62,9 +90,17 @@
       for (var i = 0; i < pending.length; i++) {
         var el = pending[i];
         if (el.getAttribute("src")) continue;
-        /* offsetParent is null under display:none ancestors, which is the state
-           being waited out; the rect check covers position:fixed. */
-        if (el.offsetParent === null && !el.getClientRects().length) continue;
+        /* Can this widget actually be seen? The old test - offsetParent null
+           AND no client rects - was passed by the widget containers, because
+           they are position:absolute with opacity:0 and visibility:hidden. They
+           have a layout box and an offsetParent, so the test said "visible" and
+           the browser fetched 1.4 MB of captcha HTML for widgets nobody could
+           see. Now nothing hidden counts as visible.
+           checkVisibility() answers it where it exists; the walk covers the
+           rest, and it has to walk, because visibility and opacity are
+           inherited - the iframe's own computed opacity is 1 even when its
+           container is at 0. */
+        if (!reallyVisible(el)) continue;
         var src = el.getAttribute("data-src");
         if (src) el.setAttribute("src", src);
       }

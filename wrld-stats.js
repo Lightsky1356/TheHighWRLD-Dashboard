@@ -1,3 +1,8 @@
+/* Batch 27 - this square is drawn at 32 pixels, so it takes the 64px thumbnail instead of the full-size cover. */
+function _smallCoverStats(src) {
+  var t = (typeof window !== "undefined" && window._coverThumb) ? window._coverThumb(src, "64") : null;
+  return t || src;
+}
 /* WRLD Stats — merged into the native profile header.
  * Extends the profile's own .cmp-qstats row with Streak + Rank cells and
  * upgrades/adds the Top-plays block with cover-art rows. Self profile only
@@ -85,7 +90,7 @@
     var cov = coverFor(r.title) || "Juice-WRLD.png";
     return '<button type="button" class="ws-top" data-ws-title="' + esc(r.title) + '">' +
       '<span class="ws-rank">#' + r.rank + '</span>' +
-      '<img decoding="async" class="ws-art" src="' + esc(cov) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+      '<img decoding="async" class="ws-art" src="' + esc(_smallCoverStats(cov)) + '" alt="" loading="lazy" onerror="this.onerror=function(){this.onerror=null;this.src=\'Juice-WRLD.png\'};this.src=\'' + esc(cov).replace(/'/g, "&#39;") + '\'">' +
       '<span class="ws-tt"><b>' + esc(r.title) + '</b><span>' + Number(r.plays || 0) + ' plays</span></span>' +
       '<i class="fas fa-play" style="color:rgba(255,255,255,.3);font-size:10px"></i></button>';
   }
