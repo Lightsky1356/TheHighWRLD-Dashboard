@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v205';
+const VERSION = 'thw-v206';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
