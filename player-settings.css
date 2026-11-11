@@ -1794,3 +1794,26 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
    on a site with twenty-two of them is a large saving. */
 .app-page{content-visibility:auto;contain-intrinsic-size:auto 900px}
 .app-page.active{content-visibility:visible}
+
+/* ===== Batch 28: the Discord button in the nav ===== */
+.nav-discord-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1px solid rgba(88,101,242,.4);background:rgba(88,101,242,.14);color:#8b9bff;text-decoration:none;transition:background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease}
+.nav-discord-btn:hover{background:rgba(88,101,242,.3);color:#fff;border-color:rgba(88,101,242,.7);transform:scale(1.07)}
+.nav-discord-btn:focus-visible{outline:2px solid #5865f2;outline-offset:2px}
+.nav-discord-btn i{font-size:15px;line-height:1}
+@media (max-width:767px){.nav-discord-btn{display:none}}
+
+/* ===== Batch 28: the lobby's scrollers say there is more =====
+   The rules panel and the comps list scroll, and their last line was cut
+   in half with nothing to say so. The fade sits over the bottom of the
+   scroll box and says, in the only way a panel can, that there is more. */
+.lobby-panel{position:relative}
+/* All five titles are set to the same size. "THEHIGHWRLD" is the
+   longest of them and it did not fit a 240px column at 20px - the first
+   letters were cut off. */
+.lobby-panel h3{font-size:1.05rem!important;line-height:1.35;gap:.45rem;flex-wrap:wrap;overflow-wrap:anywhere;min-width:0}
+.lobby-panel-fade::after{content:"";position:absolute;left:1px;right:1px;bottom:1px;height:34px;pointer-events:none;border-radius:0 0 19px 19px;background:linear-gradient(to top,rgba(20,14,42,.92),rgba(20,14,42,.55) 45%,transparent)}
+
+/* The Comps panel's filter buttons used to run off the panel and were cut
+   off with nothing to say so. They wrap, and they are small enough to fit
+   two to a row in a 240px column. */
+.comps-tabs .tab-btn{padding:3px 9px!important;font-size:9.5px!important;line-height:1.4;white-space:nowrap}

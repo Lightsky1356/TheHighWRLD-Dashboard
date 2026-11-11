@@ -10,6 +10,7 @@ retina screen:
     64   the track list rows, the mini cover, the queue items
     128  the stat art, trending, recent, the mobile player
     320  the credits wall, the info panel cover
+    640  the cover view, the lightbox
 
 WebP, quality 72, method 6. The output is measured, not guessed - the
 script prints the before and after.
@@ -21,7 +22,7 @@ ROOT = "D:/TheHighWRLD Dashboard"
 SRC = os.path.join(ROOT, "Covers")
 DST = os.path.join(SRC, "thumbs")
 
-TIERS = [("64", 64), ("128", 128), ("320", 320)]
+TIERS = [("64", 64), ("128", 128), ("320", 320), ("640", 640)]
 
 # Never larger than the source, and never upscaled.
 MAX_QUALITY = 72

@@ -640,24 +640,28 @@ html:where([data-theme]){
    the root with background-attachment: fixed cannot be cached, so it was
    re-rasterised on every frame instead.
  */
-.th-blob{position:fixed;display:block;border-radius:50%;pointer-events:none;will-change:transform;transform:translateZ(0)}
-.th-blob-a{width:min(620px,48vmin);height:min(620px,48vmin);left:15%;top:10%;background:radial-gradient(circle closest-side,color-mix(in srgb,var(--th-accent,#a855f7) 32%,transparent) 0%,transparent 70%);animation:thw-drift-a 26s ease-in-out infinite alternate}
-.th-blob-b{width:min(520px,40vmin);height:min(520px,40vmin);left:85%;top:86%;background:radial-gradient(circle closest-side,color-mix(in srgb,var(--th-accent2,#22d3ee) 26%,transparent) 0%,transparent 70%);animation:thw-drift-b 34s ease-in-out infinite alternate}
-.th-blob-c{width:min(440px,34vmin);height:min(440px,34vmin);left:66%;top:18%;background:radial-gradient(circle closest-side,color-mix(in srgb,var(--ac-pink,#ec4899) 22%,transparent) 0%,transparent 70%);animation:thw-drift-c 44s ease-in-out infinite alternate}
+.th-blob{position:fixed;display:block;border-radius:50%;pointer-events:none;will-change:transform,opacity;transform:translateZ(0)}
+.th-blob-a{width:min(620px,48vmin);height:min(620px,48vmin);left:12%;top:6%;background:radial-gradient(circle closest-side,color-mix(in srgb,var(--th-accent,#a855f7) 32%,transparent) 0%,transparent 70%);animation:thw-drift-a 26s ease-in-out infinite alternate}
+.th-blob-b{width:min(520px,40vmin);height:min(520px,40vmin);left:78%;top:62%;background:radial-gradient(circle closest-side,color-mix(in srgb,var(--th-accent2,#22d3ee) 26%,transparent) 0%,transparent 70%);animation:thw-drift-b 34s ease-in-out infinite alternate}
+.th-blob-c{width:min(440px,34vmin);height:min(440px,34vmin);left:60%;top:24%;background:radial-gradient(circle closest-side,color-mix(in srgb,var(--ac-pink,#ec4899) 22%,transparent) 0%,transparent 70%);animation:thw-drift-c 21s ease-in-out infinite alternate}
+/* The circles BREATHE. They grow and shrink, brighten and dim, and wander
+   a little - the same colour in the same place, alive. A circle sweeping
+   the whole screen was tried and it is a lot: a 600px wash of colour over
+   the page every half minute, and a lot of layer to move. */
 @keyframes thw-drift-a{
-  0%{transform:translate3d(-4%,-3%,0) scale(1)}
-  50%{transform:translate3d(5%,4%,0) scale(1.14)}
-  100%{transform:translate3d(-2%,6%,0) scale(1.05)}
+  0%{transform:translate3d(-5%,2vh,0) scale(.86);opacity:.58}
+  50%{transform:translate3d(6%,-4vh,0) scale(1.15);opacity:1}
+  100%{transform:translate3d(-3%,3vh,0) scale(.95);opacity:.72}
 }
 @keyframes thw-drift-b{
-  0%{transform:translate3d(5%,4%,0) scale(1.08)}
-  50%{transform:translate3d(-4%,-5%,0) scale(.96)}
-  100%{transform:translate3d(3%,-2%,0) scale(1.12)}
+  0%{transform:translate3d(4%,-2vh,0) scale(1.08);opacity:.62}
+  50%{transform:translate3d(-5%,4vh,0) scale(.88);opacity:1}
+  100%{transform:translate3d(2%,-3vh,0) scale(1.12);opacity:.7}
 }
 @keyframes thw-drift-c{
-  0%{transform:translate3d(0,0,0) scale(.9)}
-  50%{transform:translate3d(-6%,5%,0) scale(1.1)}
-  100%{transform:translate3d(5%,-4%,0) scale(.92)}
+  0%{transform:translate3d(0,0,0) scale(.9);opacity:.55}
+  50%{transform:translate3d(-6%,5vh,0) scale(1.14);opacity:1}
+  100%{transform:translate3d(5%,-4vh,0) scale(.93);opacity:.68}
 }
 @media (prefers-reduced-motion:reduce){
   .th-blob{animation:none!important}

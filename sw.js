@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v208';
+const VERSION = 'thw-v210';
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -57,7 +57,7 @@ const PRECACHE = [
   './account.js?v=thw-v40',
   './effects.js?v=thw-v2',
   './i18n.js?v=9',
-  './script.js?v=thw-v65',
+  './script.js?v=thw-v66',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v11',
@@ -68,11 +68,11 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v2',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v7',
-  'player-settings.css?v=thw-v81',
+  'player-settings.css?v=thw-v84',
   './style.css?v=thw-v45',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
-  './themes.css?v=thw-v14',
+  './themes.css?v=thw-v17',
   './css2.css?v=thw-v2',
   './about.css?v=thw-v4',
   './fonts/0-Sora-300.woff2',
@@ -188,8 +188,8 @@ const PRECACHE = [
   './AlbumArt/party.jpg',
   './AlbumArt/preparty.jpg',
   './cover-artists.js?v=thw-v92',
-  './credits-wall.js?v=thw-v14',
-  './credits-wall.css?v=thw-v10',
+  './credits-wall.js?v=thw-v16',
+  './credits-wall.css?v=thw-v11',
 ];
 
 /* Requests that must NEVER be served from cache (privacy / correctness). */

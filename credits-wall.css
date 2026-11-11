@@ -84,7 +84,7 @@ body.cw-modal-open{overflow:hidden}
 @media (max-width:720px){
   .cw-modal{padding:14px}
   .cw-modal-card{padding:14px;max-height:96vh;overflow-y:auto}
-  .cw-modal-art{width:100%;border-radius:12px}
+  .cw-modal-art{width:100%;border-radius:12px;flex:0 0 auto;aspect-ratio:1/1;max-height:calc(96vh - 200px)}
   .cw-modal-meta{margin-top:14px}
 }
 
@@ -144,3 +144,14 @@ body.cw-modal-open{overflow:hidden}
 .cw-modal-download:disabled{opacity:.5;cursor:default;transform:none}
 .cw-modal-download:focus-visible{outline:2px solid #a855f7;outline-offset:2px}
 .cw-modal-download i{font-size:12px}
+
+/* ===== The loader at the foot of the wall =====
+   The wall is a long scroll, and every cover is a picture. The pictures
+   arrive in batches as the reader reaches the end of what is there, and
+   the reader is told so rather than being left with a blank row. */
+.cw-more{display:flex;align-items:center;justify-content:center;gap:10px;padding:22px 0 6px;color:rgba(255,255,255,.42);font-size:12px;letter-spacing:.04em}
+.cw-more[hidden]{display:none}
+.cw-more-spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(168,85,247,.28);border-top-color:#a855f7;animation:cw-more-spin .7s linear infinite}
+.cw-more.is-done .cw-more-spin{animation:none;border-color:rgba(255,255,255,.2);border-top-color:rgba(255,255,255,.35)}
+@keyframes cw-more-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.cw-more-spin{animation:none}}

@@ -32,9 +32,9 @@
      that, for a retina screen. The full-size picture stays where it is: the
      big view and the download button both want the original bytes, and a
      download that handed over a thumbnail would be a different picture. */
-  function thumbUrl(file) {
+  function thumbUrl(file, tier) {
     if (!file) return "";
-    var t = window._coverThumb ? window._coverThumb("Covers/" + file, "320") : null;
+    var t = window._coverThumb ? window._coverThumb("Covers/" + file, tier || "320") : null;
     return t || coverUrl(file);
   }
 
@@ -127,7 +127,10 @@
   function openModal(entry) {
     var el = buildModal();
     var img = el.querySelector(".cw-modal-art img");
-    img.src = coverUrl(entry.file);
+    /* The big picture, from this site's own CDN. The original is still
+       what the download button fetches - a download that handed over a
+       resized picture would be a different picture. */
+    img.src = thumbUrl(entry.file, "640") || coverUrl(entry.file);
     img.alt = entry.title + " cover art";
     el.querySelector(".cw-modal-title").textContent = entry.title;
     var nameEl = el.querySelector("[data-cw-credit-name]");
@@ -306,12 +309,14 @@
       html += '<article class="cw-card" data-cw-card data-cw-artist="' + esc(e.artist) + '" ' +
         'tabindex="0" role="button" aria-label="View ' + esc(e.title) + ' cover art">';
       html += '<div class="cw-cover">';
-      /* The first row is loaded at once - it is what is on screen when
-         the page opens. The rest are prefetched while the browser is idle
-         further down, so scrolling to them never waits for a fetch. */
-      html += '<img loading="' + (i < EAGER ? "eager" : "lazy") + '" decoding="async" ' +
-        'fetchpriority="' + (i < EAGER ? "high" : "low") + '" src="' + esc(thumbUrl(e.file)) +
-        '" alt="' + esc(e.title) + ' cover art" onerror="this.closest(\'.cw-cover\')' +
+      /* The first row is loaded at once - it is what is on screen when the
+         page opens. The rest carry their address in data-src and are given
+         it when their batch is wanted, so a reader who never scrolls past
+         the first screen never downloads the other two hundred covers. */
+      html += '<img ' + (i < EAGER
+        ? 'loading="eager" fetchpriority="high" src="' + esc(thumbUrl(e.file)) + '"'
+        : 'loading="lazy" fetchpriority="low" data-src="' + esc(thumbUrl(e.file)) + '"') +
+        ' decoding="async" alt="' + esc(e.title) + ' cover art" onerror="this.closest(\'.cw-cover\')' +
         '.classList.add(\'is-missing\');this.remove();">';
       html += '</div>';
       html += '<div class="cw-meta">';
@@ -325,6 +330,14 @@
     });
     html += '</div>';
 
+    /* The loader. It sits at the foot of the wall, and it says what it is
+       doing rather than leaving a reader to wonder why the page has
+       stopped. */
+    html += '<div class="cw-more" data-cw-more>' +
+      '<span class="cw-more-spin" aria-hidden="true"></span>' +
+      '<span class="cw-more-text">Loading More Covers</span>' +
+      '</div>';
+
     /* The count is made with the markup, not after it, so the filter can
        always find it - the wall can open already filtered to one artist,
        and the count has to be right from the first paint. */
@@ -335,6 +348,102 @@
     }
 
     root.innerHTML = html;
+
+    /* ---------- Loading more ----------
+       * The wall is long and every cover is a picture, so the pictures come
+       * in batches. The next batch is fetched before the reader reaches it,
+       * and the loader says what it is doing while it happens. */
+    var grid = root.querySelector(".cw-grid");
+    var moreEl = root.querySelector("[data-cw-more]");
+    var moreText = moreEl ? moreEl.querySelector(".cw-more-text") : null;
+    var cards = Array.prototype.slice.call(root.querySelectorAll("[data-cw-card]"));
+    var PAGE = 36;
+    var loaded = EAGER;
+    var loading = false;
+    var currentArtist = "";
+
+    /* Give the pictures in a list of cards their addresses, and say when
+       they are all there. */
+    function loadIndexes(idxs, done) {
+      var waiting = [];
+      for (var i = 0; i < idxs.length; i++) {
+        var card = cards[idxs[i]];
+        if (!card) continue;
+        var img = card.querySelector("img[data-src]");
+        if (!img) continue;
+        var src = img.getAttribute("data-src");
+        img.removeAttribute("data-src");
+        waiting.push({ img: img, src: src });
+      }
+      if (!waiting.length) { done(); return; }
+      var left = waiting.length;
+      var finish = function () { if (--left > 0) return; done(); };
+      for (var j = 0; j < waiting.length; j++) {
+        var w = waiting[j];
+        w.img.addEventListener("load", finish, { once: true });
+        w.img.addEventListener("error", finish, { once: true });
+        w.img.src = w.src;
+      }
+    }
+
+    /* What is on screen: the covers that match the filter AND are in a
+       batch that has been loaded. */
+    function showUpTo(n, who) {
+      for (var i = 0; i < cards.length; i++) {
+        var card = cards[i];
+        var match = !who || card.getAttribute("data-cw-artist") === who;
+        card.style.display = (match && i < n) ? "" : "none";
+      }
+    }
+
+    function setLoader(text, done) {
+      if (!moreEl) return;
+      if (done) {
+        moreEl.hidden = true;
+        return;
+      }
+      moreEl.hidden = false;
+      moreEl.classList.remove("is-done");
+      if (moreText) moreText.textContent = text;
+    }
+
+    function loadMore() {
+      if (loading || loaded >= entries.length) return;
+      loading = true;
+      setLoader("Loading More Covers", false);
+      var from = loaded;
+      var to = Math.min(from + PAGE, entries.length);
+      var idxs = [];
+      for (var i = from; i < to; i++) idxs.push(i);
+      loadIndexes(idxs, function () {
+        loaded = to;
+        loading = false;
+        showUpTo(loaded, currentArtist);
+        if (loaded >= entries.length) {
+          setLoader("", true);
+        } else {
+          setLoader("Loading More Covers", false);
+        }
+      });
+    }
+
+    /* The first batch is the one on screen when the page opens. */
+    showUpTo(loaded, "");
+    if (entries.length <= loaded) setLoader("", true);
+
+    /* The next batch is fetched before the reader gets there. */
+    if (moreEl && typeof IntersectionObserver === "function") {
+      var io = new IntersectionObserver(function (list) {
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].isIntersecting) loadMore();
+        }
+      }, { rootMargin: "600px 0px" });
+      io.observe(moreEl);
+    } else if (moreEl) {
+      /* No observer: the loader is a button. */
+      moreEl.addEventListener("click", loadMore);
+      moreEl.style.cursor = "pointer";
+    }
 
     /* The count sits under the filters, where the filter's own doing is
        read. */
@@ -407,12 +516,30 @@
         var cName = c.getAttribute("data-cw-artist") || "";
         c.classList.toggle("is-on", cName === (who || ""));
       });
+      currentArtist = who || "";
       var shown = 0;
-      root.querySelectorAll("[data-cw-card]").forEach(function (card) {
-        var match = !who || card.getAttribute("data-cw-artist") === who;
-        card.style.display = match ? "" : "none";
-        if (match) shown++;
-      });
+      if (currentArtist) {
+        /* One artist: every cover they made, loaded at once. They made a
+           handful, so there is nothing to batch. */
+        var idxs = [];
+        for (var i = 0; i < cards.length; i++) {
+          if (cards[i].getAttribute("data-cw-artist") === currentArtist) {
+            idxs.push(i);
+            shown++;
+          }
+        }
+        loadIndexes(idxs, function () { showUpTo(cards.length, currentArtist); });
+        showUpTo(cards.length, currentArtist);
+        setLoader("", true);
+      } else {
+        /* Every cover: the ones that have been loaded, and no more. */
+        for (var j = 0; j < cards.length; j++) {
+          if (j < loaded) shown++;
+        }
+        showUpTo(loaded, "");
+        if (entries.length > loaded) setLoader("Loading More Covers", false);
+        else setLoader("", true);
+      }
       /* The counter is made after this function is defined, so it is
          looked up here rather than captured up front. */
       var counter = root.querySelector(".cw-count");
@@ -472,9 +599,6 @@
       window.__cwArtistWanted = "";
       applyFilter(wanted);
     }
-
-    /* Warm the rest of the covers while the browser is idle. */
-    prefetchCovers(entries.map(function (e) { return thumbUrl(e.file); }));
 
     /* The count is already in the markup - see above. */
   }

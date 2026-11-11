@@ -28,7 +28,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const COVERS = join(ROOT, "Covers");
-const TIERS = ["64", "128", "320"];
+const TIERS = ["64", "128", "320", "640"];
 
 let failures = 0;
 const fail = (m) => { console.log("  FAIL  " + m); failures++; };
@@ -123,8 +123,8 @@ else ok("index.html points at the thumbnail tiers");
    have to agree - a tier that is built at 64 and asked for at 320 is blurry,
    and one built at 320 and asked for at 64 is 25 times heavier than it needs
    to be. */
-const TIERS_IN_CODE = ["64", "128", "320"];
-const BUILT = { "64": 64, "128": 128, "320": 320 };
+const TIERS_IN_CODE = ["64", "128", "320", "640"];
+const BUILT = { "64": 64, "128": 128, "320": 320, "640": 640 };
 for (const t of TIERS_IN_CODE) {
   if (!BUILT[t]) fail("the code asks for a tier the build does not make: " + t);
 }
