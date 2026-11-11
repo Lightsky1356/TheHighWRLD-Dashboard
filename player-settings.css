@@ -1799,7 +1799,7 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
 .nav-discord-btn:hover{background:rgba(88,101,242,.3);color:#fff;border-color:rgba(88,101,242,.7);transform:scale(1.07)}
 .nav-discord-btn:focus-visible{outline:2px solid #5865f2;outline-offset:2px}
 .nav-discord-btn i{font-size:15px;line-height:1}
-@media (max-width:767px){.nav-discord-btn{display:none}}
+@media (max-width:767px){.nav-discord-btn{display:inline-flex}}
 
 /* ===== Batch 28: the lobby's scrollers say there is more =====
    The rules panel and the comps list scroll, and their last line was cut

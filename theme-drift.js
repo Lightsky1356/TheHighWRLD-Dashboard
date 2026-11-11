@@ -39,8 +39,9 @@
   var MAX_SCALE = 1.2;
   var PAD = 1.16;
 
-  /* How fast each circle drifts, in pixels a second. */
-  var SPEEDS = [11, 15, 9, 13, 17, 12];
+  /* How fast each circle drifts, in pixels a second. Faster than before
+     so the movement is clearly visible instead of a slow creep. */
+  var SPEEDS = [22, 28, 18, 26, 30, 24];
 
   var state = blobs.map(function (el, i) {
     var size = el.offsetWidth || 300;
@@ -55,7 +56,7 @@
       vx: 0,
       vy: 0,
       heading: Math.random() * Math.PI * 2,
-      turnIn: 1200 + Math.random() * 3500,
+      turnIn: 900 + Math.random() * 2400,
       wobble: Math.random() * Math.PI * 2,
       speed: SPEEDS[i % SPEEDS.length]
     };
@@ -77,7 +78,7 @@
       var s = state[i];
       var best = null;
       var bestCost = Infinity;
-      for (var k = 0; k < 90; k++) {
+      for (var k = 0; k < 120; k++) {
         var cand = {
           x: s.r + Math.random() * Math.max(1, window.innerWidth - s.r * 2),
           y: s.r + Math.random() * Math.max(1, window.innerHeight - s.r * 2)
@@ -117,22 +118,23 @@
       var s = state[i];
 
       /* The heading turns now and then, and the circle wobbles a little as
-         it travels - so the path is a drift, not a line. */
+         it travels - so the path is a drift, not a line. More frequent
+         turns than before so the movement feels alive. */
       s.turnIn -= dt * 1000;
       if (s.turnIn <= 0) {
-        s.turnIn = 1800 + Math.random() * 4200;
-        s.heading += (Math.random() - 0.5) * 1.9;
+        s.turnIn = 1200 + Math.random() * 2400;
+        s.heading += (Math.random() - 0.5) * 2.4;
       }
-      s.wobble += dt * 0.55;
+      s.wobble += dt * 0.7;
 
       var want = s.speed;
-      var wob = Math.sin(s.wobble) * 0.5;
+      var wob = Math.sin(s.wobble) * 0.7;
       var hx = Math.cos(s.heading + wob);
       var hy = Math.sin(s.heading + wob);
       /* The velocity eases toward the heading, so a turn is a curve and
          not a corner. */
-      s.vx += (hx * want - s.vx) * Math.min(1, dt * 1.6);
-      s.vy += (hy * want - s.vy) * Math.min(1, dt * 1.6);
+      s.vx += (hx * want - s.vx) * Math.min(1, dt * 2.2);
+      s.vy += (hy * want - s.vy) * Math.min(1, dt * 2.2);
 
       s.x += s.vx * dt;
       s.y += s.vy * dt;
@@ -146,7 +148,7 @@
 
     /* Keep them apart. A few rounds, because moving one can push it into
        another. */
-    for (var pass = 0; pass < 4; pass++) {
+    for (var pass = 0; pass < 5; pass++) {
       for (var a = 0; a < state.length; a++) {
         for (var c = a + 1; c < state.length; c++) {
           var A = state[a];
@@ -170,10 +172,10 @@
           C.y += uy * push;
           /* The nudge is taken off the heading, so the circles do not
              fight the push and end up jittering. */
-          A.vx -= ux * push * 3;
-          A.vy -= uy * push * 3;
-          C.vx += ux * push * 3;
-          C.vy += uy * push * 3;
+          A.vx -= ux * push * 4;
+          A.vy -= uy * push * 4;
+          C.vx += ux * push * 4;
+          C.vy += uy * push * 4;
         }
       }
       /* And back inside the screen, after the pushes. */
