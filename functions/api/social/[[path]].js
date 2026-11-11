@@ -305,17 +305,20 @@ async function bootstrap(db, env, me) {
   if (statusIds.length) {
     const q = statusIds.map(() => "?").join(",");
     const activities = await db.prepare(
-      "SELECT uid, type, label, detail FROM (" +
-      "SELECT uid, type, label, detail, ROW_NUMBER() OVER (PARTITION BY uid ORDER BY ts DESC) AS rn " +
-      "FROM activity WHERE uid IN (" + q + ") AND type = 'listen') WHERE rn = 1"
-    ).bind(...statusIds).all();
+      "SELECT uid, track_id, title, artist, artwork, label, detail, expires_at, ROW_NUMBER() OVER (PARTITION BY uid ORDER BY created_at DESC) AS rn " +
+      "FROM friend_activity WHERE uid IN (" + q + ") AND type = 'listening' AND (expires_at IS NULL OR expires_at > ?) WHERE rn = 1"
+    ).bind(...statusIds, new Date().toISOString()).all();
     for (const row of activities.results || []) {
-      /* The words are for whoever is reading the row, not for the member who
-         played the track - the account page keeps "You played ..." for their
-         own history, and this says what they are doing right now. */
-      const song = String(row.detail || "").trim() || String(row.label || "").replace(/^You played\s+/i, "");
-      row.present = song ? "Listening To " + song : "";
-      activityByUid.set(row.uid, row);
+      activityByUid.set(row.uid, {
+        trackId: row.track_id || "",
+        title: row.title || "",
+        artist: row.artist || "",
+        artwork: row.artwork || "",
+        label: row.label || "",
+        detail: row.detail || "",
+        present: row.title ? "Listening To " + row.title : "",
+        expiresAt: row.expires_at || ""
+      });
     }
   }
   const friends = friendRows.map((r) => ({
@@ -324,7 +327,7 @@ async function bootstrap(db, env, me) {
     avatar: r.avatar,
     online: friendIds.includes(r.uid) && r.online_status !== "nobody",
     lastActive: r.online_status === "nobody" ? "" : (r.last_seen || ""),
-    activity: r.activity_status === "nobody" ? "" : (activityByUid.get(r.uid)?.present || ""),
+    activity: r.activity_status === "nobody" ? null : (activityByUid.get(r.uid) || null),
   }));
   const requests = (requestsResult.results || []).map((r) => ({
     id: r.id,

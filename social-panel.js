@@ -170,7 +170,7 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v36";
+    css.href = "/social.css?v=thw-v37";
     document.head.appendChild(css);
 
     var root = el("div");
@@ -1151,7 +1151,32 @@
          the online state disappeared behind it. */
       var meta = el("span", "thw-social-meta" + (friend.online ? " thw-social-online" : ""), statusOf(friend).label);
       person.appendChild(meta);
-      if (friend.activity) person.appendChild(el("span", "thw-social-activity", friend.activity));
+      if (friend.online && friend.activity && friend.activity.trackId) {
+        var actWrap = el("span", "thw-social-activity-now");
+        var cover = document.createElement("img");
+        cover.className = "thw-social-cover";
+        cover.src = friend.activity.artwork || "Juice-WRLD.png";
+        cover.alt = "";
+        cover.onerror = function () { this.src = "Juice-WRLD.png"; };
+        actWrap.appendChild(cover);
+        if (friend.activity.label) {
+          actWrap.appendChild(el("span", "thw-social-activity-album", friend.activity.label));
+        }
+        actWrap.appendChild(el("span", "thw-social-activity-title", friend.activity.title));
+        var playBtn = el("button", "thw-social-activity-play", "Play");
+        playBtn.type = "button";
+        playBtn.dataset.action = "play-friend-track";
+        playBtn.dataset.trackId = friend.activity.trackId;
+        playBtn.dataset.trackTitle = friend.activity.title || "";
+        playBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          playFriendTrack(this.dataset.trackId, this.dataset.trackTitle);
+        });
+        actWrap.appendChild(playBtn);
+        person.appendChild(actWrap);
+      } else if (friend.activity && friend.activity.present) {
+        person.appendChild(el("span", "thw-social-activity", friend.activity.present));
+      }
       row.appendChild(person);
       var actions = el("span", "thw-social-actions");
       actions.appendChild(button("Message", "message-user", "primary", { uid: friend.uid }));
@@ -1160,6 +1185,29 @@
       row.appendChild(actions);
       list.appendChild(row);
     });
+  }
+
+  /* Play a friend's currently-playing track from the friends list.
+   * Finds the track in trackList by title, switches to the player page if
+   * needed, and starts playback. */
+  function playFriendTrack(trackId, trackTitle) {
+    var idx = -1;
+    for (var i = 0; i < trackList.length; i++) {
+      if (trackList[i].title === trackId || trackList[i].title === trackTitle) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx >= 0) {
+      if (document.getElementById("page-section-player").classList.contains("active")) {
+        if (typeof selectTrackFromList === "function") selectTrackFromList(idx);
+      } else {
+        window.switchAppPage("player");
+        setTimeout(function () {
+          if (typeof window.selectTrackFromList === "function") window.selectTrackFromList(idx);
+        }, 100);
+      }
+    }
   }
 
   function renderSearchResults(users) {

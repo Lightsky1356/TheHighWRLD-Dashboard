@@ -431,6 +431,15 @@ html.thw-social-scrolllock body {
    be the feed's job to show it. The label now sits with the presence
    instead of standing in for it. */
 .thw-social-activity{display:block;margin-top:2px;color:#67e8f9;font:600 10px/1.35 system-ui,sans-serif}
+/* The now-playing pill on a friend's row: cover art, album tag, title and a
+   play button that starts the track in the player. */
+.thw-social-activity-now{display:flex;align-items:center;gap:8px;margin-top:2px}
+.thw-social-cover{width:30px;height:30px;border-radius:7px;object-fit:cover;background:#1c1530;flex-shrink:0}
+.thw-social-activity-album{font:700 9px system-ui;text-transform:uppercase;letter-spacing:.04em;color:#67e8f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thw-social-activity-title{font:600 11px/1.25 system-ui,sans-serif;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.thw-social-activity-play{display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;border-radius:5px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#fff;font:700 10px system-ui;cursor:pointer;margin-left:6px}
+.thw-social-activity-play:hover{background:rgba(255,255,255,.12);color:#fbbf24;border-color:rgba(251,191,36,.45)}
+.thw-social-activity-play:focus-visible{outline:2px solid #fbbf24;outline-offset:1px}
 /* The setting for the feed lives in the panel's settings card, so it gets
    the same note styling as the rest of that card. */
 .thw-social-settings-note{margin:0 0 8px;color:#64748b;font:500 10.5px/1.6 "Sora",system-ui,sans-serif}
