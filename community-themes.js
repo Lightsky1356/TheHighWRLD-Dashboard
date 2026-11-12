@@ -304,14 +304,14 @@
 
   /* ------------------------------------------------------------ pickers */
 
-  /* Both theme pickers grow a "Community" group: without an option there is
+  /* The theme picker grows a "Community" group: without an option there is
      nothing to select, and the wear path - from a gallery row or the field
      together - sets and dispatches on that option. Rebuilt on every gallery
      refresh, with the wearer's current pick restored afterwards. */
   function syncMemberPickers(extra) {
     var merged = list.slice();
     if (extra) merged = extra.concat(merged);
-    ["setTheme", "ftTheme"].forEach(function (selId) {
+    ["setTheme"].forEach(function (selId) {
       var sel = document.getElementById(selId);
       if (!sel) return;
       var group = sel.querySelector("optgroup[data-member-group]");

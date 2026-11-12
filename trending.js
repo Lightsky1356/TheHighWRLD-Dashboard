@@ -117,6 +117,23 @@ function _smallCoverTrending(src) {
       '<span class="trending-plays"><i class="fas fa-headphones"></i> ' + Number(t.plays || 0).toLocaleString() + ' plays</span></span></button>';
   }
 
+  /* The nav's Trending button: the list is drawn under the WRLD Player's
+   * playlist, or in the Lobby when the player is not there, so the button
+   * goes to whichever page it is on and brings it into view. */
+  window.showTrending = function () {
+    try {
+      var sec = document.getElementById("trending-sec");
+      if (sec) {
+        var page = sec.closest ? sec.closest(".app-page") : null;
+        if (page && !page.classList.contains("active") && window.switchAppPage) {
+          window.switchAppPage(String(page.id || "").replace("page-section-", ""));
+        }
+        setTimeout(function () { try { sec.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {} }, 140);
+        return;
+      }
+    } catch (e) {}
+    if (window.switchAppPage) window.switchAppPage("player");
+  };
   function shell() {
     var sec = document.getElementById("trending-sec");
     if (sec) return sec;

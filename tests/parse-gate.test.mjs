@@ -388,16 +388,16 @@ if (dupes.length) {
 /* ---- every theme is on every list that has to agree ----
  *
  * A theme is named in four places: the THEMES table in account.js (the name a
- * member sees), the picker markup in index.html - TWICE, the settings page and
- * the footer - the CSS block that draws it, and the server's allowlist that
- * decides whether a save sticks. Missing from any one of them, a theme still
- * half works, which is worse than not shipping: it can be applied and then
- * cannot be named, or cannot be saved, or renders as the default palette with
- * no error anywhere.
+ * member sees), the picker markup in index.html - the settings page, which is
+ * the only picker now that the footer's copy is gone - the CSS block that
+ * draws it, and the server's allowlist that decides whether a save sticks.
+ * Missing from any one of them, a theme still half works, which is worse
+ * than not shipping: it can be applied and then cannot be named, or cannot
+ * be saved, or renders as the default palette with no error anywhere.
  *
  * The seasonal eight carry a fifth detail - a SEASONAL entry saying when they
- * are offered - and that table is checked against the ids the pickers actually
- * mark data-seasonal, so a season added to one file and not the other fails
+ * are offered - and that table is checked against the ids the picker actually
+ * marks data-seasonal, so a season added to one file and not the other fails
  * here rather than in July. */
 {
   const acct = readFileSync(join(ROOT, "account.js"), "utf8");
@@ -430,33 +430,33 @@ if (dupes.length) {
     if (cssless.length) structureFail(`themes with no CSS block of their own: ${cssless.join(", ")}`);
     else structureOk(`all ${themeIds.length} themes have a CSS block`);
 
-    /* Both pickers, by extracting each <select> and looking inside it - a
-       bare search for value="default" would also match the mode picker. */
+    /* The picker, by extracting the <select> and looking inside it - a bare
+       search for value="default" would also match the mode picker. */
     const pickerOptions = (id) => {
       const m = new RegExp('<select id="' + id + '"[^>]*>([\\s\\S]*?)</select>').exec(page);
       return m ? new Set(idsIn(m[1], /<option value="([a-z0-9-]+)"/g)) : null;
     };
     const optionless = [];
     for (const id of themeIds) {
-      for (const picker of ["setTheme", "ftTheme"]) {
+      for (const picker of ["setTheme"]) {
         const opts = pickerOptions(picker);
         if (!opts) { structureFail(`index.html has no #${picker} select`); break; }
         if (!opts.has(id)) optionless.push(`${id} not in #${picker}`);
       }
     }
     if (optionless.length) structureFail(`themes missing from a picker: ${optionless.slice(0, 6).join(", ")}`);
-    else structureOk(`all ${themeIds.length} themes are offered by both pickers`);
+    else structureOk(`all ${themeIds.length} themes are offered by the picker`);
 
     if (!seasonalBlock) structureFail("account.js SEASONAL table could not be read");
     else {
       const unknown = seasonalIds.filter((id) => !themeIds.includes(id));
       const unseasoned = themeIds.filter((id) => {
         const marked = idsIn(page, new RegExp('data-seasonal="' + id.replace(/-/g, "\\-") + '"', "g"));
-        return seasonalIds.includes(id) ? marked.length !== 2 : marked.length !== 0;
+        return seasonalIds.includes(id) ? marked.length !== 1 : marked.length !== 0;
       });
       if (unknown.length) structureFail(`seasonal themes not in THEMES: ${unknown.join(", ")}`);
       else if (unseasoned.length) structureFail(`data-seasonal and SEASONAL disagree: ${unseasoned.join(", ")}`);
-      else structureOk(`${seasonalIds.length} seasonal themes, each marked in both pickers and in SEASONAL`);
+      else structureOk(`${seasonalIds.length} seasonal themes, each marked in the picker and in SEASONAL`);
     }
   }
 }
@@ -542,8 +542,8 @@ if (dupes.length) {
   else structureOk("each row's ⓘ opens a picture panel with its story, and effects.js paints the worn season");
 
   const btnCount = (page.match(/class="thw-theme-info"/g) || []).length;
-  if (btnCount !== 2) structureFail(`expected the info button in both pickers, found ${btnCount}`);
-  else structureOk("both theme pickers carry the seasonal info button");
+  if (btnCount !== 1) structureFail(`expected the info button in the picker, found ${btnCount}`);
+  else structureOk("the theme picker carries the seasonal info button");
 
   /* The popup is gone twice over: no markup left in the page, no handler left
      in account.js - a surviving half would open into a void. */
@@ -592,7 +592,7 @@ if (dupes.length) {
   } else if ((acct.match(/ensureMemberThemeCss\(theme\)/g) || []).length < 3 ||
              !/ensureMemberThemeCss\(v\)/.test(acct)) {
     structureFail("member-theme stylesheets are not fetched on every theme-apply path");
-  } else if (!/#setTheme option\[value/.test(acct) || !/#ftTheme option\[value/.test(acct)) {
+  } else if (!/#setTheme option\[value/.test(acct)) {
     structureFail("a member theme's name is not read from its picker option");
   } else {
     structureOk("account.js wears, fetches CSS for, and names member themes");
@@ -2384,6 +2384,69 @@ function safeDecode4(v) {
     structureFail("social.css is missing " + missing.length + " rule(s) - " + missing[0]);
   } else {
     structureOk("the panel's rules are all in the stylesheet");
+  }
+}
+
+/* ---- the markup does not draw stray brackets ----
+ *
+ * A ">" on its own is not a tag. It is a character, and the browser draws it
+ * as text - three of them were in index.html, and they read on the page as a
+ * pair of little arrows at the left of the WRLD Player and a stray mark
+ * under the footer.
+ *
+ * The count of ">>" is not enough to catch them: one of the three had three
+ * in a row, and fixing the count left one of them behind. What is needed is
+ * the text a browser would actually draw, so the markup is walked the way a
+ * browser walks it - comments and raw-text elements skipped, quoted
+ * attribute values honoured - and every piece of text is looked at. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+
+  const textOf = (src) => {
+    const out = [];
+    let i = 0;
+    while (i < src.length) {
+      if (src.startsWith("<!--", i)) {
+        const j = src.indexOf("-->", i + 4);
+        i = j < 0 ? src.length : j + 3;
+        continue;
+      }
+      const raw = src.slice(i).match(/^<(script|style)\b/i);
+      if (raw) {
+        const close = src.toLowerCase().indexOf("</" + raw[1], i);
+        i = close < 0 ? src.length : close;
+        continue;
+      }
+      if (src[i] === "<") {
+        /* A tag: its end is the first ">" outside a quoted value. */
+        let j = i + 1;
+        let quote = null;
+        while (j < src.length) {
+          const c = src[j];
+          if (quote) { if (c === quote) quote = null; }
+          else if (c === '"' || c === "'") quote = c;
+          else if (c === ">") break;
+          j++;
+        }
+        i = j + 1;
+        continue;
+      }
+      let j = i;
+      while (j < src.length && src[j] !== "<") j++;
+      out.push(src.slice(i, j));
+      i = j;
+    }
+    return out;
+  };
+
+  const strays = textOf(html).filter((t) => t.indexOf(">") >= 0);
+  if (strays.length) {
+    structureFail(
+      "index.html draws " + strays.length + " stray \">\" character(s) - " +
+      strays.slice(0, 3).map((t) => JSON.stringify(t.trim().slice(0, 60))).join(", ")
+    );
+  } else {
+    structureOk("the markup draws no stray brackets");
   }
 }
 

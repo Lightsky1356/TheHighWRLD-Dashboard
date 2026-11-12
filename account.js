@@ -1698,7 +1698,7 @@ function compactProfileViewHtml(d) {
      back to it; it just cannot be picked anywhere it is not already. */
   function syncSeasonalThemes(current, now) {
     current = current || document.documentElement.getAttribute("data-theme") || "";
-    var sels = [document.getElementById("setTheme"), document.getElementById("ftTheme")];
+    var sels = [document.getElementById("setTheme")];
     for (var s = 0; s < sels.length; s++) {
       var sel = sels[s];
       if (!sel) continue;
@@ -1760,12 +1760,8 @@ function compactProfileViewHtml(d) {
     var theme = _data && _data.theme ? _data.theme : (_cachedTheme || "default");
     var th = document.getElementById("setTheme");
     if (th) th.value = theme;
-    var fth = document.getElementById("ftTheme");
-    if (fth) fth.value = theme;
     var lg = document.getElementById("setLang");
     if (lg) lg.value = _lang;
-    var flg = document.getElementById("ftLang");
-    if (flg) flg.value = _lang;
     applyTheme(theme);
     /* Member themes carry their own generated stylesheet, not one from
        themes.css - fetch it whenever the slug is in the u- namespace. */
@@ -1801,8 +1797,6 @@ function compactProfileViewHtml(d) {
     try { document.documentElement.lang = lang; } catch (e) {}
     var th = document.getElementById("setTheme");
     if (th) th.value = theme;
-    var fth = document.getElementById("ftTheme");
-    if (fth) fth.value = theme;
     var lg = document.getElementById("setLang");
     if (lg) lg.value = lang;
     applyI18n();
@@ -1838,8 +1832,6 @@ function compactProfileViewHtml(d) {
   function syncMode(v) {
     var sm = document.getElementById("setMode");
     if (sm) sm.value = v;
-    var fm = document.getElementById("ftMode");
-    if (fm) fm.value = v;
   }
   function bindModeSel(sel) {
     console.log("DIAG bindModeSel called sel=" + (sel ? sel.id : "NULL"));
@@ -1868,16 +1860,14 @@ function compactProfileViewHtml(d) {
       list.forEach(function (x) { var o = document.createElement("option"); o.value = x[0]; o.textContent = x[1]; sel.appendChild(o); });
     }
     var th = document.getElementById("setTheme");
-    var fth = document.getElementById("ftTheme");
     var lg = document.getElementById("setLang");
-    var flg = document.getElementById("ftLang");
-    fillSelect(th, THEMES); fillSelect(fth, THEMES);
-    fillSelect(lg, LANGS); fillSelect(flg, LANGS);
+    fillSelect(th, THEMES);
+    fillSelect(lg, LANGS);
     /* First pass over the static markup: everything out of season is shut
        until an applied theme says otherwise a moment later. */
     syncSeasonalThemes();
-    function syncTheme(v) { if (th) th.value = v; if (fth) fth.value = v; }
-    function syncLang(v) { if (lg) lg.value = v; if (flg) flg.value = v; }
+    function syncTheme(v) { if (th) th.value = v; }
+    function syncLang(v) { if (lg) lg.value = v; }
 
     /* The slug ("deep-violet" style value) is what gets stored; the name
        ("Deep Violet") is what a person recognises. An unknown slug falls back
@@ -1888,7 +1878,7 @@ function compactProfileViewHtml(d) {
     function themeName(slug) {
       for (var i = 0; i < THEMES.length; i++) if (THEMES[i][0] === slug) return THEMES[i][1];
       try {
-        var opt = document.querySelector('#setTheme option[value="' + slug + '"],#ftTheme option[value="' + slug + '"]');
+        var opt = document.querySelector('#setTheme option[value="' + slug + '"]');
         if (opt && opt.textContent) return opt.textContent;
       } catch (e) {}
       return String(slug || "");
@@ -2265,7 +2255,7 @@ function compactProfileViewHtml(d) {
        option is set and its change event fired, so saving, toasting and
        syncing stay in the one handler that already does all three. */
     function wearFromList(id) {
-      var sel = document.getElementById("setTheme") || document.getElementById("ftTheme");
+      var sel = document.getElementById("setTheme");
       if (!sel) return;
       var opt = sel.querySelector('option[value="' + id + '"]');
       /* Out of season or unknown to the picker: not wearable, whatever built
@@ -2285,10 +2275,10 @@ function compactProfileViewHtml(d) {
       try { return localStorage.getItem("thwPrevTheme") || ""; } catch (_) { return ""; }
     };
 
-    bindThemeSel(th); bindThemeSel(fth);
+    bindThemeSel(th);
     console.log("DIAG init reached bind call");
-    bindModeSel(document.getElementById("setMode")); bindModeSel(document.getElementById("ftMode"));
-    bindLangSel(lg); bindLangSel(flg);
+    bindModeSel(document.getElementById("setMode"));
+    bindLangSel(lg);
     syncTheme(_data && _data.theme ? _data.theme : (_cachedTheme || "default"));
     syncLang(_lang);
   }
@@ -3536,7 +3526,9 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
        the sign-in button is navPillAuthBtn rather than a page-nav-* id. Returning
        "" hides the pill deliberately, instead of relying on getElementById
        returning null for a button that was never there. */
-    if (page === "gallery" || page === "credits" || page === "downloads" || page === "failed" || page === "login" || page === "register") return "";
+    if (page === "gallery") return "page-nav-gallery";
+    if (page === "credits") return "page-nav-credits";
+    if (page === "downloads" || page === "failed" || page === "login" || page === "register") return "";
     if (page === "tos" || page === "pp" || page === "dmca" || page === "copyright") return "page-nav-home";
     return "page-nav-" + page;
   }

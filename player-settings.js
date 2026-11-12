@@ -146,8 +146,8 @@
   function drpReport(){
     if(!isElectron || !window.highwrld || typeof window.highwrld.setActivity !== 'function') return;
     try{
-      var title = (document.getElementById('mini-title') || {}).textContent || '';
-      var cover = (document.getElementById('mini-cover') || {}).getAttribute && document.getElementById('mini-cover').getAttribute('src') || '';
+      var title = (document.getElementById('deck-title') || {}).textContent || '';
+      var cover = (document.getElementById('deck-cover') || {}).getAttribute && document.getElementById('deck-cover').getAttribute('src') || '';
       var audio = document.querySelector('audio');
       if(!title || /nothing playing/i.test(title)){
         window.highwrld.clearActivity();
@@ -191,7 +191,7 @@
     if(!isElectron || !window.highwrld) return;
     /* the mini player text changes on every track change, so watch it rather than
        polling a second copy of the player state */
-    var title = document.getElementById('mini-title');
+    var title = document.getElementById('deck-title');
     if(title && window.MutationObserver){
       new MutationObserver(scheduleDrpReport).observe(title, { childList: true, characterData: true, subtree: true });
     }
@@ -213,9 +213,36 @@
       var drpUnavailable = 'Discord Rich Presence needs the Discord desktop app running, and this build has no Discord client id yet.';
       /* remembered so the normal wording comes back when Discord does show up */
       var drpDefaultDesc = null;
+      /* Discord not answering is worth saying out loud: the presence is
+         the thing people look at to see it is working, and a setting that
+         quietly does nothing is worse than one that says it cannot. It
+         is said once, not on every retry, and said again when Discord
+         comes back. */
+      var drpSaidNotAnswering = false;
+      function sayAboutDiscord(st){
+        var connected = !!(st && st.loggedIn && st.available);
+        var enabled = !!(st && st.enabled);
+        if(!enabled){ drpSaidNotAnswering = false; return; }
+        if(connected){
+          if(drpSaidNotAnswering){
+            drpSaidNotAnswering = false;
+            if(typeof showToastSimple === 'function'){
+              showToastSimple('Discord is answering again - your status is showing.', { type: 'success' });
+            }
+          }
+          return;
+        }
+        if(drpSaidNotAnswering) return;
+        drpSaidNotAnswering = true;
+        var why = (st && st.error) ? String(st.error) : 'Discord is not answering';
+        if(typeof showToastSimple === 'function'){
+          showToastSimple('Discord Rich Presence is not working - ' + why + '. Open the Discord desktop app and it will connect.', { type: 'error' });
+        }
+      }
       window.highwrld.onDrpEvent(function(payload){
         if(payload && payload.type === 'status'){
           var st = payload.status || {};
+          try { sayAboutDiscord(st); } catch (e) {}
           /* looked up here on purpose: these live inside init() and applyDrpGate(),
              so referencing them from this scope would throw under Electron */
           var tgl = document.getElementById('ps-drp-toggle');

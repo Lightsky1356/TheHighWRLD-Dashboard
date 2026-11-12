@@ -3306,3 +3306,54 @@ body.deck-hidden{
 }
 #deck-player .deck-keys{color:rgba(255,255,255,.3)}
 #deck-player .deck-keys:hover{color:#fff}
+
+/* The footer's head: the mark, who made it, and the way into the legal
+   panel. It sits above the columns of links. */
+.foot-brand{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px 24px;
+  flex-wrap:wrap;
+  padding-bottom:22px;
+  margin-bottom:26px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.foot-brand-mark{
+  font-size:clamp(1.4rem,3.2vw,2.1rem);
+  font-weight:900;
+  letter-spacing:.06em;
+  line-height:1;
+  background:linear-gradient(90deg,#22d3ee,#a855f7,#ec4899);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.foot-brand-made{
+  font-size:11px;
+  color:rgba(255,255,255,.38);
+  letter-spacing:.04em;
+}
+.foot-legal-btn{
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.7);
+  font-family:inherit;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  padding:8px 15px;
+  border-radius:999px;
+  cursor:pointer;
+  transition:background .18s ease,color .18s ease,border-color .18s ease;
+}
+.foot-legal-btn:hover{
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  border-color:rgba(255,255,255,.24);
+}
+@media (max-width:640px){
+  .foot-brand{justify-content:flex-start}
+  .foot-brand-made{width:100%;order:3}
+}

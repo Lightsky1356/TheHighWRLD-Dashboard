@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v240';;;;;;;;;;;;;;;;
+const VERSION = 'thw-v242';;;;;;;;;;;;;;;;;
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -54,7 +54,7 @@ const PRECACHE = [
   './tracks.js?v=thw-v11',
   './browser-id3-writer.js?v=thw-v3',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v51',
+  './account.js?v=thw-v52',
   './effects.js?v=thw-v2',
   './theme-drift.js?v=thw-v5',
   './i18n.js?v=9',
@@ -74,7 +74,7 @@ const PRECACHE = [
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v8',
   './account-shared.css?v=thw-v1',
-  'player-settings.css?v=thw-v106',
+  'player-settings.css?v=thw-v107',
   './style.css?v=thw-v48',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
@@ -128,7 +128,7 @@ const PRECACHE = [
   /* --- page scripts --- */
   './user-relations.js?v=thw-v2',
   './user-menu.js?v=thw-v6',
-  './player-settings.js?v=thw-v13',
+  './player-settings.js?v=thw-v14',
   './reports.js?v=thw-v4',
   './owner-vault-sync.js?v=thw-v4',
   './owner-live.js?v=thw-v2',
@@ -137,7 +137,7 @@ const PRECACHE = [
   './vault-discography.js?v=thw-v4',
   './global-search.js?v=thw-v4',
   './about-tabs.js?v=thw-v6',
-  './trending.js?v=thw-v7',
+  './trending.js?v=thw-v8',
   './owner-search.js?v=thw-v3',
   './owner-announce.js?v=thw-v3',
   './bans.js?v=thw-v3',
@@ -157,7 +157,7 @@ const PRECACHE = [
   './gallery.js?v=thw-v11',
   './failed-projects-data.js?v=thw-v13',
   './failed-projects.js?v=thw-v13',
-  './community-themes.js?v=thw-v4',
+  './community-themes.js?v=thw-v5',
   './community-themes.css?v=thw-v2',
   /* The seasonal holiday art for the panels - precached so the picture is on
      the glass the moment its ⓘ is clicked. Files are tiny SVGs. */
