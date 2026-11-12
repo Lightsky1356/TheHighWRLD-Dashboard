@@ -2450,6 +2450,42 @@ function safeDecode4(v) {
   }
 }
 
+/* ---- the critical CSS is in the page, and the big stylesheet is not
+   holding the first paint ----
+ *
+ * The big stylesheet is 293 KB. It sat on the critical path, so the browser
+ * would not paint anything until all of it had arrived - and what was being
+ * painted was a splash screen with one button on it. The rules that apply
+ * to what is on the screen are now in the page itself, and the stylesheet
+ * arrives a moment later.
+ *
+ * The copy has to sit exactly where the link to the stylesheet was, or the
+ * cascade changes: the stylesheets after it would no longer be the ones
+ * with the last word. */
+{
+  const page = readFileSync(join(ROOT, "index.html"), "utf8");
+  const css = readFileSync(join(ROOT, "player-settings.css"), "utf8");
+  const at = page.indexOf('<style id="thw-critical">');
+  if (at < 0) {
+    structureFail("index.html has no critical CSS - the page waits for the whole stylesheet to paint");
+  } else {
+    const end = page.indexOf("</style>", at);
+    const block = page.slice(at, end);
+    const link = page.indexOf("player-settings.css?v=thw-v", at);
+    if (block.length < 2000) {
+      structureFail("the critical CSS is only " + block.length + " bytes - it is not the rules for the first screen");
+    } else if (link < 0 || link > end + 400) {
+      structureFail("the critical CSS does not sit where the stylesheet was - the cascade has changed");
+    } else if (page.indexOf('media="print"', link) < 0) {
+      structureFail("the big stylesheet is still on the critical path");
+    } else if (css.indexOf("THE CRITICAL CSS IS A COPY OF THIS FILE") < 0) {
+      structureFail("player-settings.css does not say that the copy in index.html has to be taken again when it changes");
+    } else {
+      structureOk("the critical CSS is in the page and the big stylesheet is off the critical path");
+    }
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

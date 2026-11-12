@@ -3518,3 +3518,23 @@ html.is-scrolling .player-lightning{
   content-visibility:auto;
   contain-intrinsic-size:auto 170px;
 }
+
+
+/* ======================================================================
+   THE CRITICAL CSS IS A COPY OF THIS FILE
+   ======================================================================
+
+   index.html carries a copy of the rules in this file that apply to
+   what is on the screen, so that the page can paint before all 293 KB
+   of this file have arrived. The copy was found by asking the browser
+   which of the rules match an element in view, on each of the site's
+   ten pages.
+
+   So: if a rule in this file changes in a way that shows on the first
+   screen, the copy in index.html has to be taken again, or the page
+   will paint one way and then change. The test in tests/parse-gate
+   checks that the copy is there and that it sits where the link to
+   this file was.
+
+   The copy is a subset, so the rules it holds keep their order - the
+   cascade is the same as it was.
