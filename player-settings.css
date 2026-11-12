@@ -2599,3 +2599,181 @@ footer .hub-panel{display:none}
 .hero-bg > div[style*="linear-gradient(180deg"]{
   background-image:linear-gradient(180deg,rgba(8,4,18,.62) 0%,rgba(8,4,18,.24) 34%,rgba(8,4,18,.05) 62%,rgba(8,4,18,0) 94%) !important;
 }
+
+/* ============================================================================
+   THE COMMAND PALETTE
+
+   The palette is the site's answer to a question asked in one keystroke.
+   It is drawn over the page, the way a desktop program answers, and it
+   is built the first time it is opened - so the site pays nothing for
+   it until somebody wants it.
+
+   The rows are the songs (out of the catalogue the page already holds),
+   the pages, the commands, and what is trending. The last of those is
+   fetched while the browser is idle, so it is there when the palette
+   opens.
+   ========================================================================== */
+#cmd-palette-overlay{
+  position:fixed;
+  inset:0;
+  z-index:10050;
+}
+#cmd-palette-wash{
+  position:absolute;
+  inset:0;
+  background:rgba(4,2,10,.66);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+#cmd-palette{
+  position:absolute;
+  top:12vh;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(680px,calc(100vw - 28px));
+  max-height:min(70vh,620px);
+  display:flex;
+  flex-direction:column;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(12,9,24,.96);
+  backdrop-filter:blur(24px) saturate(1.3);
+  -webkit-backdrop-filter:blur(24px) saturate(1.3);
+  box-shadow:0 30px 90px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.06);
+  overflow:hidden;
+  animation:cmdIn .16s cubic-bezier(.16,1,.3,1);
+}
+@keyframes cmdIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%)}}
+
+.cmd-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.cmd-head-icon{font-size:13px;color:rgba(255,255,255,.4);flex:0 0 auto}
+#cmd-input{
+  flex:1 1 auto;
+  min-width:0;
+  border:none;
+  outline:none;
+  background:none;
+  color:#fff;
+  font-family:inherit;
+  font-size:15px;
+  padding:2px 0;
+}
+#cmd-input::placeholder{color:rgba(255,255,255,.32)}
+.cmd-close{
+  flex:0 0 auto;
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.55);
+  font-size:11px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.cmd-close:hover{background:rgba(255,255,255,.12);color:#fff}
+
+.cmd-results{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  padding:6px;
+}
+.cmd-group{
+  padding:9px 10px 5px;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.3);
+}
+.cmd-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  padding:7px 10px;
+  border:none;
+  border-radius:9px;
+  background:none;
+  color:inherit;
+  font-family:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.cmd-row.is-active{background:rgba(255,255,255,.07)}
+.cmd-row:hover{background:rgba(255,255,255,.05)}
+.cmd-cover{
+  width:26px;
+  height:26px;
+  border-radius:6px;
+  object-fit:cover;
+  flex:0 0 auto;
+  background:rgba(255,255,255,.06);
+}
+.cmd-icon{
+  width:26px;
+  height:26px;
+  border-radius:6px;
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  color:rgba(255,255,255,.45);
+  background:rgba(255,255,255,.05);
+}
+.cmd-text{display:flex;flex-direction:column;gap:1px;min-width:0}
+.cmd-label{
+  font-size:13px;
+  font-weight:600;
+  color:rgba(255,255,255,.92);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.cmd-hint{
+  font-size:10.5px;
+  color:rgba(255,255,255,.36);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.cmd-empty{
+  margin:26px 12px;
+  text-align:center;
+  font-size:12px;
+  color:rgba(255,255,255,.32);
+}
+.cmd-foot{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:9px 14px;
+  border-top:1px solid rgba(255,255,255,.08);
+  font-size:10px;
+  color:rgba(255,255,255,.3);
+}
+.cmd-foot kbd{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:9px;
+  padding:1px 5px;
+  margin-right:3px;
+  border-radius:4px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.09);
+  color:rgba(255,255,255,.6);
+}
+
+@media (max-width:520px){
+  #cmd-palette{top:6vh;width:calc(100vw - 16px);border-radius:14px}
+  .cmd-foot span:nth-child(2){display:none}
+}
