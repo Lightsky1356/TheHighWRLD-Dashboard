@@ -106,10 +106,30 @@
       }
     }
 
+    /* PERFORMANCE: the scan runs four times a second, not sixty.
+     *
+     * Asking whether a widget can be seen is a style recalculation, and
+     * the watcher that asks sits on the whole document - so every change
+     * of a class or a style anywhere set it going. While a track is
+     * playing the progress bar's style changes four times a second, and
+     * the answering took a fifth of the main thread.
+     *
+     * Four times a second is far quicker than a person can open a panel. */
+    var lastScan = 0;
+    var SCAN_EVERY = 250;
     function schedule() {
       if (queued) return;
       queued = true;
-      requestAnimationFrame(function () { queued = false; scan(); });
+      requestAnimationFrame(function () {
+        queued = false;
+        var now = Date.now();
+        if (now - lastScan < SCAN_EVERY) {
+          setTimeout(schedule, SCAN_EVERY - (now - lastScan));
+          return;
+        }
+        lastScan = now;
+        scan();
+      });
     }
 
     function collect() {
@@ -121,12 +141,33 @@
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", collect);
     else collect();
 
-    /* Attribute-only observation: a reveal happens by style/class/hidden changing
-       on an ancestor, so this stays cheap enough to leave running. */
+    /* PERFORMANCE: the watcher watches the captcha, and nothing else.
+     *
+     * The widgets are in five known places, and a reveal happens by a
+     * style, a class or a hidden attribute changing on an ancestor of one
+     * of them. So the ancestors are watched - and only the ancestors. The
+     * watcher used to sit on the whole document with `subtree: true`, so
+     * every change of a class or a style anywhere in the site set it
+     * going, and each question it then asked was a style recalculation.
+     * While a track was playing the progress bar's style changed four
+     * times a second, and the answering took a fifth of the main thread.
+     *
+     * The progress bar is not an ancestor of a captcha, so the progress
+     * bar can change as often as it likes. */
     try {
-      new MutationObserver(schedule).observe(document.documentElement, {
-        attributes: true, subtree: true, attributeFilter: ["style", "class", "hidden"]
-      });
+      var watched = {};
+      for (var w = 0; w < pending.length; w++) {
+        var node = pending[w] && pending[w].parentElement;
+        while (node) {
+          if (!watched[node]) {
+            watched[node] = true;
+            new MutationObserver(schedule).observe(node, {
+              attributes: true, attributeFilter: ["style", "class", "hidden"]
+            });
+          }
+          node = node.parentElement;
+        }
+      }
     } catch (e) {}
 
     window.addEventListener("resize", schedule, { passive: true });

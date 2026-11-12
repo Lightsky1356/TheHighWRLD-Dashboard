@@ -3627,26 +3627,40 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
       tg.setAttribute("aria-expanded", open ? "true" : "false");
     });
     var ticking = false;
+    /* The section offsets are measured once and then read off the scroll
+       position. Asking the browser where nine elements are on every
+       scroll frame is asking it to lay the page out again on every
+       scroll frame, which is the one thing a scroll is trying not to
+       do. They are measured again whenever the page is opened or the
+       window changes, because that is when they can have moved. */
+    var offsets = null;
+    function measureSections() {
+      offsets = secs.map(function (el) {
+        var r = el.getBoundingClientRect();
+        return { el: el, top: r.top + window.scrollY, bottom: r.bottom + window.scrollY };
+      });
+    }
     function spy() {
       ticking = false;
       var acc = document.getElementById("page-section-account");
       if (!acc || !acc.classList.contains("active")) return;
-      var targetY = 130, best = null, bestD = 1e9;
-      for (var i = 0; i < secs.length; i++) {
-        var r = secs[i].getBoundingClientRect();
-        if (r.bottom <= 0) continue;
-        var d = Math.abs(r.top - targetY);
-        if (d < bestD) { bestD = d; best = secs[i]; }
+      if (!offsets) measureSections();
+      var targetY = window.scrollY + 130, best = null, bestD = 1e9;
+      for (var i = 0; i < offsets.length; i++) {
+        var o = offsets[i];
+        if (o.bottom <= 0) continue;
+        var d = Math.abs(o.top - targetY);
+        if (d < bestD) { bestD = d; best = o.el; }
       }
       setActive(best ? best.id : "");
     }
     function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(spy); } }
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    window.addEventListener("resize", function () { offsets = null; onScroll(); });
     var acc = document.getElementById("page-section-account");
     if (acc && window.MutationObserver) {
       new MutationObserver(function () {
-        if (acc.classList.contains("active")) onScroll();
+        if (acc.classList.contains("active")) { offsets = null; onScroll(); }
       }).observe(acc, { attributes: true, attributeFilter: ["class"] });
     }
   });

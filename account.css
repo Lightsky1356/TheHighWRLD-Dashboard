@@ -989,7 +989,7 @@
 }
 #account-page .ac-shell-content{display:grid;grid-template-columns:280px minmax(0,1fr);gap:1.15rem;align-items:start}
 #account-page .ac-shell-content .ac-main,#account-page .acv-sidebar{min-width:0}
-#account-page .acv-sidebar{position:sticky;top:6.5rem;padding:.8rem;border:1px solid rgba(255,255,255,.07);border-radius:20px;background:rgba(9,8,13,.3);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:inset 0 1px 0 rgba(255,255,255,.02)}
+#account-page .acv-sidebar{position:sticky;top:6.5rem;padding:.8rem;border:1px solid rgba(255,255,255,.07);border-radius:20px;background:rgba(9,8,13,.82);box-shadow:inset 0 1px 0 rgba(255,255,255,.02)}
 #account-page .acv-sidebar-label{padding:.55rem .65rem .75rem;color:rgba(255,255,255,.3);font-size:.66rem;font-weight:750;letter-spacing:.1em;text-transform:uppercase}
 #account-page .acv-nav{display:grid;gap:.48rem}
 #account-page .acv-nav-group{overflow:hidden;border:1px solid transparent;border-radius:16px;transition:border-color .16s ease,background .16s ease}
@@ -1139,3 +1139,40 @@ body:has(#owner-backdrop.show)>*:not(#mini-player):not(#mini-shortcuts):not(#own
 @media (max-width:900px){#account-page .section{padding:14px 15px}#account-page .section>.sec-head{margin-bottom:12px;padding-bottom:11px}}
 #account-page .toggle-label,#account-page .toggle-sub{display:block}
 #account-page .section .ac-conn-stack{grid-template-columns:minmax(0,1fr)}
+
+
+/* ======================================================================
+   PERFORMANCE: the panels stop blurring the page behind them
+   ======================================================================
+
+   The Account page carried eighteen blurred surfaces over 2.2 megapixels
+   - the sections, the cards inside them, and a sticky sidebar with a
+   22px blur. A backdrop-filter is a surface the compositor blurs the
+   page behind, and it is blurred again whenever anything behind it
+   moves, which while scrolling is everything. The panels get a solid
+   backing instead; over the site's dark mesh the difference cannot be
+   seen, and the page stops asking for the blur at all.
+
+   The modals keep theirs - there is one of them at a time, it is over
+   a blurred overlay, and nothing moves behind it. */
+#account-page .card,
+#account-page .set-card,
+#account-page .ac-card,
+#account-page .ac-shell-sidebar,
+#account-page .ac-sidebar,
+#account-page .disc-profile,
+#account-page .device,
+#account-page .section,
+#account-page .acv-sidebar{
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+#account-page .section{
+  background:rgba(8,20,33,.82);
+}
+#account-page .card{
+  background:rgba(15,23,42,.78);
+}
+#account-page .acv-sidebar{
+  background:rgba(9,8,13,.86);
+}

@@ -106,6 +106,22 @@
     return { minX: minX, maxX: maxX, minY: minY, maxY: maxY };
   }
 
+  /* PERFORMANCE: the drift stops while the page is busy.
+   *
+   * The loop writes a position for every circle on every frame, and
+   * a write is a style change the browser has to make good on. The
+   * CSS motion around the circles was already paused while the page
+   * was scrolled and while nothing was happening - this loop was
+   * not, so the page was doing the work during every scroll even
+   * though the circles were standing still.
+   *
+   * The class is the signal the rest of the site already uses, so
+   * the two stay in step. */
+  function paused() {
+    var root = document.documentElement;
+    return root.classList.contains("is-scrolling") || root.classList.contains("is-idle");
+  }
+
   var last = 0;
   var running = false;
 
@@ -201,10 +217,18 @@
   }
 
   function start() {
-    if (running) return;
+    if (running || paused()) return;
     running = true;
     last = 0;
     requestAnimationFrame(frame);
+  }
+
+  /* The class changes when the page starts and stops being busy, and
+     on its own it is enough to start and stop the loop. */
+  if (window.MutationObserver) {
+    new MutationObserver(function () {
+      if (paused()) stop(); else start();
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
   }
 
   function stop() {
