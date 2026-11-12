@@ -87,4 +87,9 @@ console.log(`\n${out.length - failed} passed, ${failed} failed`);
 await new Promise((r) => setTimeout(r, 300));
 /* A moment, so the connections close before the process ends. */
 await new Promise((r) => setTimeout(r, 300));
-process.exit(failed ? 1 : 0);
+/* The exit code is set, and the process is left to end on its own. Calling
+   process.exit() here used to crash the runner on Windows instead of
+   finishing: the process was torn down while a socket was still closing,
+   and libuv said so with an assertion - a red run that had nothing to do
+   with the vault. The other server suites end this way already. */
+process.exitCode = failed ? 1 : 0;

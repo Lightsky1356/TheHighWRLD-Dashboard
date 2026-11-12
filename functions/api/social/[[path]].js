@@ -159,6 +159,146 @@ async function signalRefresh(env, recipientUid) {
  * Group conversations are answered by the members table alone. The pair of
  * columns on dm_conversations belongs to the one-to-one shape and means
  * nothing for a group, so nothing here reads them. */
+/* ---------- Pictures, files and stickers ----------
+ *
+ * The bytes are checked, not the file name. A file called photo.jpg that is
+ * really something else is refused, because the browser would be asked to
+ * draw it.
+ *
+ * The sizes are the ones the gallery already uses for artwork: 800KB for a
+ * single picture, and six of them on a message. */
+const ATTACH_MAX = 800 * 1024;
+const ATTACH_MAX_COUNT = 6;
+const ATTACH_DAILY = 40;
+
+/* The types that may be attached, and how each one's bytes are checked. */
+const ATTACH_MIME = {
+  "image/jpeg": { magic: [0xff, 0xd8, 0xff], inline: true },
+  "image/png": { magic: [0x89, 0x50, 0x4e, 0x47], inline: true },
+  "image/gif": { magic: [0x47, 0x49, 0x46, 0x38], inline: true },
+  "image/webp": { magic: null, inline: true },
+  "application/pdf": { magic: [0x25, 0x50, 0x44, 0x46], inline: false },
+  "application/zip": { magic: [0x50, 0x4b, 0x03, 0x04], inline: false },
+  "text/plain": { magic: null, inline: false }
+};
+
+function b64ToBytes(data) {
+  const raw = String(data || "").replace(/^data:[^;]+;base64,/, "");
+  if (!raw || !/^[A-Za-z0-9+/]*={0,2}$/.test(raw)) throw new Error("bad base64");
+  const bin = atob(raw);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function magicOk(bytes, mime) {
+  const rule = ATTACH_MIME[mime];
+  if (!rule || !rule.magic) return true;
+  if (bytes.length < rule.magic.length) return false;
+  for (let i = 0; i < rule.magic.length; i++) {
+    if (bytes[i] !== rule.magic[i]) return false;
+  }
+  return true;
+}
+
+/* A file name that is safe to put in a Content-Disposition header. */
+function safeFileName(name) {
+  const s = String(name || "file").replace(/[^A-Za-z0-9._\- ]+/g, "_").trim();
+  return (s || "file").slice(0, 80);
+}
+
+/* The table, made on the way past. A deploy and a migration do not happen
+   at the same moment, so the code makes what it needs if the migration has
+   not run yet - which reads no rows, and so works either way. */
+async function ensureAttachmentSchema(db) {
+  try {
+    await db.prepare(
+      "CREATE TABLE IF NOT EXISTS dm_attachments (" +
+      "id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL DEFAULT '', message_id INTEGER, " +
+      "uid TEXT NOT NULL DEFAULT '', kind TEXT NOT NULL DEFAULT 'file', " +
+      "name TEXT NOT NULL DEFAULT '', mime TEXT NOT NULL DEFAULT '', " +
+      "size INTEGER NOT NULL DEFAULT 0, width INTEGER NOT NULL DEFAULT 0, height INTEGER NOT NULL DEFAULT 0, " +
+      "data BLOB, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))"
+    ).run();
+    await db.prepare("CREATE INDEX IF NOT EXISTS idx_dm_attachments_message ON dm_attachments(message_id)").run();
+    /* The friend activity table is read by the panel too, and it was added
+       later than the rest. A database that has not been migrated yet must
+       still be able to show the panel. */
+    await db.prepare(
+      "CREATE TABLE IF NOT EXISTS friend_activity (" +
+      "id TEXT PRIMARY KEY, uid TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'listening', " +
+      "track_id TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', artist TEXT NOT NULL DEFAULT '', " +
+      "artwork TEXT NOT NULL DEFAULT '', label TEXT NOT NULL DEFAULT '', detail TEXT NOT NULL DEFAULT '', " +
+      "link TEXT NOT NULL DEFAULT '', expires_at TEXT, " +
+      "created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))"
+    ).run();
+  } catch (_) {
+    /* Cannot make it here. The migration will. */
+  }
+}
+
+/* The attachments of a set of messages, in the shape the client draws. */
+async function attachmentsFor(db, messageIds) {
+  const out = new Map();
+  const ids = (messageIds || []).filter((n) => Number.isInteger(Number(n)));
+  if (!ids.length) return out;
+  const marks = ids.map(() => "?").join(",");
+  let rows = [];
+  try {
+    rows = (await db.prepare(
+      "SELECT id, message_id, kind, name, mime, size, width, height FROM dm_attachments " +
+      "WHERE message_id IN (" + marks + ") ORDER BY id"
+    ).bind(...ids).all()).results || [];
+  } catch (_) {
+    return out;
+  }
+  for (const row of rows) {
+    const key = Number(row.message_id);
+    if (!out.has(key)) out.set(key, []);
+    out.get(key).push({
+      id: row.id,
+      kind: row.kind || "file",
+      name: row.name || "",
+      mime: row.mime || "",
+      size: Number(row.size) || 0,
+      width: Number(row.width) || 0,
+      height: Number(row.height) || 0,
+      url: "/api/social/attachments/" + encodeURIComponent(row.id)
+    });
+  }
+  return out;
+}
+
+/* The bytes of one attachment, for the member who may see them.
+ *
+ * The membership check is the whole point: an attachment belongs to a
+ * conversation, and only the people in that conversation may fetch it. */
+async function serveAttachment(db, me, id) {
+  let row = null;
+  try {
+    row = await db.prepare(
+      "SELECT a.id, a.name, a.mime, a.size, a.data FROM dm_attachments a " +
+      "JOIN dm_conversation_members m ON m.conversation_id = a.conversation_id AND m.uid = ? " +
+      "WHERE a.id = ? LIMIT 1"
+    ).bind(me.uid, id).first();
+  } catch (err) {
+    return json({ error: "attachments_unavailable" }, 503);
+  }
+  if (!row) return json({ error: "not_found" }, 404);
+  const bytes = Array.isArray(row.data) ? new Uint8Array(row.data) : new Uint8Array(0);
+  if (!bytes.length) return json({ error: "not_found" }, 404);
+  const rule = ATTACH_MIME[row.mime] || { inline: false };
+  return new Response(bytes, {
+    headers: {
+      "Content-Type": rule.inline ? (row.mime || "application/octet-stream") : "application/octet-stream",
+      "Content-Length": String(bytes.length),
+      "Cache-Control": "private, max-age=86400",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Disposition": (rule.inline ? "inline" : "attachment") + "; filename=\"" + safeFileName(row.name) + "\""
+    }
+  });
+}
+
 async function conversationOf(db, conversationId, uid) {
   const row = await db.prepare(
     "SELECT c.id, c.kind, c.title, " +
@@ -288,7 +428,8 @@ async function bootstrap(db, env, me) {
     const profileRows = await db.prepare(
       "SELECT u.uid, COALESCE(NULLIF(p.name,''), NULLIF(d.display_name,''), u.name, 'Member') AS name, " +
       "COALESCE(NULLIF(p.avatar,''), NULLIF(d.avatar,''), u.avatar, '') AS avatar, " +
-      "ps.last_seen, COALESCE(ss.online_status, 'friends') AS online_status " +
+      "ps.last_seen, COALESCE(ss.online_status, 'friends') AS online_status, " +
+      "COALESCE(ss.activity_status, 'friends') AS activity_status " +
       "FROM users u LEFT JOIN user_profiles p ON p.site_uid = u.uid LEFT JOIN discord_links d ON d.site_uid = u.uid " +
       "LEFT JOIN presence_state ps ON ps.uid = u.uid LEFT JOIN user_social_settings ss ON ss.uid = u.uid " +
       "WHERE u.uid IN (" + people + ")"
@@ -303,11 +444,20 @@ async function bootstrap(db, env, me) {
    * the listen rows alone, and picks the newest of them per person. */
   const activityByUid = new Map();
   if (statusIds.length) {
+    await ensureAttachmentSchema(db);
     const q = statusIds.map(() => "?").join(",");
-    const activities = await db.prepare(
-      "SELECT uid, track_id, title, artist, artwork, label, detail, expires_at, ROW_NUMBER() OVER (PARTITION BY uid ORDER BY created_at DESC) AS rn " +
-      "FROM friend_activity WHERE uid IN (" + q + ") AND type = 'listening' AND (expires_at IS NULL OR expires_at > ?) WHERE rn = 1"
-    ).bind(...statusIds, new Date().toISOString()).all();
+    let activities = { results: [] };
+    try {
+      activities = await db.prepare(
+        "SELECT uid, track_id, title, artist, artwork, label, detail, expires_at, ROW_NUMBER() OVER (PARTITION BY uid ORDER BY created_at DESC) AS rn " +
+        "FROM friend_activity WHERE uid IN (" + q + ") AND type = 'listening' AND (expires_at IS NULL OR expires_at > ?) WHERE rn = 1"
+      ).bind(...statusIds, new Date().toISOString()).all();
+    } catch (err) {
+      /* A database that has not been migrated yet has no friend activity.
+         That is not a reason to fail the whole panel - it just means there is
+         nothing to say about what anybody is playing. */
+      activities = { results: [] };
+    }
     for (const row of activities.results || []) {
       activityByUid.set(row.uid, {
         trackId: row.track_id || "",
@@ -321,14 +471,20 @@ async function bootstrap(db, env, me) {
       });
     }
   }
-  const friends = friendRows.map((r) => ({
-    uid: r.uid,
-    name: r.name,
-    avatar: r.avatar,
-    online: friendIds.includes(r.uid) && r.online_status !== "nobody",
-    lastActive: r.online_status === "nobody" ? "" : (r.last_seen || ""),
-    activity: r.activity_status === "nobody" ? null : (activityByUid.get(r.uid) || null),
-  }));
+  const friends = friendRows.map((r) => {
+    /* The activity is only true while they are here. Somebody who is offline
+       is not listening to anything on this site, so a song beside their name
+       would be saying something that is not true. */
+    const online = friendIds.includes(r.uid) && r.online_status !== "nobody";
+    return {
+      uid: r.uid,
+      name: r.name,
+      avatar: r.avatar,
+      online: online,
+      lastActive: r.online_status === "nobody" ? "" : (r.last_seen || ""),
+      activity: (!online || r.activity_status === "nobody") ? null : (activityByUid.get(r.uid) || null)
+    };
+  });
   const requests = (requestsResult.results || []).map((r) => ({
     id: r.id,
     direction: r.recipient_uid === me.uid ? "incoming" : "outgoing",
@@ -358,6 +514,7 @@ async function bootstrap(db, env, me) {
        about them: no last-seen, no song. Whether they are here right now
        was already gated the same way, one line below. */
     const sharesPresence = ids.includes(r.other_uid) && person.online_status !== "nobody";
+    const otherOnline = friendIds.includes(r.other_uid) && person.online_status !== "nobody";
     return {
       id: r.id, kind: "dm", uid: r.other_uid || "",
       name: person.name || "Member", avatar: person.avatar || "",
@@ -367,12 +524,18 @@ async function bootstrap(db, env, me) {
       /* The presence, the same way the friends list has it: whether they are
          here now, and when they were last here. Without this the thread
          header said "Offline" to everybody, always. */
-      online: friendIds.includes(r.other_uid) && person.online_status !== "nobody",
+      online: otherOnline,
       lastActive: sharesPresence ? (person.last_seen || "") : "",
       /* The song they are playing - the same one the friends list says, and
          the only thing the presence ever claims. Friends only, for the same
          reason as the line above. */
-      activity: sharesPresence ? (activityByUid.get(r.other_uid)?.present || "") : "",
+      /* The song they are playing - the same one the friends list says, and
+         the only thing the presence ever claims. Friends only, for the same
+         reason as the line above. And only while they are actually here:
+         somebody who is offline is not listening to anything on this site. */
+      activity: (!otherOnline || person.activity_status === "nobody")
+        ? null
+        : (activityByUid.get(r.other_uid) || null),
     };
   });
   const unreadMessages = conversations.reduce((n, c) => n + c.unread, 0);
@@ -572,7 +735,7 @@ async function listMessages(db, me, conversationId, url) {
   const before = Math.max(0, Number(url.searchParams.get("before")) || 0);
   const rows = await db.prepare(
     "SELECT m.id, m.conversation_id, m.sender_uid, m.body, m.reply_to_id, m.created_at, m.edited_at, m.deleted_at, " +
-    "m.track_title, m.track_artist, " +
+    "m.track_title, m.track_artist, m.sticker, " +
     "COALESCE((SELECT json_group_array(json_object('emoji', x.emoji, 'count', x.count, 'mine', x.mine)) " +
     "FROM (SELECT emoji, COUNT(*) AS count, MAX(CASE WHEN uid = ? THEN 1 ELSE 0 END) AS mine " +
     "FROM dm_message_reactions WHERE message_id = m.id GROUP BY emoji) x), '[]') AS reactions, " +
@@ -589,11 +752,14 @@ async function listMessages(db, me, conversationId, url) {
     : (others.length ? await isBlocked(db, me.uid, others[0]) : true);
   const canSend = conversation.kind === "group" ? others.length > 0
     : (!blocked && others.length > 0 && await canMessage(db, me.uid, others[0]));
+  const ordered = (rows.results || []).reverse();
+  const attachments = await attachmentsFor(db, ordered.map((m) => m.id));
   return json({
     ok: true,
     conversation,
-    messages: (rows.results || []).reverse().map((m) => ({
+    messages: ordered.map((m) => ({
       id: m.id, senderUid: m.sender_uid, body: m.deleted_at ? "" : m.body,
+      sticker: m.deleted_at ? "" : (m.sticker || ""),
       replyToId: m.reply_to_id || null, replyBody: m.reply_body || "",
       replySenderUid: m.reply_sender_uid || "", createdAt: m.created_at,
       editedAt: m.edited_at || null, deleted: !!m.deleted_at,
@@ -602,6 +768,7 @@ async function listMessages(db, me, conversationId, url) {
       track: (m.deleted_at || !m.track_title) ? null
         : { title: m.track_title, artist: m.track_artist || "" },
       reactions: JSON.parse(m.reactions || "[]"),
+      attachments: m.deleted_at ? [] : (attachments.get(Number(m.id)) || []),
     })),
     /* Who said what. A group has to name its senders; a one-to-one already
        knows, but the map comes back either way so the client has one path. */
@@ -621,15 +788,24 @@ async function sendMessage(context, db, me, conversationId, body) {
   if (conversation.kind !== "group" && !(await canMessage(db, me.uid, others[0]))) {
     return json({ error: "messages_not_allowed" }, 403);
   }
-  const text = String(body.body || "").replace(/\u0000/g, "").trim();
+  /* The words of the message. A sticker is not words - it is a picture of a
+     feeling - so it does not fill the words field. */
+  const stickerText = String(body.sticker || "").replace(/\u0000/g, "").trim().slice(0, 16);
+  const text = stickerText ? "" : String(body.body || "").replace(/\u0000/g, "").trim();
   /* A track can be the whole message - that is the point of sharing one -
      so the text is only required when there is no track beside it. The
      title is the track's identity everywhere else on the site, which is
      why the card needs no id of its own, and the artist rides along as
      the line under the title in the thread. */
+  /* A sticker is a message that is a picture of a feeling. It is short, and it
+     is drawn large, so it travels in the message itself. */
   const trackTitle = String((body.track && body.track.title) || "").replace(/\u0000/g, "").trim().slice(0, 160);
   const trackArtist = String((body.track && body.track.artist) || "").replace(/\u0000/g, "").trim().slice(0, 120);
-  if ((!text && !trackTitle) || text.length > MAX_MESSAGE) return json({ error: "invalid_message", maxLength: MAX_MESSAGE }, 400);
+  /* A sticker alone is a message. So is a picture alone. */
+  const hasAttachments = Array.isArray(body.attachments) && body.attachments.length > 0;
+  if ((!text && !trackTitle && !stickerText && !hasAttachments) || text.length > MAX_MESSAGE) {
+    return json({ error: "invalid_message", maxLength: MAX_MESSAGE }, 400);
+  }
   if (!(await rateLimit(db, me.uid, "dm_send", 30, 60000))) return json({ error: "rate_limited" }, 429);
   const replyTo = body.replyToId == null ? null : Number(body.replyToId);
   if (replyTo != null) {
@@ -640,10 +816,58 @@ async function sendMessage(context, db, me, conversationId, body) {
     if (!parent) return json({ error: "reply_not_found" }, 404);
   }
   const inserted = await db.prepare(
-    "INSERT INTO dm_messages (conversation_id, sender_uid, body, reply_to_id, track_title, track_artist) " +
-    "VALUES (?, ?, ?, ?, ?, ?)"
-  ).bind(conversationId, me.uid, text, replyTo, trackTitle, trackArtist).run();
+    "INSERT INTO dm_messages (conversation_id, sender_uid, body, reply_to_id, track_title, track_artist, sticker) " +
+    "VALUES (?, ?, ?, ?, ?, ?, ?)"
+  ).bind(conversationId, me.uid, text, replyTo, trackTitle, trackArtist, stickerText).run();
   const id = Number(inserted.meta && inserted.meta.last_row_id) || 0;
+
+  /* What the message carries beside its words. The bytes are checked before
+     they are stored, and a rejected attachment rejects the whole message - a
+     message that says one thing and carries something else is worse than a
+     message that was not sent. */
+  const wanted = Array.isArray(body.attachments) ? body.attachments.slice(0, ATTACH_MAX_COUNT) : [];
+  const stored = [];
+  if (wanted.length) {
+    await ensureAttachmentSchema(db);
+    const recent = await db.prepare(
+      "SELECT COUNT(*) AS n FROM dm_attachments WHERE uid = ? AND created_at >= datetime('now', '-1 day')"
+    ).bind(me.uid).first().catch(() => null);
+    if (recent && recent.n >= ATTACH_DAILY) {
+      return json({ error: "daily attachment limit reached" }, 429);
+    }
+    for (const item of wanted) {
+      const mime = String(item.mime || "");
+      const rule = ATTACH_MIME[mime];
+      if (!rule) return json({ error: "that kind of file cannot be attached" }, 400);
+      let bytes;
+      try {
+        bytes = b64ToBytes(item.data);
+      } catch (err) {
+        return json({ error: "the file could not be read" }, 400);
+      }
+      if (!bytes.length || bytes.length > ATTACH_MAX) {
+        return json({ error: "file too large (800KB max)" }, 400);
+      }
+      if (!magicOk(bytes, mime)) {
+        return json({ error: "that file is not what it says it is" }, 400);
+      }
+      const kind = rule.inline ? (item.kind === "sticker" ? "sticker" : "photo") : "file";
+      const attId = "att_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
+      await db.prepare(
+        "INSERT INTO dm_attachments (id, conversation_id, message_id, uid, kind, name, mime, size, width, height, data) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      ).bind(
+        attId, conversationId, id, me.uid, kind,
+        safeFileName(item.name), mime, bytes.length,
+        Number(item.width) || 0, Number(item.height) || 0, bytes.buffer
+      ).run();
+      stored.push({
+        id: attId, kind: kind, name: safeFileName(item.name), mime: mime,
+        size: bytes.length, width: Number(item.width) || 0, height: Number(item.height) || 0,
+        url: "/api/social/attachments/" + encodeURIComponent(attId)
+      });
+    }
+  }
   await db.prepare(
     "UPDATE dm_conversations SET last_message_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?"
   ).bind(conversationId).run();
@@ -675,7 +899,7 @@ async function sendMessage(context, db, me, conversationId, body) {
     messageId: id,
   });
   const row = await db.prepare(
-    "SELECT id, sender_uid, body, reply_to_id, created_at, track_title, track_artist FROM dm_messages WHERE id = ?"
+    "SELECT id, sender_uid, body, reply_to_id, created_at, track_title, track_artist, sticker FROM dm_messages WHERE id = ?"
   ).bind(id).first();
   return json({
     ok: true,
@@ -683,8 +907,9 @@ async function sendMessage(context, db, me, conversationId, body) {
        drawing a message whether it arrived from the send or from a reload. */
     message: {
       id: row.id, senderUid: row.sender_uid, body: row.body, replyToId: row.reply_to_id,
-      createdAt: row.created_at,
+      createdAt: row.created_at, sticker: row.sticker || "",
       track: row.track_title ? { title: row.track_title, artist: row.track_artist || "" } : null,
+      attachments: stored,
     },
   }, 201);
 }
@@ -738,7 +963,10 @@ async function mutateMessage(context, db, me, messageId, method, body) {
   if (row.sender_uid !== me.uid) return json({ error: "forbidden" }, 403);
   const others = await memberUids(db, row.conversation_id, me.uid);
   if (method === "PATCH") {
-    const text = String(body.body || "").replace(/\u0000/g, "").trim();
+    /* The words of the message. A sticker is not words - it is a picture of a
+     feeling - so it does not fill the words field. */
+  const stickerText = String(body.sticker || "").replace(/\u0000/g, "").trim().slice(0, 16);
+  const text = stickerText ? "" : String(body.body || "").replace(/\u0000/g, "").trim();
     if (!text || text.length > MAX_MESSAGE) return json({ error: "invalid_message", maxLength: MAX_MESSAGE }, 400);
     await db.prepare(
       "UPDATE dm_messages SET body = ?, edited_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ? AND sender_uid = ? AND deleted_at IS NULL"
@@ -884,6 +1112,10 @@ export async function onRequest(context) {
       return handleRequestAction(context, db, me, parts[1], String(body.action || ""));
     }
     if (parts.length === 2 && parts[0] === "friends" && method === "DELETE") return removeFriend(context, db, me, parts[1]);
+    if (parts.length === 2 && parts[0] === "attachments" && method === "GET") {
+      await ensureAttachmentSchema(db);
+      return serveAttachment(db, me, parts[1]);
+    }
     if (parts.length === 1 && parts[0] === "conversations" && method === "POST") {
       /* One person opens a one-to-one; a list of people makes a group. The
          shape of the body is what says which, so a group never has to be a

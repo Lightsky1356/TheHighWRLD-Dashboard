@@ -60,6 +60,8 @@ const GROUPS = [
   { name: "playlists", file: "./playlists.test.mjs", needsServer: true },
   { name: "gallery-publish", file: "./gallery-publish.test.mjs", needsServer: true },
   { name: "autosync", file: "./autosync.test.mjs", needsServer: true },
+  { name: "social-attachments", file: "./social-attachments.test.mjs", needsServer: true },
+  { name: "song-comments", file: "./song-comments.test.mjs", needsServer: true },
 ];
 
 const SERVER_BOOT_TIMEOUT_MS = 120_000;

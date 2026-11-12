@@ -1816,3 +1816,786 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
    off with nothing to say so. They wrap, and they are small enough to fit
    two to a row in a 240px column. */
 .comps-tabs .tab-btn{padding:3px 9px!important;font-size:9.5px!important;line-height:1.4;white-space:nowrap}
+
+/* ---------------------------------------------------------------------------
+   THE FOOTER
+
+   Four columns of links and a bar at the bottom. The links are grouped by
+   what they are, and every one of them goes somewhere that exists.
+   --------------------------------------------------------------------------- */
+.foot{
+  width:100%;
+  margin-top:60px;
+  padding:48px 16px 26px;
+  border-top:1px solid rgba(255,255,255,.06);
+  background:rgba(0,0,0,.22);
+}
+.foot-inner{max-width:1280px;margin:0 auto}
+.foot-cols{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:28px 24px;
+  align-items:start;
+}
+.foot-col{min-width:0}
+.foot-head{
+  margin:0 0 12px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.34);
+}
+.foot-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.foot-link{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-size:12.5px;
+  line-height:1.45;
+  color:rgba(255,255,255,.56);
+  text-decoration:none;
+  transition:color .18s ease;
+}
+.foot-link:hover{color:#fff}
+.foot-link:focus-visible{outline:2px solid var(--th-accent,#22d3ee);outline-offset:2px;border-radius:4px}
+.foot-ext{font-size:8px;opacity:.55}
+
+/* The appearance controls: the theme, the mode and the language, laid
+   out in a row rather than stacked in a tall panel. */
+.foot-settings{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px 18px;
+  align-items:flex-end;
+  margin-top:34px;
+  padding-top:26px;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.foot-set{display:flex;flex-direction:column;gap:6px;min-width:0}
+.foot-set > label{
+  font-size:9.5px;
+  font-weight:800;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.32);
+}
+.foot-set select{
+  min-width:150px;
+  padding:7px 10px;
+  font-size:11.5px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.82);
+  outline:none;
+}
+.foot-set select:focus-visible{border-color:var(--th-accent,#22d3ee)}
+
+/* The bar at the bottom: the mark, the note, and the date. */
+.foot-bar{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px 22px;
+  margin-top:26px;
+  padding-top:20px;
+  border-top:1px solid rgba(255,255,255,.06);
+  font-size:11px;
+  color:rgba(255,255,255,.3);
+}
+.foot-note{display:flex;align-items:center;gap:9px;min-width:0}
+.foot-mark{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-weight:800;
+  letter-spacing:.12em;
+  color:rgba(255,255,255,.5);
+  flex:0 0 auto;
+}
+.foot-note span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.foot-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;flex:0 0 auto}
+.foot-meta kbd{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:9.5px;
+  padding:1px 6px;
+  border-radius:4px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  color:rgba(255,255,255,.6);
+}
+
+/* The old footer's panels are gone, so the rules that dressed them are
+   no longer needed. */
+footer .hub-panel{display:none}
+
+@media (max-width:900px){
+  .foot-cols{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .foot{padding:34px 16px 20px;margin-top:40px}
+  .foot-cols{grid-template-columns:minmax(0,1fr);gap:22px}
+  .foot-bar{flex-direction:column;align-items:flex-start}
+}
+
+/* ============================================================================
+   THE SONG COMMENTS PANEL
+   ========================================================================== */
+#song-comments-overlay{position:fixed;inset:0;z-index:10000}
+#song-comments-wash{position:absolute;inset:0;background:rgba(5,3,12,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#song-comments-panel{
+  position:absolute;
+  top:0;
+  right:0;
+  bottom:0;
+  width:min(430px,100%);
+  display:flex;
+  flex-direction:column;
+  background:rgba(14,11,28,.97);
+  border-left:1px solid rgba(255,255,255,.08);
+  box-shadow:-18px 0 60px rgba(0,0,0,.55);
+  animation:scSheetIn .22s cubic-bezier(.16,1,.3,1);
+}
+@keyframes scSheetIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+
+.song-comments-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 16px 12px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.song-comments-head-text{min-width:0}
+.song-comments-title{margin:0;font-size:15px;font-weight:800;color:#fff;letter-spacing:.01em}
+.song-comments-subtitle{
+  margin:4px 0 0;
+  font-size:11px;
+  color:rgba(255,255,255,.45);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.song-comments-close{
+  flex:0 0 auto;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.6);
+  font-size:13px;
+  cursor:pointer;
+  transition:background .18s,color .18s;
+}
+.song-comments-close:hover{background:rgba(255,255,255,.12);color:#fff}
+
+/* The tabs: comments, what is lined up, and the credits. */
+.song-comments-tabs{
+  display:flex;
+  gap:2px;
+  padding:8px 12px 0;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.song-comments-tab{
+  position:relative;
+  border:none;
+  background:none;
+  padding:8px 10px 9px;
+  font-family:inherit;
+  font-size:11.5px;
+  font-weight:700;
+  color:rgba(255,255,255,.4);
+  cursor:pointer;
+  transition:color .18s;
+}
+.song-comments-tab:hover{color:rgba(255,255,255,.75)}
+.song-comments-tab.is-active{color:#fff}
+.song-comments-tab.is-active::after{
+  content:"";
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:-1px;
+  height:2px;
+  border-radius:2px;
+  background:var(--th-accent,#22d3ee);
+}
+.song-comments-tab span{
+  font-size:10px;
+  font-weight:700;
+  opacity:.65;
+  margin-left:3px;
+}
+
+.song-comments-body{flex:1 1 auto;overflow-y:auto;min-height:0}
+.song-comments-list{padding:6px 14px 14px;display:flex;flex-direction:column;gap:12px}
+
+.song-comments-empty{
+  margin:22px 4px;
+  font-size:11.5px;
+  line-height:1.6;
+  color:rgba(255,255,255,.32);
+  text-align:center;
+}
+
+/* One comment. */
+.song-comment{display:flex;gap:10px;align-items:flex-start}
+.song-comment.is-reply{margin-left:34px;padding-left:12px;border-left:1px solid rgba(255,255,255,.09)}
+.song-comment-avatar{
+  flex:0 0 auto;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  overflow:hidden;
+  background:rgba(255,255,255,.06);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  color:rgba(255,255,255,.4);
+}
+.song-comment-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.song-comment-body{flex:1 1 auto;min-width:0}
+.song-comment-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.song-comment-name{font-size:12px;font-weight:700;color:rgba(255,255,255,.92)}
+.song-comment-time{font-size:10px;color:rgba(255,255,255,.32)}
+.song-comment-text{
+  margin:3px 0 0;
+  font-size:12px;
+  line-height:1.6;
+  color:rgba(255,255,255,.72);
+  overflow-wrap:anywhere;
+}
+.song-comment-gone{margin:3px 0 0;font-size:11.5px;font-style:italic;color:rgba(255,255,255,.28)}
+
+/* The moment of the song the comment was written at. */
+.song-comment-at{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  margin:4px 0 0;
+  padding:2px 8px 2px 6px;
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,.09);
+  background:rgba(255,255,255,.045);
+  color:rgba(255,255,255,.55);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:10px;
+  cursor:pointer;
+  transition:background .18s,color .18s,border-color .18s;
+}
+.song-comment-at:hover{background:rgba(34,211,238,.12);border-color:rgba(34,211,238,.3);color:#67e8f9}
+.song-comment-at i{font-size:8px}
+
+.song-comment-actions{display:flex;align-items:center;gap:12px;margin-top:5px}
+.song-comment-like{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  border:none;
+  background:none;
+  padding:2px 0;
+  font-family:inherit;
+  font-size:10.5px;
+  color:rgba(255,255,255,.34);
+  cursor:pointer;
+  transition:color .18s;
+}
+.song-comment-like:hover{color:rgba(255,255,255,.7)}
+.song-comment-like.is-on{color:#f472b6}
+.song-comment-like i{font-size:10px}
+.song-comment-reply{
+  border:none;
+  background:none;
+  padding:2px 0;
+  font-family:inherit;
+  font-size:10.5px;
+  color:rgba(255,255,255,.34);
+  cursor:pointer;
+  transition:color .18s;
+}
+.song-comment-reply:hover{color:rgba(255,255,255,.7)}
+
+/* The composer. */
+.song-comments-compose{
+  flex:0 0 auto;
+  padding:12px 14px 14px;
+  border-top:1px solid rgba(255,255,255,.07);
+  background:rgba(10,8,22,.6);
+}
+.song-comments-replying{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+  font-size:10.5px;
+  color:rgba(255,255,255,.5);
+}
+.song-comments-replying span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.song-comments-replying button{
+  border:none;
+  background:none;
+  padding:0;
+  font-family:inherit;
+  font-size:10.5px;
+  color:rgba(255,255,255,.4);
+  cursor:pointer;
+  text-decoration:underline;
+}
+.song-comments-replying button:hover{color:#fff}
+.song-comments-input{
+  width:100%;
+  min-height:52px;
+  max-height:130px;
+  resize:vertical;
+  padding:9px 11px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.045);
+  color:#fff;
+  font-family:inherit;
+  font-size:12px;
+  line-height:1.55;
+  outline:none;
+  transition:border-color .18s,background .18s;
+}
+.song-comments-input:focus{border-color:rgba(34,211,238,.4);background:rgba(255,255,255,.07)}
+.song-comments-input:disabled{opacity:.6;cursor:not-allowed}
+.song-comments-compose-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.song-comments-moment{font-size:10px;color:rgba(255,255,255,.3);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.song-comments-send{
+  border:1px solid rgba(34,211,238,.3);
+  background:rgba(34,211,238,.14);
+  color:#67e8f9;
+  border-radius:8px;
+  padding:6px 14px;
+  font-family:inherit;
+  font-size:11px;
+  font-weight:700;
+  cursor:pointer;
+  transition:background .18s,color .18s;
+}
+.song-comments-send:hover{background:rgba(34,211,238,.24);color:#a5f3fc}
+.song-comments-send:disabled{opacity:.45;cursor:not-allowed}
+.song-comments-note{margin:7px 0 0;font-size:10.5px;color:rgba(248,113,113,.8);min-height:0}
+
+/* What is lined up behind the song. */
+.song-comments-upnext{padding:10px 14px 16px;display:flex;flex-direction:column;gap:2px}
+.song-upnext-row{display:flex;align-items:center;gap:10px;padding:7px 4px;border-radius:8px}
+.song-upnext-row:hover{background:rgba(255,255,255,.04)}
+.song-upnext-num{width:16px;flex:0 0 auto;font-size:10px;color:rgba(255,255,255,.28);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.song-upnext-title{font-size:11.5px;color:rgba(255,255,255,.66);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* The credits of the song. */
+.song-comments-credits{padding:14px}
+.song-credits-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.song-credit-cell{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:9px 11px;min-width:0}
+.song-credit-label{display:block;font-size:8px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.36);margin-bottom:3px}
+.song-credit-value{display:block;font-size:12.5px;font-weight:700;color:#fff;line-height:1.3;overflow-wrap:anywhere}
+
+@media (max-width:520px){
+  #song-comments-panel{width:100%;top:auto;height:min(86dvh,760px);border-left:none;border-top:1px solid rgba(255,255,255,.08);border-radius:18px 18px 0 0}
+  @keyframes scSheetIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+}
+
+/* ============================================================================
+   THE FLOATING BAR
+
+   The mini player becomes the bar the reference draws: the song on the
+   left, the transport and the progress in the middle, the actions on the
+   right - and it floats at the bottom of the page, centred.
+
+   The ids are the mini player's own, so the code that fills the widget in
+   keeps working without being told about the change.
+   ========================================================================== */
+@media (min-width:768px){
+  /* The bar floats at the bottom, centred on the page. */
+  #mini-player{
+    position:fixed !important;
+    top:auto !important;
+    bottom:20px !important;
+    left:50% !important;
+    right:auto !important;
+    width:min(1240px,calc(100vw - 56px)) !important;
+    max-width:none !important;
+    min-width:0 !important;
+    margin-left:calc(min(1240px,calc(100vw - 56px)) / -2);
+    padding:12px 20px 14px;
+    border-radius:22px !important;
+    border:1px solid rgba(255,255,255,.09);
+    background:rgba(12,9,24,.88);
+    backdrop-filter:blur(22px) saturate(1.35);
+    -webkit-backdrop-filter:blur(22px) saturate(1.35);
+    box-shadow:0 20px 60px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.06);
+    overflow:visible;
+  }
+  /* It slides down out of the way when there is nothing playing. */
+  #mini-player.hidden{transform:translateY(150%) scale(.97)}
+  #mini-player .mini-inner{padding:0;display:block}
+  #mini-player .mini-progress-tooltip{display:none}
+
+  /* Three columns: the song, the transport, the actions. */
+  #mini-player .mini-row{
+    display:grid;
+    grid-template-columns:minmax(190px,1fr) minmax(300px,2.1fr) minmax(190px,1fr);
+    align-items:center;
+    gap:20px;
+    padding:0;
+  }
+
+  /* ---- the song, on the left ---- */
+  #mini-player .mini-song{display:flex;align-items:center;gap:14px;min-width:0}
+  #mini-player .mini-cover-wrap{width:64px;height:64px}
+  #mini-player .mini-cover{width:64px;height:64px;border-radius:12px}
+  #mini-player .mini-info{
+    flex:1 1 auto;
+    min-width:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  #mini-player .mini-title{
+    font-size:15px;
+    font-weight:800;
+    color:rgba(255,255,255,.95);
+    line-height:1.25;
+    letter-spacing:.01em;
+  }
+  #mini-player .mini-tag{
+    margin:0;
+    font-size:9.5px;
+    line-height:1.25;
+    color:rgba(255,255,255,.4);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  #mini-player .mini-artist{font-size:11px;color:rgba(255,255,255,.55)}
+  #mini-player .mini-fav-btn{
+    flex:0 0 auto;
+    width:32px;
+    height:32px;
+    border:none;
+    border-radius:50%;
+    background:rgba(255,255,255,.05);
+    color:rgba(255,255,255,.45);
+    font-size:12px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:color .18s ease,background .18s ease;
+  }
+  #mini-player .mini-fav-btn:hover{color:#fff;background:rgba(255,255,255,.12)}
+  #mini-player .mini-fav-btn.fav-active{color:#f472b6}
+
+  /* ---- the transport and the bar, in the middle ---- */
+  #mini-player .mini-centre{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:7px;
+    min-width:0;
+  }
+  #mini-player .mini-controls{gap:4px}
+  #mini-player .mini-btn{
+    position:relative;
+    width:34px;
+    height:34px;
+    font-size:12px;
+    border-radius:50%;
+  }
+  #mini-player .mini-play-btn{
+    width:44px;
+    height:44px;
+    font-size:15px;
+    background:rgba(255,255,255,.08);
+  }
+  #mini-player .mini-play-btn:hover{background:rgba(255,255,255,.16)}
+  #mini-player .mini-bar-row{display:flex;align-items:center;gap:10px;width:100%}
+  #mini-player .mini-clock{
+    flex:0 0 auto;
+    min-width:34px;
+    font-size:10.5px;
+    line-height:1;
+    color:rgba(255,255,255,.5);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  #mini-player #mini-current-time{text-align:right}
+  #mini-player #mini-duration-time{text-align:left}
+  #mini-player .mini-progress{
+    position:relative;
+    left:auto;
+    right:auto;
+    bottom:auto;
+    flex:1 1 auto;
+    height:4px;
+    background:rgba(0,0,0,.5);
+    overflow:visible;
+    border-radius:10px;
+  }
+  #mini-player .mini-progress:hover{height:6px}
+  #mini-player .mini-progress-bar{
+    height:100%;
+    border-radius:10px;
+    background:linear-gradient(90deg,#0891b2,#22d3ee);
+  }
+
+  /* ---- the actions, on the right ---- */
+  #mini-player .mini-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    min-width:0;
+  }
+  #mini-player .mini-volume{display:flex;align-items:center;gap:8px}
+  #mini-player .mini-volume-slider{
+    position:relative;
+    width:84px;
+    height:4px;
+    border-radius:4px;
+    background:rgba(255,255,255,.14);
+    cursor:pointer;
+    outline:none;
+  }
+  #mini-player .mini-volume-slider:focus-visible{box-shadow:0 0 0 2px rgba(34,211,238,.6)}
+  #mini-player .mini-volume-fill{
+    position:absolute;
+    left:0;
+    top:0;
+    bottom:0;
+    width:75%;
+    border-radius:4px;
+    background:linear-gradient(90deg,#0891b2,#22d3ee);
+  }
+  #mini-player .mini-volume-thumb{
+    position:absolute;
+    top:50%;
+    left:75%;
+    transform:translate(-50%,-50%);
+    width:11px;
+    height:11px;
+    border-radius:50%;
+    background:#fff;
+    box-shadow:0 1px 5px rgba(0,0,0,.6);
+    pointer-events:none;
+  }
+  #mini-player .mini-badge{
+    position:absolute;
+    top:-3px;
+    right:-3px;
+    min-width:14px;
+    height:14px;
+    padding:0 4px;
+    font-size:8px;
+    font-weight:700;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    background:rgba(34,211,238,.9);
+    color:#04070f;
+    border-radius:20px;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+    pointer-events:none;
+    box-shadow:0 1px 4px rgba(0,0,0,.4);
+  }
+  #mini-player .mini-badge.on{display:flex}
+}
+
+/* Below 768px the bar is not shown - the phone has its own player, and the
+   bottom navigation sits where the bar would go. */
+
+/* ============================================================================
+   THE FLOATING BAR - THE ROOM IT NEEDS
+
+   The bar sits over the bottom of the page, so the page has to be taller
+   than it looks: otherwise the footer's own bottom bar is behind it and
+   cannot be read.
+   ========================================================================== */
+@media (min-width:768px){
+  body:has(#mini-player:not(.hidden)){
+    padding-bottom:120px;
+  }
+  /* The bar is drawn over the page, so it must not be swallowed by the
+     page's own overflow. */
+  #mini-player{z-index:9999}
+}
+
+/* ============================================================================
+   THE LOBBY HERO - LIGHT, AND NO SEAM
+
+   The photo of him behind the title was the wrong picture: it was a
+   portrait of a person where the page wanted a place, and it made the
+   title fight with the face behind it.
+
+   So the picture goes, and what is left is the site's own light - a
+   violet halo behind the title, a cyan glow low on the left, a rose one
+   low on the right.
+
+   And it runs into the page rather than stopping at a line. The light
+   that lies behind the page - the slow drift of colour in the margins -
+   is drawn over the whole screen, and the hero used to hide the top of
+   it and let the rest show below, which is what drew the line: the same
+   glow, once behind the hero and once not, cut off at the hero's edge.
+
+   So the hero's own colour is let go of early and slowly, over the
+   bottom half of it, and the two scrims and the vignette fade out with
+   it. By the time the hero ends there is nothing of it left, and the
+   page's light carries straight through.
+
+   The picture itself is not deleted: it is still the player's cover when
+   a track has no artwork of its own.
+   ========================================================================== */
+.hero-bg{
+  background-color:transparent;
+  background-image:
+    radial-gradient(90% 55% at 50% 4%,rgba(147,51,234,.42) 0%,rgba(147,51,234,0) 66%),
+    radial-gradient(60% 45% at 10% 52%,rgba(6,182,212,.20) 0%,rgba(6,182,212,0) 72%),
+    radial-gradient(60% 45% at 90% 50%,rgba(236,72,153,.17) 0%,rgba(236,72,153,0) 72%),
+    linear-gradient(180deg,
+      #120a26 0%,
+      #0c0719 26%,
+      rgba(11,7,24,.72) 42%,
+      rgba(9,7,20,.42) 58%,
+      rgba(6,5,16,.20) 74%,
+      rgba(4,4,12,.07) 88%,
+      rgba(4,4,12,0) 100%);
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+/* The zoom layer was the same picture, put back by an older hero. It is
+   not on the page, but if it ever is, it is light too. */
+.hero-zoom-bg{
+  background-image:
+    radial-gradient(90% 55% at 50% 4%,rgba(147,51,234,.42) 0%,rgba(147,51,234,0) 66%),
+    radial-gradient(60% 45% at 10% 52%,rgba(6,182,212,.20) 0%,rgba(6,182,212,0) 72%),
+    radial-gradient(60% 45% at 90% 50%,rgba(236,72,153,.17) 0%,rgba(236,72,153,0) 72%),
+    linear-gradient(180deg,
+      #120a26 0%,
+      #0c0719 26%,
+      rgba(11,7,24,.72) 42%,
+      rgba(9,7,20,.42) 58%,
+      rgba(6,5,16,.20) 74%,
+      rgba(4,4,12,.07) 88%,
+      rgba(4,4,12,0) 100%);
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  filter:none;
+}
+
+/* The two scrims over the hero both darkened its foot, which is what
+   drew the line between the hero and the page. They fade out as they
+   reach the foot now, and the hero's own light runs on into the page. */
+.hero-bg > div.bg-gradient-to-b{
+  background-image:linear-gradient(to bottom,rgba(0,0,0,.38) 0%,rgba(0,0,0,.22) 34%,rgba(0,0,0,.08) 62%,rgba(0,0,0,0) 92%);
+}
+.hero-bg > div[style*="linear-gradient(180deg"]{
+  background-image:linear-gradient(180deg,rgba(8,4,18,.62) 0%,rgba(8,4,18,.24) 34%,rgba(8,4,18,.05) 62%,rgba(8,4,18,0) 94%) !important;
+}
+
+/* The vignette framed the hero with an inset shadow, which darkens every
+   edge the same - including the foot, which is where the seam was. It
+   frames the top and the two sides now, and leaves the foot alone, so
+   the light behind the page carries straight through. */
+.hero-bg .hero-vignette{
+  box-shadow:none;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.42) 0%,rgba(0,0,0,.10) 16%,rgba(0,0,0,0) 30%),
+    linear-gradient(90deg,rgba(0,0,0,.30) 0%,rgba(0,0,0,0) 13%,rgba(0,0,0,0) 87%,rgba(0,0,0,.30) 100%);
+}
+
+/* ============================================================================
+   THE PAGE'S LIGHT, AND THE LOBBY HERO THAT SITS IN IT
+
+   The photo of him behind the title was the wrong picture: it was a
+   portrait of a person where the page wanted a place, and it made the
+   title fight with the face behind it.
+
+   What was left in its place still had a line across it, because the
+   light belonged to the hero and the page had its own light: the same
+   glow, once behind the hero and once not, cut off at the hero's edge.
+
+   juicewrld.io has no such line, and the reason is worth copying. Its
+   light is a mesh - one layer over the whole page, a colour that runs
+   from the top to the bottom with a glow laid over the top of it, and
+   a veil over the whole thing. Nothing ends, because nothing belongs to
+   one part of the page.
+
+   So the light is the page's now, not the hero's:
+
+     - the mesh sits behind the whole page, in the layer that already
+       carried the drifting light, so it is under every page and not
+       under one section
+     - the hero paints nothing of its own except a soft glow behind the
+       title, which fades out well before the hero's foot
+     - the texture and the vignette fade out as they reach the foot, so
+       they cannot draw a line either
+
+   The picture itself is not deleted: it is still the player's cover when
+   a track has no artwork of its own.
+   ========================================================================== */
+
+/* ---- the mesh, over the whole page ---- */
+#bg-motion{
+  background:
+    radial-gradient(120% 80% at 82% -8%,rgba(147,51,234,.30) 0%,rgba(147,51,234,0) 72%),
+    radial-gradient(100% 70% at 2% 104%,rgba(6,182,212,.17) 0%,rgba(6,182,212,0) 72%),
+    radial-gradient(90% 60% at 98% 96%,rgba(236,72,153,.13) 0%,rgba(236,72,153,0) 72%);
+}
+
+/* ---- the hero, which now paints only the glow behind the title ---- */
+.hero-bg{
+  background-color:transparent;
+  background-image:
+    radial-gradient(46% 34% at 50% 42%,rgba(147,51,234,.22) 0%,rgba(147,51,234,0) 72%);
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+/* The zoom layer was the same picture, put back by an older hero. It is
+   not on the page, but if it ever is, it is light too. */
+.hero-zoom-bg{
+  background-image:
+    radial-gradient(46% 34% at 50% 42%,rgba(147,51,234,.22) 0%,rgba(147,51,234,0) 72%);
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  filter:none;
+}
+
+/* ---- the texture and the vignette fade out before the foot ----
+   Both of them used to run to the very edge of the hero, which is what
+   drew the line: above it there was texture and a darkened edge, below
+   it there was neither. */
+.hero-bg .hero-scanlines,
+.hero-bg .hero-vignette{
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 68%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 0%,#000 68%,transparent 100%);
+}
+
+/* The vignette framed the hero with an inset shadow, which darkens every
+   edge the same - including the foot. It frames the top and the two
+   sides now, and leaves the foot alone. */
+.hero-bg .hero-vignette{
+  box-shadow:none;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.42) 0%,rgba(0,0,0,.10) 16%,rgba(0,0,0,0) 30%),
+    linear-gradient(90deg,rgba(0,0,0,.30) 0%,rgba(0,0,0,0) 13%,rgba(0,0,0,0) 87%,rgba(0,0,0,.30) 100%);
+}
+
+/* ---- the scrims fade out as they reach the foot ---- */
+.hero-bg > div.bg-gradient-to-b{
+  background-image:linear-gradient(to bottom,rgba(0,0,0,.38) 0%,rgba(0,0,0,.22) 34%,rgba(0,0,0,.08) 62%,rgba(0,0,0,0) 92%);
+}
+.hero-bg > div[style*="linear-gradient(180deg"]{
+  background-image:linear-gradient(180deg,rgba(8,4,18,.62) 0%,rgba(8,4,18,.24) 34%,rgba(8,4,18,.05) 62%,rgba(8,4,18,0) 94%) !important;
+}

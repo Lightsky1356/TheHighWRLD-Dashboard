@@ -57,7 +57,11 @@
     retryDelay: 1000,
     lastSyncAt: 0,
     searching: false,
-    recentSearches: []
+    recentSearches: [],
+    /* What is about to be sent: the pictures and files chosen but not yet
+       sent, and the sticker picked but not yet sent. */
+    pendingAttachments: [],
+    pendingSticker: ""
   };
 
   /* One empty state for the whole panel. These three places used to be bare
@@ -109,7 +113,7 @@
      something a person can act on, and never fall back to the original text. */
   function describeError(error) {
     var status = error && error.status;
-    if (status === 401) return "Sign in to use Friends & Messages.";
+    if (status === 401) return "Sign in to use Inner Circle.";
     if (status === 403) return "You do not have permission to do that.";
     if (status === 404) return "That is no longer available.";
     if (status === 409) return "That no longer matches what is saved. Try again.";
@@ -170,24 +174,24 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v37";
+    css.href = "/social.css?v=thw-v39";
     document.head.appendChild(css);
 
     var root = el("div");
     root.id = "thw-social-root";
     root.innerHTML =
-      '<button id="thw-social-fab" type="button" aria-label="Open Friends and Messages" aria-haspopup="dialog" aria-expanded="false" title="Friends & Messages">' +
+      '<button id="thw-social-fab" type="button" aria-label="Open Inner Circle" aria-haspopup="dialog" aria-expanded="false" title="Inner Circle">' +
         '<i class="fas fa-comments" aria-hidden="true"></i><span id="thw-social-badge" hidden></span>' +
       '</button>' +
       '<div id="thw-social-overlay" hidden>' +
         '<div id="thw-social-wash" aria-hidden="true"></div>' +
         '<section id="thw-social-panel" role="dialog" aria-modal="true" aria-labelledby="thw-social-title">' +
-          '<header class="thw-social-head"><div><h2 class="thw-social-title" id="thw-social-title">Friends &amp; Messages</h2><p class="thw-social-subtitle">Your community, wherever you are</p></div>' +
+          '<header class="thw-social-head"><div><h2 class="thw-social-title" id="thw-social-title">Inner Circle</h2><p class="thw-social-subtitle">Your people, your conversations</p></div>' +
             '<span class="thw-social-head-actions">' +
             '<button class="thw-social-rules-link" id="thw-social-rules-link" type="button" aria-haspopup="dialog" title="House rules"><i class="fas fa-shield-halved" aria-hidden="true"></i><span>Rules</span></button>' +
-            '<button class="thw-social-settings-link" id="thw-social-settings-link" type="button" aria-controls="thw-social-settings-view" aria-pressed="false" title="Friends &amp; Messaging settings"><i class="fas fa-gear" aria-hidden="true"></i><span>Settings</span></button>' +
+            '<button class="thw-social-settings-link" id="thw-social-settings-link" type="button" aria-controls="thw-social-settings-view" aria-pressed="false" title="Inner Circle settings"><i class="fas fa-gear" aria-hidden="true"></i><span>Settings</span></button>' +
             '<button class="thw-social-expand" id="thw-social-expand" data-action="toggle-panel-size" type="button" aria-pressed="false" aria-controls="thw-social-panel" title="Make the panel bigger"><i class="fas fa-expand" aria-hidden="true"></i></button>' +
-            '<button class="thw-social-close" id="thw-social-close" type="button" aria-label="Close Friends and Messages"><i class="fas fa-xmark" aria-hidden="true"></i></button></span></header>' +
+            '<button class="thw-social-close" id="thw-social-close" type="button" aria-label="Close Inner Circle"><i class="fas fa-xmark" aria-hidden="true"></i></button></span></header>' +
           '<nav class="thw-social-tabs" role="tablist" aria-label="Social sections">' +
             '<button class="thw-social-tab" type="button" role="tab" data-tab="friends" aria-selected="true">Friends</button>' +
             '<button class="thw-social-tab" type="button" role="tab" data-tab="messages" aria-selected="false">Messages <span class="thw-social-tab-count" id="thw-social-message-count"></span></button>' +
@@ -218,8 +222,15 @@
                 '<div class="thw-social-thread-body" id="thw-social-thread-body"><div class="thw-social-thread-placeholder"><span class="thw-social-empty-icon"><i class="fas fa-comment-dots" aria-hidden="true"></i></span><strong class="thw-social-empty-title">No conversation open</strong><span class="thw-social-empty-text">Pick someone from your friends to start messaging.</span></div></div>' +
                 '<div class="thw-social-typing" id="thw-social-typing" aria-live="polite"></div>' +
                 '<div class="thw-social-replying" id="thw-social-replying"><span id="thw-social-reply-label"></span><button id="thw-social-reply-cancel" type="button" aria-label="Cancel reply">Cancel</button></div>' +
-                '<form class="thw-social-composer" id="thw-social-composer"><label class="sr-only" for="thw-social-input">Write a message</label><textarea id="thw-social-input" maxlength="2000" rows="1" placeholder="Write a message" disabled></textarea><span class="thw-social-counter" id="thw-social-counter" aria-live="off"></span><button class="thw-social-send" id="thw-social-send" type="submit" disabled>Send</button></form>' +
-              '</div></div>' +
+                                '<div class="thw-social-attachments" id="thw-social-attachments" hidden></div>' +
+                '<form class="thw-social-composer" id="thw-social-composer">' +
+                '<button class="thw-social-attach" id="thw-social-attach" type="button" aria-label="Attach a photo or file" title="Attach a photo or file"><i class="fas fa-paperclip" aria-hidden="true"></i></button>' +
+                '<input id="thw-social-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,application/zip" multiple hidden>' +
+                '<span class="thw-social-composer-field"><label class="sr-only" for="thw-social-input">Write a message</label><textarea id="thw-social-input" maxlength="2000" rows="1" placeholder="Write a message" disabled></textarea><span class="thw-social-counter" id="thw-social-counter" aria-live="off"></span></span>' +
+                '<button class="thw-social-sticker-btn" id="thw-social-sticker-btn" type="button" aria-label="Send a sticker" aria-haspopup="true" aria-expanded="false" title="Send a sticker"><i class="fas fa-smile-beam" aria-hidden="true"></i></button>' +
+                '<button class="thw-social-send" id="thw-social-send" type="submit" disabled>Send</button></form>' +
+                '<div class="thw-social-stickers" id="thw-social-stickers" hidden><div class="thw-social-sticker-grid" id="thw-social-sticker-grid"></div></div>' +
+'</div></div>' +
           '</section>' +
           '<section class="thw-social-view" data-view="requests" role="tabpanel"><div class="thw-social-list" id="thw-social-requests"></div></section>' +
           '<section class="thw-social-view" data-view="settings" id="thw-social-settings-view" role="tabpanel"><div id="thw-social-settings-mount"></div></section>' +
@@ -227,7 +238,7 @@
       '</div>' +
       '<div class="thw-social-rules" id="thw-social-rules" role="dialog" aria-modal="true" aria-labelledby="thw-social-rules-title" hidden>' +
         '<div class="thw-social-rules-card">' +
-          '<header class="thw-social-rules-head"><h3 class="thw-social-rules-title" id="thw-social-rules-title">Friends &amp; Messages rules</h3>' +
+          '<header class="thw-social-rules-head"><h3 class="thw-social-rules-title" id="thw-social-rules-title">Inner Circle rules</h3>' +
             '<button class="thw-social-rules-close" type="button" aria-label="Close rules"><i class="fas fa-xmark" aria-hidden="true"></i></button></header>' +
           '<div class="thw-social-rules-body"></div>' +
         '</div>' +
@@ -309,6 +320,27 @@
       closeMessageMenu();
     }, true);
     document.getElementById("thw-social-composer").addEventListener("submit", sendMessage);
+
+    /* The attach button, and the file chooser it opens. */
+    var attachBtn = document.getElementById("thw-social-attach");
+    var fileInput = document.getElementById("thw-social-file");
+    if (attachBtn && fileInput) {
+      attachBtn.addEventListener("click", function () { fileInput.click(); });
+      fileInput.addEventListener("change", function () {
+        addFiles(fileInput.files);
+        fileInput.value = "";
+      });
+    }
+    /* The sticker picker. */
+    var stickerBtn = document.getElementById("thw-social-sticker-btn");
+    if (stickerBtn) stickerBtn.addEventListener("click", toggleStickerPicker);
+    /* A click anywhere else closes it. */
+    document.addEventListener("click", function (e) {
+      var picker = document.getElementById("thw-social-stickers");
+      if (!picker || picker.hidden) return;
+      if (e.target.closest("#thw-social-stickers") || e.target.closest("#thw-social-sticker-btn")) return;
+      closeStickerPicker();
+    });
     document.getElementById("thw-social-reply-cancel").addEventListener("click", clearReply);
     document.getElementById("thw-social-rules-link").addEventListener("click", openRules);
     document.getElementById("thw-social-settings-link").addEventListener("click", toggleSettings);
@@ -1740,6 +1772,212 @@
     loadMessages(false);
   }
 
+/* ---------- Picking a picture or a file ----------
+   *
+   * A picture is resized before it is sent, the way the gallery resizes
+   * artwork before it is published: a phone camera picture is several
+   * megabytes, and the server's cap is 800KB. Resizing here means the
+   * upload is small and the picture still looks right.
+   *
+   * The file is read into a data URL and sent as base64 in the same
+   * request as the message that carries it, so a picture cannot be left
+   * behind on its own.
+   */
+  var ATTACH_MAX = 800 * 1024;
+  var ATTACH_TYPES = {
+    "image/jpeg": true, "image/png": true, "image/gif": true, "image/webp": true,
+    "application/pdf": true, "text/plain": true, "application/zip": true
+  };
+
+  /* How many bytes a data URL really holds. The base64 is four characters
+     for every three bytes, and the padding is not a byte - so the length
+     of the base64 is not the length of the file. */
+  function dataBytes(dataUrl) {
+    var raw = String(dataUrl || "").replace(/^data:[^;]+;base64,/, "");
+    if (!raw) return 0;
+    var padding = 0;
+    if (raw.charAt(raw.length - 1) === "=") padding++;
+    if (raw.charAt(raw.length - 2) === "=") padding++;
+    return Math.max(0, Math.floor(raw.length * 3 / 4) - padding);
+  }
+
+  function fileSize(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
+    return (bytes / 1024 / 1024).toFixed(1) + " MB";
+  }
+
+  /* A picture, made small enough to send. */
+  function readPicture(file, done) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var gif = file.type === "image/gif";
+          var maxDim = 1600;
+          var w = img.width, h = img.height;
+          if (!gif && Math.max(w, h) > maxDim) {
+            var sc = maxDim / Math.max(w, h);
+            w = Math.round(w * sc); h = Math.round(h * sc);
+          }
+          var cv = document.createElement("canvas");
+          cv.width = w; cv.height = h;
+          cv.getContext("2d").drawImage(img, 0, 0, w, h);
+          var mime = gif ? "image/gif" : "image/jpeg";
+          var quality = 0.82;
+          var url = cv.toDataURL(mime, quality);
+          /* Still too big after one pass: try again, smaller. */
+          if (url.length * 0.75 > ATTACH_MAX && !gif) {
+            quality = 0.6;
+            url = cv.toDataURL(mime, quality);
+          }
+          done(null, { mime: mime, data: url, width: w, height: h });
+        } catch (e) {
+          done(new Error("Could not read that picture."));
+        }
+      };
+      img.onerror = function () { done(new Error("Could not read that picture.")); };
+      img.src = reader.result;
+    };
+    reader.onerror = function () { done(new Error("Could not read that file.")); };
+    reader.readAsDataURL(file);
+  }
+
+  /* A document, as it is. */
+  function readDocument(file, done) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      done(null, { mime: file.type || "text/plain", data: reader.result, width: 0, height: 0 });
+    };
+    reader.onerror = function () { done(new Error("Could not read that file.")); };
+    reader.readAsDataURL(file);
+  }
+
+  /* The files that were chosen, and the little row of them above the
+     composer. */
+  function addFiles(files) {
+    var list = Array.prototype.slice.call(files || []);
+    if (!list.length) return;
+    var room = 6 - state.pendingAttachments.length;
+    if (room <= 0) {
+      showStatus("Six attachments is the most a message can carry.", "warn");
+      return;
+    }
+    if (list.length > room) {
+      showStatus("Only " + room + " more can go with this message.", "warn");
+      list = list.slice(0, room);
+    }
+    list.forEach(function (file) {
+      if (!ATTACH_TYPES[file.type]) {
+        showStatus("\u201C" + file.name + "\u201D is not a kind of file that can be sent.", "warn");
+        return;
+      }
+      if (file.size > ATTACH_MAX * 2) {
+        showStatus("\u201C" + file.name + "\u201D is too big (800KB max).", "warn");
+        return;
+      }
+      var isPicture = /^image\//.test(file.type);
+      var read = isPicture ? readPicture : readDocument;
+      read(file, function (err, data) {
+        if (err) { showStatus(err.message || "That file could not be read.", "warn"); return; }
+        if (data.data.length * 0.75 > ATTACH_MAX) {
+          showStatus("\u201C" + file.name + "\u201D is too big (800KB max).", "warn");
+          return;
+        }
+        state.pendingAttachments.push({
+          kind: isPicture ? "photo" : "file",
+          name: file.name || (isPicture ? "picture" : "file"),
+          mime: data.mime,
+          size: dataBytes(data.data),
+          width: data.width || 0,
+          height: data.height || 0,
+          data: data.data
+        });
+        renderPendingAttachments();
+      });
+    });
+  }
+
+  /* The row of what is waiting to be sent. */
+  function renderPendingAttachments() {
+    var row = document.getElementById("thw-social-attachments");
+    if (!row) return;
+    row.replaceChildren();
+    var list = state.pendingAttachments;
+    if (!list.length) { row.hidden = true; return; }
+    row.hidden = false;
+    list.forEach(function (item, index) {
+      var chip = el("span", "thw-social-attachment");
+      if (item.kind === "photo") {
+        var thumb = document.createElement("img");
+        thumb.className = "thw-social-attachment-thumb";
+        thumb.src = item.data;
+        thumb.alt = "";
+        chip.appendChild(thumb);
+      } else {
+        var icon = el("span", "thw-social-attachment-icon");
+        icon.innerHTML = '<i class="fas fa-file" aria-hidden="true"></i>';
+        chip.appendChild(icon);
+      }
+      var name = el("span", "thw-social-attachment-name", item.name);
+      chip.appendChild(name);
+      var size = el("span", "thw-social-attachment-size", fileSize(item.size));
+      chip.appendChild(size);
+      var drop = el("button", "thw-social-attachment-remove", "\u00D7");
+      drop.type = "button";
+      drop.setAttribute("aria-label", "Remove " + item.name);
+      drop.dataset.action = "remove-attachment";
+      drop.dataset.index = String(index);
+      chip.appendChild(drop);
+      row.appendChild(chip);
+    });
+  }
+
+  /* ---------- Stickers ----------
+   *
+   * A sticker is a picture of a feeling, and the cheapest honest version of
+   * one is a big emoji. It needs no upload, so it arrives at once, and it
+   * travels in the message itself - so the person on the other end sees
+   * exactly the sticker that was sent.
+   */
+  var STICKERS = [
+    "\uD83E\uDD17", "\uD83D\uDE00", "\uD83D\uDE02", "\uD83D\uDE05", "\uD83D\uDE0A", "\uD83D\uDE0E",
+    "\uD83D\uDE18", "\uD83D\uDC4F", "\uD83D\uDE4C", "\uD83E\uDD14", "\uD83E\uDD25", "\uD83C\uDF89",
+    "\uD83D\uDC4F\uD83D\uDE00", "\uD83D\uDE0D", "\u2764\uFE0F", "\uD83D\uDC96", "\uD83D\uDE80", "\uD83D\uDD25\uD83D\uDE00"
+  ];
+
+  function renderStickerGrid() {
+    var grid = document.getElementById("thw-social-sticker-grid");
+    if (!grid || grid.childNodes.length) return;
+    STICKERS.forEach(function (emoji) {
+      var pick = el("button", "thw-social-sticker", emoji);
+      pick.type = "button";
+      pick.dataset.action = "send-sticker";
+      pick.dataset.emoji = emoji;
+      pick.setAttribute("aria-label", "Send the sticker " + emoji);
+      grid.appendChild(pick);
+    });
+  }
+
+  function toggleStickerPicker() {
+    var picker = document.getElementById("thw-social-stickers");
+    var button = document.getElementById("thw-social-sticker-btn");
+    if (!picker || !button) return;
+    renderStickerGrid();
+    var open = picker.hidden;
+    picker.hidden = !open;
+    button.setAttribute("aria-expanded", open ? "true" : "false");
+    button.classList.toggle("is-open", open);
+  }
+
+  function closeStickerPicker() {
+    var picker = document.getElementById("thw-social-stickers");
+    var button = document.getElementById("thw-social-sticker-btn");
+    if (picker) picker.hidden = true;
+    if (button) { button.setAttribute("aria-expanded", "false"); button.classList.remove("is-open"); }
+  }
+
   function renderThreadHeader(conversation) {
     var head = document.getElementById("thw-social-thread-head");
     head.replaceChildren();
@@ -1768,9 +2006,36 @@
       ? "Online"
       : (conversation.lastActive ? "Last active " + relativeTime(conversation.lastActive) : "Offline");
     person.appendChild(el("span", "thw-social-meta" + (conversation.online ? " thw-social-online" : ""), presence));
-    /* A custom status, when they have set one - it says more than a
-       presence does. */
-    if (conversation.activity) person.appendChild(el("span", "thw-social-meta", conversation.activity));
+    /* What they are playing right now, under their name: the cover, the
+       album and the song, and a button that starts it here. It is only
+       there while they are actually here - somebody who is offline is not
+       listening to anything on this site. */
+    if (conversation.online && conversation.activity && conversation.activity.trackId) {
+      var playing = el("span", "thw-social-playing");
+      var cover = document.createElement("img");
+      cover.className = "thw-social-playing-cover";
+      cover.src = conversation.activity.artwork || "Juice-WRLD.png";
+      cover.alt = "";
+      cover.onerror = function () { this.src = "Juice-WRLD.png"; };
+      playing.appendChild(cover);
+      var playingText = el("span", "thw-social-playing-text");
+      if (conversation.activity.label) {
+        playingText.appendChild(el("span", "thw-social-playing-album", conversation.activity.label));
+      }
+      playingText.appendChild(el("span", "thw-social-playing-title", conversation.activity.title || ""));
+      playing.appendChild(playingText);
+      var playNow = el("button", "thw-social-playing-play", "Play");
+      playNow.type = "button";
+      playNow.dataset.action = "play-friend-track";
+      playNow.dataset.trackId = conversation.activity.trackId;
+      playNow.dataset.trackTitle = conversation.activity.title || "";
+      playNow.addEventListener("click", function (e) {
+        e.stopPropagation();
+        playFriendTrack(this.dataset.trackId, this.dataset.trackTitle);
+      });
+      playing.appendChild(playNow);
+      person.appendChild(playing);
+    }
     head.appendChild(person);
     head.appendChild(button("Block", "block-user", "danger", { uid: conversation.uid }));
     head.appendChild(button("Report", "report-user", "", { uid: conversation.uid }));
@@ -1824,6 +2089,47 @@
     }).catch(function (error) { showStatus(describeError(error), "error"); });
   }
 
+  /* What a message carries beside its words.
+   *
+   * A sticker is drawn large, because that is the whole point of one. A
+   * picture is drawn in the thread and opens full size. A file is offered as
+   * a download. They come back from the server with the message, so the
+   * sender and the reader draw the same thing.
+   */
+  function drawWhatItCarries(bubble, message) {
+    if (message.deleted) return;
+    if (message.sticker) {
+      bubble.appendChild(el("span", "thw-social-sticker-emoji", message.sticker));
+    }
+    if (!message.attachments || !message.attachments.length) return;
+    var files = el("div", "thw-social-attachments-box");
+    message.attachments.forEach(function (item) {
+      if (item.kind === "photo" || item.kind === "sticker") {
+        var pic = el("a", "thw-social-photo");
+        pic.href = item.url;
+        pic.target = "_blank";
+        pic.rel = "noopener noreferrer";
+        var image = document.createElement("img");
+        image.src = item.url;
+        image.alt = item.name || "picture";
+        image.loading = "lazy";
+        image.onerror = function () { this.closest(".thw-social-photo").classList.add("is-missing"); };
+        pic.appendChild(image);
+        files.appendChild(pic);
+      } else {
+        var file = el("a", "thw-social-file");
+        file.href = item.url;
+        file.setAttribute("download", item.name || "file");
+        var icon = el("span", "thw-social-file-icon");
+        icon.innerHTML = '<i class="fas fa-file" aria-hidden="true"></i>';
+        file.appendChild(icon);
+        file.appendChild(el("span", "thw-social-file-name", item.name || "file"));
+        file.appendChild(el("span", "thw-social-file-size", fileSize(item.size)));
+        files.appendChild(file);
+      }
+    });
+    bubble.appendChild(files);
+  }
   function renderMessages() {
     var body = document.getElementById("thw-social-thread-body");
     body.replaceChildren();
@@ -1885,7 +2191,8 @@
         card.appendChild(play);
         bubble.appendChild(card);
       }
-      if (message.deleted || message.body) {
+      drawWhatItCarries(bubble, message);
+      if (message.deleted || (message.body && !message.sticker)) {
         bubble.appendChild(el("p", "thw-social-message-text", message.deleted ? "Message deleted" : message.body));
       }
       var tools = el("div", "thw-social-message-tools");
@@ -2026,15 +2333,29 @@
     event.preventDefault();
     var input = document.getElementById("thw-social-input");
     var text = input.value.trim();
-    if (!state.conversation || !text) return;
+    /* A sticker travels on its own - it IS the message. */
+    var sticker = state.pendingSticker;
+    var attachments = state.pendingAttachments.slice();
+    if (!state.conversation) return;
+    if (!text && !sticker && !attachments.length) return;
     var send = document.getElementById("thw-social-send");
     send.disabled = true;
     api("/conversations/" + encodeURIComponent(state.conversation.id) + "/messages", {
       method: "POST",
-      body: { body: text, replyToId: state.replyTo ? state.replyTo.id : null }
+      body: {
+        body: sticker || text,
+        sticker: sticker || null,
+        replyToId: state.replyTo ? state.replyTo.id : null,
+        attachments: attachments.map(function (a) {
+          return { kind: a.kind, name: a.name, mime: a.mime, data: a.data, width: a.width, height: a.height };
+        })
+      }
     }).then(function (data) {
       state.messages.push(data.message);
       input.value = "";
+      state.pendingSticker = "";
+      state.pendingAttachments = [];
+      renderPendingAttachments();
       clearReply();
       var counterNode = document.getElementById("thw-social-counter");
       if (counterNode) { counterNode.textContent = ""; counterNode.classList.remove("warn"); }
@@ -2050,7 +2371,9 @@
         id: "pending-" + Date.now(),
         pending: true,
         failed: true,
-        body: text,
+        body: sticker || text,
+        sticker: sticker || null,
+        attachments: attachments,
         senderUid: state.boot && state.boot.me && state.boot.me.uid,
         createdAt: new Date().toISOString()
       });
@@ -2108,6 +2431,26 @@
         window.openProfile(uid);
         setOpen(false);
       }
+      return;
+    }
+    if (action === "send-sticker") {
+      /* A sticker is the whole message. */
+      var emoji = node.dataset.emoji || "";
+      if (!emoji || !state.conversation) return;
+      state.pendingSticker = emoji;
+      closeStickerPicker();
+      sendMessage({ preventDefault: function () {} });
+      return;
+    }
+    if (action === "remove-attachment") {
+      var at = parseInt(node.dataset.index, 10);
+      if (isNaN(at)) return;
+      state.pendingAttachments.splice(at, 1);
+      renderPendingAttachments();
+      return;
+    }
+    if (action === "play-friend-track") {
+      playFriendTrack(node.dataset.trackId || "", node.dataset.trackTitle || "");
       return;
     }
     if (action === "play-track") {
@@ -2425,7 +2768,7 @@
            switch genuinely stops them rather than just recording a preference. */
         '<h4 class="thw-social-settings-group">Notifications</h4>' +
         '<label class="thw-social-switch-row">' +
-          '<span class="thw-social-switch-copy"><b>Friends &amp; Messages notifications</b>' +
+          '<span class="thw-social-switch-copy"><b>Inner Circle notifications</b>' +
           '<small>Friend requests and new messages. Turning this off stops them being created.</small></span>' +
           /* checked by default, matching the server's default of 1. Signed out the fetch
              below cannot run, and defaulting to off would show a false "you have
