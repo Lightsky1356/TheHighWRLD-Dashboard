@@ -3516,7 +3516,7 @@ html.is-scrolling .player-lightning{
    the second visit onwards. */
 .wanted-item{
   content-visibility:auto;
-  contain-intrinsic-size:auto 170px;
+  contain-intrinsic-size:auto 132px;
 }
 
 
