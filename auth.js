@@ -266,7 +266,44 @@
       toast(label === "google" ? "Google login isn't configured yet." : "Discord login isn't configured yet.", "error");
       return;
     }
-    window.location.href = url;
+
+    /* The sign-in opens in a small window, so the page is not thrown
+       away and whatever was playing keeps playing.
+       A browser that blocks the small window gets the old way - the
+       sign-in goes to the provider in this window - because a sign-in
+       that cannot happen is worse than one that interrupts the music. */
+    var target = url + (url.indexOf("?") >= 0 ? "&" : "?") + "popup=1";
+    var popup = null;
+    try {
+      var left = Math.max(0, Math.round((window.screen.width - 520) / 2));
+      var top = Math.max(0, Math.round((window.screen.height - 760) / 2));
+      popup = window.open(target, "thw-oauth", "popup=yes,width=520,height=760,left=" + left + ",top=" + top);
+    } catch (e) {
+      popup = null;
+    }
+    if (!popup) {
+      window.location.href = url + (url.indexOf("?") >= 0 ? "&" : "?") + "popup=0";
+      return;
+    }
+    try { popup.focus(); } catch (e) {}
+  }
+
+  /* The small window says it is done, and the page reads the session
+     again - without being fetched again, so nothing that was happening
+     stops. */
+  window.addEventListener("message", function (ev) {
+    if (!ev.data || ev.data.type !== "thw:signed-in") return;
+    if (ev.origin !== location.origin) return;
+    refreshSession();
+  });
+
+  /* Reads the session and redraws the part that says who is signed in. */
+  function refreshSession() {
+    return fetchJson("/api/auth/session").then(function (d) {
+      if (!d || !d.uid) return;
+      applyLoggedIn({ uid: d.uid, email: d.email, name: d.name });
+      toast("Signed in as " + (d.name || "999") + "!", "success");
+    }).catch(function () {});
   }
 
   /* ---------- Forms ---------- */

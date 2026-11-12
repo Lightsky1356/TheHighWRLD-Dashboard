@@ -1,7 +1,6 @@
 /* Mobile expanded player — full-screen overlay reusing the SAME audio element
- * and existing player globals (no second engine). Opens by tapping the mini
- * player (outside its buttons). All transport actions delegate to the real
- * controls: mini-play click, prev/next, setShuffle, toggleQueuePanel. */
+ * and existing player globals (no second engine). Opens by tapping the WRLD Deck (outside its buttons). All transport actions delegate to the real
+ * controls: deck-play click, prev/next, setShuffle, toggleQueuePanel. */
 (function () {
   "use strict";
   if (window.__mplayerMounted) return;
@@ -29,7 +28,7 @@
 
   function coverSrc() {
     try {
-      var el = document.getElementById("mini-cover");
+      var el = document.getElementById("deck-cover");
       if (el && el.src) return el.src;
     } catch (e) {}
     return "Juice-WRLD.png";
@@ -198,7 +197,7 @@
     var ov = document.getElementById(OV);
     if (!ov) { stopSync(); return; }
     try {
-      var t = txt("mini-title"), a = txt("mini-artist");
+      var t = txt("deck-title"), a = txt("deck-artist");
       var te = ov.querySelector("[data-mp=title]"), ae = ov.querySelector("[data-mp=artist]");
       if (te && te.textContent !== t) te.textContent = t || "Nothing playing";
       if (ae && ae.textContent !== a) ae.textContent = a || "Juice WRLD";
@@ -256,8 +255,8 @@
       '<div class="mplayer-grab" aria-hidden="true"></div>' +
       '<div class="mplayer-top"><span>Now Playing</span><button type="button" class="mplayer-x" data-mp-x aria-label="Close">×</button></div>' +
       '<img decoding="async" class="mplayer-cover" data-mp="cover" src="' + esc(coverSrc()) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
-      '<div class="mplayer-title" data-mp="title">' + esc(txt("mini-title") || "Nothing playing") + "</div>" +
-      '<div class="mplayer-artist" data-mp="artist">' + esc(txt("mini-artist") || "Juice WRLD") + "</div>" +
+      '<div class="mplayer-title" data-mp="title">' + esc(txt("deck-title") || "Nothing playing") + "</div>" +
+      '<div class="mplayer-artist" data-mp="artist">' + esc(txt("deck-artist") || "Juice WRLD") + "</div>" +
       '<div class="mplayer-prog" data-mp="prog" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +
       '<div class="mplayer-fill" data-mp="fill"></div><div class="mplayer-thumb" data-mp="thumb"></div></div>' +
       '<div class="mplayer-times"><span data-mp="cur">0:00</span><span data-mp="dur">0:00</span></div>' +
@@ -278,7 +277,7 @@
       var a = b.getAttribute("data-mp");
       try {
         if (a === "play") {
-          var mp = document.getElementById("mini-play");
+          var mp = document.getElementById("deck-play");
           if (mp) mp.click();
         } else if (a === "prev") {
           var pb = document.getElementById("prev-btn");
@@ -320,7 +319,7 @@
   window.closeMobilePlayer = close;
 
   function boot() {
-    /* The mini player used to open this full-screen sheet on any click of its
+    /* The WRLD Deck used to open this full-screen sheet on any click of its
        own body. It already navigates to the WRLD Player itself (script.js binds
        that handler), so the click was doing two things at once: moving you to
        the player and dropping a modal over it. Escape and the close button

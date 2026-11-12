@@ -1,4 +1,5 @@
 import { json, nowIso, newUid, getCookie, createSession, setSessionCookie } from "../../../_lib/auth.js";
+import { isPopupState, popupDonePage } from "../../../_lib/oauth-popup.js";
 
 function htmlRedirect(location, text) {
   return new Response(
@@ -14,7 +15,8 @@ export async function onRequestGet(context) {
     const state = url.searchParams.get("state") || "";
     const expected = getCookie(context.request, "oauth_state");
     if (!code) return json({ error: "missing code" }, 400);
-    if (!state || !expected || state !== expected) return json({ error: "state mismatch or missing oauth state cookie" }, 400);
+    const popup = isPopupState(state);
+    if (!state || !expected || state.replace(/:win$/, "") !== expected) return json({ error: "state mismatch or missing oauth state cookie" }, 400);
 
     const clientId = context.env.GOOGLE_CLIENT_ID || "";
     const clientSecret = context.env.GOOGLE_CLIENT_SECRET || "";
@@ -67,6 +69,18 @@ export async function onRequestGet(context) {
     }
 
     const token = await createSession(db, user.uid, context.request);
+    /* A small window tells the page that opened it and closes itself. A
+       full page goes back to the site the way it always did. */
+    if (popup) {
+      return new Response(popupDonePage("google"), {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Set-Cookie": setSessionCookie(token),
+          "Cache-Control": "no-store",
+        },
+      });
+    }
     return new Response(null, {
       status: 302,
       headers: {

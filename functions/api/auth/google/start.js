@@ -1,13 +1,15 @@
 import { json, randomHex } from "../../../_lib/auth.js";
+import { withPopup } from "../../../_lib/oauth-popup.js";
 
 export async function onRequestGet(context) {
+  const url = new URL(context.request.url);
   const clientId = context.env.GOOGLE_CLIENT_ID || "";
   const clientSecret = context.env.GOOGLE_CLIENT_SECRET || "";
   if (!clientId || !clientSecret) {
     return json({ error: "Google login not configured yet" }, 503);
   }
   const redirectUri = "https://thehighwrlddashboard.pages.dev/api/auth/google/callback";
-  const state = randomHex(16);
+  const state = withPopup(randomHex(16), url.searchParams.get("popup") === "1");
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,

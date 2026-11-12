@@ -48,6 +48,7 @@ const GROUPS = [
   { name: "asset-tokens", file: "./asset-tokens.test.mjs", needsServer: false },
   { name: "cover-thumbs", file: "./cover-thumbs.test.mjs", needsServer: false },
   { name: "social-modal", file: "./social-modal.test.mjs", needsServer: false },
+  { name: "signin-window", file: "./signin-window.test.mjs", needsServer: false },
   { name: "push-api", file: "./push-api.test.mjs", needsServer: true },
   { name: "notifications", file: "./notifications-optout.test.mjs", needsServer: true },
   { name: "notification-prefs", file: "./notification-prefs.test.mjs", needsServer: true },

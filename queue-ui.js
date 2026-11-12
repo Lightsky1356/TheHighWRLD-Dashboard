@@ -273,7 +273,7 @@
       b.style.display = "none";
     }
     lastBadge = n;
-    if (typeof updateMiniQueueBadge === "function") { try { updateMiniQueueBadge(); } catch (e) {} }
+    if (typeof updateDeckQueueBadge === "function") { try { updateDeckQueueBadge(); } catch (e) {} }
   }
 
   function renderAll() {
@@ -395,7 +395,7 @@
        loadTrack and playAudio directly - as script.js's own queue handler did,
        which is why this was broken before the queue was taken over - so the
        audio started while the panel still read "SELECT A TRACK" over the top of
-       it. The true flag matches queueTracks: no shortcuts toast or mini-player
+       it. The true flag matches queueTracks: no shortcuts toast or deck-player
        nudge on every queue tap. selectTrackFromList already loads, plays and
        re-renders the playlist, so none of that is repeated here. */
     if (typeof selectTrackFromList === "function") {

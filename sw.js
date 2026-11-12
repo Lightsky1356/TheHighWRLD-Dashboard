@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v233';;;;;;;;;
+const VERSION = 'thw-v240';;;;;;;;;;;;;;;;
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -54,28 +54,28 @@ const PRECACHE = [
   './tracks.js?v=thw-v11',
   './browser-id3-writer.js?v=thw-v3',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v44',
+  './account.js?v=thw-v51',
   './effects.js?v=thw-v2',
   './theme-drift.js?v=thw-v5',
   './i18n.js?v=9',
-  './script.js?v=thw-v70',
+  './script.js?v=thw-v76',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
-  './auth.js?v=thw-v11',
+  './auth.js?v=thw-v12',
   './wanted-realtime.js?v=thw-v4',
   './community-realtime.js?v=thw-v6',
   './presence.js?v=thw-v6',
-  './pwa.js?v=thw-v3',
+  './pwa.js?v=thw-v10',
   './community-realtime.css?v=thw-v2',
   './song-comments.js?v=thw-v3',
-  './floating-player.js?v=thw-v1',
+  './deck.js?v=thw-v1',
   './command-palette.js?v=thw-v1',
   './song-page.js?v=thw-v1',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v8',
   './account-shared.css?v=thw-v1',
-  'player-settings.css?v=thw-v99',
-  './style.css?v=thw-v45',
+  'player-settings.css?v=thw-v106',
+  './style.css?v=thw-v48',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
   './themes.css?v=thw-v20',
@@ -128,12 +128,12 @@ const PRECACHE = [
   /* --- page scripts --- */
   './user-relations.js?v=thw-v2',
   './user-menu.js?v=thw-v6',
-  './player-settings.js?v=thw-v11',
+  './player-settings.js?v=thw-v13',
   './reports.js?v=thw-v4',
   './owner-vault-sync.js?v=thw-v4',
   './owner-live.js?v=thw-v2',
   './player-performance.js?v=thw-v9',
-    './queue-ui.js?v=thw-v17',
+    './queue-ui.js?v=thw-v20',
   './vault-discography.js?v=thw-v4',
   './global-search.js?v=thw-v4',
   './about-tabs.js?v=thw-v6',
@@ -170,7 +170,7 @@ const PRECACHE = [
   './holiday-art/thanksgiving.jpg',
   './holiday-art/christmas.jpg',
   './presets.js?v=thw-v3',
-  './mobile-player.js?v=thw-v4',
+  './mobile-player.js?v=thw-v7',
   './follows.js?v=thw-v3',
   './privacy.js?v=thw-v4',
   './playlists-ui.js?v=thw-v6',
@@ -236,6 +236,26 @@ function isStaticAsset(url) {
  *
  * Nothing about the app shell being available offline changes: the same list is
  * precached, just after the worker is live rather than before it. */
+/* The page tells the worker when it is up.
+ *
+ * On a first visit the worker takes control while the page is still asking
+ * for the very assets the worker is about to fetch for its own cache - and
+ * they were competing for the same handful of connections, which is how a
+ * first visit took so long. So the page says when it is up, and the worker
+ * waits for that before it starts.
+ *
+ * If the page never says - an old one, or one that was already up - the wait
+ * ends anyway after a few seconds, so the cache is still filled. */
+function waitForThePage() {
+  return new Promise(function (resolve) {
+    var said = false;
+    function go() { if (said) return; said = true; resolve(); }
+    self.addEventListener('message', function (event) {
+      if (event.data && event.data.type === 'thw:page-ready') go();
+    });
+    setTimeout(go, 8000);
+  });
+}
 function precacheShell() {
   return caches.open(SHELL_CACHE).then((cache) => {
     /* Added one at a time rather than with cache.addAll(). addAll() is atomic:
@@ -342,6 +362,7 @@ self.addEventListener('activate', (event) => {
     /* The shell is filled in AFTER the worker has taken control of the page, so
        the app is usable - and push-capable - straight away rather than after
        120 assets have been fetched. */
+    .then(() => waitForThePage())
     .then(() => precacheShell())
   );
 });

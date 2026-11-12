@@ -236,10 +236,14 @@
     var overlay = document.getElementById('player-settings-overlay');
     if(!overlay) return;
     var opening = overlay.classList.contains('hidden');
-    /* settings UI is hidden on this platform (e.g. mobile web): never open an
-       invisible panel that would still lock scrolling */
-    var cog = document.getElementById('player-settings-cog');
-    if(opening && cog && !cog.offsetParent) return;
+    /* The settings are not on a phone - the cog is hidden there - so they
+       are not opened there either.
+       This used to test whether the cog was on the screen, and that was
+       the wrong test: the cog lives in the WRLD Player's own page, which
+       is hidden whenever somebody is on another page, and the settings
+       have to open from there too - WRLD Deck's own settings button
+       opens them from any page. The width is what says "a phone". */
+    if(opening && window.innerWidth < 768) return;
     overlay.classList.toggle('hidden');
     if(opening){
       overlay.classList.add('open');

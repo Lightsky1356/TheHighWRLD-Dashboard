@@ -1,4 +1,5 @@
 import { json, nowIso, newUid, getCookie, createSession, setSessionCookie } from "../../_lib/auth.js";
+import { isPopupState, popupDonePage } from "../../_lib/oauth-popup.js";
 import { movePlays } from "../../_lib/listens-stats.js";
 
 function discordAvatar(me) {
@@ -116,6 +117,18 @@ export async function onRequestGet(context) {
       await db.prepare("DELETE FROM discord_links WHERE discord_id = ? AND site_uid != ?").bind(discordId, user.uid).run();
 
       const token = await createSession(db, user.uid, context.request);
+      /* A small window tells the page that opened it and closes itself. A
+         full page goes back to the site the way it always did. */
+      if (isPopupState(url.searchParams.get("state") || "")) {
+        return new Response(popupDonePage("discord"), {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Set-Cookie": setSessionCookie(token),
+            "Cache-Control": "no-store",
+          },
+        });
+      }
       return new Response(null, {
         status: 302,
         headers: {

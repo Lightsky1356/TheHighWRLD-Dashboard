@@ -1104,7 +1104,7 @@ function compactProfileViewHtml(d) {
       var play = e.target.closest("[data-play-idx]");
       if (play) {
         var idx = parseInt(play.getAttribute("data-play-idx"), 10);
-        if (!isNaN(idx) && idx >= 0 && window.selectTrackFromList) { window.selectTrackFromList(idx); if (window.showMiniPlayer) window.showMiniPlayer(); }
+        if (!isNaN(idx) && idx >= 0 && window.selectTrackFromList) { window.selectTrackFromList(idx); if (window.showDeckPlayer) window.showDeckPlayer(); }
       }
     });
   }
@@ -2399,7 +2399,7 @@ function compactProfileViewHtml(d) {
 
   /* ---------- Profile links (server-synced) ---------- */
   function linksRow(l) {
-    return '<div class="link-row"><input type="text" class="link-row-label" placeholder="' + esc(_tt("linkLabelPh", "Label (e.g. YouTube)")) + '" maxlength="40" value="' + esc(l.label) + '"><input type="url" class="link-row-url" placeholder="https://" maxlength="500" value="' + esc(l.url) + '"><button type="button" class="mini-btn del" title="' + esc(_tt("remove", "Remove")) + '" data-dellink="1"><i class="fas fa-xmark"></i></button></div>';
+    return '<div class="link-row"><input type="text" class="link-row-label" placeholder="' + esc(_tt("linkLabelPh", "Label (e.g. YouTube)")) + '" maxlength="40" value="' + esc(l.label) + '"><input type="url" class="link-row-url" placeholder="https://" maxlength="500" value="' + esc(l.url) + '"><button type="button" class="deck-btn del" title="' + esc(_tt("remove", "Remove")) + '" data-dellink="1"><i class="fas fa-xmark"></i></button></div>';
   }
   function collectLinks(box) {
     var out = [];
@@ -2477,8 +2477,8 @@ function compactProfileViewHtml(d) {
         p.tracks.forEach(function (t) { secs += trackDurationOf(t.title); });
         dur = '<span><i class="fas fa-clock"></i> ' + fmtHours(secs) + '</span>';
       }
-      var acts = '<div class="pl-actions"><button class="mini-btn play" data-playpl="' + p.id + '" title="' + esc(_tt("playTitle", "Play")) + '"><i class="fas fa-play"></i></button><button class="mini-btn" data-openpl="' + p.id + '" title="' + esc(_tt("openTitle", "Open")) + '"><i class="fas fa-list-ul"></i></button>';
-      if (own) acts += '<button class="mini-btn" data-editpl="' + p.id + '" title="' + esc(_tt("editTitle", "Edit")) + '"><i class="fas fa-pen"></i></button><button class="mini-btn del" data-delpl="' + p.id + '" title="' + esc(_tt("deleteTitle", "Delete")) + '"><i class="fas fa-trash"></i></button>';
+      var acts = '<div class="pl-actions"><button class="deck-btn play" data-playpl="' + p.id + '" title="' + esc(_tt("playTitle", "Play")) + '"><i class="fas fa-play"></i></button><button class="deck-btn" data-openpl="' + p.id + '" title="' + esc(_tt("openTitle", "Open")) + '"><i class="fas fa-list-ul"></i></button>';
+      if (own) acts += '<button class="deck-btn" data-editpl="' + p.id + '" title="' + esc(_tt("editTitle", "Edit")) + '"><i class="fas fa-pen"></i></button><button class="deck-btn del" data-delpl="' + p.id + '" title="' + esc(_tt("deleteTitle", "Delete")) + '"><i class="fas fa-trash"></i></button>';
       acts += '</div>';
       return '<div class="card pl-card" data-pl="' + p.id + '"><div class="pl-cover" style="background:linear-gradient(135deg,' + col + ',rgba(20,12,40,.9))">' + esc(initials) + '<i class="fas fa-play play-hover" data-playpl="' + p.id + '"></i></div><div class="pl-info"><div class="pl-name">' + esc(p.name) + '</div><div class="pl-desc">' + esc(p.desc || "") + '</div><div class="pl-meta"><span><i class="fas fa-music"></i> ' + (p.count || 0) + ' ' + esc(_tt("songsCount", "songs")) + '</span>' + dur + '</div></div>' + acts + '</div>';
     }).join("");
@@ -2527,7 +2527,7 @@ function compactProfileViewHtml(d) {
     if (!(pl.tracks || []).length) { list.innerHTML = '<p class="ac-empty">' + esc(_tt("plNoTracksDetail", "No tracks yet - add songs to build a playlist.")) + '</p>'; }
     else {
       list.innerHTML = pl.tracks.map(function (t, i) {
-        return '<div class="pl-track-row"><span class="pl-track-idx">' + (i + 1) + '</span><span class="pl-track-name" data-pltrackplay="' + esc(t.title) + '"><i class="fas fa-music"></i>' + esc(t.title) + '</span><span class="pl-track-dur">' + fmtHours(trackDurationOf(t.title)) + '</span><button class="mini-btn" data-pltrackfav="' + esc(t.title) + '" title="' + esc(_tt("favTitle", "Favorite")) + '"><i class="fas fa-heart"></i></button>' + (isOwn ? '<button class="mini-btn del" data-pltrackdel="' + t.id + '" title="' + esc(_tt("remove", "Remove")) + '"><i class="fas fa-xmark"></i></button>' : '') + '</div>';
+        return '<div class="pl-track-row"><span class="pl-track-idx">' + (i + 1) + '</span><span class="pl-track-name" data-pltrackplay="' + esc(t.title) + '"><i class="fas fa-music"></i>' + esc(t.title) + '</span><span class="pl-track-dur">' + fmtHours(trackDurationOf(t.title)) + '</span><button class="deck-btn" data-pltrackfav="' + esc(t.title) + '" title="' + esc(_tt("favTitle", "Favorite")) + '"><i class="fas fa-heart"></i></button>' + (isOwn ? '<button class="deck-btn del" data-pltrackdel="' + t.id + '" title="' + esc(_tt("remove", "Remove")) + '"><i class="fas fa-xmark"></i></button>' : '') + '</div>';
       }).join("");
     }
     openModal("plDetailModal");
@@ -2952,7 +2952,7 @@ function compactProfileViewHtml(d) {
       var play = e.target.closest("[data-play-idx]");
       if (play) {
         var idx = parseInt(play.getAttribute("data-play-idx"), 10);
-        if (!isNaN(idx) && idx >= 0 && window.selectTrackFromList) { window.selectTrackFromList(idx); if (window.showMiniPlayer) window.showMiniPlayer(); }
+        if (!isNaN(idx) && idx >= 0 && window.selectTrackFromList) { window.selectTrackFromList(idx); if (window.showDeckPlayer) window.showDeckPlayer(); }
       }
     });
   }
@@ -3415,7 +3415,7 @@ window.profileSectionShown = function () {
         var pv = (e.target && e.target.closest) ? e.target.closest(".pv-top[data-play-idx]") : null;
         if (pv) {
           var pi2 = parseInt(pv.getAttribute("data-play-idx"), 10);
-          if (!isNaN(pi2) && pi2 >= 0 && window.selectTrackFromList) { window.selectTrackFromList(pi2); if (window.showMiniPlayer) window.showMiniPlayer(); }
+          if (!isNaN(pi2) && pi2 >= 0 && window.selectTrackFromList) { window.selectTrackFromList(pi2); if (window.showDeckPlayer) window.showDeckPlayer(); }
           return;
         }
         var t = (e.target && e.target.closest) ? e.target.closest("[data-profile-link]") : null;
@@ -3451,6 +3451,7 @@ window.profileSectionShown = function () {
     })();
     if (uid) loadAccount();
     wrapSwitchAppPage();
+    wireFooterLinks();
     var ppath = (location.pathname || "").replace(/\/+$/, "") || "/";
     var profilePath = parseProfilePath(ppath);
     if (profilePath && profilePath.self) { if (window.openProfile) window.openProfile(); }
@@ -3487,6 +3488,37 @@ window.profileSectionShown = function () {
 var NAV_URL = { home: "/", community: "/community", developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register" };
   var NAV_URL_REV = {};
   Object.keys(NAV_URL).forEach(function (k) { NAV_URL_REV[NAV_URL[k]] = k; });
+  /* The router, for a link that has to be a link but must not reload the
+   * page. It answers whether the address is one of ours, and puts the page
+   * on the screen if it is. */
+  window.__thwGoTo = function (path) {
+    var p = String(path || "").replace(/\/+$/, "") || "/";
+    var page = NAV_URL_REV[p];
+    if (!page) return false;
+    if (typeof window.switchAppPage === "function") window.switchAppPage(page);
+    return true;
+  };
+  /* The links in the footer are handled here, in one place: a plain click
+   * on one of them draws the page, and anything else - a new tab, a middle
+   * click, a link to somewhere else - is left to the browser. */
+  function wireFooterLinks() {
+    var foot = document.querySelector("footer.foot");
+    if (!foot || foot._linksWired) return;
+    foot._linksWired = true;
+    foot.addEventListener("click", function (e) {
+      if (e.defaultPrevented) return;
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+      if (!a || !foot.contains(a)) return;
+      var href = a.getAttribute("href") || "";
+      if (!href || href.charAt(0) === "#") return;
+      var url;
+      try { url = new URL(a.href, location.href); } catch (err) { return; }
+      if (url.origin !== location.origin) return;
+      if (url.pathname === location.pathname) return;
+      if (window.__thwGoTo(url.pathname)) e.preventDefault();
+    });
+  }
   function _navTabFor(page) {
     if (page === "player") return "player";
     if (page === "hub") return "vault";

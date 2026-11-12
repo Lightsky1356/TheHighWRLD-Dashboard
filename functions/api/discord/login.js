@@ -1,4 +1,5 @@
 import { randomHex, json } from "../../_lib/auth.js";
+import { withPopup } from "../../_lib/oauth-popup.js";
 
 export async function onRequestGet(context) {
   try {
@@ -20,7 +21,7 @@ export async function onRequestGet(context) {
     let setCookie = "";
     if (mode === "login") {
       const csrf = randomHex(16);
-      state = "login:" + csrf;
+      state = withPopup("login:" + csrf, url.searchParams.get("popup") === "1");
       params.set("scope", "identify email");
       setCookie = "oauth_state=" + csrf + "; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=600";
     } else {

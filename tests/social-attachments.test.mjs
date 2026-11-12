@@ -132,10 +132,11 @@ if (attachment?.url) {
 /* ------------------------------------------------------------------ *
  * A sticker.
  * ------------------------------------------------------------------ */
-/* How many stickers the thread already holds. A sticker is not words - it
-   IS the message - so it cannot carry a mark like the other messages do,
-   and the count is what tells this run's sticker from an earlier one. */
-const beforeStickers = (read.json?.messages || []).filter((m) => m.sticker).length;
+/* A sticker is not words - it IS the message - so it cannot carry a mark
+   like the other messages do. This run's sticker is found by its own id
+   when the thread is read back, because the thread hands back a window
+   of the last messages and the count in that window cannot grow once
+   the window is full. */
 
 const sticker = await call(ALICE.token, `/api/social/conversations/${conversationId}/messages`, "POST", {
   body: "\u{1F917}", sticker: "\u{1F917}",
@@ -145,9 +146,14 @@ check("the sticker comes back with the message", sticker.json?.message?.sticker 
   JSON.stringify(sticker.json?.message?.sticker || ""));
 
 const readAgain = await call(BOB.token, `/api/social/conversations/${conversationId}/messages`);
-const stickerSeen = (readAgain.json?.messages || []).filter((m) => m.sticker);
-check("the reader sees the sticker", stickerSeen.length === beforeStickers + 1,
-  `${stickerSeen.length} stickers, against ${beforeStickers} before`);
+/* The thread hands back a window of the last messages, so counting the
+   stickers in it only tells you something while there is room in the
+   window - and this conversation has been used by every run of this
+   suite. So this run's sticker is found by its own id. */
+const stickerId = sticker.json?.message?.id;
+const stickerInWindow = (readAgain.json?.messages || []).find((m) => m.id === stickerId);
+check("the reader sees the sticker", !!stickerInWindow && stickerInWindow.sticker === "\u{1F917}",
+  `${(readAgain.json?.messages || []).filter((m) => m.sticker).length} stickers in the window, this one's id ${stickerId}`);
 
 /* ------------------------------------------------------------------ *
  * What may NOT be attached.

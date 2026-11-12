@@ -91,6 +91,13 @@
   if ('serviceWorker' in navigator) {
     try {
       window.addEventListener('load', function () {
+        /* Tell the worker the page is up, so it stops competing with the page
+           * for the same connections while it fills its own cache. */
+        try {
+          if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'thw:page-ready' });
+          }
+        } catch (err) {}
         navigator.serviceWorker.register('./sw.js').then(function (reg) {
           // Optionally refresh downloads once the shell is live.
           if (window.__thwPwaRefreshDownloads) window.__thwPwaRefreshDownloads();
