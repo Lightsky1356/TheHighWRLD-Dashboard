@@ -205,13 +205,13 @@
   }
 
   /* ---- opening and closing ---- */
-  function setOpen(open) {
+  function setOpen(open, track) {
     state.open = open;
     var overlay = document.getElementById("song-comments-overlay");
     if (!overlay) return;
     overlay.hidden = !open;
     if (open) {
-      state.track = currentTitle();
+      state.track = track || currentTitle();
       state.signedIn = signedIn();
       render();
       load();
@@ -293,17 +293,56 @@
     return null;
   }
 
-  function toggleLike(comment) {
+  function toggleLike(comment, after) {
     if (!state.signedIn) return;
     api("/likes", { method: "POST", body: { id: comment.id } }).then(function (data) {
       comment.likes = Number(data.likes) || 0;
       comment.likedByMe = !!data.liked;
-      render();
+      if (after) after();
+      else render();
     }).catch(function () {});
   }
 
   /* ---- the drawing ---- */
-  function commentNode(comment, isReply) {
+  /* ---- the drawing ---- */
+  /* The thread, drawn into a box. The panel and a song's own page draw
+     the same thread, so they draw it the same way. */
+  function drawComments(list, comments, after, onReply) {
+    if (!list) return;
+    if (!comments || !comments.length) {
+      list.appendChild(el("p", "song-comments-empty", "No comments on this song yet."));
+      return;
+    }
+    comments.forEach(function (comment) {
+      list.appendChild(commentNode(comment, false, after, onReply));
+      (comment.replies || []).forEach(function (reply) {
+        list.appendChild(commentNode(reply, true, after, onReply));
+      });
+    });
+  }
+
+  /* ---- the same thread, on a song's own page ----
+   *
+   * A song's page shows its thread in place rather than behind a button,
+   * and the page asks for it here. The reply button opens the panel,
+   * which is where the writing is done. */
+  function renderThreadInto(container, title) {
+    if (!container) return Promise.resolve();
+    container.textContent = "";
+    return api("?track=" + encodeURIComponent(title)).then(function (data) {
+      container.textContent = "";
+      drawComments(container, data.comments || [], function () {
+        renderThreadInto(container, title);
+      }, function () {
+        setOpen(true, title);
+      });
+    }).catch(function () {
+      container.textContent = "";
+      container.appendChild(el("p", "song-comments-empty", "The comments could not be loaded."));
+    });
+  }
+
+  function commentNode(comment, isReply, after, onReply) {
     var row = el("div", "song-comment" + (isReply ? " is-reply" : ""));
 
     var avatar = el("span", "song-comment-avatar");
@@ -347,12 +386,13 @@
       like.type = "button";
       like.setAttribute("aria-pressed", comment.likedByMe ? "true" : "false");
       like.innerHTML = '<i class="fas fa-heart" aria-hidden="true"></i><span>' + (comment.likes || 0) + "</span>";
-      like.addEventListener("click", function () { toggleLike(comment); });
+      like.addEventListener("click", function () { toggleLike(comment, after); });
       actions.appendChild(like);
 
       var reply = el("button", "song-comment-reply", "Reply");
       reply.type = "button";
       reply.addEventListener("click", function () {
+        if (onReply) { onReply(comment); return; }
         state.replyTo = comment.id;
         render();
         var input = document.getElementById("song-comments-input");
@@ -415,16 +455,8 @@
     if (!state.track) {
       var empty = el("p", "song-comments-empty", "Play a song to see its comments.");
       list.appendChild(empty);
-    } else if (!state.comments.length) {
-      var none = el("p", "song-comments-empty", "No comments on this song yet.");
-      list.appendChild(none);
     } else {
-      state.comments.forEach(function (comment) {
-        list.appendChild(commentNode(comment, false));
-        (comment.replies || []).forEach(function (reply) {
-          list.appendChild(commentNode(reply, true));
-        });
-      });
+      drawComments(list, state.comments);
     }
 
     /* The reply banner. */
@@ -537,4 +569,10 @@
   } else {
     boot();
   }
+
+  /* The thread, for a song's own page to draw in place. */
+  window.SongComments = {
+    renderThreadInto: renderThreadInto,
+    open: function (title) { setOpen(true, title); },
+  };
 })();

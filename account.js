@@ -2977,6 +2977,21 @@ function compactProfileViewHtml(d) {
    * two drifting apart is how a shared link stops working. */
   var PROFILE_PATH_ROOT = "/Profile";
 
+  /* The song pages: /song/<the-song>.
+   *
+   * A song's address carries its name, so it cannot live in the table of
+   * routes - that holds one address per page, and there are three hundred
+   * songs. It is read here instead, the way a profile's address is. */
+  var SONG_PATH_ROOT = "/song";
+  function parseSongPath(pathname) {
+    var p = String(pathname || "").replace(/\/+$/, "");
+    if (!p) return null;
+    if (new RegExp("^" + SONG_PATH_ROOT + "$", "i").test(p)) return { slug: "" };
+    var m = new RegExp("^" + SONG_PATH_ROOT + "/(.+)$", "i").exec(p);
+    if (!m) return null;
+    return { slug: decodeURIComponent(m[1]) };
+  }
+
   function profilePathFor(handle) {
     return PROFILE_PATH_ROOT + "/" + encodeURIComponent(String(handle || "").replace(/^@/, ""));
   }
@@ -3441,11 +3456,17 @@ window.profileSectionShown = function () {
     if (profilePath && profilePath.self) { if (window.openProfile) window.openProfile(); }
     else if (profilePath) { if (window.openProfile) window.openProfile(profilePath.key); }
     else {
-      var bootPage = NAV_URL_REV[ppath];
-      /* An unrecognised path used to fall through and leave whatever the boot
-         timer last showed on screen. It resolves to home instead, so this hook is
-         the single thing that decides what a cold load shows. */
-      if (window.switchAppPage) window.switchAppPage(bootPage || "home");
+      var songPath = parseSongPath(ppath);
+      if (songPath && window.openSongPage) {
+        window.switchAppPage("song");
+        window.openSongPage(songPath.slug, true);
+      } else {
+        var bootPage = NAV_URL_REV[ppath];
+        /* An unrecognised path used to fall through and leave whatever the boot
+           timer last showed on screen. It resolves to home instead, so this hook is
+           the single thing that decides what a cold load shows. */
+        if (window.switchAppPage) window.switchAppPage(bootPage || "home");
+      }
     }
   });
 
@@ -3463,7 +3484,7 @@ window.profileSectionShown = function () {
    meant two sources of truth for the same job. _navPillFor already resolves both
    to their real nav buttons (page-nav-about, page-nav-partner), so nothing else
    needed changing to highlight them. */
-var NAV_URL = { home: "/", community: "/community", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register" };
+var NAV_URL = { home: "/", community: "/community", developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register" };
   var NAV_URL_REV = {};
   Object.keys(NAV_URL).forEach(function (k) { NAV_URL_REV[NAV_URL[k]] = k; });
   function _navTabFor(page) {
@@ -3528,6 +3549,8 @@ var NAV_URL = { home: "/", community: "/community", player: "/player", hub: "/va
   window.addEventListener("popstate", function () {
     var p = (location.pathname || "").replace(/\/+$/, "") || "/";
     if (parseProfilePath(p)) return;
+    var song = parseSongPath(p);
+    if (song && window.openSongPage) { window.openSongPage(song.slug, true); return; }
     var page = NAV_URL_REV[p];
     if (page && window.switchAppPage) window.switchAppPage(page);
   });
