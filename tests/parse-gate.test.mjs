@@ -2527,8 +2527,8 @@ function safeDecode4(v) {
   /* The footer's columns, side by side on a phone. */
   if (!/\.foot-cols\s*\{[^}]*repeat\(2,/.test(phone)) {
     structureFail("the footer's columns are not side by side on a phone - the footer is four screens tall");
-  } else if (!/\.foot-note\{[^}]*flex-wrap:wrap/.test(phone) || !/\.foot-meta\{[^}]*width:100%/.test(phone)) {
-    structureFail("the footer's bottom bar does not wrap on a phone - the Legal & Info button runs off the side");
+  } else if (!/\.foot-note\{flex:1 1 100%\}/.test(phone) || !/\.foot-meta\{[^}]*margin-left:auto/.test(phone)) {
+    structureFail("the footer's bottom bar does not put the disclaimer on its own line and the date against the right edge on a phone");
   } else {
     structureOk("the footer's columns sit side by side on a phone, and its bottom bar wraps");
   }
@@ -2562,8 +2562,23 @@ function safeDecode4(v) {
     structureFail("the footer's column still lists the Terms of Use, the Privacy Policy or the DMCA - the Legal & Info panel has all three");
   } else if (legalButtons !== 1) {
     structureFail("the footer offers " + legalButtons + " ways into the Legal & Info panel - there should be one");
+  } else if (/foot-mark|foot-made/.test(foot)) {
+    structureFail("the footer's bottom bar still has the 999 or the Made by line - both are at the top of the footer already");
   } else {
     structureOk("the footer's head is stacked and centred, and there is one way into the Legal & Info panel");
+  }
+
+  /* The bottom bar: the disclaimer on the left, the date on the right. */
+  const barStart = foot.indexOf('class="foot-bar"');
+  const bar = barStart < 0 ? "" : foot.slice(barStart);
+  const noteAt = bar.indexOf('class="foot-note"');
+  const metaAt = bar.indexOf('class="foot-meta"');
+  if (noteAt < 0 || metaAt < 0 || metaAt < noteAt) {
+    structureFail("the footer's bottom bar does not have the disclaimer before the date");
+  } else if (!/justify-content:space-between/.test(css)) {
+    structureFail("the footer's bottom bar does not put the two ends apart");
+  } else {
+    structureOk("the footer's bottom bar is the disclaimer on the left and the date on the right");
   }
 
   /* The deck on a phone: shown, sitting above the navigation, and opening
