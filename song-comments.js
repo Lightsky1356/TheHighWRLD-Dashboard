@@ -635,7 +635,7 @@
     if (album) cell("Version", album, { wide: true });
     if (t.producer) {
       var n = producerSongCount(t.producer);
-      cell("Produced by", n ? t.producer + " · " + n + " songs" : t.producer, { wide: true });
+      cell("Produced by", n ? t.producer + " · " + n + (n === 1 ? " song" : " songs") : t.producer, { wide: true });
     }
     if (t.year) cell("Year", t.year);
     if (t.duration) cell("Length", fmtTime(t.duration));

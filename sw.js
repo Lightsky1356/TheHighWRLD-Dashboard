@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v262';;;;;;;;;;;;;;;;;
+const VERSION = 'thw-v263';;;;;;;;;;;;;;;;;
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -72,6 +72,7 @@ const PRECACHE = [
   './era-page.js?v=thw-v1',
   './context-menu.js?v=thw-v1',
   './leaderboard.js?v=thw-v1',
+  './desktop-player.js?v=thw-v1',
   './deck.js?v=thw-v1',
   './command-palette.js?v=thw-v1',
   './song-page.js?v=thw-v1',

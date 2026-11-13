@@ -412,6 +412,7 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
 <script src="./era-page.js?v=thw-v1" defer></script>
 <script src="./context-menu.js?v=thw-v1" defer></script>
 <script src="./leaderboard.js?v=thw-v1" defer></script>
+<script src="./desktop-player.js?v=thw-v1" defer></script>
 <script src="./deck.js?v=thw-v1" defer></script>
 <script src="./command-palette.js?v=thw-v1" defer></script>
 <script src="./song-page.js?v=thw-v1" defer></script>
@@ -1619,7 +1620,7 @@ thehighwrld-desktop_1.0.0_amd64.deb            F450FAA97E30ED2D3F1A9206EB24885F5
 <span id="deck-duration-time" class="deck-clock">0:00</span>
 </div>
 </div>
-<div class="deck-actions" onclick="event.stopPropagation()"><button id="deck-bluetooth-btn" data-thw-bluetooth class="deck-btn" type="button" title="Bluetooth" aria-label="Bluetooth"><i class="fab fa-bluetooth" aria-hidden="true"></i></button><label class="deck-opacity" title="How see-through the WRLD Deck is"><i class="fas fa-circle-half-stroke" aria-hidden="true"></i><select id="deck-opacity" aria-label="WRLD Deck opacity"><option value="1">100%</option><option value="0.92">92%</option><option value="0.85">85%</option><option value="0.75">75%</option><option value="0.65">65%</option><option value="0.5">50%</option></select></label>
+<div class="deck-actions" onclick="event.stopPropagation()"><button id="deck-expand-btn" class="deck-btn desktop-only" type="button" title="Open the full screen player" aria-label="Open the full screen player" onclick="if(window.openDesktopPlayer)window.openDesktopPlayer()"><i class="fas fa-expand" aria-hidden="true"></i></button><button id="deck-bluetooth-btn" data-thw-bluetooth class="deck-btn" type="button" title="Bluetooth" aria-label="Bluetooth"><i class="fab fa-bluetooth" aria-hidden="true"></i></button><label class="deck-opacity" title="How see-through the WRLD Deck is"><i class="fas fa-circle-half-stroke" aria-hidden="true"></i><select id="deck-opacity" aria-label="WRLD Deck opacity"><option value="1">100%</option><option value="0.92">92%</option><option value="0.85">85%</option><option value="0.75">75%</option><option value="0.65">65%</option><option value="0.5">50%</option></select></label>
 <button id="song-comments-btn" class="deck-btn" type="button" title="Comments on this song" aria-label="Comments on this song">
 <i class="fas fa-message"></i>
 <span id="song-comments-count" class="deck-badge">0</span>
