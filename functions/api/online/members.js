@@ -8,7 +8,7 @@
    not an error, it just means level 1 everywhere.
    ========================================================================== */
 
-import { levelFor } from "../_lib/xp.js";
+import { levelFor } from "../../_lib/xp.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
