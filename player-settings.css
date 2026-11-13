@@ -3776,9 +3776,14 @@ html.foot-in-view #scrollTopBtn{
 /* A speaker that has been chosen says so. */
 [data-thw-bluetooth].is-on{color:#22d3ee}
 
-/* The phone's Deck has room for the transport and nothing else, so the
-   steps stay on the desktop. The Bluetooth button is small enough to
-   stay. */
+/* Bluetooth and the opacity steps are desktop-only: a phone's browser cannot
+   route audio to a speaker, and its landscape layout has no room for the
+   steps. Away with both on any phone. */
 @media (max-width:767px){
   .deck-opacity{display:none}
+  [data-thw-bluetooth]{display:none!important}
+}
+@media (orientation:landscape) and (max-height:500px) and (pointer:coarse){
+  .deck-opacity{display:none}
+  [data-thw-bluetooth]{display:none!important}
 }
