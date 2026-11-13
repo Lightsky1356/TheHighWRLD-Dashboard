@@ -16,6 +16,7 @@ import { getSessionUser } from "../../_lib/auth.js";
 import { banRejection } from "../../_lib/bans.js";
 import { moderateContent } from "../../_lib/automod.js";
 import { rateLimit } from "../../_lib/rate-limit.js";
+import { awardXp } from "../../_lib/xp.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -208,6 +209,7 @@ export async function onRequest(context) {
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
       ).bind(track, parentId || null, who.uid, name, avatar, text, atSeconds, atLabel).run();
       const id = ins && ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0;
+      try { await awardXp(db, who.uid, parentId ? 10 : 15); } catch (_) {}
 
       /* The rules engine sees the text, so a comment is held the same way a
          post is. It never blocks: a held comment is flagged for a person. */
@@ -264,6 +266,10 @@ export async function onRequest(context) {
         await db.prepare("DELETE FROM song_comment_likes WHERE comment_id = ? AND uid = ?").bind(id, who.uid).run();
       } else {
         await db.prepare("INSERT OR IGNORE INTO song_comment_likes (comment_id, uid) VALUES (?, ?)").bind(id, who.uid).run();
+        try {
+          const author = await db.prepare("SELECT author_uid FROM song_comments WHERE id = ?").bind(id).first();
+          if (author && author.author_uid && author.author_uid !== who.uid) await awardXp(db, author.author_uid, 2);
+        } catch (_) {}
       }
       const count = await db.prepare(
         "SELECT COUNT(*) AS n FROM song_comment_likes WHERE comment_id = ?"

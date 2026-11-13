@@ -28,6 +28,7 @@
     replyTo: 0,
     busy: false,
     signedIn: false,
+    mode: "moment", /* "moment" pins the comment to the second of the song; "song" means the whole song */
   };
 
   function el(tag, className, text) {
@@ -86,8 +87,10 @@
   }
 
   /* The moment of the song the player is at, and the label that goes
-     with it. */
+     with it. In "whole song" mode there is no moment - the comment is
+     about the song as a whole. */
   function nowMoment() {
+    if (state && state.mode === "song") return { seconds: 0, label: "" };
     var seconds = 0;
     try {
       var audio = document.querySelector("audio");
@@ -149,6 +152,10 @@
               '<span id="song-comments-replying-label"></span>' +
               '<button id="song-comments-replying-cancel" type="button">Cancel</button>' +
             '</div>' +
+            '<div class="song-moment-toggle" role="group" aria-label="When this comment applies to">' +
+              '<button type="button" class="song-moment-btn is-on" data-mode="moment">This moment</button>' +
+              '<button type="button" class="song-moment-btn" data-mode="song">Whole song</button>' +
+            '</div>' +
             '<textarea id="song-comments-input" class="song-comments-input" rows="2" maxlength="2000" ' +
               'placeholder="Say something about this song"></textarea>' +
             '<div class="song-comments-compose-foot">' +
@@ -177,6 +184,13 @@
 
     Array.prototype.forEach.call(document.querySelectorAll(".song-comments-tab"), function (tab) {
       tab.addEventListener("click", function () { showTab(tab.dataset.tab); });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll(".song-moment-btn"), function (btn) {
+      btn.addEventListener("click", function () {
+        state.mode = btn.getAttribute("data-mode") === "song" ? "song" : "moment";
+        render();
+      });
     });
 
     document.addEventListener("keydown", function (e) {
@@ -486,7 +500,21 @@
     }
     if (moment) {
       var m = nowMoment();
-      moment.textContent = state.track ? ("at " + m.label) : "";
+      moment.textContent = state.track
+        ? (state.mode === "song" ? "the whole song" : "at " + m.label)
+        : "";
+    }
+
+    /* The moment toggle and the post button follow the mode. */
+    var modeBtns = document.querySelectorAll(".song-moment-btn");
+    Array.prototype.forEach.call(modeBtns, function (btn) {
+      var on = btn.getAttribute("data-mode") === state.mode;
+      btn.classList.toggle("is-on", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    if (send) {
+      var mm = nowMoment();
+      send.textContent = state.mode === "song" ? "Post" : (state.track && mm.label ? "Post at " + mm.label : "Post");
     }
   }
 
@@ -515,6 +543,69 @@
     });
   }
 
+  /* Era codes, display names and slugs - same table the era pages use. */
+  var ERA_INFO = {
+    "GB&GR": { name: "Goodbye & Good Riddance", slug: "gbgr" },
+    "WOD":   { name: "WRLD ON DRUGS",           slug: "wod" },
+    "DRFL":  { name: "Death Race For Love",     slug: "drfl" },
+    "JW3":   { name: "Legends Never Die",       slug: "jw3" },
+    "POST":  { name: "Posthumous",              slug: "post" },
+    "OUT":   { name: "Outsiders",               slug: "out" },
+    "AF":    { name: "affliction",              slug: "af" },
+    "ND":    { name: "NOTHING'S DIFFERENT",     slug: "nd" },
+    "BDM":   { name: "BINGEDRINKINGMUSIC",      slug: "bdm" },
+    "SOUNDCLOUD": { name: "SoundCloud era",     slug: "soundcloud" },
+  };
+  var ERA_RE = /\((GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|SOUNDCLOUD)\)/i;
+
+  function eraInfoOf(t) {
+    try {
+      var m = String((t || {}).tag || "").match(ERA_RE);
+      var code = m ? m[1].toUpperCase() : ((t && t.category === "halloween") ? "POST" : "");
+      if (code && ERA_INFO[code]) return { code: code };
+    } catch (e) {}
+    return null;
+  }
+
+  /* The number of vault songs a given producer credits - one lookup, used once
+     per credits render, on a catalogue of a few hundred tracks. */
+  function producerSongCount(name) {
+    try {
+      if (typeof trackList === "undefined" || !trackList) return 0;
+      var want = String(name || "").trim().toLowerCase();
+      if (!want) return 0;
+      var n = 0;
+      for (var i = 0; i < trackList.length; i++) {
+        if (String((trackList[i] && trackList[i].producer) || "").trim().toLowerCase() === want) n++;
+      }
+      return n;
+    } catch (e) { return 0; }
+  }
+
+  /* Which artist drew the cover, from the site's own credit table. */
+  function coverCreditOf(t) {
+    try {
+      if (typeof artistData === "undefined" || !artistData) return "";
+      var file = String((t || {}).cover || "")
+        .replace("https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/", "")
+        .replace(/^Covers\//, "");
+      try { file = decodeURIComponent(file); } catch (e) {}
+      if (!file) return "";
+      for (var i = 0; i < artistData.length; i++) {
+        var list = (artistData[i] && artistData[i].tracks) || [];
+        for (var j = 0; j < list.length; j++) {
+          if (String(list[j][1] || "").toLowerCase() === file.toLowerCase()) return artistData[i].name || "";
+        }
+      }
+    } catch (e) {}
+    return "";
+  }
+
+  function statusLabel(t) {
+    var c = String((t || {}).category || "").toLowerCase();
+    return c === "leaks" ? "Leaked" : c === "sessions" ? "Session" : c === "halloween" ? "Halloween" : "";
+  }
+
   function renderCredits() {
     var box = document.getElementById("song-comments-credits");
     if (!box) return;
@@ -525,22 +616,34 @@
       return;
     }
     var grid = el("div", "song-credits-grid");
-    [
-      ["Song", t.title],
-      ["Artist", t.artist],
-      ["Version", t.tag],
-      ["Producer", t.producer],
-      ["Year", t.year],
-      ["Category", t.category],
-      ["Length", t.duration ? fmtTime(t.duration) : ""],
-    ].forEach(function (pair) {
-      if (!pair[1]) return;
-      var cell = el("div", "song-credit-cell");
-      cell.appendChild(el("span", "song-credit-label", pair[0]));
-      cell.appendChild(el("b", "song-credit-value", String(pair[1])));
-      grid.appendChild(cell);
-    });
-    box.appendChild(grid);
+    function cell(label, value, opts) {
+      opts = opts || {};
+      var c = el("div", "song-credit-cell" + (opts.wide ? " song-credit-cell--wide" : ""));
+      c.appendChild(el("span", "song-credit-label", label));
+      var b = opts.link
+        ? (function () { var a = el("a", "song-credit-value song-credit-link", String(value)); a.href = opts.link; return a; })()
+        : el("b", "song-credit-value", String(value));
+      c.appendChild(b);
+      grid.appendChild(c);
+    }
+    var status = statusLabel(t);
+    if (status) cell("Status", status);
+    var era = eraInfoOf(t);
+    if (era) cell("Era", ERA_INFO[era.code].name, { link: "/era/" + ERA_INFO[era.code].slug });
+    var album = "";
+    try { if (typeof getTrackAlbum === "function") album = getTrackAlbum(t); } catch (e) {}
+    if (album) cell("Version", album, { wide: true });
+    if (t.producer) {
+      var n = producerSongCount(t.producer);
+      cell("Produced by", n ? t.producer + " · " + n + " songs" : t.producer, { wide: true });
+    }
+    if (t.year) cell("Year", t.year);
+    if (t.duration) cell("Length", fmtTime(t.duration));
+    if (t.artist) cell("Artist", t.artist);
+    var credit = coverCreditOf(t);
+    if (credit) cell("Cover art", "Made by " + credit);
+    if (grid.children.length) box.appendChild(grid);
+    else box.appendChild(el("p", "song-comments-empty", "No credits on record for this song."));
   }
 
   function boot() {

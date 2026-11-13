@@ -1,6 +1,7 @@
 import { getSessionUser, verifyPassword, hashPassword, emailOk, randomHex } from "../../_lib/auth.js";
 import { banRejection } from "../../_lib/bans.js";
 import { listeningStats, recordPlay, clearPlays } from "../../_lib/listens-stats.js";
+import { awardXp } from "../../_lib/xp.js";
 import { loadPlaylistTracks } from "../../_lib/playlist-tracks.js";
 import { stateCacheGet, stateCacheSet, invalidateAccountState } from "../../_lib/account-state.js";
 
@@ -691,6 +692,7 @@ export async function onRequestPost(context) {
         ).bind(uid, title).first();
         if (!recent || !recent.ts || recent.ts < new Date(Date.now() - 90000).toISOString()) {
           await recordPlay(db, uid, title, seconds);
+          await awardXp(db, uid, 5);
         }
         break;
       }

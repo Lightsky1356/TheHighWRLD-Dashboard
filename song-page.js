@@ -75,6 +75,16 @@
 
   /* The name of the song, without its version, so the songs that belong
      together can be found beside each other. */
+  var ERA_SLUG = {
+    "GB&GR": "gbgr", "WOD": "wod", "DRFL": "drfl", "JW3": "jw3",
+    "POST": "post", "OUT": "out", "AF": "af", "ND": "nd",
+    "BDM": "bdm", "SOUNDCLOUD": "soundcloud"
+  };
+
+  function eraSlug(code) {
+    return ERA_SLUG[String(code || "").toUpperCase()] || "gbgr";
+  }
+
   function baseTitle(title) {
     return String(title == null ? "" : title).split("(")[0].trim().toLowerCase();
   }
@@ -169,6 +179,92 @@
     return src;
   }
 
+  /* ---- the fan covers made for this song, credited or not shown ---- */
+  function coversForSong(track) {
+    if (typeof artistData === "undefined" || !artistData) return [];
+    var want = baseTitle(track && track.title);
+    if (!want) return [];
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < artistData.length; i++) {
+      var a = artistData[i];
+      var list = (a && a.tracks) || [];
+      for (var j = 0; j < list.length; j++) {
+        var base = baseTitle(list[j] && list[j][0]);
+        if (base !== want) continue;
+        var file = (list[j] && list[j][1]) || "";
+        var key = (a.name || "") + "|" + file;
+        if (seen[key]) continue;
+        seen[key] = 1;
+        out.push({ artist: a.name || "Unknown", color: a.color || "#a78bfa", file: file });
+      }
+    }
+    return out;
+  }
+
+  /* ---- the "how often played" line ---- */
+  var TRENDING_CACHE_KEY = "thwTrendingCache";
+  var TRENDING_CACHE_AT = "thwTrendingCacheAt";
+
+  function loadTrending(cb) {
+    var now = Date.now();
+    try {
+      var at = Number(sessionStorage.getItem(TRENDING_CACHE_AT) || 0);
+      var cached = JSON.parse(sessionStorage.getItem(TRENDING_CACHE_KEY) || "[]");
+      if (at && now - at < 5 * 60 * 1000 && Array.isArray(cached)) { cb(cached); return; }
+    } catch (e) {}
+    fetch("/api/trending?days=365&limit=300", { credentials: "same-origin" })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (data) {
+        var list = (data && data.trending) || [];
+        try {
+          sessionStorage.setItem(TRENDING_CACHE_KEY, JSON.stringify(list));
+          sessionStorage.setItem(TRENDING_CACHE_AT, String(now));
+        } catch (e) {}
+        cb(list);
+      })
+      .catch(function () { cb(null); });
+  }
+
+  function devicePlays(index) {
+    try {
+      var hist = JSON.parse(localStorage.getItem("jw_play_history") || "[]");
+      var n = 0;
+      for (var i = 0; i < hist.length; i++) if (hist[i] && hist[i].idx === index) n++;
+      return n;
+    } catch (e) { return 0; }
+  }
+
+  function paintStats(box, track, index) {
+    if (!box) return;
+    box.textContent = "";
+    var device = devicePlays(index);
+
+    var everywhere = el("div", "song-stats-item");
+    var everywhereB = el("b", null, "…");
+    var everywhereS = el("span", null, "Plays everywhere this year");
+    everywhere.appendChild(everywhereB);
+    everywhere.appendChild(everywhereS);
+    box.appendChild(everywhere);
+
+    var mine = el("div", "song-stats-item");
+    var mineB = el("b", null, String(device));
+    var mineS = el("span", null, "Plays on this device");
+    mine.appendChild(mineB);
+    mine.appendChild(mineS);
+    box.appendChild(mine);
+
+    loadTrending(function (list) {
+      if (!list) { everywhereB.textContent = "—"; return; }
+      var title = (track && track.title) || "";
+      var found = null;
+      for (var i = 0; i < list.length; i++) {
+        if (list[i] && list[i].title === title) { found = list[i]; break; }
+      }
+      everywhereB.textContent = found ? String(found.plays) : "0";
+    });
+  }
+
   /* ---- the facts, in the order they are read ---- */
   function facts(track) {
     var out = [];
@@ -181,7 +277,7 @@
     add("Producer", track && track.producer);
     add("Year", track && track.year);
     add("Length", track && track.duration ? fmtTime(track.duration) : "");
-    add("Era", eraOf(track));
+    add("Era", eraOf(track), "/era/" + eraSlug(eraOf(track)));
     add("Category", track && track.category ? String(track.category).charAt(0).toUpperCase() + String(track.category).slice(1) : "");
     var credit = coverCredit(track);
     add("Cover art", credit ? "Made by " + credit : "");
@@ -305,10 +401,62 @@
       factList.forEach(function (f) {
         var cell = el("div", "song-fact");
         cell.appendChild(el("span", "song-fact-label", f.label));
-        cell.appendChild(el("b", "song-fact-value", f.value));
+        if (f.href) {
+          var link = el("a", "song-fact-value song-fact-link", f.value);
+          link.href = f.href;
+          cell.appendChild(link);
+        } else {
+          cell.appendChild(el("b", "song-fact-value", f.value));
+        }
         factsBox.appendChild(cell);
       });
       wrap.appendChild(factsBox);
+    }
+
+    /* The plays, honestly: the site counts them, and this browser counts its own. */
+    var statsBox = el("div", "song-stats");
+    wrap.appendChild(statsBox);
+    paintStats(statsBox, track, index);
+
+    /* The fan covers of this song, credited ones only. */
+    var covers = coversForSong(track);
+    if (covers.length) {
+      var csec = el("section", "song-section");
+      var h2 = el("h2", "song-section-title", "Fan covers");
+      h2.appendChild(el("span", "song-section-count", String(covers.length)));
+      csec.appendChild(h2);
+      var cgrid = el("div", "song-covers");
+      covers.forEach(function (c) {
+        var card = el("button", "song-cover-card");
+        card.type = "button";
+        card.title = "Cover by " + c.artist + " - see their covers";
+        var cimg = document.createElement("img");
+        var ccover = "Covers/" + c.file;
+        cimg.src = (typeof window._coverThumb === "function" ? window._coverThumb(ccover, "320") : ccover) || ccover;
+        cimg.alt = "Fan cover by " + c.artist;
+        cimg.loading = "lazy";
+        cimg.decoding = "async";
+        card.appendChild(cimg);
+        var pill = el("span", "song-cover-pill");
+        pill.style.background = c.color || "#a78bfa";
+        card.appendChild(pill);
+        card.appendChild(el("b", null, c.artist));
+        card.appendChild(el("span", null, c.file.replace(/\.[^.]+$/, "")));
+        card.addEventListener("click", function () {
+          try { sessionStorage.setItem("thwCreditsArtist", c.artist); } catch (e) {}
+          if (typeof window.switchAppPage === "function") window.switchAppPage("credits");
+        });
+        cgrid.appendChild(card);
+      });
+      csec.appendChild(cgrid);
+      var cnote = el("p", "song-covers-note");
+      cnote.innerHTML = 'Credited covers from the <a href="#" id="song-covers-all">Covers</a> wall.';
+      cnote.querySelector("#song-covers-all").addEventListener("click", function (e) {
+        e.preventDefault();
+        if (typeof window.switchAppPage === "function") window.switchAppPage("credits");
+      });
+      csec.appendChild(cnote);
+      wrap.appendChild(csec);
     }
 
     /* The songs that belong beside this one: the same era, and the same

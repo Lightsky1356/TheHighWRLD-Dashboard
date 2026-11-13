@@ -35,6 +35,7 @@
   var OV = "mplayer-ov";
   var syncIv = null;
   var queueOpen = false;
+  var momentMode = "moment"; /* "moment" | "song" — the comments composer's pin */
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -514,14 +515,16 @@
     if (!signedIn()) { if (note) note.textContent = "Sign in to comment."; return; }
 
     var au = audioEl();
-    var atTarget = commentsTarget ? 0 : (au && isFinite(au.currentTime) ? Math.round(au.currentTime) : 0);
+    var wholeSong = momentMode === "song";
+    var atTarget = wholeSong ? 0 : (commentsTarget ? 0 : (au && isFinite(au.currentTime) ? Math.max(0, Math.round(au.currentTime)) : 0));
+    var atLabel = wholeSong ? "" : fmt(atTarget);
     if (note) note.textContent = "";
 
     fetch("/api/song-comments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "same-origin",
-      body: JSON.stringify({ track: title, body: text, parentId: 0, atSeconds: atTarget, atLabel: fmt(atTarget) }),
+      body: JSON.stringify({ track: title, body: text, parentId: 0, atSeconds: atTarget, atLabel: atLabel }),
     }).then(function (response) {
       return response.json().catch(function () { return {}; }).then(function (data) {
         if (!response.ok) throw new Error(data.message || data.error || "The comment could not be saved");
@@ -536,17 +539,20 @@
     });
   }
 
-  var lastPlaceholder = "", lastNote = "", lastAvatar = "";
+  var lastPlaceholder = "", lastNote = "", lastAvatar = "", lastPostAt = "";
   function paintComposeState(ov) {
     var can = signedIn();
     var input = q(ov, "[data-mp='comment-input']");
     var send = q(ov, "[data-mp='comment-send']");
     var note = q(ov, "[data-mp='comments-note']");
     var au = audioEl();
-    var at = commentsTarget ? 0 : (au && isFinite(au.currentTime) ? Math.round(au.currentTime) : 0);
+    var at = (au && isFinite(au.currentTime)) ? Math.max(0, Math.round(au.currentTime)) : 0;
+    var wholeSong = momentMode === "song";
     if (input) {
       input.disabled = !can;
-      var ph = can ? "Comment at " + fmt(at) : "Sign in to comment";
+      var ph = !can ? "Sign in to comment"
+        : wholeSong ? "Comment on the song"
+        : "Comment at " + fmt(at);
       if (ph !== lastPlaceholder) { lastPlaceholder = ph; input.placeholder = ph; }
     }
     if (send) send.disabled = !can;
@@ -554,6 +560,18 @@
       var msg = can ? "" : "Sign in to comment on this song.";
       if (msg !== lastNote) { lastNote = msg; if (!can || note.textContent) note.textContent = msg; }
     }
+    var postAt = q(ov, "[data-mp='post-at']");
+    if (postAt) {
+      var label = wholeSong ? "Post" : "Post at " + fmt(at);
+      if (label !== lastPostAt) { lastPostAt = label; postAt.textContent = label; }
+      postAt.classList.toggle("is-on", !wholeSong);
+      postAt.setAttribute("aria-pressed", !wholeSong ? "true" : "false");
+    }
+    qa(ov, "[data-mp='moment-moment'],[data-mp='moment-song']").forEach(function (btn) {
+      var on = (btn.getAttribute("data-mp") === "moment-moment") === !wholeSong;
+      btn.classList.toggle("is-on", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
     var avatar = q(ov, "[data-mp='avatar']");
     if (avatar) {
       var html = myAvatarHTML();
@@ -1309,6 +1327,13 @@
             '<input class="mp2-compose-input" data-mp="comment-input" type="text" maxlength="2000" enterkeyhint="send" placeholder="Comment at 0:00" aria-label="Write a comment">' +
             '<button type="button" class="mp2-compose-send" data-mp="comment-send" aria-label="Send the comment"><i class="fas fa-arrow-right" aria-hidden="true"></i></button>' +
           '</div>' +
+          '<div class="mp2-moment-row">' +
+            '<div class="mp2-moment-toggle" role="group" aria-label="When this comment applies to">' +
+              '<button type="button" class="mp2-moment-btn is-on" data-mp="moment-moment">This moment</button>' +
+              '<button type="button" class="mp2-moment-btn" data-mp="moment-song">Whole song</button>' +
+            '</div>' +
+            '<button type="button" class="mp2-post-at is-on" data-mp="post-at">Post at 0:00</button>' +
+          '</div>' +
           '<p class="mp2-comments-note" data-mp="comments-note"></p>' +
           '<div class="mp2-comments" data-mp="comments"></div>' +
           '<div class="mp2-mini">' +
@@ -1478,8 +1503,14 @@
           paintQueuePage(ov, true);
         } else if (action === "pill") {
           openSongPage(currentTitle());
-        } else if (action === "comment-send") {
+        } else if (action === "comment-send" || action === "post-at") {
           postComment(ov);
+        } else if (action === "moment-moment") {
+          momentMode = "moment";
+          paintComposeState(ov);
+        } else if (action === "moment-song") {
+          momentMode = "song";
+          paintComposeState(ov);
         }
       } catch (err) {}
       setTimeout(function () { sync(true); }, 120);

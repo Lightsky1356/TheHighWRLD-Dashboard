@@ -276,4 +276,82 @@
   } else {
     start();
   }
+
+  /* =====================================================================
+     The "Online now" popover — who is actually on the site, and their
+     level. Clicking the online badge toggles it; it refreshes itself
+     while open. Signed-in members are listed; guests stay a count.
+     ===================================================================== */
+  var popOpen = false;
+  var popTimer = null;
+
+  function panelEl() { return document.getElementById('online-now-panel'); }
+  function closeEl() { return document.getElementById('online-now-close'); }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function renderPanel(data) {
+    var list = document.getElementById('online-now-list');
+    var count = document.getElementById('online-now-count');
+    var guests = document.getElementById('online-now-guests');
+    var guestCount = document.getElementById('online-now-guest-count');
+    if (count) count.textContent = String((data && data.total) || 0);
+    if (guests) guests.hidden = !(data && data.guests);
+    if (guestCount) guestCount.textContent = String((data && data.guests) || 0);
+    if (!list) return;
+    var members = (data && data.members) || [];
+    if (!members.length) {
+      list.innerHTML = '<p class="online-now-empty">No signed-in members here right now.</p>';
+      return;
+    }
+    list.innerHTML = members.map(function (m) {
+      var avatar = m.avatar
+        ? '<img decoding="async" loading="lazy" src="' + escapeHtml(m.avatar) + '" alt="" onerror="this.onerror=null;this.src=\'\'">'
+        : '<i class="fas fa-user" aria-hidden="true"></i>';
+      return '<div class="online-now-row">' +
+        '<span class="online-now-avatar">' + avatar + '</span>' +
+        '<span class="online-now-name">' + escapeHtml(m.name) + '</span>' +
+        '<span class="online-now-level">Lv ' + (m.level || 1) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  async function refreshPanel() {
+    try {
+      var res = await fetch('/api/online/members');
+      if (!res.ok) return;
+      var data = await res.json();
+      if (data) renderPanel(data);
+    } catch (_) {}
+  }
+
+  function setPopOpen(open) {
+    popOpen = open;
+    var panel = panelEl();
+    var badge = badgeEl();
+    if (panel) panel.hidden = !open;
+    if (badge) badge.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (popTimer) { clearInterval(popTimer); popTimer = null; }
+    if (open) {
+      refreshPanel();
+      popTimer = setInterval(refreshPanel, 30000);
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    var badge = badgeEl();
+    var panel = panelEl();
+    if (badge && badge.contains(e.target)) { e.preventDefault(); setPopOpen(!popOpen); return; }
+    if (panel && !panel.contains(e.target)) setPopOpen(false);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') setPopOpen(false);
+  });
+  var closeBtn = closeEl();
+  if (closeBtn) closeBtn.addEventListener('click', function () { setPopOpen(false); });
+
 })();

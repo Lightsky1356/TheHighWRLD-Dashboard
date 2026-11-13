@@ -1,0 +1,97 @@
+/* ==========================================================================
+   XP — the read side of the leaderboard.
+   GET /api/xp            → { ok, me, board, total }
+   GET /api/xp?limit=100  → narrower board
+
+   Public, read-only, one round trip. `me` is null when signed out (no shame
+   in signed-out: the board is public). The board is cached a few seconds in
+   isolate memory because it is read on every open of the panel and must
+   not fan out to 100 member rows per hit.
+   ========================================================================== */
+
+import { ensureXpTable, memberStanding, leaderboard, memberCount, levelFor, levelProgress } from "../_lib/xp.js";
+import { getSessionUser } from "../_lib/auth.js";
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...CORS },
+  });
+}
+
+export async function onRequestOptions() {
+  return new Response(null, { status: 204, headers: CORS });
+}
+
+let cached = null;
+let cachedAt = 0;
+const TTL_MS = 5000;
+
+async function board(db) {
+  if (cached && Date.now() - cachedAt < TTL_MS) return cached;
+  const [alltime, week, total] = await Promise.all([
+    leaderboard(db, "alltime", 100),
+    leaderboard(db, "week", 100),
+    memberCount(db),
+  ]);
+  cached = { alltime: alltime.members || [], week: week.members || [], total: total || 0 };
+  cachedAt = Date.now();
+  return cached;
+}
+
+export async function onRequestGet(context) {
+  const { env, request } = context;
+  const db = env.wanted_vault;
+  if (!db) return json({ ok: false, error: "no db" }, 500);
+
+  const b = await board(db);
+
+  let me = null;
+  try {
+    const session = await getSessionUser(db, request);
+    if (session && session.uid) {
+      const st = await memberStanding(db, session.uid);
+      const allIdx = b.alltime.findIndex((m) => m.uid === session.uid);
+      const weekIdx = b.week.findIndex((m) => m.uid === session.uid);
+      me = {
+        uid: session.uid,
+        name: session.name || "You",
+        xp: st.xp,
+        level: st.level || levelFor(st.xp),
+        week_xp: st.week_xp,
+        levelProgress: levelProgress(st.xp),
+        rankAll: allIdx >= 0 ? allIdx + 1 : null,
+        rankWeek: weekIdx >= 0 ? weekIdx + 1 : null,
+      };
+    }
+  } catch (_) {}
+
+  return json({
+    ok: true,
+    me: me,
+    total: b.total,
+    board: {
+      alltime: b.alltime.map(rankRow),
+      week: b.week.map(rankRow),
+    },
+  });
+}
+
+function rankRow(m, i) {
+  return {
+    uid: m.uid,
+    name: m.name,
+    avatar: m.avatar,
+    xp: m.xp,
+    score: m.score,
+    level: m.level,
+    rank: i + 1,
+    levelProgress: levelProgress(m.xp),
+  };
+}
