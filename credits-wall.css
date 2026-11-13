@@ -149,9 +149,32 @@ body.cw-modal-open{overflow:hidden}
    The wall is a long scroll, and every cover is a picture. The pictures
    arrive in batches as the reader reaches the end of what is there, and
    the reader is told so rather than being left with a blank row. */
-.cw-more{display:flex;align-items:center;justify-content:center;gap:10px;padding:22px 0 6px;color:rgba(255,255,255,.42);font-size:12px;letter-spacing:.04em}
+/* It is a button now, so it looks like one: a pill with a border, that
+   lifts when it is touched. The spinner only turns while it is working,
+   so the label is the only thing that moves when it is waiting. */
+.cw-more{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin:22px auto 6px;
+  padding:12px 22px;
+  border:1px solid rgba(168,85,247,.24);
+  border-radius:999px;
+  background:rgba(168,85,247,.08);
+  color:rgba(255,255,255,.62);
+  font-family:inherit;
+  font-size:12px;
+  letter-spacing:.04em;
+  cursor:pointer;
+  transition:background .18s ease,border-color .18s ease,color .18s ease;
+}
+.cw-more:hover{background:rgba(168,85,247,.16);border-color:rgba(168,85,247,.42);color:#fff}
+.cw-more:focus-visible{outline:2px solid rgba(168,85,247,.6);outline-offset:3px}
+.cw-more:disabled{cursor:default;opacity:.75}
+.cw-more:disabled:hover{background:rgba(168,85,247,.08);border-color:rgba(168,85,247,.24);color:rgba(255,255,255,.62)}
 .cw-more[hidden]{display:none}
-.cw-more-spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(168,85,247,.28);border-top-color:#a855f7;animation:cw-more-spin .7s linear infinite}
-.cw-more.is-done .cw-more-spin{animation:none;border-color:rgba(255,255,255,.2);border-top-color:rgba(255,255,255,.35)}
+.cw-more-spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(168,85,247,.28);border-top-color:#a855f7}
+.cw-more.is-loading .cw-more-spin{animation:cw-more-spin .7s linear infinite}
 @keyframes cw-more-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.cw-more-spin{animation:none}}

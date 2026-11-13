@@ -335,7 +335,7 @@
        stopped. */
     html += '<div class="cw-more" data-cw-more>' +
       '<span class="cw-more-spin" aria-hidden="true"></span>' +
-      '<span class="cw-more-text">Loading More Covers</span>' +
+      '<span class="cw-more-text">Scroll for More Covers</span>' +
       '</div>';
 
     /* The count is made with the markup, not after it, so the filter can
@@ -373,11 +373,31 @@
         if (!img) continue;
         var src = img.getAttribute("data-src");
         img.removeAttribute("data-src");
+        /* The browser does not fetch a lazy picture that is nowhere near the
+           screen, so a batch of them would wait for ever for pictures that
+           were never going to be asked for - and the wall stopped at the
+           first twenty-four because of it. A thumbnail is a couple of
+           kilobytes and a batch is thirty-six of them, so they are handed
+           over as eager ones and fetched now. */
+        img.loading = "eager";
         waiting.push({ img: img, src: src });
       }
       if (!waiting.length) { done(); return; }
       var left = waiting.length;
-      var finish = function () { if (--left > 0) return; done(); };
+      var finished = false;
+      var finish = function () {
+        if (finished) return;
+        if (--left > 0) return;
+        finished = true;
+        done();
+      };
+      /* And a picture that never answers - a broken address, a connection
+         that went away - must not hold the whole wall hostage. */
+      setTimeout(function () {
+        if (finished) return;
+        finished = true;
+        done();
+      }, 8000);
       for (var j = 0; j < waiting.length; j++) {
         var w = waiting[j];
         w.img.addEventListener("load", finish, { once: true });
@@ -396,21 +416,27 @@
       }
     }
 
-    function setLoader(text, done) {
+    /* Three states: waiting for a touch, working, and finished. The
+       label says which one it is, so a reader is never left wondering
+       why the wall has stopped. */
+    function setLoader(text, state) {
       if (!moreEl) return;
-      if (done) {
+      if (state === "done") {
         moreEl.hidden = true;
+        moreEl.disabled = true;
+        moreEl.classList.remove("is-loading");
         return;
       }
       moreEl.hidden = false;
-      moreEl.classList.remove("is-done");
+      moreEl.disabled = false;
+      moreEl.classList.toggle("is-loading", state === "loading");
       if (moreText) moreText.textContent = text;
     }
 
     function loadMore() {
       if (loading || loaded >= entries.length) return;
       loading = true;
-      setLoader("Loading More Covers", false);
+      setLoader("Loading More Covers", "loading");
       var from = loaded;
       var to = Math.min(from + PAGE, entries.length);
       var idxs = [];
@@ -420,18 +446,20 @@
         loading = false;
         showUpTo(loaded, currentArtist);
         if (loaded >= entries.length) {
-          setLoader("", true);
+          setLoader("", "done");
         } else {
-          setLoader("Loading More Covers", false);
+          setLoader("Scroll for More Covers", "more");
         }
       });
     }
 
     /* The first batch is the one on screen when the page opens. */
     showUpTo(loaded, "");
-    if (entries.length <= loaded) setLoader("", true);
+    if (entries.length <= loaded) setLoader("", "done");
 
-    /* The next batch is fetched before the reader gets there. */
+    /* The wall grows as the reader goes down it. The loader says so, and
+       the next batch is fetched before the reader reaches it, so the
+       covers are already there when they arrive. */
     if (moreEl && typeof IntersectionObserver === "function") {
       var io = new IntersectionObserver(function (list) {
         for (var i = 0; i < list.length; i++) {
@@ -439,10 +467,6 @@
         }
       }, { rootMargin: "600px 0px" });
       io.observe(moreEl);
-    } else if (moreEl) {
-      /* No observer: the loader is a button. */
-      moreEl.addEventListener("click", loadMore);
-      moreEl.style.cursor = "pointer";
     }
 
     /* The count sits under the filters, where the filter's own doing is
@@ -530,15 +554,15 @@
         }
         loadIndexes(idxs, function () { showUpTo(cards.length, currentArtist); });
         showUpTo(cards.length, currentArtist);
-        setLoader("", true);
+        setLoader("", "done");
       } else {
         /* Every cover: the ones that have been loaded, and no more. */
         for (var j = 0; j < cards.length; j++) {
           if (j < loaded) shown++;
         }
         showUpTo(loaded, "");
-        if (entries.length > loaded) setLoader("Loading More Covers", false);
-        else setLoader("", true);
+        if (entries.length > loaded) setLoader("Scroll for More Covers", "more");
+        else setLoader("", "done");
       }
       /* The counter is made after this function is defined, so it is
          looked up here rather than captured up front. */

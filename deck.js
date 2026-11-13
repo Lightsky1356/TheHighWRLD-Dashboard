@@ -157,6 +157,31 @@
       });
     }
 
+    /* How see-through the bar is.
+     *
+     * The Deck sits over the page, so how much of the page shows through
+     * it is a matter of taste. The steps are in the dropdown, and the
+     * choice is remembered - a reader who likes to see the page behind
+     * the bar does not want to set it again every morning. */
+    var opacitySel = el("deck-opacity");
+    if (opacitySel) {
+      var OPACITY_KEY = "thw-deck-opacity";
+      var applyOpacity = function () {
+        var v = parseFloat(opacitySel.value);
+        if (!isFinite(v)) v = 1;
+        var d = el("deck-player");
+        if (d) d.style.opacity = String(v);
+        try { localStorage.setItem(OPACITY_KEY, String(v)); } catch (e) {}
+      };
+      var remembered = "1";
+      try { remembered = localStorage.getItem(OPACITY_KEY) || "1"; } catch (e) {}
+      /* A remembered value that is not one of the steps is ignored. */
+      var option = opacitySel.querySelector('option[value="' + remembered + '"]');
+      if (option) opacitySel.value = remembered;
+      opacitySel.addEventListener("change", applyOpacity);
+      applyOpacity();
+    }
+
     /* The volume: a slider that lies down. */
     var slider = el("deck-volume-slider");
     if (slider) {

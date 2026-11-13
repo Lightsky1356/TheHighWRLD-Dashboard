@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v253';;;;;;;;;;;;;;;;;
+const VERSION = 'thw-v255';;;;;;;;;;;;;;;;;
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -68,6 +68,7 @@ const PRECACHE = [
   './pwa.js?v=thw-v10',
   './community-realtime.css?v=thw-v2',
   './song-comments.js?v=thw-v3',
+  './bluetooth.js?v=thw-v1',
   './deck.js?v=thw-v1',
   './command-palette.js?v=thw-v1',
   './song-page.js?v=thw-v1',
@@ -170,7 +171,7 @@ const PRECACHE = [
   './holiday-art/thanksgiving.jpg',
   './holiday-art/christmas.jpg',
   './presets.js?v=thw-v3',
-  './mobile-player.js?v=thw-v7',
+  './mobile-player.js?v=thw-v10',
   './follows.js?v=thw-v3',
   './privacy.js?v=thw-v4',
   './playlists-ui.js?v=thw-v6',
@@ -194,8 +195,8 @@ const PRECACHE = [
   './AlbumArt/party.jpg',
   './AlbumArt/preparty.jpg',
   './cover-artists.js?v=thw-v95',
-  './credits-wall.js?v=thw-v16',
-  './credits-wall.css?v=thw-v11',
+  './credits-wall.js?v=thw-v17',
+  './credits-wall.css?v=thw-v12',
 ];
 
 /* Requests that must NEVER be served from cache (privacy / correctness). */

@@ -3730,3 +3730,55 @@ html.foot-in-view #scrollTopBtn{
     padding-bottom:calc(var(--mbn-h,54px) + 12px) !important;
   }
 }
+
+
+/* ======================================================================
+   HOW SEE-THROUGH THE DECK IS
+   ======================================================================
+
+   The Deck sits over the page, so how much of the page shows through
+   it is a matter of taste. The steps are in a dropdown beside the
+   Deck's own buttons, and the choice is remembered.
+
+   And the Bluetooth button: a phone with a Bluetooth speaker is the
+   commonest way to listen to something, and the web had no way to ask
+   for one. The button is only shown where the browser can do something
+   about it.
+   ------------------------------------------------------------------ */
+.deck-opacity{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  height:26px;
+  padding:0 6px 0 8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  transition:border-color .18s ease,background .18s ease;
+}
+.deck-opacity:hover{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.08)}
+.deck-opacity i{font-size:9px;color:rgba(255,255,255,.4);pointer-events:none}
+.deck-opacity select{
+  -webkit-appearance:none;
+  appearance:none;
+  background:transparent;
+  border:none;
+  outline:none;
+  padding:0 2px;
+  color:rgba(255,255,255,.62);
+  font-family:inherit;
+  font-size:10px;
+  font-weight:700;
+  cursor:pointer;
+}
+.deck-opacity select option{background:#141021;color:#fff}
+
+/* A speaker that has been chosen says so. */
+[data-thw-bluetooth].is-on{color:#22d3ee}
+
+/* The phone's Deck has room for the transport and nothing else, so the
+   steps stay on the desktop. The Bluetooth button is small enough to
+   stay. */
+@media (max-width:767px){
+  .deck-opacity{display:none}
+}

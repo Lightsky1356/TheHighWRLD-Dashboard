@@ -2506,20 +2506,26 @@ function safeDecode4(v) {
   const js = readFileSync(join(ROOT, "player-performance.js"), "utf8");
   const script = readFileSync(join(ROOT, "script.js"), "utf8");
 
-  /* The media block itself, so a rule inside it can be looked for. The last
-     one of each is the one that wins: the file has had a phone block since
-     long before the deck came back to a phone. */
+  /* The media blocks themselves, so a rule inside one can be looked for.
+     There is more than one of each: the file has had a phone block since
+     long before the Deck came back to a phone, and a rule added later is
+     in a block of its own. Every block is gathered, and the last one of
+     each kind wins - which is what the browser does. */
   const mediaBlock = (query) => {
-    const at = css.lastIndexOf(query);
-    if (at < 0) return "";
-    const open = css.indexOf("{", at);
-    let depth = 1, i = open + 1;
-    while (i < css.length && depth > 0) {
-      if (css[i] === "{") depth++;
-      else if (css[i] === "}") depth--;
-      i++;
+    const found = [];
+    let at = css.indexOf(query);
+    while (at >= 0) {
+      const open = css.indexOf("{", at);
+      let depth = 1, i = open + 1;
+      while (i < css.length && depth > 0) {
+        if (css[i] === "{") depth++;
+        else if (css[i] === "}") depth--;
+        i++;
+      }
+      found.push(css.slice(open + 1, i - 1));
+      at = css.indexOf(query, i);
     }
-    return css.slice(open + 1, i - 1);
+    return found.join("\n");
   };
   const phone = mediaBlock("@media (max-width:520px)");
   const phoneUp = mediaBlock("@media (max-width:767px)");
@@ -2591,6 +2597,100 @@ function safeDecode4(v) {
     structureFail("tapping the WRLD Deck on a phone does not open the full-screen player");
   } else {
     structureOk("the WRLD Deck is on the phone, above the navigation, and opens the full-screen player");
+  }
+}
+
+
+/* ---- the Covers wall's loader, and the nav's Trending icon ----
+ *
+ * The loader was a div with the words 'Loading More Covers' on it. The
+ * only thing that grew the wall was an IntersectionObserver, and that
+ * only exists in browsers that already know what to do with it - so on
+ * every modern browser the label sat there saying it was loading more
+ * covers and nothing happened when you touched it.
+ *
+ * And the batches never finished: they waited for pictures that carried
+ * `loading="lazy"`, and the browser does not fetch a lazy picture that
+ * is nowhere near the screen. So the wall stopped at the first twenty-
+ * four and the spinner turned for ever.
+ *
+ * The nav's Trending button wore a flame, which reads as 'hot'. What it
+ * opens is a list of what people are listening to most, which is a line
+ * going up.
+ */
+{
+  const page = readFileSync(join(ROOT, "index.html"), "utf8");
+  const wall = readFileSync(join(ROOT, "credits-wall.js"), "utf8");
+  const wallCss = readFileSync(join(ROOT, "credits-wall.css"), "utf8");
+
+  /* The wall grows as the reader scrolls. It used to be a button, and the
+     label said it was loading more covers while nothing was loading at
+     all - because the batches waited for pictures the browser was not
+     going to fetch until they were on the screen. */
+  if (!/<div class="cw-more" data-cw-more>/.test(wall)) {
+    structureFail("the Covers wall's loader is not the label it was - the wall grows as the reader scrolls");
+  } else if (/moreEl\.addEventListener\("click"/.test(wall)) {
+    structureFail("the Covers wall's loader is a button again - it should grow as the reader scrolls");
+  } else if (!/img\.loading = "eager"/.test(wall)) {
+    structureFail("the Covers wall's batches still wait for pictures the browser will not fetch until they are on the screen");
+  } else if (!/setTimeout\(function \(\) \{\s*if \(finished\) return;/.test(wall)) {
+    structureFail("a picture that never answers can hold the whole Covers wall hostage");
+  } else if (!/Scroll for More Covers/.test(wall)) {
+    structureFail("the Covers wall's loader does not say that the wall grows as the reader scrolls");
+  } else {
+    structureOk("the Covers wall grows as the reader scrolls, and its batches finish");
+  }
+
+  if (!/id="page-nav-trending"[^>]*>[^<]*<i class="fas fa-arrow-trend-up"/.test(page)) {
+    structureFail("the nav's Trending button does not wear the arrow - it still wears the flame");
+  } else if (/id="page-nav-trending"[^>]*>[^<]*<i class="fas fa-fire"/.test(page)) {
+    structureFail("the nav's Trending button still wears the flame");
+  } else {
+    structureOk("the nav's Trending button wears an arrow that goes up");
+  }
+}
+
+
+/* ---- the footer's links, the Deck's opacity, and Bluetooth ----
+ *
+ * The RSS feed is out of the footer, and so is all of its code: the
+ * endpoint, the test, and the row in the Public API page that named it.
+ * The Community Board is out of the footer's list of links.
+ *
+ * The Deck can be see-through, in steps, and remembers how see-through
+ * it was left. And there is a Bluetooth button in the Deck and in the
+ * WRLD Player, so the music can go to a speaker without wires.
+ */
+{
+  const page = readFileSync(join(ROOT, "index.html"), "utf8");
+  const css = readFileSync(join(ROOT, "player-settings.css"), "utf8");
+  const deck = readFileSync(join(ROOT, "deck.js"), "utf8");
+  const footStart = page.indexOf('class="foot-brand"');
+  const footEnd = page.indexOf("</footer>", footStart);
+  const foot = footStart < 0 || footEnd < 0 ? "" : page.slice(footStart, footEnd);
+
+  if (existsSync(join(ROOT, "functions", "feed.xml.js"))) {
+    structureFail("the RSS feed's endpoint is still there");
+  } else if (/feed\.xml/.test(page)) {
+    structureFail("something still points at the RSS feed");
+  } else if (/RSS feed/i.test(foot)) {
+    structureFail("the footer's column still has the RSS feed in it");
+  } else if (/Community Board/.test(foot)) {
+    structureFail("the footer's column still has the Community Board in it");
+  } else {
+    structureOk("the RSS feed and the Community Board are out of the footer, and the feed's code is gone");
+  }
+
+  if (!/<select[^>]*id="deck-opacity"/.test(page) || !/"deck-opacity"/.test(deck)) {
+    structureFail("the WRLD Deck has no opacity, or the choice is not remembered");
+  } else if (!/thw-deck-opacity/.test(deck)) {
+    structureFail("the WRLD Deck's opacity is not remembered");
+  } else if ((page.match(/data-thw-bluetooth/g) || []).length < 2) {
+    structureFail("the Bluetooth button is not in both the WRLD Deck and the WRLD Player");
+  } else if (!/\.deck-opacity\{/.test(css)) {
+    structureFail("the WRLD Deck's opacity dropdown has no styling");
+  } else {
+    structureOk("the WRLD Deck has an opacity that is remembered, and both it and the player have a Bluetooth button");
   }
 }
 
