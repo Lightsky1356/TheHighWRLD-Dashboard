@@ -2542,6 +2542,23 @@ function safeDecode4(v) {
     structureOk("the floating chrome gets out of the footer's way");
   }
 
+  /* The footer's head - the mark, who made it, and the way into the Legal
+     & Info panel - is stacked, the way the old footer's brand block was.
+     And the Terms of Use, the Privacy Policy and the DMCA are out of the
+     column of links: the Legal & Info panel, which is the button right
+     beside them, is where all three live. */
+  const page = readFileSync(join(ROOT, "index.html"), "utf8");
+  const footStart = page.indexOf('class="foot-brand"');
+  const footEnd = page.indexOf("</footer>", footStart);
+  const foot = footStart < 0 || footEnd < 0 ? "" : page.slice(footStart, footEnd);
+  if (!/\.foot-brand\{[^}]*flex-direction:column/.test(css)) {
+    structureFail("the footer's head is not stacked - the mark, the maker and the Legal & Info button lie across the page");
+  } else if (/\/TOS\"|\/PP\"|\/DMCA\"/.test(foot)) {
+    structureFail("the footer's column still lists the Terms of Use, the Privacy Policy or the DMCA - the Legal & Info panel has all three");
+  } else {
+    structureOk("the footer's head is stacked, and its column does not repeat the Legal & Info panel");
+  }
+
   /* The deck on a phone: shown, sitting above the navigation, and opening
      the full-screen player when it is tapped. */
   if (!/#deck-player\s*\{[^}]*display:block\s*!important/.test(phoneUp)) {
