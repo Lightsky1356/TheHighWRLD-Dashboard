@@ -2486,6 +2486,75 @@ function safeDecode4(v) {
   }
 }
 
+
+/* ---- the footer and the deck, on a phone ----
+ *
+ * The footer's columns were one under another, so the footer was four
+ * screens tall on a 430px-wide phone. They sit side by side now.
+ *
+ * The WRLD Deck was hidden below 480px - and the full-screen mobile
+ * player opens from the deck, so hiding the deck hid the only way into
+ * it. A phone had no way at all of seeing what was playing.
+ *
+ * The floating chrome - the presence badges, the chat button, the night
+ * light, the scroll-to-top - is fixed to the screen, so the footer's own
+ * bottom bar ended up underneath it. A class on the root says the
+ * footer is on screen, and the chrome gets out of the way.
+ */
+{
+  const css = readFileSync(join(ROOT, "player-settings.css"), "utf8");
+  const js = readFileSync(join(ROOT, "player-performance.js"), "utf8");
+  const script = readFileSync(join(ROOT, "script.js"), "utf8");
+
+  /* The media block itself, so a rule inside it can be looked for. The last
+     one of each is the one that wins: the file has had a phone block since
+     long before the deck came back to a phone. */
+  const mediaBlock = (query) => {
+    const at = css.lastIndexOf(query);
+    if (at < 0) return "";
+    const open = css.indexOf("{", at);
+    let depth = 1, i = open + 1;
+    while (i < css.length && depth > 0) {
+      if (css[i] === "{") depth++;
+      else if (css[i] === "}") depth--;
+      i++;
+    }
+    return css.slice(open + 1, i - 1);
+  };
+  const phone = mediaBlock("@media (max-width:520px)");
+  const phoneUp = mediaBlock("@media (max-width:767px)");
+
+  /* The footer's columns, side by side on a phone. */
+  if (!/\.foot-cols\s*\{[^}]*repeat\(2,/.test(phone)) {
+    structureFail("the footer's columns are not side by side on a phone - the footer is four screens tall");
+  } else if (!/\.foot-note\{[^}]*flex-wrap:wrap/.test(phone) || !/\.foot-meta\{[^}]*width:100%/.test(phone)) {
+    structureFail("the footer's bottom bar does not wrap on a phone - the Legal & Info button runs off the side");
+  } else {
+    structureOk("the footer's columns sit side by side on a phone, and its bottom bar wraps");
+  }
+
+  /* The floating chrome, out of the footer's way. */
+  if (!/html\.foot-in-view #site-online-badge/.test(css) || !/html\.foot-in-view #scrollTopBtn/.test(css)) {
+    structureFail("the floating chrome is not moved out of the footer's way");
+  } else if (js.indexOf("foot-in-view") < 0 || js.indexOf("IntersectionObserver") < 0) {
+    structureFail("nothing sets the class that moves the floating chrome out of the footer's way");
+  } else {
+    structureOk("the floating chrome gets out of the footer's way");
+  }
+
+  /* The deck on a phone: shown, sitting above the navigation, and opening
+     the full-screen player when it is tapped. */
+  if (!/#deck-player\s*\{[^}]*display:block\s*!important/.test(phoneUp)) {
+    structureFail("the WRLD Deck is not shown on a phone - and the full-screen player opens from it");
+  } else if (!/bottom:calc\(var\(--mbn-h/.test(phoneUp)) {
+    structureFail("the WRLD Deck does not sit above the bottom navigation on a phone");
+  } else if (script.indexOf("openMobilePlayer") < 0) {
+    structureFail("tapping the WRLD Deck on a phone does not open the full-screen player");
+  } else {
+    structureOk("the WRLD Deck is on the phone, above the navigation, and opens the full-screen player");
+  }
+}
+
 failures += structureFailures;
 
 process.exit(failures ? 1 : 0);

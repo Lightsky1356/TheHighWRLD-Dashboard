@@ -540,3 +540,35 @@
 
   wake();
 })();
+
+/* PERFORMANCE: the floating chrome gets out of the footer's way.
+ *
+ * The presence badges, the chat button, the night light and the
+ * scroll-to-top are fixed to the screen. The footer scrolls under them,
+ * so its own bottom bar ended up underneath theirs - the two read as one
+ * jumble of text on a phone.
+ *
+ * So while the footer is on screen they get out of the way. The class is
+ * the signal, the same way the scroll and idle pauses are. */
+(function () {
+  if (window.__thwFooterChrome) return;
+  window.__thwFooterChrome = true;
+
+  var foot = document.querySelector("footer.foot");
+  if (!foot || !window.MutationObserver) return;
+  var root = document.documentElement;
+  var seen = false;
+
+  new IntersectionObserver(function (entries) {
+    for (var i = 0; i < entries.length; i++) {
+      /* A single observer for the whole footer: any part of it on screen
+         counts, because the badges sit over the columns as well as over
+         the bottom bar. */
+      var on = entries[i].isIntersecting;
+      if (on === seen) continue;
+      seen = on;
+      if (on) root.classList.add("foot-in-view");
+      else root.classList.remove("foot-in-view");
+    }
+  }, { threshold: 0 }).observe(foot);
+})();

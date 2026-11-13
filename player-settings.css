@@ -3538,3 +3538,204 @@ html.is-scrolling .player-lightning{
 
    The copy is a subset, so the rules it holds keep their order - the
    cascade is the same as it was.
+
+
+/* ======================================================================
+   THE FOOTER AND THE DECK, ON A PHONE
+   ======================================================================
+
+   The footer's columns sat one under another, so the footer was four
+   screens tall on a phone. They sit side by side now, and the labels
+   are a shade smaller so the longest one still fits.
+
+   The floating chrome - the presence badges, the chat button, the night
+   light, the scroll-to-top - is fixed to the screen, and the footer
+   scrolls under it, so the footer's own bottom bar ended up underneath
+   theirs. While the footer is on screen they get out of the way.
+
+   And the WRLD Deck, which was hidden below 480px: the full-screen
+   mobile player opens from the deck, so hiding the deck hid the only
+   way into it. It is a bar now - the cover, the song, the transport -
+   sitting just above the bottom navigation, with the progress along
+   its top edge.
+   ------------------------------------------------------------------ */
+@media (max-width:520px){
+  .foot{padding:30px 14px calc(var(--mbn-h,54px) + 20px);margin-top:32px}
+  .foot-cols{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 14px}
+  .foot-head{font-size:9px;margin-bottom:9px;letter-spacing:.12em}
+  .foot-list{gap:7px}
+  .foot-link{font-size:11.5px;gap:4px}
+  .foot-brand{gap:10px 14px;padding-bottom:18px;margin-bottom:20px}
+  .foot-brand-made{font-size:10px;line-height:1.5}
+  .foot-legal-btn{font-size:10px;padding:7px 13px}
+  .foot-bar{gap:8px 16px;margin-top:20px;padding-top:16px;font-size:10.5px}
+  .foot-mark{font-size:10px}
+  /* The bottom bar was one long line that ran off the side of the screen:
+     the note kept its full width, and the Legal & Info button with it. */
+  .foot-note{flex-wrap:wrap;gap:5px 9px}
+  .foot-note span{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.5}
+  .foot-note .foot-mark{flex:0 0 auto}
+  .foot-made{flex:1 0 100%;margin-top:0}
+  .foot-meta{flex:1 1 auto;min-width:0;width:100%;gap:9px 14px}
+  .foot-legal{
+    padding:6px 13px;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:999px;
+    font-size:10px;
+  }
+}
+
+/* The floating chrome, while the footer is on screen. */
+html.foot-in-view #site-online-badge,
+html.foot-in-view #site-guest-badge,
+html.foot-in-view #thw-social-fab,
+html.foot-in-view #nightLightToggle{
+  opacity:0 !important;
+  pointer-events:none !important;
+  transform:translateY(8px);
+  transition:opacity .2s ease,transform .2s ease;
+}
+
+/* The scroll-to-top button is the one that stays: it is the way back up,
+   and the footer is exactly where a person would want it. So the footer
+   keeps room for it instead - the button sits in the footer's own padding,
+   below its last line. */
+html.foot-in-view #scrollTopBtn{
+  opacity:1 !important;
+  pointer-events:auto !important;
+}
+@media (min-width:768px){
+  .foot{padding-bottom:76px}
+}
+
+/* ---- The WRLD Deck, on a phone ---- */
+@media (max-width:767px){
+  /* It was hidden below 480px. The full-screen mobile player opens from
+     the deck, so hiding the deck hid the only way into it. */
+  #deck-player{
+    display:block !important;
+    position:fixed !important;
+    top:auto !important;
+    bottom:calc(var(--mbn-h,54px) + 8px) !important;
+    left:8px !important;
+    right:8px !important;
+    width:auto !important;
+    max-width:none !important;
+    min-width:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+    border-radius:18px !important;
+    border:1px solid rgba(255,255,255,.09);
+    /* The deck carries an inline background - the track's own colours - and
+       an inline style beats a rule in the stylesheet. On a phone that
+       gradient is see-through, and the page's text shows straight through
+       the bar. So the mobile bar is given its own backing, and it has to
+       be said loudly enough to win. */
+    background:#0b0816 !important;
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    box-shadow:0 14px 44px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.06);
+    overflow:visible;
+    z-index:9999 !important;
+  }
+  #deck-player.hidden{transform:translateY(160%) scale(.97)}
+  #deck-player .deck-inner{padding:0;display:block}
+
+  /* One line: the song, and the transport beside it. */
+  #deck-player .deck-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 10px;
+  }
+  #deck-player .deck-song{display:flex;align-items:center;gap:9px;min-width:0;flex:1 1 auto}
+  #deck-player .deck-cover-wrap{width:42px;height:42px;flex:0 0 42px}
+  #deck-player .deck-cover{width:42px;height:42px;border-radius:11px}
+  #deck-player .deck-info{flex:1 1 auto;min-width:0;padding:0;display:flex;flex-direction:column;gap:1px}
+  #deck-player .deck-title{font-size:12.5px;line-height:1.25}
+  #deck-player .deck-tag{display:none}
+  #deck-player .deck-artist{font-size:10px;line-height:1.2}
+  #deck-player .deck-fav{width:30px;height:30px;font-size:11px;flex:0 0 30px}
+
+  /* The transport: play and next. */
+  #deck-player .deck-centre{display:flex;align-items:center;gap:2px;flex:0 0 auto}
+  #deck-player #deck-shuffle-btn,
+  #deck-player #deck-repeat-btn,
+  #deck-player #deck-prev{display:none}
+  #deck-player .deck-btn{width:32px;height:32px;font-size:12px}
+  #deck-player #deck-play{width:38px;height:38px;font-size:13px}
+
+  /* The progress, along the top edge of the bar. */
+  #deck-player .deck-bar-row{
+    position:absolute;
+    left:0;right:0;top:0;
+    display:block;
+    width:auto;
+    height:2px;
+  }
+  #deck-player .deck-clock{display:none}
+  #deck-player .deck-progress{
+    position:static;
+    height:2px;
+    width:100%;
+    border-radius:0;
+    background:rgba(255,255,255,.14);
+  }
+
+  /* The rest of the actions live in the full-screen player. The one that
+     stays is the chevron: it is the only way to put the bar away, and the
+     handle that brings it back sits under the navigation. */
+  #deck-player .deck-actions{display:flex;gap:2px;flex:0 0 auto}
+  #deck-player #song-comments-btn,
+  #deck-player #deck-queue-btn,
+  #deck-player .deck-volume,
+  #deck-player #deck-keys-btn,
+  #deck-player #deck-settings-btn{display:none}
+  #deck-player #deck-toggle{width:30px;height:30px;font-size:11px}
+
+  /* While the bar is up, the floating chrome moves above it. The bar is the
+     width of the screen, so anything left in the bottom band would sit on
+     top of it - the badges on the left, the chat button and the night light
+     on the right. */
+  body:has(#deck-player:not(.hidden)) #site-guest-badge{
+    bottom:calc(var(--mbn-h,54px) + 90px) !important;
+  }
+  body:has(#deck-player:not(.hidden)) #site-online-badge{
+    bottom:calc(var(--mbn-h,54px) + 124px) !important;
+  }
+  body:has(#deck-player:not(.hidden)) #scrollTopBtn{
+    bottom:calc(var(--mbn-h,54px) + 90px) !important;
+  }
+  body:has(#deck-player:not(.hidden)) #nightLightToggle{
+    bottom:calc(var(--mbn-h,54px) + 124px) !important;
+  }
+  body:has(#deck-player:not(.hidden)) #thw-social-fab{
+    bottom:calc(var(--mbn-h,54px) + 168px) !important;
+  }
+
+  /* The handle, above the bottom navigation rather than under it. */
+  .deck-handle{bottom:calc(var(--mbn-h,54px) + 8px)}
+
+  /* The navigation on a phone is fixed at the top with nothing behind it, so
+     whatever the page scrolls past shows through it - the footer's own mark
+     ended up under the search button. A soft shade goes behind the buttons,
+     so they always sit on something. */
+  nav::before{
+    content:"";
+    position:fixed;
+    top:0;left:0;right:0;
+    height:110px;
+    background:linear-gradient(180deg,rgba(5,3,12,.97) 0,rgba(5,3,12,.93) 58%,rgba(5,3,12,0) 100%);
+    pointer-events:none;
+    z-index:-1;
+  }
+
+  /* The page keeps room for the bar, and for the navigation under it. */
+  body:has(#deck-player:not(.hidden)){
+    padding-bottom:calc(var(--mbn-h,54px) + 92px) !important;
+  }
+  /* With the bar put away, the navigation still needs its room. */
+  body.deck-hidden{
+    padding-bottom:calc(var(--mbn-h,54px) + 12px) !important;
+  }
+}
