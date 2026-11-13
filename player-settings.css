@@ -3317,13 +3317,14 @@ body.deck-hidden{
 /* The footer's head: the mark, who made it, and the way into the legal
    panel. It sits above the columns of links.
 
-   Stacked, the way the old footer's brand block was. They used to lie
-   across the width of the footer with a long gap between them, which
-   pulled the mark away from the button that belongs with it. */
+   Stacked and centred, the way the old footer's brand block was. They used
+   to lie across the width of the footer with a long gap between them,
+   which pulled the mark away from the button that belongs with it. */
 .foot-brand{
   display:flex;
   flex-direction:column;
-  align-items:flex-start;
+  align-items:center;
+  text-align:center;
   gap:11px;
   padding-bottom:22px;
   margin-bottom:26px;

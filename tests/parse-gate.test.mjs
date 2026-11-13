@@ -2543,20 +2543,27 @@ function safeDecode4(v) {
   }
 
   /* The footer's head - the mark, who made it, and the way into the Legal
-     & Info panel - is stacked, the way the old footer's brand block was.
-     And the Terms of Use, the Privacy Policy and the DMCA are out of the
-     column of links: the Legal & Info panel, which is the button right
-     beside them, is where all three live. */
+     & Info panel - is stacked and centred, the way the old footer's brand
+     block was. And the Terms of Use, the Privacy Policy and the DMCA are
+     out of the column of links: the Legal & Info panel, which is the button
+     right beside them, is where all three live.
+     There is one way into that panel, not two - the bottom bar had its own
+     Legal & Info button opening the same door. */
   const page = readFileSync(join(ROOT, "index.html"), "utf8");
   const footStart = page.indexOf('class="foot-brand"');
   const footEnd = page.indexOf("</footer>", footStart);
   const foot = footStart < 0 || footEnd < 0 ? "" : page.slice(footStart, footEnd);
+  const legalButtons = (foot.match(/data-legal-info/g) || []).length;
   if (!/\.foot-brand\{[^}]*flex-direction:column/.test(css)) {
     structureFail("the footer's head is not stacked - the mark, the maker and the Legal & Info button lie across the page");
+  } else if (!/\.foot-brand\{[^}]*align-items:center/.test(css)) {
+    structureFail("the footer's head is not centred");
   } else if (/\/TOS\"|\/PP\"|\/DMCA\"/.test(foot)) {
     structureFail("the footer's column still lists the Terms of Use, the Privacy Policy or the DMCA - the Legal & Info panel has all three");
+  } else if (legalButtons !== 1) {
+    structureFail("the footer offers " + legalButtons + " ways into the Legal & Info panel - there should be one");
   } else {
-    structureOk("the footer's head is stacked, and its column does not repeat the Legal & Info panel");
+    structureOk("the footer's head is stacked and centred, and there is one way into the Legal & Info panel");
   }
 
   /* The deck on a phone: shown, sitting above the navigation, and opening
