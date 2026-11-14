@@ -3190,7 +3190,7 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Eye Contact, Mind Control (Sessions)",
+    title: "Eye Contact (Sessions)",
     tag: "Eye Contact (Mind Control) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     altnames: ["Eye Contact, Mind Control (v1)"],
