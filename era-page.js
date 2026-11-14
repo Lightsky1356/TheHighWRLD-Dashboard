@@ -361,4 +361,25 @@
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderChoose);
     else renderChoose();
   }
+
+  /* Wake up when the switch flips to this section, the same way the
+     leaderboard wakes itself: the switch only toggles classes. Cold boots
+     into /era and every in-app button call switchAppPage("era") long before
+     any renderer runs, so without this the section appears with nothing
+     in it. Render only when the pane is empty - never stomp an era page
+     that is already open. */
+  if (typeof window.switchAppPage === "function" && !window.__eraWakeWrapped) {
+    window.__eraWakeWrapped = true;
+    var origSwitchEra = window.switchAppPage;
+    window.switchAppPage = function (page) {
+      var out = origSwitchEra.apply(this, arguments);
+      if (page === "era") {
+        try {
+          var pane = document.getElementById("page-section-era");
+          if (pane && !pane.innerHTML.trim()) renderChoose();
+        } catch (e) {}
+      }
+      return out;
+    };
+  }
 })();
