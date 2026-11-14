@@ -293,6 +293,21 @@
       ".dpl-ov.is-collapsed .dpl-left{overflow:hidden}" +
       ".dpl-ov.is-collapsed .dpl-cover{width:min(48%,460px)}" +
       "@media (max-height:900px){.dpl-ov.is-collapsed .dpl-cover{width:min(44%,420px)}}" +
+      /* short windows: the whole column, cover and all, fits without cutting anything off */ +
+      "@media (max-height:780px){" +
+        ".dpl-left{justify-content:flex-start;padding-top:0;justify-content:flex-start}" +
+        ".dpl-cover{width:min(52vw,250px,32vh);margin-top:0}" +
+        ".dpl-title{margin-top:8px;font-size:clamp(17px,2.2vw,22px)}" +
+        ".dpl-album{margin-top:2px}" +
+        ".dpl-artist{margin-top:2px;font-size:14px}" +
+        ".dpl-chips{margin-top:8px}" +
+        ".dpl-chip-year,.dpl-chip{padding-top:3px;padding-bottom:3px}" +
+        ".dpl-prog{margin-top:10px}" +
+        ".dpl-transport{margin-top:12px}" +
+        ".dpl-play{width:60px;height:60px;font-size:19px}" +
+        ".dpl-volume{margin-top:8px}" +
+        ".dpl-actions{margin-top:8px}" +
+      "}" +
       ".dpl-volume{display:flex;align-items:center;gap:12px;margin-top:16px}" +
       ".dpl-vol-ic{background:none;border:none;color:rgba(255,255,255,.5);width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:color .18s ease}" +
       ".dpl-vol-ic:hover{color:#fff}" +
