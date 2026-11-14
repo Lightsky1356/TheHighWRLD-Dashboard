@@ -839,7 +839,8 @@ function coverFor(stem, coverFiles) {
   });
 
   if (COMMIT && (added > 0 || backfilled > 0)) {
-    commitAndPush(["tracks.js", "script.js", "wrldlog-data.js"]);
+    refreshForAddedTracks(added, backfilled);
+    commitAndPush(["tracks.js", "script.js", "wrldlog-data.js", "index.html", "sw.js"]);
   }
 })().catch(function (err) {
   warn("fatal: " + (err && err.message ? err.message : err));
@@ -875,6 +876,52 @@ function writeRunReport(r) {
 }
 
 /* ----------------------------------------------------------- file surgery */
+
+/* New songs reach an open browser through two files: tracks.js and script.js
+   (the cover gradient table). The monitor's cache holds them by ?v= token,
+   so without a bump the worker that is live on the page keeps serving the
+   OLD catalogue even after the new one deploys. Hence this routine runs on
+   the same push as the tracks: bump index.html's ?v= and sw.js's precache
+   for both, and bump the SW VERSION so returning browsers pick up a fresh
+   worker - and a fresh catalogue - on the next page load.
+
+   The token rule is the same one scripts/bump-token.mjs uses: every changed
+   asset's exact current reference gets its number raised by one. If a
+   reference is not found the routine refuses to guess rather than corrupt
+   the shell. */
+function refreshForAddedTracks(added, backfilled) {
+  const files = [path.join(ROOT, "index.html"), path.join(ROOT, "sw.js")];
+  const assets = ["tracks.js", "script.js"];
+  const touched = [];
+
+  for (const asset of assets) {
+    const html = fs.readFileSync(files[0], "utf8");
+    const re = new RegExp("(" + asset.replace(/\./g, "\\.") + "\\?v=)thw-v(\\d+)");
+    const hit = html.match(re);
+    if (!hit) { warn("could not find " + asset + "'s current token in index.html - SW not bumped"); continue; }
+    const next = String(Number(hit[2]) + 1);
+    for (const file of files) {
+      let src = fs.readFileSync(file, "utf8");
+      const before = src;
+      src = src.replace(new RegExp("(" + asset.replace(/\./g, "\\.") + "\\?v=)thw-v(\\d+)", "g"), "$1thw-v" + next);
+      if (src !== before) {
+        fs.writeFileSync(file, src, "utf8");
+        log("cache token " + asset + " -> thw-v" + next);
+      }
+    }
+    touched.push(next);
+  }
+
+  /* SW VERSION is a monotonic number. Raise it as well. */
+  const swSrc = fs.readFileSync(files[1], "utf8");
+  const versionRe = /const VERSION = 'thw-v(\d+)';;;;;;;;;/;
+  const vMatch = swSrc.match(versionRe);
+  if (!vMatch) { warn("could not read sw.js VERSION - SW needs a manual bump"); return; }
+  const newVersion = "thw-v" + (Number(vMatch[1]) + 1);
+  const bumpedSw = swSrc.replace(versionRe, "const VERSION = '" + newVersion + "';;;;;;;;;");
+  fs.writeFileSync(files[1], bumpedSw, "utf8");
+  log("SW VERSION -> " + newVersion);
+}
 
 /* A batch of songs added by the pipeline is itself a release. wrldlog-data.js
    holds every version, newest first, and wrldlog.js renders whatever is in
