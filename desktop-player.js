@@ -253,6 +253,9 @@
       ".dpl-reveal{position:absolute;top:14px;right:22px;z-index:4;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.72);display:none;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:background .18s ease,color .18s ease}" +
       ".dpl-reveal:hover{background:rgba(255,255,255,.13);color:#fff}" +
       ".dpl-ov.is-collapsed .dpl-reveal{display:flex}" +
+      ".dpl-more-collapsed{position:absolute;top:14px;right:74px;z-index:4;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.72);display:none;align-items:center;justify-content:center;font-size:17px;cursor:pointer;transition:background .18s ease,color .18s ease}" +
+      ".dpl-more-collapsed:hover{background:rgba(255,255,255,.13);color:#fff}" +
+      ".dpl-ov.is-collapsed .dpl-more-collapsed{display:flex}" +
 
       /* left */
       ".dpl-left{display:flex;flex-direction:column;align-items:center;min-height:0;min-width:0;justify-content:center;overflow-y:auto;overscroll-behavior:contain;padding:10px 6px}" +
@@ -429,6 +432,7 @@
         '</div>' +
       '</header>' +
       '<button type="button" class="dpl-reveal" data-dpl="reveal" aria-label="Show the panel"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>' +
+      '<button type="button" class="dpl-more-collapsed" data-dpl="more" aria-label="More options"><i class="fas fa-ellipsis" aria-hidden="true"></i></button>' +
       '<div class="dpl-body">' +
 
         /* -------- the left column -------- */
