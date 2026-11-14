@@ -14,29 +14,14 @@
  */
 'use strict';
 
-const VERSION = 'thw-v285';;;;;;;;;;;;;;;;;
+const VERSION = 'thw-v286';;;;;;;;;;;;;;;;;
 
-/* The shell cache is NOT versioned, and that is deliberate.
- *
- * Every asset in it already carries its own ?v= token, and that token moves
- * when the asset's content moves - which is the entire purpose of the token,
- * and what check-tokens.mjs enforces. So an asset whose content has not
- * changed has the same URL, and the copy already sitting in the cache is
- * still exactly right.
- *
- * A versioned cache name meant the opposite. Every deployment produced a new,
- * empty cache, and the old one was deleted, so every opening of the app after
- * that deployment re-downloaded all 120 shell assets - 25 fonts, 12 album
- * photos, 12 icons and every script and stylesheet. On a Pages project
- * running in bundled mode each of those is a request counted against the
- * plan's daily limit, and 120 of them per app opening is how a dozen
- * deployments turn into tens of thousands of requests. The site reached that
- * limit and went down with "Error 1046: the owner has reached their plan
- * limits", which is a far worse failure than a stale asset.
- *
- * The runtime cache is the same story: it is bounded by size, and its
- * contents are tokenised URLs, so a deployment has no reason to throw it
- * away. */
+/* The shell cache is NOT versioned, and that stays deliberate (the site hit
+ * the plan's daily request limit once already; precaching the whole shell on
+ * every deployment is what did it). What was not deliberate - and is now
+ * fixed - is that the precache stored ANY response, so one HTML error page
+ * fetched during a bad window got cached under a JS filename and poisoned
+ * that device forever. Only 200s are stored now. */
 const SHELL_CACHE = 'thw-shell';
 const RUNTIME_CACHE = 'thw-runtime';
 
@@ -69,7 +54,7 @@ const PRECACHE = [
   './community-realtime.css?v=thw-v2',
   './song-comments.js?v=thw-v10',
   './bluetooth.js?v=thw-v1',
-  './era-page.js?v=thw-v1',
+  './era-page.js?v=thw-v2',
   './context-menu.js?v=thw-v3',
   './leaderboard.js?v=thw-v2',
   './desktop-player.js?v=thw-v13',
@@ -325,9 +310,17 @@ function precacheShell() {
            * Between them, a deployment now costs 42 requests instead of 120,
            * and nothing can go stale. */
           if (hit && url.indexOf("?v=") !== -1) return null;
-          return cache.add(new Request(url, { cache: 'reload' })).catch(function () {
-            failed.push(url);
-          });
+          /* cache.add() stores ANY response - an HTML 504 page fetched during a
+             bad window would be cached under the JS filename and poison this
+             device's shell forever. Only 200s are kept. */
+          return fetch(new Request(url, { cache: 'reload' }))
+            .then(function (res) {
+              if (!res || !res.ok || res.redirected) { failed.push(url); return; }
+              return cache.put(url, res);
+            })
+            .catch(function () {
+              failed.push(url);
+            });
         })
         .then(next);
     };
