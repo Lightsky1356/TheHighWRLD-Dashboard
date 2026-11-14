@@ -2972,18 +2972,6 @@ function compactProfileViewHtml(d) {
    * A song's address carries its name, so it cannot live in the table of
    * routes - that holds one address per page, and there are three hundred
    * songs. It is read here instead, the way a profile's address is. */
-  /* The era pages: /era/<the-era> and /era (the chooser).
-   * Same shape as the song pages: one address per era, read here. */
-  var ERA_PATH_ROOT = "/era";
-  function parseEraPath(pathname) {
-    var p = String(pathname || "").replace(/\/+$/, "");
-    if (!p) return null;
-    if (new RegExp("^" + ERA_PATH_ROOT + "$", "i").test(p)) return { code: "" };
-    var m = new RegExp("^" + ERA_PATH_ROOT + "/(.+)$", "i").exec(p);
-    if (!m) return null;
-    return { code: decodeURIComponent(m[1]).toLowerCase() };
-  }
-
   /* /songs/<the song> — both /songs and the old /song addresses are read,
      so links made before the rename keep working. The song page tells the
      reader what to do if the address doesn't match anything in the vault. */
@@ -3470,9 +3458,6 @@ window.profileSectionShown = function () {
       if (songPath && window.openSongPage) {
         window.switchAppPage("song");
         window.openSongPage(songPath.slug, true);
-      } else if (parseEraPath(ppath) && window.openEraPage) {
-        window.switchAppPage("era");
-        window.openEraPage(parseEraPath(ppath).code || "");
       } else {
         var bootPage = NAV_URL_REV[ppath];
         /* An unrecognised path used to fall through and leave whatever the boot
@@ -3497,7 +3482,7 @@ window.profileSectionShown = function () {
    meant two sources of truth for the same job. _navPillFor already resolves both
    to their real nav buttons (page-nav-about, page-nav-partner), so nothing else
    needed changing to highlight them. */
-var NAV_URL = { home: "/", community: "/community", developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register", era: "/era", leaderboard: "/leaderboard" };
+var NAV_URL = { home: "/", community: "/community", developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register", leaderboard: "/leaderboard" };
   var NAV_URL_REV = {};
   Object.keys(NAV_URL).forEach(function (k) { NAV_URL_REV[NAV_URL[k]] = k; });
   /* The router, for a link that has to be a link but must not reload the

@@ -77,16 +77,6 @@
 
   /* The name of the song, without its version, so the songs that belong
      together can be found beside each other. */
-  var ERA_SLUG = {
-    "GB&GR": "gbgr", "WOD": "wod", "DRFL": "drfl", "JW3": "jw3",
-    "POST": "post", "OUT": "out", "AF": "af", "ND": "nd",
-    "BDM": "bdm", "SOUNDCLOUD": "soundcloud"
-  };
-
-  function eraSlug(code) {
-    return ERA_SLUG[String(code || "").toUpperCase()] || "gbgr";
-  }
-
   function baseTitle(title) {
     return String(title == null ? "" : title).split("(")[0].trim().toLowerCase();
   }
@@ -279,7 +269,7 @@
     add("Producer", track && track.producer);
     add("Year", track && track.year);
     add("Length", track && track.duration ? fmtTime(track.duration) : "");
-    add("Era", eraOf(track), "/era/" + eraSlug(eraOf(track)));
+    add("Era", eraOf(track));
     add("Category", track && track.category ? String(track.category).charAt(0).toUpperCase() + String(track.category).slice(1) : "");
     var credit = coverCredit(track);
     add("Cover art", credit ? "Made by " + credit : "");
@@ -403,20 +393,7 @@
       factList.forEach(function (f) {
         var cell = el("div", "song-fact");
         cell.appendChild(el("span", "song-fact-label", f.label));
-        if (f.href) {
-          var link = el("a", "song-fact-value song-fact-link", f.value);
-          link.href = f.href;
-          var eraSlug = f.href.indexOf("/era/") === 0 ? (f.href.split("/era/")[1] || "") : "";
-          if (eraSlug && window.openEraPage) {
-            link.addEventListener("click", function (ev) {
-              ev.preventDefault();
-              window.openEraPage(eraSlug);
-            });
-          }
-          cell.appendChild(link);
-        } else {
-          cell.appendChild(el("b", "song-fact-value", f.value));
-        }
+        cell.appendChild(el("b", "song-fact-value", f.value));
         factsBox.appendChild(cell);
       });
       wrap.appendChild(factsBox);
