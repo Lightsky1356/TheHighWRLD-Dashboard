@@ -3217,10 +3217,9 @@ const trackList=[
     title: "Choppa (Sessions)",
     tag: "Choppa (Sessions)",
     artist: "Juice WRLD",
-    altnames: ["Hell Girl"],
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Choppa%20(Sessions).mp3",
-    duration: 1272,
+    duration: 627,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Choppa_2.png",
     producer: "Kid Wond3r",
     year: "2018"

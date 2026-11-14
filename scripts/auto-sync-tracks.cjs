@@ -366,8 +366,14 @@ function mp3Duration(buf) {
       if (ver === 3) { bitrate = BR_WIDTHS[bindex]; sampleRate = SR1[sindex]; samples = 1152; }
       else { bitrate = V2_BR[bindex]; sampleRate = ver === 2 ? SR2[sindex] : SR25[sindex]; samples = 576; }
       if (!bitrate || !sampleRate) continue;
-      /* Xing / Info header: frame count, so VBR files read exactly. */
-      const sideInfo = ver === 3 ? 17 : 9;
+      /* Xing / Info header: frame count, so VBR files read exactly.
+         The side-info block's size varies: MPEG1 stereo files carry 32
+         bytes of it (mono 17), MPEG2/2.5 stereo 17 (mono 9). The Xing
+         tag lives right after it, so the channel mode is read from the
+         frame header rather than guessed. */
+      const chanMode = (buf[p + 3] >> 6) & 3;   /* 3 = mono */
+      const stereo = chanMode !== 3;
+      const sideInfo = ver === 3 ? (stereo ? 32 : 17) : (stereo ? 17 : 9);
       const tag = buf.slice(p + 4 + sideInfo, p + 8 + sideInfo).toString("latin1");
       if (tag === "Xing" || tag === "Info") {
         const flags = (buf[p + 8 + sideInfo + 4] << 24) | (buf[p + 8 + sideInfo + 5] << 16) |
@@ -676,6 +682,12 @@ function coverFor(stem, coverFiles) {
     let producer = "";
     let year = "";
     let altnames = [];
+    /* Was this file only found because of the duration check? Then the
+       metadata match is NOT trustworthy for the alias list — the tracker
+       cannot tell the two recordings apart, and its alias might belong to
+       the other one. Producer/year are much more likely to match both, so
+       they keep coming through. The alias is left for a human. */
+    const fromTitleCollision = cachedDurations.has(file);
     if (meta) {
       title = meta.name || title;
       if (isSessions && !/\(Sessions\)/i.test(title)) title += " (Sessions)";
@@ -688,6 +700,7 @@ function coverFor(stem, coverFiles) {
         if (!nn || seen.has(nn)) return false;
         seen.add(nn); return true;
       });
+      if (fromTitleCollision) altnames = [];
       log("   meta: " + meta.source + " | title=" + title + " | producer=" + producer + " | year=" + year + " | altnames=" + altnames.length);
     } else {
       missingMeta++;
