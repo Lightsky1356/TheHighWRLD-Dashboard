@@ -522,6 +522,12 @@
         window.switchAppPage = wrapped;
       }
     } catch (e) {}
+    /* One call for any page that loads a track and wants the Deck back on
+       screen right away. Exposed so the vault, the era pages and the queue
+       can ask for it directly. */
+    window.showDeckPlayer = function () {
+      try { setAway(false); } catch (e) {}
+    };
     /* The bar appears and goes with the player, so the Deck's own state
        is checked again now and then. */
     syncNoTrack();

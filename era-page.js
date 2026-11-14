@@ -156,6 +156,7 @@
     try { if (typeof clearQueue === "function") window.clearQueue(); else if (typeof trackQueue !== "undefined" && trackQueue.length) trackQueue.length = 0; } catch (e) {}
     var first = order[0];
     if (window.selectTrackFromList) window.selectTrackFromList(first);
+    if (window.showDeckPlayer) window.showDeckPlayer();
     if (typeof addToQueue === "function") {
       for (var k = 1; k < order.length && k <= 14; k++) addToQueue(order[k]);
     }
@@ -282,7 +283,10 @@
         '</span>' +
         '<span class="era-row-len">' + fmtTime(t.duration) + '</span>' +
         '<span class="era-row-play"><i class="fas fa-play" aria-hidden="true"></i></span>';
-      row.addEventListener("click", function () { if (window.selectTrackFromList) window.selectTrackFromList(i); });
+      row.addEventListener("click", function () {
+        if (window.selectTrackFromList) window.selectTrackFromList(i);
+        if (window.showDeckPlayer) window.showDeckPlayer();
+      });
       listEl.appendChild(row);
     });
 
@@ -315,7 +319,10 @@
             '<span class="era-row-sub">' + esc(catLabel(list[c.idx])) + (c.year ? " · " + esc(c.year) : "") + '</span>' +
           '</span>' +
           '<span class="era-most-plays"><b>' + c.plays + '</b><small>plays</small></span>';
-        play.addEventListener("click", function () { if (window.selectTrackFromList) window.selectTrackFromList(c.idx); });
+        play.addEventListener("click", function () {
+          if (window.selectTrackFromList) window.selectTrackFromList(c.idx);
+          if (window.showDeckPlayer) window.showDeckPlayer();
+        });
         li.appendChild(play);
         most.appendChild(li);
       });

@@ -1932,6 +1932,10 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
   border:1px solid rgba(255,255,255,.08);
   color:rgba(255,255,255,.6);
 }
+.d1-reset-chip[hidden]{display:none !important}
+.d1-reset-chip{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;color:#fcd34d;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.18);border-radius:999px;padding:5px 12px;font-weight:700;white-space:nowrap}
+.d1-reset-chip i{font-size:10px;color:#f59e0b}
+.d1-reset-chip b{font-variant-numeric:tabular-nums;font-weight:800}
 
 /* The old footer's panels are gone, so the rules that dressed them are
    no longer needed. */
