@@ -89,6 +89,89 @@
       if (avatar.__dplAvatar !== html) { avatar.__dplAvatar = html; avatar.innerHTML = html; }
     }
   }
+  /* ------------------------------------------------------------------ */
+  /* the search pill                                                     */
+  /* ------------------------------------------------------------------ */
+  function dplSearchMatches(query) {
+    var out = [];
+    try {
+      if (typeof trackList === "undefined" || !trackList) return out;
+      var needle = String(query || "").toLowerCase();
+      for (var i = 0; i < trackList.length; i++) {
+        var t = trackList[i];
+        var title = String((t && t.title) || "").toLowerCase();
+        var tag = String((t && t.tag) || "").toLowerCase();
+        if (title.indexOf(needle) >= 0 || tag.indexOf(needle) >= 0) out.push(i);
+        if (out.length >= 9) break;
+      }
+    } catch (e) {}
+    return out;
+  }
+  function dplRenderSearch(ov) {
+    var input = q(ov, "[data-dpl='search']");
+    var box = q(ov, "[data-dpl='search-results']");
+    var clear = q(ov, "[data-dpl='search-clear']");
+    if (!input || !box) return;
+    var query = String(input.value || "").trim();
+    if (clear) clear.classList.toggle("is-shown", !!query);
+    if (!query) { box.hidden = true; box.textContent = ""; return; }
+    var matches = dplSearchMatches(query);
+    box.textContent = "";
+    if (!matches.length) {
+      box.innerHTML = '<p class="dpl-srow-empty">Nothing in the vault matches “' + esc(query) + '”.</p>';
+      box.hidden = false;
+      return;
+    }
+    matches.forEach(function (idx) {
+      var t2 = null;
+      try { t2 = (typeof trackList !== "undefined" ? trackList[idx] : null); } catch (e) {}
+      var cat = String((t2 || {}).category || "");
+      var catLabel2 = cat === "leaks" ? "Leaked" : cat === "sessions" ? "Sessions" : cat === "halloween" ? "Halloween" : "";
+      var src = t2 && t2.cover ? String(t2.cover) : "Juice-WRLD.png";
+      var thumb = src;
+      try { if (window._coverThumb) thumb = window._coverThumb(src, "64"); } catch (e) {}
+      var row = document.createElement("div");
+      row.className = "dpl-srow";
+      row.setAttribute("role", "button");
+      row.setAttribute("tabindex", "0");
+      row.setAttribute("data-idx", String(idx));
+      row.innerHTML =
+        '<img decoding="async" class="dpl-srow-cover" loading="lazy" src="' + esc(thumb) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+        '<span class="dpl-srow-meta"><p class="dpl-srow-title">' + esc((t2 && t2.title) || "Untitled") + '</p>' +
+          '<p class="dpl-srow-sub">' + esc(eraName(t2) + (catLabel2 ? " · " + catLabel2 : "")) + '</p></span>' +
+        '<span class="dpl-srow-dur">' + esc(fmt((t2 && Number(t2.duration)) || 0)) + '</span>' +
+        '<button type="button" class="dpl-srow-add" data-add="' + idx + '" aria-label="Queue ' + esc((t2 && t2.title) || "song") + '"><i class="fas fa-plus" aria-hidden="true"></i></button>';
+      row.addEventListener("click", function (e) {
+        var addBtn = e.target.closest ? e.target.closest("[data-add]") : null;
+        if (addBtn) {
+          e.stopPropagation();
+          try { if (typeof addToQueue === "function") addToQueue(idx); } catch (err) {}
+          toast("Added to the queue", "success");
+          addBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i>';
+          return;
+        }
+        try { if (window.selectTrackFromList) window.selectTrackFromList(idx); } catch (err) {}
+        input.value = "";
+        dplRenderSearch(ov);
+        input.blur();
+      });
+      row.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); try { if (window.selectTrackFromList) window.selectTrackFromList(idx); } catch (err) {} input.value = ""; dplRenderSearch(ov); input.blur(); }
+      });
+      box.appendChild(row);
+    });
+    box.hidden = false;
+  }
+  function dplClearSearch(ov) {
+    var input = q(ov, "[data-dpl='search']");
+    var box = q(ov, "[data-dpl='search-results']");
+    var clear = q(ov, "[data-dpl='search-clear']");
+    if (input) input.value = "";
+    if (box) { box.hidden = true; box.textContent = ""; }
+    if (clear) clear.classList.remove("is-shown");
+    if (input) input.blur();
+  }
+
   function dplSendComment(ov) {
     var input = q(ov, "[data-dpl='comment-input']");
     var note = q(ov, "[data-dpl='comments-note']");
@@ -263,6 +346,27 @@
       ".dpl-title{margin:22px 0 0;font-size:clamp(24px,2.4vw,32px);line-height:1.1;font-weight:900;letter-spacing:-.02em;text-align:center;max-width:100%}" +
       ".dpl-artist{margin:6px 0 0;font-size:19px;font-weight:700;color:rgba(255,255,255,.75);text-align:center}" +
       ".dpl-album{margin:6px 0 0;font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.4);text-align:center}" +
+      /* the search pill in the top bar */ +
+      ".dpl-searchwrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(430px,46vw);height:38px;z-index:6}" +
+      ".dpl-search-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.42);font-size:12px;pointer-events:none}" +
+      ".dpl-search-input{width:100%;height:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 36px 0 36px;transition:border-color .2s ease,background .2s ease}" +
+      ".dpl-search-input::placeholder{color:rgba(255,255,255,.36)}" +
+      ".dpl-search-input:focus{border-color:rgba(34,211,238,.45);background:rgba(255,255,255,.12)}" +
+      ".dpl-search-clear{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.5);width:30px;height:30px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:12px;cursor:pointer}" +
+      ".dpl-search-clear:hover{color:#fff;background:rgba(255,255,255,.09)}" +
+      ".dpl-search-clear.is-shown{display:flex}" +
+      ".dpl-search-results{position:absolute;top:calc(100% + 10px);left:0;right:0;background:#171310;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:6px;max-height:min(46vh,420px);overflow-y:auto;overscroll-behavior:contain;box-shadow:0 24px 60px rgba(0,0,0,.62);z-index:30}" +
+      ".dpl-search-results[hidden]{display:none}" +
+      ".dpl-srow{display:flex;align-items:center;gap:12px;padding:6px 8px;border-radius:12px;cursor:pointer}" +
+      ".dpl-srow:hover,.dpl-srow.is-active{background:rgba(255,255,255,.08)}" +
+      ".dpl-srow-cover{width:44px;height:44px;border-radius:9px;object-fit:cover;background:#1c1530;flex-shrink:0}" +
+      ".dpl-srow-meta{flex:1;min-width:0}" +
+      ".dpl-srow-title{margin:0;font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".dpl-srow-sub{margin:2px 0 0;font-size:10px;color:rgba(255,255,255,.42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".dpl-srow-dur{font-size:10.5px;color:rgba(255,255,255,.46);font-variant-numeric:tabular-nums;flex-shrink:0}" +
+      ".dpl-srow-add{background:none;border:none;color:rgba(255,255,255,.55);width:38px;height:44px;min-width:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;border-radius:10px}" +
+      ".dpl-srow-add:hover{color:#34d399}" +
+      ".dpl-srow-empty{padding:16px 14px;text-align:center;color:rgba(255,255,255,.4);font-size:12px}" +
 
       ".dpl-actions{display:flex;align-items:center;gap:16px;margin-top:16px}" +
       ".dpl-act{background:none;border:none;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.65);font-size:18px;cursor:pointer;border:1px solid rgba(255,255,255,.1)}" +
@@ -430,6 +534,12 @@
           '<button type="button" class="dpl-close" data-dpl="close" aria-label="Close"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
           '<span class="dpl-context">PLAYING FROM THE WRLD PLAYER</span>' +
         '</div>' +
+        '<div class="dpl-searchwrap">' +
+          '<i class="fas fa-magnifying-glass dpl-search-ic" aria-hidden="true"></i>' +
+          '<input class="dpl-search-input" data-dpl="search" type="text" placeholder="Search the vault…" aria-label="Search the vault" autocomplete="off" spellcheck="false">' +
+          '<button type="button" class="dpl-search-clear" data-dpl="search-clear" aria-label="Clear the search"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
+          '<div class="dpl-search-results" data-dpl="search-results" hidden></div>' +
+        '</div>' +
       '</header>' +
       '<button type="button" class="dpl-reveal" data-dpl="reveal" aria-label="Show the panel"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>' +
       '<button type="button" class="dpl-more-collapsed" data-dpl="more" aria-label="More options"><i class="fas fa-ellipsis" aria-hidden="true"></i></button>' +
@@ -561,6 +671,7 @@
         if (a === "tab-queue" || a === "tab-comments" || a === "tab-credits" || a === "tab-playlists") { switchTab(ov, a.slice(4)); return; }
         if (a === "collapse") { setCollapsed(ov, !ov.classList.contains("is-collapsed")); return; }
         if (a === "reveal") { setCollapsed(ov, false); return; }
+        if (a === "search-clear") { dplClearSearch(ov); return; }
         if (a === "vault-pull") { if (window.vaultPull) window.vaultPull(); return; }
         if (a === "pl-refresh") { loadPlaylists(ov); return; }
         if (a === "pl-back") { plState.current = null; paintPlView(ov, "list"); return; }
@@ -607,6 +718,23 @@
     if (dinput) {
       dinput.addEventListener("keydown", function (e) {
         if (e.key === "Enter") { e.preventDefault(); dplSendComment(ov); }
+      });
+    }
+    var sInput = q(ov, "[data-dpl='search']");
+    if (sInput) {
+      sInput.addEventListener("input", function () { dplRenderSearch(ov); });
+      sInput.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") { e.preventDefault(); dplClearSearch(ov); return; }
+        if (e.key === "Enter") {
+          var matches = dplSearchMatches(sInput.value);
+          if (matches.length) {
+            e.preventDefault();
+            try { if (window.selectTrackFromList) window.selectTrackFromList(matches[0]); } catch (err) {}
+            sInput.value = "";
+            dplRenderSearch(ov);
+            sInput.blur();
+          }
+        }
       });
     }
 

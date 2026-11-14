@@ -317,6 +317,26 @@
       ".mp2-x,.mp2-more{background:none;border:none;color:rgba(255,255,255,.72);width:44px;height:44px;min-width:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px}" +
       ".mp2-x:active,.mp2-more:active{background:rgba(255,255,255,.09)}" +
       ".mp2-context{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);font-weight:700}" +
+      /* the search pill, dead centre, the same shape juicewrld.io carries */
+      ".mp2-search{position:relative;flex:1 1 auto;max-width:560px;height:40px;margin:0 8px}" +
+      ".mp2-search-input{width:100%;height:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 40px 0 36px;transition:border-color .2s ease,background .2s ease}" +
+      ".mp2-search-input::placeholder{color:rgba(255,255,255,.36)}" +
+      ".mp2-search-input:focus{border-color:rgba(34,211,238,.45);background:rgba(255,255,255,.11)}" +
+      ".mp2-search-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.42);font-size:12px;pointer-events:none}" +
+      ".mp2-search-clear{position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.5);width:32px;height:32px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:13px;cursor:pointer}" +
+      ".mp2-search-clear.is-shown{display:flex}" +
+      ".mp2-search-results{position:absolute;top:calc(100% + 10px);left:0;right:0;background:#171310;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:6px;max-height:46vh;overflow-y:auto;overscroll-behavior:contain;box-shadow:0 24px 60px rgba(0,0,0,.62);z-index:30}" +
+      ".mp2-search-results[hidden]{display:none}" +
+      ".mp2-srow{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:11px;cursor:pointer}" +
+      ".mp2-srow:hover,.mp2-srow.is-active{background:rgba(255,255,255,.08)}" +
+      ".mp2-srow-cover{width:44px;height:44px;border-radius:9px;object-fit:cover;background:#1c1530;flex-shrink:0}" +
+      ".mp2-srow-meta{flex:1;min-width:0}" +
+      ".mp2-srow-title{margin:0;font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mp2-srow-sub{margin:2px 0 0;font-size:10px;color:rgba(255,255,255,.42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mp2-srow-dur{font-size:10.5px;color:rgba(255,255,255,.46);font-variant-numeric:tabular-nums;flex-shrink:0}" +
+      ".mp2-srow-add{background:none;border:none;color:rgba(255,255,255,.55);width:38px;height:44px;min-width:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;border-radius:10px}" +
+      ".mp2-srow-add:hover{color:#34d399}" +
+      ".mp2-srow-empty{padding:18px 14px;text-align:center;color:rgba(255,255,255,.4);font-size:12px}" +
 
       /* the two views */
       ".mp2-body{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:column;padding:0 22px;overflow:hidden}" +
@@ -1026,6 +1046,89 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* the search pill                                                     */
+  /* ------------------------------------------------------------------ */
+  function mpSearchMatches(query) {
+    var out = [];
+    try {
+      if (typeof trackList === "undefined" || !trackList) return out;
+      var needle = String(query || "").toLowerCase();
+      for (var i = 0; i < trackList.length; i++) {
+        var t = trackList[i];
+        var title = String((t && t.title) || "").toLowerCase();
+        var tag = String((t && t.tag) || "").toLowerCase();
+        if (title.indexOf(needle) >= 0 || tag.indexOf(needle) >= 0) out.push(i);
+        if (out.length >= 9) break;
+      }
+    } catch (e) {}
+    return out;
+  }
+  function renderMpSearch(ov) {
+    var input = q(ov, "[data-mp='search']");
+    var box = q(ov, "[data-mp-search-results]");
+    var clear = q(ov, "[data-mp-search-clear]");
+    if (!input || !box) return;
+    var query = String(input.value || "").trim();
+    if (clear) clear.classList.toggle("is-shown", !!query);
+    if (!query) { box.hidden = true; box.textContent = ""; return; }
+    var matches = mpSearchMatches(query);
+    box.textContent = "";
+    if (!matches.length) {
+      box.innerHTML = '<p class="mp2-srow-empty">Nothing in the vault matches “' + esc(query) + '”.</p>';
+      box.hidden = false;
+      return;
+    }
+    matches.forEach(function (idx) {
+      var t2 = null;
+      try { t2 = (typeof trackList !== "undefined" ? trackList[idx] : null); } catch (e) {}
+      var cat = String((t2 || {}).category || "");
+      var catLabel2 = cat === "leaks" ? "Leaked" : cat === "sessions" ? "Sessions" : cat === "halloween" ? "Halloween" : "";
+      var src = t2 && t2.cover ? String(t2.cover) : "Juice-WRLD.png";
+      var thumb = src;
+      try { if (window._coverThumb) thumb = window._coverThumb(src, "64"); } catch (e) {}
+      var row = document.createElement("div");
+      row.className = "mp2-srow";
+      row.setAttribute("role", "button");
+      row.setAttribute("tabindex", "0");
+      row.setAttribute("data-idx", String(idx));
+      row.innerHTML =
+        '<img decoding="async" class="mp2-srow-cover" loading="lazy" src="' + esc(thumb) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+        '<span class="mp2-srow-meta"><p class="mp2-srow-title">' + esc((t2 && t2.title) || "Untitled") + '</p>' +
+          '<p class="mp2-srow-sub">' + esc(eraNameOf(t2) + (catLabel2 ? " · " + catLabel2 : "")) + '</p></span>' +
+        '<span class="mp2-srow-dur">' + esc(fmt((t2 && Number(t2.duration)) || 0)) + '</span>' +
+        '<button type="button" class="mp2-srow-add" data-add="' + idx + '" aria-label="Queue ' + esc((t2 && t2.title) || "song") + '"><i class="fas fa-plus" aria-hidden="true"></i></button>';
+      row.addEventListener("click", function (e) {
+        var addBtn = e.target.closest ? e.target.closest("[data-add]") : null;
+        if (addBtn) {
+          e.stopPropagation();
+          try { if (typeof addToQueue === "function") addToQueue(idx); } catch (err) {}
+          toast("Added to the queue", "success");
+          addBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i>';
+          return;
+        }
+        try { if (window.selectTrackFromList) window.selectTrackFromList(idx); } catch (err) {}
+        input.value = "";
+        renderMpSearch(ov);
+        input.blur();
+      });
+      row.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); try { if (window.selectTrackFromList) window.selectTrackFromList(idx); } catch (err) {} input.value = ""; renderMpSearch(ov); input.blur(); }
+      });
+      box.appendChild(row);
+    });
+    box.hidden = false;
+  }
+  function clearMpSearch(ov) {
+    var input = q(ov, "[data-mp='search']");
+    var box = q(ov, "[data-mp-search-results]");
+    var clear = q(ov, "[data-mp-search-clear]");
+    if (input) input.value = "";
+    if (box) { box.hidden = true; box.textContent = ""; }
+    if (clear) clear.classList.remove("is-shown");
+    if (input) input.blur();
+  }
+
+  /* ------------------------------------------------------------------ */
   /* the context menu                                                     */
   /* ------------------------------------------------------------------ */
   function openCtx(ov) {
@@ -1545,7 +1648,12 @@
 
       '<header class="mp2-top">' +
         '<button type="button" class="mp2-x" data-mp-close aria-label="Close the player"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
-        '<span class="mp2-context">TheHighWRLD</span>' +
+        '<div class="mp2-search">' +
+          '<i class="fas fa-magnifying-glass mp2-search-ic" aria-hidden="true"></i>' +
+          '<input class="mp2-search-input" data-mp="search" type="text" placeholder="Search the vault…" aria-label="Search the vault" autocomplete="off" spellcheck="false">' +
+          '<button type="button" class="mp2-search-clear" data-mp-search-clear aria-label="Clear the search"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
+          '<div class="mp2-search-results" data-mp-search-results hidden></div>' +
+        '</div>' +
         '<button type="button" class="mp2-more" data-mp-more aria-label="More options"><i class="fas fa-ellipsis" aria-hidden="true"></i></button>' +
       '</header>' +
 
@@ -1732,6 +1840,8 @@
 
       if (target && target.tagName === "A") e.preventDefault();
       var ctxScrim = target.closest ? target.closest("[data-mp='ctx-scrim']") : null;
+      var searchClearBtn = target.closest ? target.closest("[data-mp-search-clear]") : null;
+      if (searchClearBtn) { clearMpSearch(ov); return; }
       if (ctxScrim) { closeCtx(ov); return; }
 
       var ctxItem = target.closest ? target.closest("[data-ctx]") : null;
@@ -1839,6 +1949,25 @@
     if (input) {
       input.addEventListener("keydown", function (e) {
         if (e.key === "Enter") { e.preventDefault(); postComment(ov); }
+      });
+    }
+
+    /* the search pill */
+    var sInput = ov.querySelector("[data-mp='search']");
+    if (sInput) {
+      sInput.addEventListener("input", function () { renderMpSearch(ov); });
+      sInput.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") { e.preventDefault(); clearMpSearch(ov); return; }
+        if (e.key === "Enter") {
+          var matches = mpSearchMatches(sInput.value);
+          if (matches.length) {
+            e.preventDefault();
+            try { if (window.selectTrackFromList) window.selectTrackFromList(matches[0]); } catch (err) {}
+            sInput.value = "";
+            renderMpSearch(ov);
+            sInput.blur();
+          }
+        }
       });
     }
 
