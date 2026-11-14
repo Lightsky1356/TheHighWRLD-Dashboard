@@ -15,9 +15,9 @@
   if (window.__d1ResetMounted) return;
   window.__d1ResetMounted = true;
 
-  var chip = document.getElementById("d1-reset-chip");
+  var panel = document.getElementById("d1-reset-panel");
   var label = document.getElementById("d1-reset-left");
-  if (!chip || !label) return;
+  if (!panel || !label) return;
 
   function secsUntilMidnightUtc() {
     var now = new Date();
@@ -28,8 +28,8 @@
     var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
     return h + "h " + String(m).padStart(2, "0") + "m " + String(s).padStart(2, "0") + "s";
   }
-  function show() { chip.hidden = false; }
-  function hide() { chip.hidden = true; }
+  function show() { panel.hidden = false; }
+  function hide() { panel.hidden = true; }
   function tick() { label.textContent = fmt(secsUntilMidnightUtc()); }
 
   function check() {
