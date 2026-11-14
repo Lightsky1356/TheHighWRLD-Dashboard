@@ -2984,14 +2984,21 @@ function compactProfileViewHtml(d) {
     return { code: decodeURIComponent(m[1]).toLowerCase() };
   }
 
-  var SONG_PATH_ROOT = "/song";
+  /* /songs/<the song> — both /songs and the old /song addresses are read,
+     so links made before the rename keep working. The song page tells the
+     reader what to do if the address doesn't match anything in the vault. */
+  var SONG_PATH_ROOT = "/songs";
+  var SONG_PATH_LEGACY = "/song";
   function parseSongPath(pathname) {
     var p = String(pathname || "").replace(/\/+$/, "");
     if (!p) return null;
-    if (new RegExp("^" + SONG_PATH_ROOT + "$", "i").test(p)) return { slug: "" };
-    var m = new RegExp("^" + SONG_PATH_ROOT + "/(.+)$", "i").exec(p);
-    if (!m) return null;
-    return { slug: decodeURIComponent(m[1]) };
+    var roots = [SONG_PATH_ROOT, SONG_PATH_LEGACY];
+    for (var i = 0; i < roots.length; i++) {
+      var m = new RegExp("^" + roots[i] + "(/(.+))?$", "i").exec(p);
+      if (!m) continue;
+      return { slug: m[2] ? decodeURIComponent(m[2]).toLowerCase() : "" };
+    }
+    return null;
   }
 
   function profilePathFor(handle) {

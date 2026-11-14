@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v275';;;;;;;;;;;;;;;;;
+const VERSION = 'thw-v276';;;;;;;;;;;;;;;;;
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -54,7 +54,7 @@ const PRECACHE = [
   './tracks.js?v=thw-v11',
   './browser-id3-writer.js?v=thw-v3',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v53',
+  './account.js?v=thw-v55',
   './effects.js?v=thw-v2',
   './theme-drift.js?v=thw-v6',
   './i18n.js?v=9',
@@ -67,22 +67,22 @@ const PRECACHE = [
   './presence.js?v=thw-v6',
   './pwa.js?v=thw-v10',
   './community-realtime.css?v=thw-v2',
-  './song-comments.js?v=thw-v9',
+  './song-comments.js?v=thw-v10',
   './bluetooth.js?v=thw-v1',
   './era-page.js?v=thw-v1',
   './context-menu.js?v=thw-v3',
   './leaderboard.js?v=thw-v2',
-  './desktop-player.js?v=thw-v12',
+  './desktop-player.js?v=thw-v13',
   './queue-side.js?v=thw-v2',
   './comment-markers.js?v=thw-v1',
   './vault-pull.js?v=thw-v1',
   './deck.js?v=thw-v4',
   './command-palette.js?v=thw-v1',
-  './song-page.js?v=thw-v2',
+  './song-page.js?v=thw-v3',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v9',
   './account-shared.css?v=thw-v1',
-  'player-settings.css?v=thw-v125',
+  'player-settings.css?v=thw-v126',
   './style.css?v=thw-v49',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
@@ -178,7 +178,7 @@ const PRECACHE = [
   './holiday-art/thanksgiving.jpg',
   './holiday-art/christmas.jpg',
   './presets.js?v=thw-v3',
-  './mobile-player.js?v=thw-v22',
+  './mobile-player.js?v=thw-v23',
   './follows.js?v=thw-v3',
   './privacy.js?v=thw-v4',
   './playlists-ui.js?v=thw-v6',

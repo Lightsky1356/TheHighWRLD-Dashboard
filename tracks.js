@@ -3190,18 +3190,6 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Militia",
-    tag: "Militia (One)",
-    artist: "Juice WRLD",
-    altnames: [".40 On My Hip","One","Outside"],
-    category: "leaks",
-    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Militia%20(One).mp3",
-    duration: 166,
-    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Militia.png",
-    producer: "Pi'erre Bourne",
-    year: "2018"
-  },
-  {
     title: "Eye Contact, Mind Control (Sessions)",
     tag: "Eye Contact (Mind Control) (Sessions) (GB&GR)",
     artist: "Juice WRLD",

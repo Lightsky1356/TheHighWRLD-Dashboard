@@ -369,7 +369,7 @@
   function share(title) {
     var origin = "";
     try { origin = window.location.origin; } catch (e) {}
-    var link = origin + "/song/" + String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    var link = origin + "/songs/" + String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     try {
       if (navigator.share) { navigator.share({ title: title, url: link }).catch(function () {}); return; }
     } catch (e) {}

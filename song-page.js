@@ -4,7 +4,7 @@
  * The Vault is a list of two hundred and ninety-odd songs, and each of
  * them is a thing somebody has a relationship with: a version they prefer,
  * a producer they follow, a comment they wrote. juicewrld.io gives each
- * song its own address, and so does this now - /song/fenty-sessions.
+ * song its own address, and so does this now - /songs/fenty-sessions.
  *
  * The page is drawn out of what the browser already holds. The catalogue
  * is in memory, the credits are in the page, the eras are in the page - so
@@ -18,7 +18,9 @@
   if (window.__songPageMounted) return;
   window.__songPageMounted = true;
 
-  var ROOT = "/song";
+  /* /songs/<the song> — links built with window.songPagePath use this. The
+     old /song/<...> addresses still work: the router reads both. */
+  var ROOT = "/songs";
 
   function el(tag, className, text) {
     var node = document.createElement(tag);
@@ -59,7 +61,7 @@
       t = tl[i] || {};
       if (String(t.title || "").trim().toLowerCase() === want) return { track: t, index: i };
     }
-    /* The address may carry the version too: /song/fenty-sessions-gbgr. */
+    /* The address may carry the version too: /songs/fenty-sessions-gbgr. */
     var bare = want.replace(/-/g, " ");
     for (i = 0; i < tl.length; i++) {
       t = tl[i] || {};
@@ -542,7 +544,7 @@
   /* ---- opening a song ---- */
   function openSong(title, noPush) {
     var hit = findTrack(title);
-    if (!hit) return false;
+    if (!hit) { renderMissing(title); return false; }
     if (typeof window.switchAppPage === "function") window.switchAppPage("song");
     render(hit.track, hit.index);
     try {
@@ -557,6 +559,41 @@
       } catch (e) {}
     }
     return true;
+  }
+
+  /* The vault's empty page — the address had a song name, but the vault
+     doesn't know it. Say so, and send the reader back to the list. */
+  function renderMissing(title) {
+    if (typeof window.switchAppPage === "function") window.switchAppPage("song");
+    var page = document.getElementById("song-page");
+    if (!page) return;
+    page.textContent = "";
+    var wrap = document.createElement("div");
+    wrap.className = "song-page-wrap song-page-missing";
+    var h = document.createElement("p");
+    h.className = "song-missing-h";
+    h.innerHTML = '<i class="fas fa-compact-disc" aria-hidden="true"></i>';
+    var title2 = document.createElement("h2");
+    title2.className = "song-missing-title";
+    title2.textContent = title ? "We couldn't find “" + title + "” in the vault" : "Pick a song to see its page";
+    var sub = document.createElement("p");
+    sub.className = "song-missing-sub";
+    sub.textContent = title
+      ? "It might have a different name, or it hasn't been added yet."
+      : "Every song in TheHighWRLD has its own page with credits, eras and comments.";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "song-missing-btn";
+    btn.innerHTML = '<i class="fas fa-arrow-left" aria-hidden="true"></i>Back to The Vault';
+    btn.addEventListener("click", function () {
+      if (typeof window.switchAppPage === "function") window.switchAppPage("hub");
+    });
+    wrap.appendChild(h);
+    wrap.appendChild(title2);
+    wrap.appendChild(sub);
+    wrap.appendChild(btn);
+    page.appendChild(wrap);
+    document.title = "That song isn't in the vault - TheHighWRLD Dashboard";
   }
 
   /* The path of a song, for anything that wants to link to it. */

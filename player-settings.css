@@ -2803,6 +2803,14 @@ footer .hub-panel{display:none}
 }
 .song-page-wrap{display:flex;flex-direction:column;gap:26px}
 
+/* The address had a song this vault doesn't know — a quiet page, not a dead end */
+.song-page-missing{align-items:center;text-align:center;padding:40px 12px;gap:16px}
+.song-missing-h{font-size:46px;color:rgba(255,255,255,.28);margin:0}
+.song-missing-title{margin:0;font-size:clamp(18px,3vw,26px);font-weight:900;letter-spacing:-.01em;color:#fff;max-width:640px}
+.song-missing-sub{margin:0;font-size:12.5px;color:rgba(255,255,255,.5);line-height:1.7;max-width:460px}
+.song-missing-btn{display:inline-flex;align-items:center;gap:8px;border:none;background:#fff;color:#161016;font-family:inherit;font-size:12.5px;font-weight:800;border-radius:999px;padding:12px 26px;cursor:pointer;margin-top:8px}
+.song-missing-btn:hover{background:rgba(255,255,255,.85)}
+
 .song-back{
   display:inline-flex;
   align-items:center;

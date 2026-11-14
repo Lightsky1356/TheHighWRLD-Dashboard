@@ -2078,7 +2078,7 @@
   function songLink(title) {
     var origin = "";
     try { origin = window.location.origin; } catch (e) {}
-    return origin + "/song/" + songPageSlugOf(title);
+    return origin + "/songs/" + songPageSlugOf(title);
   }
 
   function copySongLink(title) {
