@@ -171,7 +171,7 @@
           '<div class="song-comments-tabs" role="tablist">' +
             '<button type="button" class="song-comments-tab is-active" data-tab="comments" role="tab" aria-selected="true">Comments <span id="song-comments-tab-count">0</span></button>' +
             '<button type="button" class="song-comments-tab" data-tab="upnext" role="tab" aria-selected="false">Up next</button>' +
-            '<button type="button" class="song-comments-tab" data-tab="credits" role="tab" aria-selected="false">Credits</button>' +
+            '<button type="button" class="song-comments-tab" data-tab="credits" role="tab" aria-selected="false">Info</button>' +
           '</div>' +
           '<div class="song-comments-body">' +
             '<div id="song-comments-list" class="song-comments-list"></div>' +
@@ -606,6 +606,27 @@
 
   /* The number of vault songs a given producer credits - one lookup, used once
      per credits render, on a catalogue of a few hundred tracks. */
+  /* Alt names — the other titles the vault has filed this song under.
+     The tag carries them: everything in parentheses that is not the
+     category, the era, or a version marker is an alternate name. */
+  function altNames(t) {
+    var tag = String((t || {}).tag || "");
+    var out = [];
+    var re = /\(([^()]*)\)/g;
+    var m;
+    var ERA = { "GB&GR":1, "WOD":1, "DRFL":1, "JW3":1, "POST":1, "OUT":1, "AF":1, "ND":1, "BDM":1, "SOUNDCLOUD":1 };
+    while ((m = re.exec(tag))) {
+      var tok = m[1].trim();
+      if (!tok) continue;
+      var low = tok.toLowerCase();
+      if (low === "sessions" || low === "leaks" || low === "leaked" || low === "halloween") continue;
+      if (/^v\d+(\.\d+)?$/i.test(low)) continue;
+      if (ERA[tok.toUpperCase()]) continue;
+      out.push(tok);
+    }
+    return out;
+  }
+
   function producerSongCount(name) {
     try {
       if (typeof trackList === "undefined" || !trackList) return 0;
@@ -678,6 +699,8 @@
     if (status) cell("Status", status);
     var era = eraInfoOf(t);
     if (era) cell("Era", ERA_INFO[era.code].name, { link: "/era/" + ERA_INFO[era.code].slug });
+    var alts = altNames(t);
+    if (alts.length) cell("Alt names", alts.join(" · "), { wide: true });
     var album = "";
     try { if (typeof getTrackAlbum === "function") album = getTrackAlbum(t); } catch (e) {}
     if (album) cell("Version", album, { wide: true });

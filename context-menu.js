@@ -125,7 +125,7 @@
       '<div class="thw-ctx-div"></div>' +
       '<button class="thw-ctx-item" data-act="edit" role="menuitem"><i class="fas fa-pen-to-square"></i><span>Edit this song<span class="thw-ctx-sub">Fix credits, dates or details</span></span></button>' +
       '<div class="thw-ctx-div"></div>' +
-      '<button class="thw-ctx-item" data-act="credits" role="menuitem"><i class="fas fa-user-group"></i><span>Credits</span></button>' +
+      '<button class="thw-ctx-item" data-act="info" role="menuitem"><i class="fas fa-circle-info"></i><span>Info</span></button>' +
       '<button class="thw-ctx-item" data-act="openqueue" role="menuitem"><i class="fas fa-list-ul"></i><span>Open queue</span></button>' +
       '<button class="thw-ctx-item" data-act="eq" role="menuitem"><i class="fas fa-sliders"></i><span>Equalizer and reverb</span></button>' +
       '<button class="thw-ctx-item" data-act="settings" role="menuitem"><i class="fas fa-gear"></i><span>Playback settings</span></button>' +

@@ -169,7 +169,7 @@
   function build() {
     css();
     var pane = document.getElementById("queue-side");
-    if (pane) return pane;
+    if (pane) { el = pane; return pane; }
     pane = document.createElement("aside");
     pane.id = "queue-side";
     pane.setAttribute("role", "dialog");
@@ -204,6 +204,7 @@
       '<footer class="qs-foot"><p class="qs-foot-line" data-qs="foot"></p></footer>';
 
     (document.body || document.documentElement).appendChild(pane);
+    el = pane;
     bind(pane);
     return pane;
   }

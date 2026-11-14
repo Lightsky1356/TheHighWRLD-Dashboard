@@ -239,6 +239,27 @@
   }
   function eraNameOf(t) { return ERA_FULL[eraCodeOf(t)] || "Other"; }
 
+  /* Alt names — the other titles the vault has filed this song under.
+     The tag carries them: everything in parentheses that is not the
+     category, the era, or a version marker is an alternate name. */
+  var ERA_CODES = { "GB&GR":1, "WOD":1, "DRFL":1, "JW3":1, "POST":1, "OUT":1, "AF":1, "ND":1, "BDM":1, "SOUNDCLOUD":1 };
+  function altNames(t) {
+    var tag = String((t || {}).tag || "");
+    var out = [];
+    var re = /\(([^()]*)\)/g;
+    var m;
+    while ((m = re.exec(tag))) {
+      var tok = m[1].trim();
+      if (!tok) continue;
+      var low = tok.toLowerCase();
+      if (low === "sessions" || low === "leaks" || low === "leaked" || low === "halloween") continue;
+      if (/^v\d+(\.\d+)?$/i.test(low)) continue;
+      if (ERA_CODES[tok.toUpperCase()]) continue;
+      out.push(tok);
+    }
+    return out;
+  }
+
   function catLabel(t) {
     var c = String((t || {}).category || "");
     return c === "leaks" ? "Leaks" : c === "sessions" ? "Sessions" : c === "halloween" ? "Halloween" : "";
@@ -311,6 +332,7 @@
       "@media (max-height:560px){.mp2-view[data-view='now']{overflow-y:auto;-webkit-overflow-scrolling:touch}.mp2-cover{width:min(100%,260px,34vh);margin-top:2px}.mp2-title{margin-top:8px !important;font-size:18px !important}}" +
       ".mp2-title{margin:16px 0 0;font-size:clamp(20px,5.6vw,24px);line-height:1.16;font-weight:800;letter-spacing:-.01em;text-align:center;max-width:100%}" +
       ".mp2-artist{margin:5px 0 0;font-size:15px;color:rgba(255,255,255,.6);text-align:center}" +
+      ".mp2-altnames{margin:5px 0 0;font-size:10px;color:rgba(255,255,255,.38);text-align:center;max-width:90%;line-height:1.55}" +
       ".mp2-pill{margin-top:14px;display:inline-flex;align-items:center;gap:9px;max-width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:8px 15px;font-size:12px;font-weight:600;color:rgba(255,255,255,.85);cursor:pointer}" +
       ".mp2-pill i{font-size:10px;opacity:.75}" +
       ".mp2-pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}" +
@@ -1105,7 +1127,7 @@
       return;
     }
 
-    if (action === "credits") { openSongPage(title); return; }
+    if (action === "info") { openSongPage(title); return; }
 
     if (action === "openqueue") {
       closeCtx(ov);
@@ -1259,6 +1281,17 @@
     qa(ov, "[data-mp='artist'],[data-mp='artist2']").forEach(function (el) {
       var want = el.getAttribute("data-mp") === "artist2" ? ctArtist : a;
       if (el.textContent !== want) el.textContent = want;
+    });
+    /* alt names — one line under the artist, only when the vault has them */
+    var alts = altNames(currentTrack());
+    qa(ov, "[data-mp='altnames']").forEach(function (el) {
+      if (alts.length) {
+        el.hidden = false;
+        el.textContent = "Also known as  " + alts.join(" · ");
+      } else {
+        el.hidden = true;
+        el.textContent = "";
+      }
     });
     qa(ov, "[data-mp='cover'],[data-mp='mini-cover']").forEach(function (img) {
       var want = img.getAttribute("data-mp") === "mini-cover" ? ctCover : cover;
@@ -1522,6 +1555,7 @@
           '<img decoding="async" class="mp2-cover" data-mp="cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
           '<h2 class="mp2-title" data-mp="title">' + esc(t) + '</h2>' +
           '<p class="mp2-artist" data-mp="artist">' + esc(a) + '</p>' +
+          '<p class="mp2-altnames" data-mp="altnames" hidden></p>' +
           '<button type="button" class="mp2-pill" data-mp="pill" title="Open the song page"><i class="fas fa-key" aria-hidden="true"></i><span data-mp="tag"></span><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
           '<div class="mp2-chiprow"><span class="mp2-chip chip-year" data-mp="chip-cat"></span><span class="mp2-chip chip-year" data-mp="chip-year"></span></div>' +
           '<div class="mp2-actions">' +
@@ -1659,7 +1693,7 @@
         '<div class="mp2-ctx-div"></div>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="edit"><i class="fas fa-pen-to-square" aria-hidden="true"></i><span>Edit this song<span class="mp2-ctx-sub">Fix credits, dates or details</span></span></button>' +
         '<div class="mp2-ctx-div"></div>' +
-        '<button type="button" class="mp2-ctx-item" data-ctx="credits"><i class="fas fa-user-group" aria-hidden="true"></i><span>Credits</span></button>' +
+        '<button type="button" class="mp2-ctx-item" data-ctx="info"><i class="fas fa-circle-info" aria-hidden="true"></i><span>Info</span></button>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="openqueue"><i class="fas fa-list-ul" aria-hidden="true"></i><span>Open queue</span></button>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="eq"><i class="fas fa-sliders" aria-hidden="true"></i><span>Equalizer and reverb</span></button>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="settings"><i class="fas fa-gear" aria-hidden="true"></i><span>Playback settings</span></button>' +

@@ -3920,7 +3920,7 @@ html.foot-in-view #scrollTopBtn{
 /* ======================================================================
    THE DESKTOP PLAYER'S "..." MENU — the player's context menu
    ------------------------------------------------------------------ */
-#thw-ctx-menu{position:fixed;z-index:10020;width:320px;max-height:min(560px,86vh);overflow-y:auto;overscroll-behavior:contain;background:#1f1a17;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:8px;box-shadow:0 24px 64px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.05);font-family:inherit}
+#thw-ctx-menu{position:fixed;z-index:11040;width:320px;max-height:min(560px,86vh);overflow-y:auto;overscroll-behavior:contain;background:#1f1a17;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:8px;box-shadow:0 24px 64px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.05);font-family:inherit}
 #thw-ctx-menu[hidden]{display:none}
 .thw-ctx-title{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em;color:#fff;padding:3px 12px 10px;border-bottom:1px solid rgba(255,255,255,.09);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .thw-ctx-item{display:flex;align-items:center;gap:15px;width:100%;text-align:left;background:none;border:none;color:rgba(255,255,255,.9);font-size:13.5px;font-weight:600;font-family:inherit;padding:10px 12px;border-radius:12px;cursor:pointer;position:relative}

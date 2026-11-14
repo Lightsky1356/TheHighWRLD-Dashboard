@@ -406,7 +406,7 @@
       '<header class="dpl-top">' +
         '<div class="dpl-topleft">' +
           '<button type="button" class="dpl-close" data-dpl="close" aria-label="Close"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
-          '<span class="dpl-context">Playing from The Vault</span>' +
+          '<span class="dpl-context">PLAYING FROM THE WRLD PLAYER</span>' +
         '</div>' +
       '</header>' +
       '<button type="button" class="dpl-reveal" data-dpl="reveal" aria-label="Show the panel"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>' +
@@ -455,7 +455,7 @@
           '<nav class="dpl-tabs" aria-label="Now playing panel">' +
             '<button type="button" class="dpl-tab" data-dpl="tab-queue">Up next<small data-dpl="upnext-count"></small></button>' +
             '<button type="button" class="dpl-tab is-active" data-dpl="tab-comments">Comments<small data-dpl="comments-count"></small></button>' +
-            '<button type="button" class="dpl-tab" data-dpl="tab-credits">Credits</button>' +
+            '<button type="button" class="dpl-tab" data-dpl="tab-credits">Info</button>' +
             '<button type="button" class="dpl-tab" data-dpl="tab-playlists">Playlists<small data-dpl="playlists-count"></small></button>' +
           '</nav>' +
           '<div class="dpl-tabpane" data-dpl="pane-queue" hidden>' +
@@ -797,6 +797,27 @@
     /* the sign-in note lives in the composer, only for signed-out readers */
   }
 
+  /* Alt names — the other titles the vault has filed this song under.
+     The tag carries them: everything in parentheses that is not the
+     category, the era, or a version marker is an alternate name. */
+  function altNames(t) {
+    var tag = String((t || {}).tag || "");
+    var out = [];
+    var re = /\(([^()]*)\)/g;
+    var m;
+    var ERA = { "GB&GR":1, "WOD":1, "DRFL":1, "JW3":1, "POST":1, "OUT":1, "AF":1, "ND":1, "BDM":1, "SOUNDCLOUD":1 };
+    while ((m = re.exec(tag))) {
+      var tok = m[1].trim();
+      if (!tok) continue;
+      var low = tok.toLowerCase();
+      if (low === "sessions" || low === "leaks" || low === "leaked" || low === "halloween") continue;
+      if (/^v\d+(\.\d+)?$/i.test(low)) continue;
+      if (ERA[tok.toUpperCase()]) continue;
+      out.push(tok);
+    }
+    return out;
+  }
+
   function producerSongCount(name) {
     try {
       if (typeof trackList === "undefined" || !trackList) return 0;
@@ -817,17 +838,36 @@
       if (!value) return;
       var c = document.createElement("div");
       c.className = "dpl-credit-cell" + (opts.wide ? " dpl-credit-cell--wide" : "");
-      var a = opts.link ? "a" : null;
-      var inner = a
-        ? '<a class="dpl-credit-value dpl-credit-link" href="' + esc(opts.link) + '">' + esc(value) + "</a>"
-        : '<span class="dpl-credit-value">' + esc(value) + "</span>";
-      c.innerHTML = '<span class="dpl-credit-label">' + esc(label) + "</span>" + inner;
+      var labelSpan = document.createElement("span");
+      labelSpan.className = "dpl-credit-label";
+      labelSpan.textContent = String(label);
+      c.appendChild(labelSpan);
+      if (opts.link) {
+        var a = document.createElement("a");
+        a.className = "dpl-credit-value dpl-credit-link";
+        a.href = opts.link;
+        a.textContent = String(value);
+        var eraSlugFromLink = opts.link.indexOf("/era/") === 0 ? (opts.link.split("/era/")[1] || "") : "";
+        if (eraSlugFromLink) {
+          a.addEventListener("click", function (ev) {
+            if (window.openEraPage) { ev.preventDefault(); window.openEraPage(eraSlugFromLink); }
+          });
+        }
+        c.appendChild(a);
+      } else {
+        var span = document.createElement("span");
+        span.className = "dpl-credit-value";
+        span.textContent = String(value);
+        c.appendChild(span);
+      }
       grid.appendChild(c);
     }
     var cat = String(t.category || "").toLowerCase();
     cell("Status", cat === "leaks" ? "Leaked" : cat === "sessions" ? "Session" : cat === "halloween" ? "Halloween" : "");
     var era = eraCode(t);
     cell("Era", eraName(t), { link: "/era/" + eraSlug(t) });
+    var alts = altNames(t);
+    if (alts.length) cell("Alt names", alts.join(" · "), { wide: true });
     if (t.tag) cell("Version", String(t.tag), { wide: true });
     if (t.producer) {
       var n = producerSongCount(t.producer);
@@ -985,12 +1025,22 @@
       el.setAttribute("aria-pressed", on ? "true" : "false");
     });
 
-    /* volume fill */
+    /* volume fill — read the element's own volume: keyboard shortcuts and the
+       deck's slider both land on the audio element, not on any global */
     var volFill = q(ov, "[data-dpl='vol-fill']");
     if (volFill) {
-      var v = 0.75;
-      try { if (typeof masterVolume !== "undefined") v = masterVolume; } catch (e) {}
+      var au = audioEl();
+      var v = au && isFinite(au.volume) ? Math.max(0, Math.min(1, Number(au.volume) || 0)) : 0.75;
       volFill.style.width = Math.round(v * 100) + "%";
+    }
+
+    /* the mute button shows the level, like the deck's does */
+    var muteBtn = q(ov, "[data-dpl='mute']");
+    if (muteBtn) {
+      var au2 = audioEl();
+      var vw = au2 && isFinite(au2.volume) ? Number(au2.volume) || 0 : 1;
+      var ic = muteBtn.querySelector("i");
+      if (ic) ic.className = vw === 0 ? "fas fa-volume-xmark" : vw < 0.5 ? "fas fa-volume-low" : "fas fa-volume-high";
     }
 
     /* the composer follows the song's clock */
