@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v271';;;;;;;;;;;;;;;;;
+const VERSION = 'thw-v272';;;;;;;;;;;;;;;;;
 
 /* The shell cache is NOT versioned, and that is deliberate.
  *
@@ -67,7 +67,7 @@ const PRECACHE = [
   './presence.js?v=thw-v6',
   './pwa.js?v=thw-v10',
   './community-realtime.css?v=thw-v2',
-  './song-comments.js?v=thw-v7',
+  './song-comments.js?v=thw-v8',
   './bluetooth.js?v=thw-v1',
   './era-page.js?v=thw-v1',
   './context-menu.js?v=thw-v3',
@@ -82,7 +82,7 @@ const PRECACHE = [
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v9',
   './account-shared.css?v=thw-v1',
-  'player-settings.css?v=thw-v123',
+  'player-settings.css?v=thw-v124',
   './style.css?v=thw-v49',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',

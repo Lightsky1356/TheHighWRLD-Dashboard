@@ -556,28 +556,179 @@
   }
 
   /* ---- the other two tabs ---- */
+  function toastHint(msg) {
+    try { if (typeof window.showToastSimple === "function") { window.showToastSimple(msg, { type: "success" }); return; } } catch (e) {}
+    try { if (typeof window.showToast === "function") window.showToast(msg, "success", 2000); } catch (e) {}
+  }
+
   function renderUpNext() {
     var box = document.getElementById("song-comments-upnext");
     if (!box) return;
     box.textContent = "";
-    /* The queue lives in the player; the panel shows what is lined up
-       behind the song. */
+
+    /* the search bar — type to find a song, tap to queue it */
+    var bar = el("div", "song-search-bar");
+    var input = document.createElement("input");
+    input.className = "song-search-input";
+    input.type = "text";
+    input.placeholder = "Search the vault…";
+    input.setAttribute("aria-label", "Search the vault");
+    input.setAttribute("autocomplete", "off");
+    input.setAttribute("spellcheck", "false");
+    bar.appendChild(input);
+    box.appendChild(bar);
+
+    var body = el("div", "song-upnext-body");
+    box.appendChild(body);
+    paintDefaultView(body);
+
+    input.addEventListener("input", function () {
+      var q = input.value.trim().toLowerCase();
+      if (!q) { paintDefaultView(body); return; }
+      paintSearch(body, q);
+    });
+  }
+
+  /* one catalogue row: cover + title/year on the left (tap plays), + on the right (tap queues) */
+  function suggestRow(i) {
+    var t2 = null;
+    try { t2 = (typeof trackList !== "undefined" ? trackList[i] : null); } catch (e) {}
+    if (!t2) return null;
+    var cat = String(t2.category || "");
+    var sub = (cat === "leaks" ? "Leaked" : cat === "sessions" ? "Session" : cat === "halloween" ? "Halloween" : "") + (t2.year ? " · " + t2.year : "");
+    var src = t2.cover || "Juice-WRLD.png";
+    try { if (window._coverThumb) src = window._coverThumb(src, "64"); } catch (e) {}
+    var row = el("div", "song-suggest-row");
+
+    var play = el("button", "song-suggest-play");
+    play.type = "button";
+    play.setAttribute("aria-label", "Play " + (t2.title || "this song"));
+    var img = document.createElement("img");
+    img.className = "song-suggest-cover";
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.src = src;
+    img.onerror = function () { this.onerror = null; this.src = "Juice-WRLD.png"; };
+    play.appendChild(img);
+    var meta = el("span", "song-suggest-meta");
+    meta.appendChild(el("span", "song-suggest-title", t2.title || "Untitled"));
+    meta.appendChild(el("span", "song-suggest-sub", sub));
+    play.appendChild(meta);
+    play.addEventListener("click", function () {
+      try { if (window.selectTrackFromList) window.selectTrackFromList(i); } catch (e) {}
+    });
+    row.appendChild(play);
+
+    var add = el("button", "song-suggest-add");
+    add.type = "button";
+    add.setAttribute("aria-label", "Add " + (t2.title || "this song") + " to the queue");
+    add.innerHTML = '<i class="fas fa-plus" aria-hidden="true"></i>';
+    add.addEventListener("click", function () {
+      try { if (typeof addToQueue === "function") addToQueue(i); } catch (e) {}
+      add.classList.add("is-done");
+      add.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i>';
+      toastHint("Added to the queue");
+      setTimeout(function () {
+        add.classList.remove("is-done");
+        add.innerHTML = '<i class="fas fa-plus" aria-hidden="true"></i>';
+      }, 1400);
+    });
+    row.appendChild(add);
+    return row;
+  }
+
+  /* the default view: the queue, and what the vault would pick from the same era */
+  function paintDefaultView(body) {
+    body.textContent = "";
+
+    var t = currentTrack();
     var queue = [];
     try {
       if (typeof trackQueue !== "undefined" && trackQueue) queue = trackQueue.slice();
     } catch (e) {}
-    if (!queue.length) {
-      box.appendChild(el("p", "song-comments-empty", "Nothing is lined up after this song."));
+
+    if (queue.length) {
+      body.appendChild(el("p", "song-upnext-h", "Up next"));
+      queue.forEach(function (idx, i) {
+        var t2 = null;
+        try { t2 = (typeof trackList !== "undefined" ? trackList[idx] : null); } catch (e) {}
+        var row = el("div", "song-upnext-row");
+        row.appendChild(el("span", "song-upnext-num", String(i + 1)));
+        row.appendChild(el("span", "song-upnext-title", (t2 && t2.title) || "Track " + (idx + 1)));
+        body.appendChild(row);
+      });
+    }
+
+    var era = t ? eraInfoOf(t) : null;
+    if (era && ERA_INFO[era.code]) {
+      var picks = suggestFromEra(era.code, t, 8);
+      if (picks.length) {
+        body.appendChild(el("p", "song-upnext-h", "More from " + ERA_INFO[era.code].name));
+        var list = el("div", "song-suggest-list");
+        picks.forEach(function (i) {
+          var row = suggestRow(i);
+          if (row) list.appendChild(row);
+        });
+        body.appendChild(list);
+      }
+    } else if (!queue.length) {
+      body.appendChild(el("p", "song-comments-empty", "Nothing is lined up after this song. Add songs from the vault — search above."));
+    }
+
+    if (!t && !queue.length) {
+      body.appendChild(el("p", "song-comments-empty", "Play a song to see what lines up next."));
+    }
+  }
+
+  /* typing into the search swaps the suggestion list out for catalogue matches */
+  function paintSearch(body, q) {
+    body.textContent = "";
+    var matches = [];
+    try {
+      if (typeof trackList !== "undefined" && trackList) {
+        for (var i = 0; i < trackList.length; i++) {
+          var title = String((trackList[i] || {}).title || "").toLowerCase();
+          var tag = String((trackList[i] || {}).tag || "").toLowerCase();
+          if (title.indexOf(q) >= 0 || tag.indexOf(q) >= 0) matches.push(i);
+          if (matches.length >= 14) break;
+        }
+      }
+    } catch (e) {}
+    if (!matches.length) {
+      body.appendChild(el("p", "song-comments-empty", "Nothing in the vault matches “" + q + "”."));
       return;
     }
-    queue.forEach(function (idx, i) {
-      var t = null;
-      try { t = (typeof trackList !== "undefined" ? trackList[idx] : null); } catch (e) {}
-      var row = el("div", "song-upnext-row");
-      row.appendChild(el("span", "song-upnext-num", String(i + 1)));
-      row.appendChild(el("span", "song-upnext-title", (t && t.title) || "Track " + (idx + 1)));
-      box.appendChild(row);
+    body.appendChild(el("p", "song-upnext-h", "The vault"));
+    var list = el("div", "song-suggest-list");
+    matches.forEach(function (i) {
+      var row = suggestRow(i);
+      if (row) list.appendChild(row);
     });
+    body.appendChild(list);
+  }
+
+  /* Suggestions: same era as the playing song, nothing from this session of
+     the vault's randomness. Shuffled fresh each time the tab opens. */
+  function suggestFromEra(code, current, limit) {
+    var out = [];
+    try {
+      if (typeof trackList === "undefined" || !trackList) return out;
+      var curBase = String((current && current.title) || "").split("(")[0].trim().toLowerCase();
+      for (var i = 0; i < trackList.length; i++) {
+        var t2 = trackList[i];
+        var m = String((t2 || {}).tag || "").match(ERA_RE);
+        var c = m ? m[1].toUpperCase() : ((t2 && t2.category === "halloween") ? "POST" : "");
+        if (c !== code) continue;
+        if (String((t2 || {}).title || "").split("(")[0].trim().toLowerCase() === curBase) continue;
+        out.push(i);
+      }
+    } catch (e) {}
+    for (var j = out.length - 1; j > 0; j--) {
+      var r = Math.floor(Math.random() * (j + 1));
+      var tmp = out[j]; out[j] = out[r]; out[r] = tmp;
+    }
+    return out.slice(0, limit || 8);
   }
 
   /* Era codes, display names and slugs - same table the era pages use. */
