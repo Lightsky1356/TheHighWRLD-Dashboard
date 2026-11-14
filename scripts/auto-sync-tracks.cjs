@@ -551,7 +551,18 @@ function coverFor(stem, coverFiles) {
     const n = norm(f.replace(/\.png$/i, ""));
     if (n && core.startsWith(n) && n.length > bestLen) { best = f; bestLen = n.length; }
   }
-  return best;
+  if (best) return best;
+  /* Fourth pass: the numbered sibling of a cover already taken — base track
+     keeps "Choppa.png", the new same-titled one picks up "Choppa_2.png". The
+     suffix must be only digits so an unrelated longer title does not win. */
+  let sibling = "", siblingLen = 0;
+  for (const f of coverFiles) {
+    const n = norm(f.replace(/\.png$/i, ""));
+    if (n && n !== core && n.startsWith(core) && /^_?\d+$/.test(n.slice(core.length))) {
+      if (n.length > siblingLen) { siblingLen = n.length; sibling = f; }
+    }
+  }
+  return sibling;
 }
 
 /* ------------------------------------------------------------------ main */
@@ -574,21 +585,74 @@ function coverFor(stem, coverFiles) {
   }
   const audioFiles = fileList(audioRes, "mp3");
   const coverFiles = fileList(coversRes, "png");
+  /* A new upload carrying a title an existing entry already has is meant for
+     its own cover too — the _2 variant sitting beside it. Prefer a cover the
+     vault is not already using; sharing the old song's artwork silently
+     would put the same image on two different tracks. */
+  const usedCovers = new Set();
+  for (const t of trackList) {
+    const m = /Covers\/([^"]+)/.exec(t.cover || "");
+    if (m && m[1]) usedCovers.add(decodeURIComponent(m[1]));
+  }
+  const freeCoverFiles = coverFiles.filter(f => !usedCovers.has(f));
   log("repo: " + audioFiles.length + " mp3 in Audio/, " + coverFiles.length + " png in Covers/");
 
   const stemsInTracks = new Set(trackList.map((t) => urlStemAndName(t.url, "/Audio/")[0]));
   const coresInTracks = new Set(trackList.map((t) => norm(coreStem(urlStemAndName(t.url, "/Audio/")[0]))));
   const baresInTracks = new Set(trackList.map((t) => bareKey(urlStemAndName(t.url, "/Audio/")[0])));
+  /* Durations by base title — the proof that two files called the same are
+     actually different recordings (Choppa vs the existing Choppa entry), or
+     the same song under a different name. Durations parsed from the mp3
+     frame headers are close to exact, so a 5-second margin is generous. */
+  const durByBare = new Map();
+  const durByCore = new Map();
+  for (const t of trackList) {
+    const stem = urlStemAndName(t.url, "/Audio/")[0];
+    const d = Number(t.duration) || 0;
+    const bk = bareKey(stem), ck = norm(coreStem(stem));
+    if (bk) { if (!durByBare.has(bk)) durByBare.set(bk, []); durByBare.get(bk).push(d); }
+    if (ck) { if (!durByCore.has(ck)) durByCore.set(ck, []); durByCore.get(ck).push(d); }
+  }
+  const sameRecording = (dur, bare, core) => {
+    if (!dur) return false;
+    for (const d of (durByBare.get(bare) || [])) if (Math.abs(dur - d) <= 5) return true;
+    for (const d of (durByCore.get(core) || [])) if (Math.abs(dur - d) <= 5) return true;
+    return false;
+  };
 
-  const newFiles = audioFiles.filter(function (n) {
+  const definiteNew = [];
+  const ambiguous = [];
+  for (const n of audioFiles) {
     const stem = n.replace(/\.mp3$/i, "");
-    if (stemsInTracks.has(stem)) return false;
-    /* a differently-named copy of a song that is already in the list is not
-       new - the (v5) copy, the renamed copy, the alias-noted copy - and would
-       only double the row, so it is skipped and reported as "already there". */
+    if (stemsInTracks.has(stem)) continue;
     const core = coreStem(stem);
-    return !coresInTracks.has(norm(core)) && !baresInTracks.has(bareKey(stem));
-  });
+    const bk = bareKey(stem), ck = norm(core);
+    if (!coresInTracks.has(ck) && !baresInTracks.has(bk)) {
+      definiteNew.push(n);
+    } else {
+      ambiguous.push({ file: n, stem: stem, bare: bk, core: ck });
+    }
+  }
+
+  const cachedDurations = new Map();
+  if (ambiguous.length) {
+    log("same-title candidates to check by duration: " + ambiguous.length);
+    for (const cand of ambiguous) {
+      const audioUrl = RAW + "Audio/" + encodeURIComponent(cand.file);
+      const res = await get(audioUrl, { timeout: 120000 });
+      const dur = res.status === 200 ? mp3Duration(res.body) : 0;
+      cachedDurations.set(cand.file, dur);
+      if (dur && sameRecording(dur, cand.bare, cand.core)) {
+        log("   duplicate of an existing entry: " + cand.file + " (duration matches within 5s)");
+      } else if (!dur) {
+        log("   duplicate candidate could not be read: " + cand.file + " - skipping it, as no duration is available to prove it is a different recording");
+      } else {
+        log("   new recording, same title: " + cand.file + " (" + dur + "s vs anything on file)");
+        definiteNew.push(cand.file);
+      }
+    }
+  }
+  const newFiles = definiteNew;
 
   log("new songs: " + newFiles.length);
   if (newFiles.length) {
@@ -630,23 +694,33 @@ function coverFor(stem, coverFiles) {
       warn("no metadata found for \"" + bareTitle(stem) + "\" - leaving producer/year/altnames empty");
     }
 
-    /* duration: read the file's own frame headers. */
+    /* duration: read the file's own frame headers. When this file was only
+       found through the same-title check, its duration was already read
+       once - do not download it a second time. */
     const audioUrl = RAW + "Audio/" + encodeURIComponent(file);
     const t0 = Date.now();
-    const audioRes = await get(audioUrl, { timeout: 120000 });
-    let duration = audioRes.status === 200 ? mp3Duration(audioRes.body) : 0;
-    if (!duration && audioRes.status === 200) {
-      duration = Math.max(30, Math.round(audioRes.body.length / (40000))); // 320kbps fallback
-      warn("could not read the mp3 frames precisely; approximating " + duration + "s from the file size");
+    let audioRes, duration;
+    if (cachedDurations.has(file)) {
+      duration = cachedDurations.get(file);
+      audioRes = { status: 200, body: Buffer.alloc(0) };
+      log("   audio: (already read during the same-title check) -> " + duration + "s");
+    } else {
+      audioRes = await get(audioUrl, { timeout: 120000 });
+      duration = audioRes.status === 200 ? mp3Duration(audioRes.body) : 0;
+      if (!duration && audioRes.status === 200) {
+        duration = Math.max(30, Math.round(audioRes.body.length / (40000))); // 320kbps fallback
+        warn("could not read the mp3 frames precisely; approximating " + duration + "s from the file size");
+      }
+      log("   audio: " + (audioRes.status === 200 ? (audioRes.body.length / 1048576).toFixed(1) + " MB in " + ((Date.now() - t0) / 1000).toFixed(1) + "s" : "HTTP " + audioRes.status) + " -> " + duration + "s");
     }
-    log("   audio: " + (audioRes.status === 200 ? (audioRes.body.length / 1048576).toFixed(1) + " MB in " + ((Date.now() - t0) / 1000).toFixed(1) + "s" : "HTTP " + audioRes.status) + " -> " + duration + "s");
     if (audioRes.status !== 200) { warn("audio is unreachable, skipping this song"); continue; }
 
     /* cover + its gradient. */
-    let coverFile = coverFor(stem, coverFiles);
+    let coverFile = coverFor(stem, freeCoverFiles);
+    if (!coverFile) coverFile = coverFor(stem, coverFiles);
     if (!coverFile) {
       /* maybe the cover exists under the API's own title */
-      if (meta && meta.name) coverFile = coverFor(meta.name, coverFiles);
+      if (meta && meta.name) coverFile = coverFor(meta.name, freeCoverFiles) || coverFor(meta.name, coverFiles);
     }
     let coverUrl = "";
     if (coverFile) {
