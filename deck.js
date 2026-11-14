@@ -495,6 +495,15 @@
     }
   }
 
+  /* Whether a track is actually loaded. On a cold phone, no track means the
+     phone is showing a dead bar at the bottom - so the Deck waits for a
+     song instead of idling there. */
+  function syncNoTrack() {
+    var has = false;
+    try { has = typeof currentTrackIndex === "number" && currentTrackIndex >= 0; } catch (e) {}
+    if (document.body) document.body.classList.toggle("deck-no-track", !has);
+  }
+
   function boot() {
     wire();
     document.addEventListener("keydown", onKey);
@@ -515,9 +524,17 @@
     } catch (e) {}
     /* The bar appears and goes with the player, so the Deck's own state
        is checked again now and then. */
+    syncNoTrack();
+    var audioEl = document.querySelector("audio");
+    if (audioEl) {
+      audioEl.addEventListener("loadedmetadata", syncNoTrack);
+      audioEl.addEventListener("play", syncNoTrack);
+    }
+
     setInterval(function () {
       syncForPage();
       removeOnPhones();
+      syncNoTrack();
       var bar = el("deck-player");
       if (!bar) return;
       var away = document.body.classList.contains("deck-hidden");

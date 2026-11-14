@@ -289,6 +289,10 @@
       ".dpl-play{width:74px;height:74px;border-radius:50%;background:#fff;color:#161016;border:none;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer}" +
       ".dpl-play:active{transform:scale(.93)}" +
 
+      "/* the middle stays one clean screen when the panel is away */" +
+      ".dpl-ov.is-collapsed .dpl-left{overflow:hidden}" +
+      ".dpl-ov.is-collapsed .dpl-cover{width:min(48%,460px)}" +
+      "@media (max-height:900px){.dpl-ov.is-collapsed .dpl-cover{width:min(44%,420px)}}" +
       ".dpl-volume{display:flex;align-items:center;gap:12px;margin-top:16px}" +
       ".dpl-vol-ic{background:none;border:none;color:rgba(255,255,255,.5);width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:color .18s ease}" +
       ".dpl-vol-ic:hover{color:#fff}" +
