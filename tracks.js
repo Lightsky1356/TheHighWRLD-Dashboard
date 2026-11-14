@@ -3212,5 +3212,17 @@ const trackList=[
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Calm%20Down.png",
     producer: "CuBeatz & Gezin",
     year: "2019"
+  },
+  {
+    title: "Choppa (Sessions)",
+    tag: "Choppa (Sessions)",
+    artist: "Juice WRLD",
+    altnames: ["Hell Girl"],
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Choppa%20(Sessions).mp3",
+    duration: 1272,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Choppa_2.png",
+    producer: "Kid Wond3r",
+    year: "2018"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});
