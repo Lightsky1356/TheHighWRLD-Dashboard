@@ -143,7 +143,7 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Beretta (Sessions)",
+    title: "Beretta",
     tag: "Beretta (Run It Up) (WOD)",
     artist: "Juice WRLD",
     category: "sessions",
@@ -484,7 +484,7 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Do The Most (Sessions)",
+    title: "Do The Most",
     tag: "Do The Most (Dirty Soda) (The Coast) (Sessions) (POST)",
     artist: "Juice WRLD, Polo G",
     category: "sessions",
@@ -1375,7 +1375,7 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Nightmare (Sessions)",
+    title: "Nightmare",
     tag: "Nightmare (v5) (Sessions) (DRFL)",
     artist: "Juice WRLD",
     category: "halloween",
@@ -1881,7 +1881,7 @@ const trackList=[
     year: "2019"
   },
   {
-    title: "Shoot For Love (Sessions)",
+    title: "Shoot For Love",
     tag: "Shoot For Love (Shoot For You) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",
@@ -2046,7 +2046,7 @@ const trackList=[
     year: "2019"
   },
   {
-    title: "That Sad Shit (Sessions)",
+    title: "That Sad Shit",
     tag: "That Sad Shit (Devil In Prada) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",
@@ -2794,7 +2794,7 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Flintstones (Sessions)",
+    title: "Flintstones",
     tag: "Flinstones (Wartime) (Sessions) (DRFL)",
     artist: "Juice WRLD",
     category: "sessions",
@@ -3228,7 +3228,6 @@ const trackList=[
     title: "Fucked Up (Sessions)",
     tag: "Fucked Up (Burning Me Out) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
-    altnames: ["Burning Me Out"],
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Fucked%20Up%20(Burning%20Me%20Out)%20(Sessions)%20(GB%26GR).mp3",
     duration: 1013,

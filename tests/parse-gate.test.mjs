@@ -1207,7 +1207,7 @@ if (!pillFor) {
 const BOOT_FORCES_HOME =
   'setTimeout(function(){try{window.switchAppPage("home")}catch(e){}showWrldLog()},0);';
 const BOOT_YIELDS =
-  'setTimeout(function(){try{if((location.pathname||"/").replace(/\\/+$/,"")==="/")window.switchAppPage("home")}catch(e){}showWrldLog()},0);';
+  'setTimeout(function(){var _p=(location.pathname||"/").replace(/\\/+$/,"");if(_p!=="/"&&_p!=="")return;try{window.switchAppPage("home")}catch(e){}try{showWrldLog()}catch(e){}},0);';
 if (scriptSrc.includes(BOOT_FORCES_HOME)) {
   structureFail("script.js's boot timer still forces the home page on every load, which rewrites every deep link to /");
 } else if (!scriptSrc.includes(BOOT_YIELDS)) {

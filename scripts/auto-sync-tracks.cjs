@@ -7,9 +7,11 @@
    For every new mp3 that is not already in tracks.js (judged by its core
    title - the stem with the era, version and alias parens stripped; v3
    copies of a song that already has an entry are deliberately skipped):
-     1. it looks up the Producer(s), Alt Name(s) and Year from juicewrld.io's
+     1. it looks up the Producer(s) and Year from juicewrld.io's
         tracker (NEW, /api/index - cached for a day) - juicewrldapi.com is
-        tried next, and JuiceVault (juicevault.xyz) when both answer nothing;
+        tried next, and JuiceVault (juicevault.xyz) when both answer nothing. The tag keeps the file's own
+         name - "Normal name (Alt name) (Sessions) (Era)" - and no
+         separate alt-names field is written;
      2. it downloads the mp3 and reads its real duration straight from the
         frame headers (no dependencies - the parser is about a page of code);
      3. it finds the cover png for it in Covers/; when there is one, it decodes
@@ -347,30 +349,9 @@ function bareKey(s) {
   return norm((s || "").replace(/\([^()]*\)/g, " ").replace(/\s+/g, " ").trim());
 }
 
-/* The tag's parentheticals are this file's own ground truth: era codes, the
-   Sessions/Halloween/Leaks category note and the vN version note are not alt
-   names - everything else is (or is not) an aka the tag already names. The
-   tracker's aka list is never used for a file the site just found, because
-   it is tied to a specific recording and the file we publish may be a
-   different cut of the same song. Group order is preserved. */
-function filenameAltnames(stem) {
-  const groups = stem.match(/\([^()]*\)/g) || [];
-  const seen = new Set();
-  const alts = [];
-  for (const g of groups) {
-    const inner = g.slice(1, -1).trim();
-    if (!inner) continue;
-    const upper = inner.toUpperCase();
-    if (ERA_SET.has(upper)) continue;                       /* WOD, GB&GR, JW3 ... */
-    if (VERSION_RE.test(g)) continue;                        /* "(v2)" version note */
-    if (/^(Sessions|Halloween|Leaks?)$/i.test(inner)) continue;   /* category */
-    const key = norm(inner);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    alts.push(inner);
-  }
-  return alts;
-}
+/* The aka the file is named after stays inside the tag itself - the shape of
+   every entry the site ships ("Name (Alt Name) (Sessions) (Era)") comes from
+   the file name, and no separate altnames field is written. */
 
 /* The bare title as a human would read it - parens stripped, spaces kept -
    which is what the vault's search answers to. */
@@ -735,7 +716,6 @@ function coverFor(stem, coverFiles) {
     if (isSessions) title += " (Sessions)";
     let producer = "";
     let year = "";
-    let altnames = [];
     if (meta) {
       title = meta.name || title;
       if (isSessions && !/\(Sessions\)/i.test(title)) title += " (Sessions)";
@@ -745,19 +725,6 @@ function coverFor(stem, coverFiles) {
     } else {
       missingMeta++;
       warn("no metadata found for \"" + bareTitle(stem) + "\" - leaving producer/year empty");
-    }
-    /* Alt names come from the tag's own parentheticals - the only record this
-       specific file has. Trackers bind their aka list to a specific recording
-       and the file dropped in here is not guaranteed to be that cut. */
-    {
-      const seenTitle = new Set([norm(title), norm(core), norm(stem), norm(bareTitle(stem)),
-        norm(title.replace(/\s*\((Sessions|Halloween)\)/i, ""))]);
-      altnames = filenameAltnames(stem).filter(function (t) {
-        const nn = norm(t);
-        if (!nn || seenTitle.has(nn)) return false;
-        seenTitle.add(nn);
-        return true;
-      });
     }
 
     /* duration: read the file's own frame headers. When this file was only
@@ -815,7 +782,6 @@ function coverFor(stem, coverFiles) {
       "\n    title: " + JSON.stringify(title) + "," +
       "\n    tag: " + JSON.stringify(stem) + "," +
       "\n    artist: \"Juice WRLD\"," +
-      (altnames.length ? "\n    altnames: " + JSON.stringify(altnames) + "," : "") +
       "\n    category: " + JSON.stringify(isSessions ? "sessions" : "leaks") + "," +
       "\n    url: " + JSON.stringify(RAW.replace(/\/$/, "") + "/Audio/" + file.split("/").map(encodeURIComponent).join("/")) + "," +
       "\n    duration: " + duration + "," +
