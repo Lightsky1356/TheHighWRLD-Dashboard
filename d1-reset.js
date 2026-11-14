@@ -1,13 +1,14 @@
 /* D1 free-tier limit countdown.
  *
- * The API plane has a hard daily row-read limit on Cloudflare's free D1 tier,
- * and when it trips every /api/* call returns 500 with the D1_ERROR body. The
- * site stays usable but empty - online count stays 0, trending shows nothing,
- * and by the time anyone notices, the limit badge is the only honest signal.
+ * The API plane has a hard daily row-read limit on Cloudflare's free D1 tier.
+ * When it trips, every D1-backed endpoint returns 500 with an `D1_ERROR` body.
+ * The owner asked for a live countdown so anyone visiting the site while the
+ * limit is exhausted can see exactly how long until it resets - which is
+ * always midnight UTC, the reset boundary for the D1 free tier.
  *
- * This file shows a quiet chip in the footer with a live countdown to the
- * reset, which is always midnight UTC. It polls /api/online every minute to
- * notice when the limit stops being hit, or when it starts.
+ * The signal used here is /api/trending, which is one of the endpoints that
+ * fails hard when the limit is exhausted and works the rest of the time -
+ * which means its ok/500 flip is also our all-clear.
  */
 (function () {
   "use strict";
@@ -32,7 +33,7 @@
   function tick() { label.textContent = fmt(secsUntilMidnightUtc()); }
 
   function check() {
-    fetch("/api/online", { cache: "no-store", credentials: "same-origin" })
+    fetch("/api/trending?days=1&limit=1", { cache: "no-store", credentials: "same-origin" })
       .then(function (r) { return r.json().catch(function () { return null; }).then(function (b) { return { status: r.status, body: b }; }); })
       .then(function (res) {
         var msg = (res && res.body && String(res.body.error || res.body.message || "") || "");

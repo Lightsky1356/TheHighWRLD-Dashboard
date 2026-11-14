@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v294';;;;;;;;;;;;;;;;;
+const VERSION = 'thw-v295';;;;;;;;;;;;;;;;;
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -55,7 +55,7 @@ const PRECACHE = [
   './song-comments.js?v=thw-v10',
   './bluetooth.js?v=thw-v1',
   './era-page.js?v=thw-v2',
-  './d1-reset.js?v=thw-v1',
+  './d1-reset.js?v=thw-v2',
 
   './context-menu.js?v=thw-v3',
   './leaderboard.js?v=thw-v2',
