@@ -627,6 +627,14 @@
     return out;
   }
 
+  /* The version marker — v1, v2.1, whatever the vault says it is. Only the
+     marker, never the rest of the tag. */
+  function versionLabel(t) {
+    var tag = String((t || {}).tag || "");
+    var m = tag.match(/\(v(\d+(?:\.\d+){0,2}[a-z]?)\)/i);
+    return m ? "v" + m[1] : "";
+  }
+
   function producerSongCount(name) {
     try {
       if (typeof trackList === "undefined" || !trackList) return 0;
@@ -701,9 +709,8 @@
     if (era) cell("Era", ERA_INFO[era.code].name, { link: "/era/" + ERA_INFO[era.code].slug });
     var alts = altNames(t);
     if (alts.length) cell("Alt names", alts.join(" · "), { wide: true });
-    var album = "";
-    try { if (typeof getTrackAlbum === "function") album = getTrackAlbum(t); } catch (e) {}
-    if (album) cell("Version", album, { wide: true });
+    var vlabel = versionLabel(t);
+    if (vlabel) cell("Version", vlabel);
     if (t.producer) {
       var n = producerSongCount(t.producer);
       cell("Produced by", n ? t.producer + " · " + n + (n === 1 ? " song" : " songs") : t.producer, { wide: true });

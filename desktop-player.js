@@ -820,6 +820,14 @@
     /* the sign-in note lives in the composer, only for signed-out readers */
   }
 
+  /* The version marker — v1, v2.1, whatever the vault says it is. Only the
+     marker, never the rest of the tag. */
+  function versionLabel(t) {
+    var tag = String((t || {}).tag || "");
+    var m = tag.match(/\(v(\d+(?:\.\d+){0,2}[a-z]?)\)/i);
+    return m ? "v" + m[1] : "";
+  }
+
   /* Alt names — the other titles the vault has filed this song under.
      The tag carries them: everything in parentheses that is not the
      category, the era, or a version marker is an alternate name. */
@@ -891,7 +899,8 @@
     cell("Era", eraName(t), { link: "/era/" + eraSlug(t) });
     var alts = altNames(t);
     if (alts.length) cell("Alt names", alts.join(" · "), { wide: true });
-    if (t.tag) cell("Version", String(t.tag), { wide: true });
+    var vlabel = versionLabel(t);
+    if (vlabel) cell("Version", vlabel);
     if (t.producer) {
       var n = producerSongCount(t.producer);
       cell("Produced by", n ? t.producer + " · " + n + (n === 1 ? " song" : " songs") : t.producer, { wide: true });
