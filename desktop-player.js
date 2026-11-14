@@ -122,6 +122,13 @@
       box.hidden = false;
       return;
     }
+    /* one button adds the whole match set to the queue */
+    var addAll = document.createElement("button");
+    addAll.type = "button";
+    addAll.className = "dpl-srow-addall";
+    addAll.setAttribute("data-dpl", "add-all");
+    addAll.innerHTML = '<i class="fas fa-plus" aria-hidden="true"></i><span>Add all ' + matches.length + ' to the queue</span>';
+    box.appendChild(addAll);
     matches.forEach(function (idx) {
       var t2 = null;
       try { t2 = (typeof trackList !== "undefined" ? trackList[idx] : null); } catch (e) {}
@@ -347,7 +354,7 @@
       ".dpl-artist{margin:6px 0 0;font-size:19px;font-weight:700;color:rgba(255,255,255,.75);text-align:center}" +
       ".dpl-album{margin:6px 0 0;font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.4);text-align:center}" +
       /* the search pill in the top bar */ +
-      ".dpl-searchwrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(430px,46vw);height:38px;z-index:6}" +
+      ".dpl-searchwrap{position:relative;width:100%;height:38px;z-index:6}" +
       ".dpl-search-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.42);font-size:12px;pointer-events:none}" +
       ".dpl-search-input{width:100%;height:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 36px 0 36px;transition:border-color .2s ease,background .2s ease}" +
       ".dpl-search-input::placeholder{color:rgba(255,255,255,.36)}" +
@@ -355,7 +362,7 @@
       ".dpl-search-clear{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.5);width:30px;height:30px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:12px;cursor:pointer}" +
       ".dpl-search-clear:hover{color:#fff;background:rgba(255,255,255,.09)}" +
       ".dpl-search-clear.is-shown{display:flex}" +
-      ".dpl-search-results{position:absolute;top:calc(100% + 10px);left:0;right:0;background:#171310;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:6px;max-height:min(46vh,420px);overflow-y:auto;overscroll-behavior:contain;box-shadow:0 24px 60px rgba(0,0,0,.62);z-index:30}" +
+      ".dpl-search-results{background:#171310;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:6px;margin-top:8px;max-height:min(40vh,380px);overflow-y:auto;overscroll-behavior:contain;box-shadow:0 24px 60px rgba(0,0,0,.62);z-index:30}" +
       ".dpl-search-results[hidden]{display:none}" +
       ".dpl-srow{display:flex;align-items:center;gap:12px;padding:6px 8px;border-radius:12px;cursor:pointer}" +
       ".dpl-srow:hover,.dpl-srow.is-active{background:rgba(255,255,255,.08)}" +
@@ -366,6 +373,8 @@
       ".dpl-srow-dur{font-size:10.5px;color:rgba(255,255,255,.46);font-variant-numeric:tabular-nums;flex-shrink:0}" +
       ".dpl-srow-add{background:none;border:none;color:rgba(255,255,255,.55);width:38px;height:44px;min-width:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;border-radius:10px}" +
       ".dpl-srow-add:hover{color:#34d399}" +
+      ".dpl-srow-addall{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:rgba(52,211,153,.13);border:1px solid rgba(52,211,153,.3);color:#6ee7b7;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.02em;border-radius:11px;padding:10px 12px;cursor:pointer;margin-bottom:6px;transition:background .15s ease,color .15s ease}" +
+      ".dpl-srow-addall:hover{background:rgba(52,211,153,.2);color:#a7f3d0}" +
       ".dpl-srow-empty{padding:16px 14px;text-align:center;color:rgba(255,255,255,.4);font-size:12px}" +
 
       ".dpl-actions{display:flex;align-items:center;gap:16px;margin-top:16px}" +
@@ -534,12 +543,6 @@
           '<button type="button" class="dpl-close" data-dpl="close" aria-label="Close"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
           '<span class="dpl-context">PLAYING FROM THE WRLD PLAYER</span>' +
         '</div>' +
-        '<div class="dpl-searchwrap">' +
-          '<i class="fas fa-magnifying-glass dpl-search-ic" aria-hidden="true"></i>' +
-          '<input class="dpl-search-input" data-dpl="search" type="text" placeholder="Search the vault…" aria-label="Search the vault" autocomplete="off" spellcheck="false">' +
-          '<button type="button" class="dpl-search-clear" data-dpl="search-clear" aria-label="Clear the search"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
-          '<div class="dpl-search-results" data-dpl="search-results" hidden></div>' +
-        '</div>' +
       '</header>' +
       '<button type="button" class="dpl-reveal" data-dpl="reveal" aria-label="Show the panel"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>' +
       '<button type="button" class="dpl-more-collapsed" data-dpl="more" aria-label="More options"><i class="fas fa-ellipsis" aria-hidden="true"></i></button>' +
@@ -592,6 +595,12 @@
             '<button type="button" class="dpl-tab" data-dpl="tab-playlists">Playlists<small data-dpl="playlists-count"></small></button>' +
           '</nav>' +
           '<div class="dpl-tabpane" data-dpl="pane-queue" hidden>' +
+            '<div class="dpl-searchwrap">' +
+              '<i class="fas fa-magnifying-glass dpl-search-ic" aria-hidden="true"></i>' +
+              '<input class="dpl-search-input" data-dpl="search" type="text" placeholder="Search the vault…" aria-label="Search the vault" autocomplete="off" spellcheck="false">' +
+              '<button type="button" class="dpl-search-clear" data-dpl="search-clear" aria-label="Clear the search"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
+              '<div class="dpl-search-results" data-dpl="search-results" hidden></div>' +
+            '</div>' +
             '<div class="dpl-upnext-hrow"><span class="dpl-upnext-h">Up next<span class="dpl-upnext-count" data-dpl="queue-count"></span></span>' +
               '<button type="button" class="dpl-clear" data-dpl="clear-queue">Clear</button></div>' +
             '<div data-dpl="queue-list"></div>' +
@@ -672,6 +681,17 @@
         if (a === "collapse") { setCollapsed(ov, !ov.classList.contains("is-collapsed")); return; }
         if (a === "reveal") { setCollapsed(ov, false); return; }
         if (a === "search-clear") { dplClearSearch(ov); return; }
+        if (a === "add-all") {
+          var input2 = q(ov, "[data-dpl='search']");
+          var matches = dplSearchMatches(input2 ? input2.value : "");
+          if (window.queueBulkStart) window.queueBulkStart();
+          try {
+            for (var i = 0; i < matches.length; i++) { if (typeof addToQueue === "function") addToQueue(matches[i]); }
+          } finally { if (window.queueBulkEnd) window.queueBulkEnd(); }
+          toast("Added " + matches.length + " songs to the queue", "success");
+          if (input2) { input2.value = ""; dplRenderSearch(ov); }
+          return;
+        }
         if (a === "vault-pull") { if (window.vaultPull) window.vaultPull(); return; }
         if (a === "pl-refresh") { loadPlaylists(ov); return; }
         if (a === "pl-back") { plState.current = null; paintPlView(ov, "list"); return; }

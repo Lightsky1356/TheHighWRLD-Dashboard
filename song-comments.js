@@ -589,6 +589,20 @@
     });
   }
 
+  /* a labelled section header with an optional trailing action (Add all) */
+  function upnextHRow(label, actionLabel, onAction) {
+    var row = el("div", "song-upnext-hrow");
+    row.appendChild(el("p", "song-upnext-h", label));
+    if (actionLabel) {
+      var btn = el("button", "song-upnext-addall");
+      btn.type = "button";
+      btn.textContent = actionLabel;
+      btn.addEventListener("click", onAction);
+      row.appendChild(btn);
+    }
+    return row;
+  }
+
   /* one catalogue row: cover + title/year on the left (tap plays), + on the right (tap queues) */
   function suggestRow(i) {
     var t2 = null;
@@ -664,7 +678,11 @@
     if (era && ERA_INFO[era.code]) {
       var picks = suggestFromEra(era.code, t, 8);
       if (picks.length) {
-        body.appendChild(el("p", "song-upnext-h", "More from " + ERA_INFO[era.code].name));
+        body.appendChild(upnextHRow("More from " + ERA_INFO[era.code].name, "Add all", function () {
+          if (window.queueBulkStart) window.queueBulkStart();
+          try { for (var i = 0; i < picks.length; i++) { if (typeof addToQueue === "function") addToQueue(picks[i]); } } finally { if (window.queueBulkEnd) window.queueBulkEnd(); }
+          toastHint("Added " + picks.length + " songs to the queue");
+        }));
         var list = el("div", "song-suggest-list");
         picks.forEach(function (i) {
           var row = suggestRow(i);
@@ -699,7 +717,11 @@
       body.appendChild(el("p", "song-comments-empty", "Nothing in the vault matches “" + q + "”."));
       return;
     }
-    body.appendChild(el("p", "song-upnext-h", "The vault"));
+    body.appendChild(upnextHRow("The vault", "Add all", function () {
+      if (window.queueBulkStart) window.queueBulkStart();
+      try { for (var i = 0; i < matches.length; i++) { if (typeof addToQueue === "function") addToQueue(matches[i]); } } finally { if (window.queueBulkEnd) window.queueBulkEnd(); }
+      toastHint("Added " + matches.length + " songs to the queue");
+    }));
     var list = el("div", "song-suggest-list");
     matches.forEach(function (i) {
       var row = suggestRow(i);

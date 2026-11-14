@@ -318,15 +318,18 @@
       ".mp2-x:active,.mp2-more:active{background:rgba(255,255,255,.09)}" +
       ".mp2-context{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);font-weight:700}" +
       /* the search pill, dead centre, the same shape juicewrld.io carries */
-      ".mp2-search{position:relative;flex:1 1 auto;max-width:560px;height:40px;margin:0 8px}" +
+      /* the search pill, inside the queue page */ +
+      ".mp2-search{position:relative;width:100%;height:40px;margin:0 0 12px}" +
       ".mp2-search-input{width:100%;height:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 40px 0 36px;transition:border-color .2s ease,background .2s ease}" +
       ".mp2-search-input::placeholder{color:rgba(255,255,255,.36)}" +
       ".mp2-search-input:focus{border-color:rgba(34,211,238,.45);background:rgba(255,255,255,.11)}" +
       ".mp2-search-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.42);font-size:12px;pointer-events:none}" +
       ".mp2-search-clear{position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.5);width:32px;height:32px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:13px;cursor:pointer}" +
       ".mp2-search-clear.is-shown{display:flex}" +
-      ".mp2-search-results{position:absolute;top:calc(100% + 10px);left:0;right:0;background:#171310;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:6px;max-height:46vh;overflow-y:auto;overscroll-behavior:contain;box-shadow:0 24px 60px rgba(0,0,0,.62);z-index:30}" +
+      ".mp2-search-results{background:#171310;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:6px;max-height:min(40vh,380px);overflow-y:auto;overscroll-behavior:contain;box-shadow:0 24px 60px rgba(0,0,0,.62);z-index:30}" +
       ".mp2-search-results[hidden]{display:none}" +
+      ".mp2-search-addall{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:rgba(52,211,153,.13);border:1px solid rgba(52,211,153,.3);color:#6ee7b7;font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.02em;border-radius:11px;padding:9px 12px;cursor:pointer;margin-bottom:6px;transition:background .15s ease,color .15s ease}" +
+      ".mp2-search-addall:hover{background:rgba(52,211,153,.2);color:#a7f3d0}" +
       ".mp2-srow{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:11px;cursor:pointer}" +
       ".mp2-srow:hover,.mp2-srow.is-active{background:rgba(255,255,255,.08)}" +
       ".mp2-srow-cover{width:44px;height:44px;border-radius:9px;object-fit:cover;background:#1c1530;flex-shrink:0}" +
@@ -1078,6 +1081,12 @@
       box.hidden = false;
       return;
     }
+    var addAll = document.createElement("button");
+    addAll.type = "button";
+    addAll.className = "mp2-search-addall";
+    addAll.setAttribute("data-mp", "search-add-all");
+    addAll.innerHTML = '<i class="fas fa-plus" aria-hidden="true"></i><span>Add all ' + matches.length + ' to the queue</span>';
+    box.appendChild(addAll);
     matches.forEach(function (idx) {
       var t2 = null;
       try { t2 = (typeof trackList !== "undefined" ? trackList[idx] : null); } catch (e) {}
@@ -1648,12 +1657,7 @@
 
       '<header class="mp2-top">' +
         '<button type="button" class="mp2-x" data-mp-close aria-label="Close the player"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
-        '<div class="mp2-search">' +
-          '<i class="fas fa-magnifying-glass mp2-search-ic" aria-hidden="true"></i>' +
-          '<input class="mp2-search-input" data-mp="search" type="text" placeholder="Search the vault…" aria-label="Search the vault" autocomplete="off" spellcheck="false">' +
-          '<button type="button" class="mp2-search-clear" data-mp-search-clear aria-label="Clear the search"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
-          '<div class="mp2-search-results" data-mp-search-results hidden></div>' +
-        '</div>' +
+        '<span class="mp2-context">TheHighWRLD</span>' +
         '<button type="button" class="mp2-more" data-mp-more aria-label="More options"><i class="fas fa-ellipsis" aria-hidden="true"></i></button>' +
       '</header>' +
 
@@ -1733,6 +1737,12 @@
           '</div>' +
         '</header>' +
         '<div class="mp2-qp-body">' +
+          '<div class="mp2-search">' +
+            '<i class="fas fa-magnifying-glass mp2-search-ic" aria-hidden="true"></i>' +
+            '<input class="mp2-search-input" data-mp="search" type="text" placeholder="Search the vault…" aria-label="Search the vault" autocomplete="off" spellcheck="false">' +
+            '<button type="button" class="mp2-search-clear" data-mp-search-clear aria-label="Clear the search"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
+            '<div class="mp2-search-results" data-mp-search-results hidden></div>' +
+          '</div>' +
           '<p class="mp2-qp-h">Now playing</p>' +
           '<div class="mp2-npcard">' +
             '<img decoding="async" class="mp2-npcard-cover" data-mp="np-cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
@@ -1841,6 +1851,18 @@
       if (target && target.tagName === "A") e.preventDefault();
       var ctxScrim = target.closest ? target.closest("[data-mp='ctx-scrim']") : null;
       var searchClearBtn = target.closest ? target.closest("[data-mp-search-clear]") : null;
+      var searchAddAllBtn = target.closest ? target.closest("[data-mp='search-add-all']") : null;
+      if (searchAddAllBtn) {
+        var in2 = q(ov, "[data-mp='search']");
+        var matches2 = mpSearchMatches(in2 ? in2.value : "");
+        if (window.queueBulkStart) window.queueBulkStart();
+        try {
+          for (var i = 0; i < matches2.length; i++) { if (typeof addToQueue === "function") addToQueue(matches2[i]); }
+        } finally { if (window.queueBulkEnd) window.queueBulkEnd(); }
+        toast("Added " + matches2.length + " songs to the queue", "success");
+        if (in2) { in2.value = ""; renderMpSearch(ov); }
+        return;
+      }
       if (searchClearBtn) { clearMpSearch(ov); return; }
       if (ctxScrim) { closeCtx(ov); return; }
 

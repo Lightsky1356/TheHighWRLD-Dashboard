@@ -2180,6 +2180,9 @@ footer .hub-panel{display:none}
 .song-search-input::placeholder{color:rgba(255,255,255,.35)}
 .song-search-input:focus{border-color:rgba(34,211,238,.4);background:rgba(255,255,255,.08)}
 .song-upnext-h{margin:2px 2px 6px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.35)}
+.song-upnext-hrow{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-right:2px}
+.song-upnext-addall{background:none;border:none;color:#f0abfc;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:8px;cursor:pointer;transition:color .15s ease,background .15s ease}
+.song-upnext-addall:hover{color:#f5d0fe;background:rgba(255,255,255,.06)}
 .song-upnext-h:not(:first-child){margin-top:14px}
 .song-suggest-list{display:flex;flex-direction:column;gap:2px}
 .song-suggest-row{display:flex;align-items:center;gap:4px;padding:4px 4px;border-radius:11px}
