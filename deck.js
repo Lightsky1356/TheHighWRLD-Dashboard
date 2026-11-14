@@ -282,8 +282,19 @@
     try { localStorage.setItem(KEY, hidden ? "1" : "0"); } catch (e) {}
   }
 
+  /* Whether the WRLD Player page is on the screen right now. The Deck is
+     the player's little sibling everywhere else - on the player itself it
+     is redundant, so it stays put away and cannot be summoned back. */
+  function pageIsPlayer() {
+    var active = document.querySelector(".app-page.active");
+    return !!(active && active.id === "page-section-player");
+  }
+
+  var pageLocked = false;
+  function pageLockedOn() { return pageLocked; }
+
   /* ---- putting the Deck away ---- */
-  function setAway(away) {
+  function setAway(away, keep) {
     var bar = el("deck-player");
     var handle = el("deck-handle");
     if (bar) {
@@ -292,7 +303,10 @@
     }
     if (handle) handle.hidden = !away;
     if (document.body) document.body.classList.toggle("deck-hidden", away);
-    remember(away);
+    /* "keep" is for locking on the WRLD Player: the Deck goes away without
+       touching the saved preference, so it comes back where the reader
+       left it the moment they leave the player. */
+    if (!keep) remember(away);
     var toggle = el("deck-toggle");
     if (toggle) {
       toggle.title = away ? "Show WRLD Deck" : "Hide WRLD Deck";
@@ -300,6 +314,42 @@
       var icon = toggle.querySelector("i");
       if (icon) icon.className = away ? "fas fa-chevron-up" : "fas fa-chevron-down";
     }
+  }
+
+  /* Push the Deck away when the WRLD Player page is the active page, and
+     restore the reader's own choice the moment they leave it. Safe to call
+     as often as we like - it only does work on a change. */
+  function syncForPage() {
+    var player = pageIsPlayer();
+    if (player && !pageLocked) {
+      pageLocked = true;
+      if (document.body) document.body.classList.add("deck-page-locked");
+      setAway(true, true);
+      return;
+    }
+    if (!player && pageLocked) {
+      pageLocked = false;
+      if (document.body) document.body.classList.remove("deck-page-locked");
+      setAway(remembered());
+    }
+  }
+
+  /* The opacity steps and the Bluetooth button do nothing on a phone -
+     routing audio out of a browser phone is not the browser's job, and the
+     phone has no room for the steps. The stylesheet hides them; this makes
+     sure they are really gone even if an old copy of the stylesheet is
+     cached on the device. */
+  function removeOnPhones() {
+    try {
+      if (!window.matchMedia) return;
+      var phone = window.matchMedia("(max-width:767px)").matches ||
+        window.matchMedia("(orientation:landscape) and (max-height:500px) and (pointer:coarse)").matches;
+      if (!phone) return;
+      var op = document.querySelector(".deck-opacity");
+      if (op && op.parentNode) op.parentNode.removeChild(op);
+      var bt = document.querySelector("[data-thw-bluetooth]");
+      if (bt && bt.parentNode) bt.parentNode.removeChild(bt);
+    } catch (e) {}
   }
 
   /* ---- the heart ---- */
@@ -324,6 +374,8 @@
     var toggle = el("deck-toggle");
     if (toggle) {
       toggle.addEventListener("click", function (e) {
+        /* The toggle hides while the WRLD Player page is up. */
+        if (pageLockedOn()) { e.preventDefault(); e.stopPropagation(); return; }
         e.stopPropagation();
         setAway(!document.body.classList.contains("deck-hidden"));
       });
@@ -332,6 +384,7 @@
     var handle = el("deck-handle-btn");
     if (handle) {
       handle.addEventListener("click", function (e) {
+        if (pageLockedOn()) { e.preventDefault(); e.stopPropagation(); return; }
         e.stopPropagation();
         setAway(false);
         try { if (typeof window.showDeckPlayer === "function") window.showDeckPlayer(); } catch (err) {}
@@ -382,8 +435,11 @@
       new MutationObserver(function () { paintFav(); }).observe(title, { childList: true, characterData: true, subtree: true });
     }
 
-    /* Where it was left. */
+    /* Where it was left. The player page can win over the saved choice -
+       it is checked again on every page switch and on the interval. */
     setAway(remembered());
+    removeOnPhones();
+    syncForPage();
     paintFav();
   }
 
@@ -424,8 +480,10 @@
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (!shortcutsOn()) return;
 
-    /* D - put WRLD Deck away, or bring it back. */
+    /* D - put WRLD Deck away, or bring it back. Not on the WRLD Player page:
+       the Deck has no business there, so the key is dead there too. */
     if (e.key === "d" || e.key === "D") {
+      if (pageLockedOn()) return;
       e.preventDefault();
       setAway(!document.body.classList.contains("deck-hidden"));
       return;
@@ -440,9 +498,26 @@
   function boot() {
     wire();
     document.addEventListener("keydown", onKey);
+    /* One page switch drives both the page and the Deck's locked state.
+       The wrapper is only installed once, and it defers to syncForPage for
+       the actual work. */
+    try {
+      var original = window.switchAppPage;
+      if (typeof original === "function" && !original.__deckWrapped) {
+        var wrapped = function () {
+          var r = original.apply(this, arguments);
+          try { syncForPage(); } catch (e) {}
+          return r;
+        };
+        wrapped.__deckWrapped = true;
+        window.switchAppPage = wrapped;
+      }
+    } catch (e) {}
     /* The bar appears and goes with the player, so the Deck's own state
        is checked again now and then. */
     setInterval(function () {
+      syncForPage();
+      removeOnPhones();
       var bar = el("deck-player");
       if (!bar) return;
       var away = document.body.classList.contains("deck-hidden");

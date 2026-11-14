@@ -2152,40 +2152,22 @@ footer .hub-panel{display:none}
   text-decoration:underline;
 }
 .song-comments-replying button:hover{color:#fff}
-.song-comments-input{
-  width:100%;
-  min-height:52px;
-  max-height:130px;
-  resize:vertical;
-  padding:9px 11px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.1);
-  background:rgba(255,255,255,.045);
-  color:#fff;
-  font-family:inherit;
-  font-size:12px;
-  line-height:1.55;
-  outline:none;
-  transition:border-color .18s,background .18s;
-}
-.song-comments-input:focus{border-color:rgba(34,211,238,.4);background:rgba(255,255,255,.07)}
-.song-comments-input:disabled{opacity:.6;cursor:not-allowed}
-.song-comments-compose-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
-.song-comments-moment{font-size:10px;color:rgba(255,255,255,.3);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-.song-comments-send{
-  border:1px solid rgba(34,211,238,.3);
-  background:rgba(34,211,238,.14);
-  color:#67e8f9;
-  border-radius:8px;
-  padding:6px 14px;
-  font-family:inherit;
-  font-size:11px;
-  font-weight:700;
-  cursor:pointer;
-  transition:background .18s,color .18s;
-}
-.song-comments-send:hover{background:rgba(34,211,238,.24);color:#a5f3fc}
-.song-comments-send:disabled{opacity:.45;cursor:not-allowed}
+/* The composer takes the phone's shape: a pill with the avatar, the
+   input and the round arrow inside, the moment row under it, and a note
+   under that. Same construction as the full-screen player on the phone. */
+.scc-row{display:flex;align-items:center;gap:10px;width:100%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 6px;margin-bottom:8px}
+.scc-avatar{width:34px;height:34px;min-width:34px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.7);font-size:13px}
+.scc-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.scc-input{flex:1;min-width:0;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit;padding:6px 2px}
+.scc-input::placeholder{color:rgba(255,255,255,.42)}
+.scc-send{background:rgba(34,211,238,.14);border:1px solid rgba(34,211,238,.35);color:#67e8f9;width:34px;height:34px;min-width:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;transition:background .18s,transform .15s}
+.scc-send:hover{background:rgba(34,211,238,.24)}
+.scc-send:active{transform:scale(.9)}
+.scc-send:disabled{opacity:.45;cursor:not-allowed}
+.scc-moment-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.scc-post-at{border:1px solid rgba(168,85,247,.3);background:rgba(168,85,247,.16);color:#d8b4fe;border-radius:999px;padding:6px 14px;font-size:11px;font-weight:800;letter-spacing:.02em;font-family:inherit;cursor:pointer;transition:background .18s,color .18s}
+.scc-post-at:not(.is-on){opacity:.55}
+.scc-post-at:hover{background:rgba(168,85,247,.24);color:#e9d5ff}
 .song-comments-note{margin:7px 0 0;font-size:10.5px;color:rgba(248,113,113,.8);min-height:0}
 
 /* What is lined up behind the song. */
@@ -3201,6 +3183,17 @@ html.tab-hidden #bg-motion *{
   pointer-events:none !important;
 }
 
+/* The WRLD Player page: the Deck has no place on it - it is the page's
+   own widget. The handle that brings the Deck back, the chevron toggle,
+   and the Deck itself all stay off until the reader leaves the page. */
+body.deck-page-locked #deck-handle{display:none !important}
+body.deck-page-locked #deck-player{
+  transform:translateY(160%) scale(.96) !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
+body.deck-page-locked #deck-player #deck-toggle{display:none !important}
+
 /* The handle that brings it back, at the foot of the page. */
 .deck-handle{
   position:fixed;
@@ -3778,14 +3771,15 @@ html.foot-in-view #scrollTopBtn{
 
 /* Bluetooth and the opacity steps are desktop-only: a phone's browser cannot
    route audio to a speaker, and its landscape layout has no room for the
-   steps. Away with both on any phone. */
+   steps. Away with both on any phone - and desktop browsers that happen
+   to report a touch screen keep them, which is where they earn their keep. */
 @media (max-width:767px){
-  .deck-opacity{display:none}
-  [data-thw-bluetooth]{display:none!important}
+  .deck-opacity{display:none !important}
+  [data-thw-bluetooth]{display:none !important}
 }
 @media (orientation:landscape) and (max-height:500px) and (pointer:coarse){
-  .deck-opacity{display:none}
-  [data-thw-bluetooth]{display:none!important}
+  .deck-opacity{display:none !important}
+  [data-thw-bluetooth]{display:none !important}
 }
 
 
@@ -4013,6 +4007,11 @@ html.foot-in-view #scrollTopBtn{
 .lb-mine-cell b{font-size:15px;font-weight:800;color:#fff}
 .lb-mine-cell span{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4)}
 .lb-mine-note{font-size:10px;color:rgba(255,255,255,.38);text-align:center;line-height:1.7;padding:6px 12px}
+
+/* Every row on the board is a door into that member's profile. */
+.lb-row[data-lb-uid]{cursor:pointer;transition:border-color .16s ease,background .16s ease,transform .16s ease}
+.lb-row[data-lb-uid]:hover{border-color:rgba(252,211,77,.3);background:rgba(252,211,77,.05)}
+.lb-row[data-lb-uid]:focus-visible{outline:2px solid rgba(252,211,77,.6);outline-offset:2px}
 
 .song-credit-link{color:rgba(168,85,247,.95);text-decoration:none}
 .song-credit-link:hover{color:#c084fc;text-decoration:underline}

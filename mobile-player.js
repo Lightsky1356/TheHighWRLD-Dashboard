@@ -299,11 +299,16 @@
 
       /* the two views */
       ".mp2-body{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:column;padding:0 22px;overflow:hidden}" +
-      ".mp2-view{display:none;flex:1;min-height:0;width:100%;flex-direction:column;align-items:center;overflow-y:auto;overscroll-behavior:contain}" +
+      /* the views never scroll - the comments list inside its own view is
+         the only thing that scrolls, so the cover can never be dragged out
+         from under the finger and the page behind never moves. */
+      ".mp2-view{display:none;flex:1;min-height:0;width:100%;flex-direction:column;align-items:center;overflow:hidden;overscroll-behavior:contain}" +
       ".mp2-view.is-active{display:flex}" +
 
       /* now */
-      ".mp2-cover{width:min(100%,340px);aspect-ratio:1/1;object-fit:cover;border-radius:16px;background:#1c1530;box-shadow:0 26px 60px rgba(0,0,0,.55),0 0 0 .5px rgba(255,255,255,.08) inset;margin-top:6px}" +
+      ".mp2-cover{width:min(100%,340px,42vh);aspect-ratio:1/1;object-fit:cover;border-radius:16px;background:#1c1530;box-shadow:0 26px 60px rgba(0,0,0,.55),0 0 0 .5px rgba(255,255,255,.08) inset;margin-top:6px;flex-shrink:0}" +
+      /* tiny screens keep a scroll hatch rather than clipping the actions */
+      "@media (max-height:560px){.mp2-view[data-view='now']{overflow-y:auto;-webkit-overflow-scrolling:touch}.mp2-cover{width:min(100%,260px,34vh);margin-top:2px}.mp2-title{margin-top:8px !important;font-size:18px !important}}" +
       ".mp2-title{margin:16px 0 0;font-size:clamp(20px,5.6vw,24px);line-height:1.16;font-weight:800;letter-spacing:-.01em;text-align:center;max-width:100%}" +
       ".mp2-artist{margin:5px 0 0;font-size:15px;color:rgba(255,255,255,.6);text-align:center}" +
       ".mp2-pill{margin-top:14px;display:inline-flex;align-items:center;gap:9px;max-width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:8px 15px;font-size:12px;font-weight:600;color:rgba(255,255,255,.85);cursor:pointer}" +
@@ -337,6 +342,34 @@
       ".mp2-qp:not([hidden]){transform:translateY(0)}" +
       ".mp2-qp[hidden]{display:none}" +
       ".mp2-qp-top{display:flex;align-items:center;justify-content:space-between;padding:max(18px,env(safe-area-inset-top)) 20px 10px;border-bottom:1px solid rgba(255,255,255,.08)}" +
+      /* ===== the playlists page ===== */
+      ".mp2-plp{position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;background:#12100f;border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.9,.25,1);box-shadow:0 -8px 40px rgba(0,0,0,.6)}" +
+      ".mp2-plp:not([hidden]){transform:translateY(0)}" +
+      ".mp2-plp[hidden]{display:none}" +
+      ".mp2-plp-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:14px 18px max(24px,env(safe-area-inset-bottom))}" +
+      ".mp2-plp-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font-family:inherit;color:#fff;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:11px 12px;margin-bottom:8px;cursor:pointer}" +
+      ".mp2-plp-card:active{background:rgba(255,255,255,.07)}" +
+      ".mp2-plp-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}" +
+      ".mp2-plp-card-meta{flex:1;min-width:0}" +
+      ".mp2-plp-name{font-size:14.5px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mp2-plp-sub{font-size:10.5px;color:rgba(255,255,255,.45);margin-top:3px}" +
+      ".mp2-plp-newrow{display:flex;align-items:center;gap:11px;width:100%;font-family:inherit;color:rgba(255,255,255,.65);background:none;border:1px dashed rgba(255,255,255,.12);border-radius:14px;padding:12px;cursor:pointer;font-size:13px;font-weight:700;margin-top:2px}" +
+      ".mp2-plp-newrow i{color:rgba(255,255,255,.45)}" +
+      ".mp2-plp-newrow small{margin-left:auto;font-size:10px;font-weight:600;color:rgba(255,255,255,.35)}" +
+      ".mp2-plp-manage{text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin:18px 0 4px}" +
+      ".mp2-plp-manage a{color:rgba(255,255,255,.6);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.2)}" +
+      ".mp2-plp-empty{text-align:center;color:rgba(255,255,255,.4);font-size:13px;padding:44px 24px;line-height:1.7}" +
+      ".mp2-plp-empty i{display:block;font-size:26px;margin-bottom:10px;color:rgba(255,255,255,.25)}" +
+      ".mp2-plp-empty b{color:#fff}" +
+      ".mp2-plp-empty a{display:inline-block;margin-top:12px;background:#fff;color:#161016;border-radius:99px;padding:9px 22px;font-weight:800;font-size:13px;text-decoration:none}" +
+      ".mp2-plp-dhead{display:flex;align-items:center;gap:12px;margin-bottom:10px}" +
+      ".mp2-plp-dmeta{flex:1;min-width:0}" +
+      ".mp2-plp-dname{margin:0;font-size:17px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mp2-plp-dsub{margin:3px 0 0;font-size:11px;color:rgba(255,255,255,.45)}" +
+      ".mp2-plp-actions{display:flex;gap:10px;margin-bottom:12px}" +
+      ".mp2-plp-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-family:inherit;font-size:12.5px;font-weight:800;border-radius:12px;padding:11px 10px;cursor:pointer}" +
+      ".mp2-plp-btn.primary{background:#fff;color:#161016;border-color:#fff}" +
+      ".mp2-plp-btn:active{transform:scale(.97)}" +
       ".mp2-qp-title{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em;color:#fff}" +
       ".mp2-qp-icons{display:flex;align-items:center;gap:2px}" +
       ".mp2-qp-icon{background:none;border:none;color:rgba(255,255,255,.85);width:42px;height:42px;min-width:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer}" +
@@ -802,6 +835,173 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* the playlists page                                                 */
+  /* the playlists the reader made - browse, play, queue                */
+  /* ------------------------------------------------------------------ */
+  var playlistsOpen = false;
+  var plState = { list: null, current: null };
+
+  function plCatalogueIndex(title) {
+    try {
+      if (typeof trackList === "undefined" || !trackList) return -1;
+      var low = String(title || "").trim().toLowerCase();
+      for (var i = 0; i < trackList.length; i++) {
+        if (String((trackList[i] || {}).title || "").trim().toLowerCase() === low) return i;
+      }
+    } catch (e) {}
+    return -1;
+  }
+  function plMatchedIdxs(pl) {
+    var out = [];
+    var tracks = (pl && pl.tracks) || [];
+    for (var i = 0; i < tracks.length; i++) {
+      var ix = plCatalogueIndex(tracks[i].title);
+      if (ix >= 0) out.push(ix);
+    }
+    return out;
+  }
+
+  function paintPlView(ov, view) {
+    var listView = q(ov, "[data-mp='pl-list-view']");
+    var detailView = q(ov, "[data-mp='pl-detail-view']");
+    if (listView) listView.hidden = view !== "list";
+    if (detailView) detailView.hidden = view !== "detail";
+    var titleEl = q(ov, "[data-mp='pl-title']");
+    if (titleEl) titleEl.textContent = view === "detail" && plState.current ? (plState.current.name || "Playlist") : "Playlists";
+  }
+
+  function renderPlList(ov) {
+    var box = q(ov, "[data-mp='pl-list']");
+    if (!box) return;
+    plState.current = null;
+    paintPlView(ov, "list");
+    box.innerHTML = '<div class="mp2-plp-empty"><i class="fas fa-compact-disc"></i>Loading your playlists…</div>';
+
+    fetch("/api/playlists", { credentials: "same-origin" })
+      .then(function (r) {
+        if (r.status === 401) return { status: 401, d: null };
+        return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, d: d }; });
+      })
+      .then(function (res) {
+        if (!document.getElementById(OV)) return;
+        box.textContent = "";
+        if (res.status === 401) {
+          box.innerHTML = '<div class="mp2-plp-empty"><i class="fas fa-user"></i><b>Sign in to see your playlists</b><br>The playlists you make live on your account.<br><a href="/login">Sign in</a></div>';
+          return;
+        }
+        var list = (res.d && Array.isArray(res.d.playlists)) ? res.d.playlists : [];
+        plState.list = list;
+        if (!list.length) {
+          box.innerHTML = '<div class="mp2-plp-empty"><i class="fas fa-compact-disc"></i><b>No playlists yet</b><br>Make one in your profile, or hit the + on any song to save it.</div>';
+          return;
+        }
+        list.forEach(function (pl) {
+          var count = Number(pl.count) || (pl.tracks || []).length || 0;
+          var vis = pl.visibility === "public" ? "Public" : pl.visibility === "unlisted" ? "Unlisted" : "Private";
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "mp2-plp-card";
+          b.innerHTML =
+            '<span class="mp2-plp-dot" style="background:' + esc(pl.color || "#a855f7") + '"></span>' +
+            '<span class="mp2-plp-card-meta">' +
+              '<span class="mp2-plp-name">' + esc(pl.name || "Playlist") + '</span><br>' +
+              '<span class="mp2-plp-sub">' + count + (count === 1 ? " song" : " songs") + " · " + esc(vis) + "</span>" +
+            "</span>" +
+            '<i class="fas fa-chevron-right" style="color:rgba(255,255,255,.35)" aria-hidden="true"></i>';
+          b.addEventListener("click", function () { renderPlDetail(ov, pl); });
+          box.appendChild(b);
+        });
+      })
+      .catch(function () {
+        if (!document.getElementById(OV)) return;
+        box.innerHTML = '<div class="mp2-plp-empty"><i class="fas fa-triangle-exclamation"></i>The playlists could not be loaded.<br>Check your connection and try again.</div>';
+      });
+  }
+
+  function renderPlDetail(ov, pl) {
+    plState.current = pl;
+    var nameEl = q(ov, "[data-mp='pl-dname']");
+    var subEl = q(ov, "[data-mp='pl-dsub']");
+    if (nameEl) nameEl.textContent = pl.name || "Playlist";
+    var tracks = (pl && pl.tracks) || [];
+    var vis = pl.visibility === "public" ? "Public" : pl.visibility === "unlisted" ? "Unlisted" : "Private";
+    var count = tracks.length;
+    if (subEl) subEl.textContent = count + (count === 1 ? " song" : " songs") + " · " + vis;
+
+    var wrap = q(ov, "[data-mp='pl-tracks']");
+    if (wrap) {
+      wrap.textContent = "";
+      if (!tracks.length) {
+        wrap.innerHTML = '<div class="mp2-plp-empty"><i class="fas fa-compact-disc"></i><b>Nothing in here yet</b><br>Add songs from the player or any song page with the + button.</div>';
+      } else {
+        tracks.forEach(function (tr) {
+          var row = document.createElement("div");
+          row.className = "mp2-qrow";
+          var title = String(tr.title || "");
+          var idx = plCatalogueIndex(title);
+          var t = null;
+          try { if (idx >= 0 && typeof trackList !== "undefined" && trackList) t = trackList[idx]; } catch (e) {}
+          var cover = t && t.cover ? String(t.cover) : "Juice-WRLD.png";
+          row.innerHTML =
+            '<img decoding="async" class="mp2-qrow-cover" loading="lazy" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'" src="' + esc(coverThumb(cover, "64")) + '">' +
+            '<div class="mp2-qrow-meta">' +
+              '<p class="mp2-qrow-title">' + esc(title || "Untitled") + '</p>' +
+              '<p class="mp2-qrow-sub">' + (t ? esc(eraNameOf(t) + (catLabel(t) ? " · " + catLabel(t) : "")) : "Not in the vault") + "</p></div>" +
+            '<div class="mp2-qrow-right">' +
+              '<span class="mp2-qrow-duration">' + (t ? esc(fmt(Number(t.duration) || 0)) : "") + '</span>' +
+              '<button type="button" class="mp2-qrow-x" data-rm aria-label="Remove from this playlist"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
+            "</div>";
+          row.querySelector(".mp2-qrow-meta").addEventListener("click", function () {
+            if (idx < 0) { toast("This song is not in the vault yet", "info"); return; }
+            try { if (window.selectTrackFromList) window.selectTrackFromList(idx); } catch (e) {}
+            closePlaylistsPage(ov);
+          });
+          row.querySelector("[data-rm]").addEventListener("click", function () {
+            fetch("/api/playlists", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "same-origin",
+              body: JSON.stringify({ action: "remove", id: pl.id, track_id: tr.id }),
+            }).then(function (r) { return r.json().catch(function () { return {}; }); })
+              .then(function (d) {
+                if (d && d.ok && d.playlist) {
+                  toast("Removed from the playlist", "info");
+                  renderPlDetail(ov, d.playlist);
+                } else {
+                  toast((d && (d.error || d.message)) || "Could not remove that song", "error");
+                }
+              })
+              .catch(function () { toast("Could not remove that song", "error"); });
+          });
+          wrap.appendChild(row);
+        });
+      }
+    }
+    paintPlView(ov, "detail");
+  }
+
+  function openPlaylistsPage(ov) {
+    playlistsOpen = true;
+    var page = q(ov, "[data-mp='playlistpage']");
+    if (page) page.hidden = false;
+    var vbtn = q(ov, "[data-mp='view-playlists']");
+    if (vbtn) { vbtn.classList.add("on"); vbtn.setAttribute("aria-pressed", "true"); }
+    renderPlList(ov);
+  }
+  function closePlaylistsPage(ov) {
+    playlistsOpen = false;
+    var page = q(ov, "[data-mp='playlistpage']");
+    if (page) page.hidden = true;
+    var vbtn = q(ov, "[data-mp='view-playlists']");
+    if (vbtn) { vbtn.classList.remove("on"); vbtn.setAttribute("aria-pressed", "false"); }
+    plState.current = null;
+    paintPlView(ov, "list");
+  }
+  function togglePlaylistsPage(ov) {
+    if (playlistsOpen) closePlaylistsPage(ov); else openPlaylistsPage(ov);
+  }
+
+  /* ------------------------------------------------------------------ */
   /* the context menu                                                     */
   /* ------------------------------------------------------------------ */
   function openCtx(ov) {
@@ -846,6 +1046,12 @@
     }
 
     if (action === "addplaylist") { openPlaylistPicker(ov, t); return; }
+
+    if (action === "myplaylists") {
+      closeCtx(ov);
+      openPlaylistsPage(ov);
+      return;
+    }
 
     if (action === "cover") {
       var input = q(ov, "[data-mp='cover-input']");
@@ -1238,7 +1444,7 @@
     var startY = null, startT = 0, moved = false;
     ov.addEventListener("pointerdown", function (ev) {
       if (ev.pointerType === "mouse") return;
-      if (ev.target.closest && ev.target.closest(".mp2-compose, .mp2-qp-body, .mp2-comments, .mp2-ctx, .mp2-pl, input, button, .mp2-scrub")) return;
+      if (ev.target.closest && ev.target.closest(".mp2-compose, .mp2-qp-body, .mp2-comments, .mp2-ctx, .mp2-pl, .mp2-plp, input, button, .mp2-scrub")) return;
       startY = ev.clientY;
       startT = Date.now();
       moved = false;
@@ -1280,6 +1486,8 @@
     lastBgCover = null;
     currentView = "now";
     queueOpen = false;
+    playlistsOpen = false;
+    plState = { list: null, current: null };
     commentsTarget = null;
     menuTrack = null;
 
@@ -1360,6 +1568,7 @@
 
       '<nav class="mp2-bottom">' +
         '<button type="button" class="mp2-vbtn" data-mp="view-comments" aria-label="Comments" aria-pressed="false"><i class="fas fa-comment" aria-hidden="true"></i></button>' +
+        '<button type="button" class="mp2-vbtn" data-mp="view-playlists" aria-label="My playlists" aria-pressed="false"><i class="fas fa-compact-disc" aria-hidden="true"></i></button>' +
         '<button type="button" class="mp2-vbtn" data-mp="view-queue" aria-label="Queue" aria-pressed="false"><i class="fas fa-list-ul" aria-hidden="true"></i></button>' +
       '</nav>' +
 
@@ -1393,6 +1602,38 @@
         '</div>' +
       '</div>' +
 
+      /* ===== the playlists page ===== */
+      '<div class="mp2-plp" data-mp="playlistpage" hidden role="dialog" aria-label="Your playlists">' +
+        '<header class="mp2-qp-top">' +
+          '<h1 class="mp2-qp-title" data-mp="pl-title">Playlists</h1>' +
+          '<div class="mp2-qp-icons">' +
+            '<button type="button" class="mp2-qp-icon" data-mp="pl-refresh" aria-label="Refresh the playlists"><i class="fas fa-rotate-right" aria-hidden="true"></i></button>' +
+            '<button type="button" class="mp2-qp-icon close" data-mp="close-playlists" aria-label="Close playlists"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
+          '</div>' +
+        '</header>' +
+        '<div class="mp2-plp-body">' +
+          '<div data-mp="pl-list-view">' +
+            '<div data-mp="pl-list"></div>' +
+            '<button type="button" class="mp2-plp-newrow" data-mp="pl-new"><i class="fas fa-plus" aria-hidden="true"></i>New playlist<small>opens your profile</small></button>' +
+            '<p class="mp2-plp-manage"><a href="#" data-mp="pl-manage">Manage your playlists in your profile</a></p>' +
+          '</div>' +
+          '<div data-mp="pl-detail-view" hidden>' +
+            '<div class="mp2-plp-dhead">' +
+              '<button type="button" class="mp2-qp-icon" data-mp="pl-back" aria-label="Back to all playlists"><i class="fas fa-arrow-left" aria-hidden="true"></i></button>' +
+              '<div class="mp2-plp-dmeta">' +
+                '<p class="mp2-plp-dname" data-mp="pl-dname"></p>' +
+                '<p class="mp2-plp-dsub" data-mp="pl-dsub"></p>' +
+              '</div>' +
+            '</div>' +
+            '<div class="mp2-plp-actions">' +
+              '<button type="button" class="mp2-plp-btn primary" data-mp="pl-playall"><i class="fas fa-play" aria-hidden="true"></i>Play all</button>' +
+              '<button type="button" class="mp2-plp-btn" data-mp="pl-queueall"><i class="fas fa-list-ul" aria-hidden="true"></i>Queue all</button>' +
+            '</div>' +
+            '<div data-mp="pl-tracks"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
       /* ===== the context menu ===== */
       '<div class="mp2-ctx-scrim" data-mp="ctx-scrim" hidden aria-hidden="true"></div>' +
       '<div class="mp2-ctx" data-mp="ctx" hidden role="dialog" aria-modal="true" aria-label="Song options">' +
@@ -1400,6 +1641,7 @@
         '<p class="mp2-ctx-title" data-mp="ctx-title">' + esc(t) + '</p>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="like"><i class="far fa-heart" aria-hidden="true"></i><span>Like</span></button>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="addplaylist"><i class="fas fa-plus" aria-hidden="true"></i><span>Add to playlist</span><i class="fas fa-chevron-right mp2-ctx-chev" aria-hidden="true"></i></button>' +
+        '<button type="button" class="mp2-ctx-item" data-ctx="myplaylists"><i class="fas fa-compact-disc" aria-hidden="true"></i><span>My playlists<span class="mp2-ctx-sub">Play or queue what you saved</span></span></button>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="cover"><i class="fas fa-image" aria-hidden="true"></i><span>Change cover<span class="mp2-ctx-sub">Only you see it</span></span></button>' +
         '<div class="mp2-ctx-div"></div>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="share"><i class="fas fa-share-nodes" aria-hidden="true"></i><span>Share</span></button>' +
@@ -1446,6 +1688,7 @@
         return;
       }
 
+      if (target && target.tagName === "A") e.preventDefault();
       var ctxScrim = target.closest ? target.closest("[data-mp='ctx-scrim']") : null;
       if (ctxScrim) { closeCtx(ov); return; }
 
@@ -1495,6 +1738,37 @@
           toggleQueuePage(ov);
         } else if (action === "close-queue") {
           closeQueuePage(ov);
+        } else if (action === "view-playlists") {
+          togglePlaylistsPage(ov);
+        } else if (action === "close-playlists") {
+          closePlaylistsPage(ov);
+        } else if (action === "pl-refresh") {
+          renderPlList(ov);
+        } else if (action === "pl-back") {
+          plState.current = null;
+          paintPlView(ov, "list");
+        } else if (action === "pl-playall") {
+          var idxsAll = plMatchedIdxs(plState.current);
+          if (idxsAll.length) {
+            try { if (window.selectTrackFromList) window.selectTrackFromList(idxsAll[0]); } catch (e) {}
+            closePlaylistsPage(ov);
+          } else {
+            toast("Nothing in the vault from this playlist", "info");
+          }
+        } else if (action === "pl-queueall") {
+          var idxsQ = plMatchedIdxs(plState.current);
+          if (!idxsQ.length) { toast("Nothing in the vault from this playlist", "info"); return; }
+          var added = 0;
+          if (window.queueBulkStart) window.queueBulkStart();
+          try {
+            for (var qi2 = 0; qi2 < idxsQ.length; qi2++) { if (typeof addToQueue === "function") { addToQueue(idxsQ[qi2]); added++; } }
+          } finally { if (window.queueBulkEnd) window.queueBulkEnd(); }
+          toast("Queued " + added + (added === 1 ? " track" : " tracks"), "success");
+        } else if (action === "pl-manage") {
+          closePlaylistsPage(ov);
+          close();
+          if (window.viewMyProfile) window.viewMyProfile();
+          else if (typeof window.switchAppPage === "function") window.switchAppPage("profile");
         } else if (action === "qp-clear-queue") {
           try { if (typeof clearQueue === "function") clearQueue(); } catch (e) {}
           paintQueuePage(ov, true);

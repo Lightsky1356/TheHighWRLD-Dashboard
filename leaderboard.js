@@ -33,18 +33,31 @@
     return Math.min(1, (xp - base) / Math.max(1, next - base));
   }
 
-  function load() {
+  /* Dead ends are not acceptable for the board's one failure mode: the page
+     either shows the board or tells the person to try again. A transient
+     hiccup at load used to freeze the error text in place until somebody
+     changed tabs twice. */
+  function load(attempt) {
+    attempt = attempt || 1;
     if (state.busy) return;
     state.busy = true;
     fetch(API, { credentials: "same-origin" })
       .then(function (r) { return r.json().catch(function () { return {}; }); })
       .then(function (d) {
-        if (!d || !d.ok) { renderError(); return; }
+        if (!d || !d.ok) {
+          state.busy = false;
+          if (attempt < 3) return load(attempt + 1);
+          return renderError();
+        }
         state.data = d;
         render();
+        state.busy = false;
       })
-      .catch(renderError)
-      .finally(function () { state.busy = false; });
+      .catch(function () {
+        state.busy = false;
+        if (attempt < 3) load(attempt + 1);
+        else renderError();
+      });
   }
 
   function renderError() {
@@ -62,7 +75,7 @@
     var pct = Math.round(levelProgress(m.xp) * 100);
     var tag = isMe ? '<span class="lb-name-tag">You</span>' : "";
     return (
-      '<li class="lb-row' + (isMe ? " is-me" : "") + '">' +
+      '<li class="lb-row' + (isMe ? " is-me" : "") + '" role="link" tabindex="0" data-lb-uid="' + esc(m.uid) + '" aria-label="Open ' + esc(m.name) + '’s profile">' +
         '<span class="lb-rank">' + m.rank + "</span>" +
         '<span class="lb-avatar">' + avatar + "</span>" +
         '<span class="lb-meta">' +
@@ -165,6 +178,25 @@
   }
 
   function mount() {
+    var list = document.getElementById("lb-list");
+    if (list) {
+      list.addEventListener("click", function (e) {
+        var row = e.target.closest ? e.target.closest("[data-lb-uid]") : null;
+        if (row) openMemberProfile(row.getAttribute("data-lb-uid"));
+      });
+      list.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        var row = e.target.closest ? e.target.closest("[data-lb-uid]") : null;
+        if (!row) return;
+        e.preventDefault();
+        openMemberProfile(row.getAttribute("data-lb-uid"));
+      });
+    }
+    function openMemberProfile(uid) {
+      if (!uid) return;
+      try { if (typeof window.openProfile === "function") window.openProfile(uid); } catch (e) {}
+    }
+
     var tabs = document.querySelectorAll(".lb-tab");
     Array.prototype.slice.call(tabs).forEach(function (tab) {
       tab.addEventListener("click", function () {

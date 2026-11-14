@@ -20,6 +20,94 @@
 
   var OV = "dplayer-ov";
   var syncIv = null;
+  var plState = { list: null, current: null };
+  var dplMomentMode = "moment"; /* "moment" | "song" */
+
+  function signedInDpl() {
+    try { if (typeof window.__thwAuthSignedIn === "boolean") return window.__thwAuthSignedIn; } catch (e) {}
+    try {
+      var wrap = document.getElementById("nav-account-wrap");
+      if (wrap && wrap.style.display !== "none") return true;
+    } catch (e) {}
+    return false;
+  }
+  function myAvatarHTML() {
+    var html = '<i class="fas fa-user" aria-hidden="true"></i>';
+    try {
+      var holder = document.getElementById("navAvatarInner");
+      var img = holder && holder.querySelector ? holder.querySelector("img") : null;
+      if (img && img.src) html = '<img decoding="async" src="' + esc(img.src) + '" alt="">';
+    } catch (e) {}
+    return html;
+  }
+  function dplMoment() {
+    if (dplMomentMode === "song") return { seconds: 0, label: "" };
+    var seconds = 0;
+    try {
+      var au = audioEl();
+      if (au && isFinite(au.currentTime)) seconds = Math.max(0, Math.round(au.currentTime));
+    } catch (e) {}
+    return { seconds: seconds, label: fmt(seconds) };
+  }
+  function paintDplComposer(ov) {
+    if (!ov) return;
+    var can = signedInDpl();
+    var m = dplMoment();
+    var wholeSong = dplMomentMode === "song";
+    var input = q(ov, "[data-dpl='comment-input']");
+    var send = q(ov, "[data-dpl='comment-send']");
+    var postAt = q(ov, "[data-dpl='post-at']");
+    var note = q(ov, "[data-dpl='comments-note']");
+    var avatar = q(ov, "[data-dpl='avatar']");
+    if (input) {
+      input.disabled = !can;
+      var ph = !can ? "Sign in to comment" : wholeSong ? "Comment on the song" : "Comment at " + (m.label || "0:00");
+      if (input.__dplPh !== ph) { input.__dplPh = ph; input.placeholder = ph; }
+    }
+    if (send) send.disabled = !can;
+    if (postAt) {
+      var label = wholeSong ? "Post" : "Post at " + (m.label || "0:00");
+      if (postAt.__dplLabel !== label) { postAt.__dplLabel = label; postAt.textContent = label; }
+      postAt.classList.toggle("is-on", !wholeSong);
+      postAt.setAttribute("aria-pressed", wholeSong ? "false" : "true");
+    }
+    qa(ov, "[data-dpl='moment-moment'],[data-dpl='moment-song']").forEach(function (btn) {
+      var on = (btn.getAttribute("data-dpl") === "moment-moment") === !wholeSong;
+      btn.classList.toggle("is-on", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    if (note && !can) note.textContent = "Sign in to comment on this song.";
+    else if (note && can && note.textContent === "Sign in to comment on this song.") note.textContent = "";
+    if (avatar) {
+      var html = myAvatarHTML();
+      if (avatar.__dplAvatar !== html) { avatar.__dplAvatar = html; avatar.innerHTML = html; }
+    }
+  }
+  function dplSendComment(ov) {
+    var input = q(ov, "[data-dpl='comment-input']");
+    var note = q(ov, "[data-dpl='comments-note']");
+    if (!input) return;
+    var text = String(input.value || "").trim();
+    if (!text) { if (note) note.textContent = "Write something first."; return; }
+    if (!signedInDpl()) { if (note) note.textContent = "Sign in to comment on this song."; return; }
+    var m = dplMoment();
+    var title = currentTitle();
+    if (note) note.textContent = "";
+    fetch("/api/song-comments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ track: title, body: text, parentId: 0, atSeconds: m.seconds, atLabel: m.label }),
+    }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok) throw new Error((res.d && (res.d.message || res.d.error)) || "The comment could not be saved");
+        input.value = "";
+        loadComments(ov);
+      })
+      .catch(function (err) {
+        if (note) note.textContent = (err && err.message) || "The comment could not be saved.";
+      });
+  }
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -219,13 +307,39 @@
       ".dpl-row-empty{text-align:center;color:rgba(255,255,255,.4);font-size:13px;padding:40px 20px;line-height:1.7}" +
 
       /* comments */
-      ".dpl-comment-cta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding:10px 12px;border:1px dashed rgba(255,255,255,.1);border-radius:14px}" +
-      ".dpl-comment-cta p{margin:0;font-size:11px;color:rgba(255,255,255,.45);line-height:1.5}" +
-      ".dpl-comment-cta button{background:rgba(232,121,249,.14);border:1px solid rgba(232,121,249,.3);color:#f0abfc;font-size:11px;font-weight:800;letter-spacing:.04em;border-radius:9px;padding:8px 13px;cursor:pointer;white-space:nowrap}" +
-      ".dpl-comment-cta button:hover{background:rgba(232,121,249,.22)}" +
+      ".dpl-compose{margin-bottom:10px}" +
 
       /* credits grid */
       ".dpl-credits{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}" +
+
+      /* ===== playlists ===== */
+      ".dpl-pl-hrow{display:flex;align-items:baseline;justify-content:space-between;padding:2px 2px 10px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px}" +
+      ".dpl-pl-h{font-size:13px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.02em}" +
+      ".dpl-pl-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font-family:inherit;color:#fff;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:10px 12px;margin-bottom:8px;cursor:pointer}" +
+      ".dpl-pl-card:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.09)}" +
+      ".dpl-pl-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0}" +
+      ".dpl-pl-card-meta{flex:1;min-width:0}" +
+      ".dpl-pl-name{font-size:14px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".dpl-pl-sub{font-size:10.5px;color:rgba(255,255,255,.45);margin-top:3px}" +
+      ".dpl-pl-newrow{display:flex;align-items:center;gap:11px;width:100%;font-family:inherit;color:rgba(255,255,255,.62);background:none;border:1px dashed rgba(255,255,255,.12);border-radius:14px;padding:11px 12px;cursor:pointer;font-size:12.5px;font-weight:700;margin-top:2px}" +
+      ".dpl-pl-newrow:hover{color:#fff;border-color:rgba(255,255,255,.22)}" +
+      ".dpl-pl-newrow small{margin-left:auto;font-size:10px;font-weight:600;color:rgba(255,255,255,.35)}" +
+      ".dpl-pl-manage{text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin:16px 0 4px}" +
+      ".dpl-pl-manage a{color:rgba(255,255,255,.6);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.2)}" +
+      ".dpl-pl-empty{text-align:center;color:rgba(255,255,255,.4);font-size:13px;padding:44px 24px;line-height:1.7}" +
+      ".dpl-pl-empty i{display:block;font-size:24px;margin-bottom:10px;color:rgba(255,255,255,.22)}" +
+      ".dpl-pl-empty b{color:#fff}" +
+      ".dpl-pl-empty a{display:inline-block;margin-top:12px;background:#fff;color:#161016;border-radius:99px;padding:8px 20px;font-weight:800;font-size:12px;text-decoration:none}" +
+      ".dpl-pl-dhead{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.06)}" +
+      ".dpl-pl-back{background:none;border:none;color:rgba(255,255,255,.65);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;flex-shrink:0}" +
+      ".dpl-pl-back:hover{background:rgba(255,255,255,.07);color:#fff}" +
+      ".dpl-pl-dmeta{flex:1;min-width:0}" +
+      ".dpl-pl-dname{margin:0;font-size:16px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".dpl-pl-dsub{margin:2px 0 0;font-size:10.5px;color:rgba(255,255,255,.45)}" +
+      ".dpl-pl-actions{display:flex;gap:10px;margin-bottom:12px}" +
+      ".dpl-pl-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;font-family:inherit;font-size:12px;font-weight:800;border-radius:11px;padding:10px;cursor:pointer}" +
+      ".dpl-pl-btn:hover{background:rgba(255,255,255,.09)}" +
+      ".dpl-pl-btn.primary{background:#fff;color:#161016;border-color:#fff}" +
       ".dpl-credit-cell{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 14px;min-width:0}" +
       ".dpl-credit-cell--wide{grid-column:1/-1}" +
       ".dpl-credit-label{display:block;font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:4px}" +
@@ -321,6 +435,7 @@
             '<button type="button" class="dpl-tab" data-dpl="tab-queue">Up next<small data-dpl="upnext-count"></small></button>' +
             '<button type="button" class="dpl-tab is-active" data-dpl="tab-comments">Comments<small data-dpl="comments-count"></small></button>' +
             '<button type="button" class="dpl-tab" data-dpl="tab-credits">Credits</button>' +
+            '<button type="button" class="dpl-tab" data-dpl="tab-playlists">Playlists<small data-dpl="playlists-count"></small></button>' +
           '</nav>' +
           '<div class="dpl-tabpane" data-dpl="pane-queue" hidden>' +
             '<div class="dpl-upnext-hrow"><span class="dpl-upnext-h">Up next<span class="dpl-upnext-count" data-dpl="queue-count"></span></span>' +
@@ -328,12 +443,48 @@
             '<div data-dpl="queue-list"></div>' +
           '</div>' +
           '<div class="dpl-tabpane" data-dpl="pane-comments">' +
-            '<div class="dpl-comment-cta"><p>This thread is on the song page, with everyone who has written on it.</p>' +
-              '<button type="button" data-dpl="open-panel">Write in the panel</button></div>' +
+            '<div class="dpl-compose">' +
+              '<div class="scc-row">' +
+                '<span class="scc-avatar" data-dpl="avatar"><i class="fas fa-user" aria-hidden="true"></i></span>' +
+                '<input class="scc-input" data-dpl="comment-input" type="text" maxlength="2000" enterkeyhint="send" placeholder="Comment at 0:00" aria-label="Write a comment">' +
+                '<button type="button" class="scc-send" data-dpl="comment-send" aria-label="Send the comment"><i class="fas fa-arrow-right" aria-hidden="true"></i></button>' +
+              '</div>' +
+              '<div class="scc-moment-row">' +
+                '<div class="song-moment-toggle" role="group" aria-label="When this comment applies to">' +
+                  '<button type="button" class="song-moment-btn is-on" data-dpl="moment-moment">This moment</button>' +
+                  '<button type="button" class="song-moment-btn" data-dpl="moment-song">Whole song</button>' +
+                '</div>' +
+                '<button type="button" class="scc-post-at is-on" data-dpl="post-at">Post at 0:00</button>' +
+              '</div>' +
+              '<p class="song-comments-note" data-dpl="comments-note"></p>' +
+            '</div>' +
             '<div data-dpl="comments-thread"></div>' +
           '</div>' +
           '<div class="dpl-tabpane" data-dpl="pane-credits" hidden>' +
             '<div class="dpl-credits" data-dpl="credits-grid"></div>' +
+          '</div>' +
+          '<div class="dpl-tabpane" data-dpl="pane-playlists" hidden>' +
+            '<div data-dpl="pl-list-view">' +
+              '<div class="dpl-pl-hrow"><span class="dpl-pl-h">Your playlists</span>' +
+                '<button type="button" class="dpl-clear" data-dpl="pl-refresh" title="Refresh"><i class="fas fa-rotate-right" aria-hidden="true"></i></button></div>' +
+              '<div data-dpl="pl-list"></div>' +
+              '<button type="button" class="dpl-pl-newrow" data-dpl="pl-new"><i class="fas fa-plus" aria-hidden="true"></i>New playlist<small>opens your profile</small></button>' +
+              '<p class="dpl-pl-manage"><a data-dpl="pl-manage" style="cursor:pointer">Manage your playlists in your profile</a></p>' +
+            '</div>' +
+            '<div data-dpl="pl-detail-view" hidden>' +
+              '<div class="dpl-pl-dhead">' +
+                '<button type="button" class="dpl-pl-back" data-dpl="pl-back" aria-label="Back to all playlists"><i class="fas fa-arrow-left" aria-hidden="true"></i></button>' +
+                '<div class="dpl-pl-dmeta">' +
+                  '<p class="dpl-pl-dname" data-dpl="pl-dname"></p>' +
+                  '<p class="dpl-pl-dsub" data-dpl="pl-dsub"></p>' +
+                '</div>' +
+              '</div>' +
+              '<div class="dpl-pl-actions">' +
+                '<button type="button" class="dpl-pl-btn primary" data-dpl="pl-playall"><i class="fas fa-play" aria-hidden="true"></i>Play all</button>' +
+                '<button type="button" class="dpl-pl-btn" data-dpl="pl-queueall"><i class="fas fa-list-ul" aria-hidden="true"></i>Queue all</button>' +
+              '</div>' +
+              '<div data-dpl="pl-tracks"></div>' +
+            '</div>' +
           '</div>' +
         '</section>' +
       '</div>';
@@ -364,13 +515,55 @@
         if (a === "repeat") { if (typeof setRepeat === "function") { try { var m = (typeof repeatMode !== "undefined" ? repeatMode : 0); setRepeat(m + 1); } catch (e) { setRepeat(1); } } return; }
         if (a === "mute") { if (typeof toggleMute === "function") toggleMute(); else { var vb = document.getElementById("volume-btn"); if (vb) vb.click(); } return; }
         if (a === "clear-queue") { try { if (typeof clearQueue === "function") window.clearQueue(); } catch (e) {} return; }
-        if (a === "tab-queue" || a === "tab-comments" || a === "tab-credits") { switchTab(ov, a.slice(4)); return; }
+        if (a === "tab-queue" || a === "tab-comments" || a === "tab-credits" || a === "tab-playlists") { switchTab(ov, a.slice(4)); return; }
+        if (a === "pl-refresh") { loadPlaylists(ov); return; }
+        if (a === "pl-back") { plState.current = null; paintPlView(ov, "list"); return; }
+        if (a === "pl-playall") {
+          var idxsAll = plMatchedIdxs(plState.current);
+          if (idxsAll.length) { try { if (window.selectTrackFromList) window.selectTrackFromList(idxsAll[0]); } catch (e) {} }
+          else toast("Nothing in the vault from this playlist", "info");
+          return;
+        }
+        if (a === "pl-queueall") {
+          var idxsQ = plMatchedIdxs(plState.current);
+          if (!idxsQ.length) { toast("Nothing in the vault from this playlist", "info"); return; }
+          var added = 0;
+          if (window.queueBulkStart) window.queueBulkStart();
+          try {
+            for (var qi = 0; qi < idxsQ.length; qi++) { if (typeof addToQueue === "function") { addToQueue(idxsQ[qi]); added++; } }
+          } finally { if (window.queueBulkEnd) window.queueBulkEnd(); }
+          toast("Queued " + added + (added === 1 ? " track" : " tracks"), "success");
+          return;
+        }
+        if (a === "pl-new") {
+          close();
+          if (window.viewMyProfile) window.viewMyProfile();
+          else if (typeof window.switchAppPage === "function") window.switchAppPage("profile");
+          return;
+        }
+        if (a === "pl-manage") {
+          close();
+          if (window.viewMyProfile) window.viewMyProfile();
+          else if (typeof window.switchAppPage === "function") window.switchAppPage("profile");
+          return;
+        }
+        if (a === "moment-moment") { dplMomentMode = "moment"; paintDplComposer(ov); return; }
+        if (a === "moment-song") { dplMomentMode = "song"; paintDplComposer(ov); return; }
+        if (a === "comment-send") { dplSendComment(ov); return; }
         if (a === "open-panel") { close(); var b = document.getElementById("song-comments-btn"); if (b) b.click(); return; }
       } catch (err) {}
       setTimeout(function () { sync(true); }, 120);
     });
 
     /* the volume slider */
+    /* the moment labels follow the song */
+    var dinput = q(ov, "[data-dpl='comment-input']");
+    if (dinput) {
+      dinput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); dplSendComment(ov); }
+      });
+    }
+
     var vol = q(ov, "[data-dpl='vol']");
     if (vol) {
       var setVol = function (e) {
@@ -420,6 +613,149 @@
     if (name === "comments") loadComments(ov);
     if (name === "credits") renderCredits(ov);
     if (name === "queue") refreshQueue(ov);
+    if (name === "playlists") loadPlaylists(ov);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* the playlists tab                                                  */
+  /* ------------------------------------------------------------------ */
+  function plCatalogueIndex(title) {
+    try {
+      if (typeof trackList === "undefined" || !trackList) return -1;
+      var low = String(title || "").trim().toLowerCase();
+      for (var i = 0; i < trackList.length; i++) {
+        if (String((trackList[i] || {}).title || "").trim().toLowerCase() === low) return i;
+      }
+    } catch (e) {}
+    return -1;
+  }
+  function plMatchedIdxs(pl) {
+    var out = [];
+    var tracks = (pl && pl.tracks) || [];
+    for (var i = 0; i < tracks.length; i++) {
+      var ix = plCatalogueIndex(tracks[i].title);
+      if (ix >= 0) out.push(ix);
+    }
+    return out;
+  }
+  function paintPlView(ov, view) {
+    var listView = q(ov, "[data-dpl='pl-list-view']");
+    var detailView = q(ov, "[data-dpl='pl-detail-view']");
+    if (listView) listView.hidden = view !== "list";
+    if (detailView) detailView.hidden = view !== "detail";
+  }
+
+  function loadPlaylists(ov) {
+    var box = q(ov, "[data-dpl='pl-list']");
+    if (!box) return;
+    plState.current = null;
+    paintPlView(ov, "list");
+    box.innerHTML = '<div class="dpl-pl-empty"><i class="fas fa-compact-disc"></i>Loading your playlists…</div>';
+
+    fetch("/api/playlists", { credentials: "same-origin" })
+      .then(function (r) {
+        if (r.status === 401) return { status: 401, d: null };
+        return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, d: d }; });
+      })
+      .then(function (res) {
+        if (!document.getElementById(OV)) return;
+        box.textContent = "";
+        var tabBadge = q(ov, "[data-dpl='playlists-count']");
+        if (res.status === 401) {
+          if (tabBadge) tabBadge.textContent = "";
+          box.innerHTML = '<div class="dpl-pl-empty"><i class="fas fa-user"></i><b>Sign in to see your playlists</b><br>The playlists you make live on your account.<br><a href="/login">Sign in</a></div>';
+          return;
+        }
+        var list = (res.d && Array.isArray(res.d.playlists)) ? res.d.playlists : [];
+        plState.list = list;
+        if (tabBadge) tabBadge.textContent = list.length ? String(list.length) : "";
+        if (!list.length) {
+          box.innerHTML = '<div class="dpl-pl-empty"><i class="fas fa-compact-disc"></i><b>No playlists yet</b><br>Make one in your profile, or hit the + on any song to save it.</div>';
+          return;
+        }
+        list.forEach(function (pl) {
+          var count = Number(pl.count) || (pl.tracks || []).length || 0;
+          var vis = pl.visibility === "public" ? "Public" : pl.visibility === "unlisted" ? "Unlisted" : "Private";
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "dpl-pl-card";
+          b.innerHTML =
+            '<span class="dpl-pl-dot" style="background:' + esc(pl.color || "#a855f7") + '"></span>' +
+            '<span class="dpl-pl-card-meta">' +
+              '<span class="dpl-pl-name">' + esc(pl.name || "Playlist") + '</span><br>' +
+              '<span class="dpl-pl-sub">' + count + (count === 1 ? " song" : " songs") + " · " + esc(vis) + "</span>" +
+            "</span>" +
+            '<i class="fas fa-chevron-right" style="color:rgba(255,255,255,.3)" aria-hidden="true"></i>';
+          b.addEventListener("click", function () { openPlaylistDetail(ov, pl); });
+          box.appendChild(b);
+        });
+      })
+      .catch(function () {
+        if (!document.getElementById(OV)) return;
+        box.innerHTML = '<div class="dpl-pl-empty"><i class="fas fa-triangle-exclamation"></i>The playlists could not be loaded.<br>Check your connection and try again.</div>';
+      });
+  }
+
+  function openPlaylistDetail(ov, pl) {
+    plState.current = pl;
+    var nameEl = q(ov, "[data-dpl='pl-dname']");
+    var subEl = q(ov, "[data-dpl='pl-dsub']");
+    var tracks = (pl && pl.tracks) || [];
+    var vis = pl.visibility === "public" ? "Public" : pl.visibility === "unlisted" ? "Unlisted" : "Private";
+    var count = tracks.length;
+    if (nameEl) nameEl.textContent = pl.name || "Playlist";
+    if (subEl) subEl.textContent = count + (count === 1 ? " song" : " songs") + " · " + vis;
+
+    var wrap = q(ov, "[data-dpl='pl-tracks']");
+    if (wrap) {
+      wrap.textContent = "";
+      if (!tracks.length) {
+        wrap.innerHTML = '<div class="dpl-pl-empty"><i class="fas fa-compact-disc"></i><b>Nothing in here yet</b><br>Add songs from the player or any song page with the + button.</div>';
+      } else {
+        tracks.forEach(function (tr) {
+          var row = document.createElement("div");
+          row.className = "dpl-row";
+          var title = String(tr.title || "");
+          var idx = plCatalogueIndex(title);
+          var t = null;
+          try { if (idx >= 0 && typeof trackList !== "undefined" && trackList) t = trackList[idx]; } catch (e) {}
+          var src = t && t.cover ? String(t.cover) : "Juice-WRLD.png";
+          row.innerHTML =
+            '<img decoding="async" class="dpl-row-cover" loading="lazy" src="' + esc(coverThumb(src, "64")) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+            '<div class="dpl-row-meta">' +
+              '<p class="dpl-row-title">' + esc(title || "Untitled") + '</p>' +
+              '<p class="dpl-row-sub">' + (t ? esc(eraName(t) + (catLabel(t) ? " · " + catLabel(t) : "")) : "Not in the vault") + "</p></div>" +
+            '<span class="dpl-row-duration">' + (t ? esc(fmt(Number(t.duration) || 0)) : "") + "</span>" +
+            '<button type="button" class="dpl-row-x" data-plrm aria-label="Remove from this playlist"><i class="fas fa-xmark" aria-hidden="true"></i></button>';
+          row.addEventListener("click", function (e) {
+            var rm = e.target.closest ? e.target.closest("[data-plrm]") : null;
+            if (rm) {
+              e.stopPropagation();
+              fetch("/api/playlists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                body: JSON.stringify({ action: "remove", id: pl.id, track_id: tr.id }),
+              }).then(function (r) { return r.json().catch(function () { return {}; }); })
+                .then(function (d) {
+                  if (d && d.ok && d.playlist) {
+                    toast("Removed from the playlist", "info");
+                    openPlaylistDetail(ov, d.playlist);
+                  } else {
+                    toast((d && (d.error || d.message)) || "Could not remove that song", "error");
+                  }
+                })
+                .catch(function () { toast("Could not remove that song", "error"); });
+              return;
+            }
+            if (idx < 0) { toast("This song is not in the vault yet", "info"); return; }
+            try { if (window.selectTrackFromList) window.selectTrackFromList(idx); } catch (err) {}
+          });
+          wrap.appendChild(row);
+        });
+      }
+    }
+    paintPlView(ov, "detail");
   }
 
   function loadComments(ov) {
@@ -431,6 +767,7 @@
       return;
     }
     window.SongComments.renderThreadInto(box, title);
+    paintDplComposer(ov);
     var cnt = document.getElementById("song-comments-count");
     var badge = q(ov, "[data-dpl='comments-count']");
     if (badge && cnt) badge.textContent = cnt.textContent || "0";
@@ -632,6 +969,10 @@
       volFill.style.width = Math.round(v * 100) + "%";
     }
 
+    /* the composer follows the song's clock */
+    var cp = q(ov, "[data-dpl='pane-comments']");
+    if (cp && !cp.hidden) paintDplComposer(ov);
+
     /* track changed: refresh the tab that shows the song */
     if (force || lastSync.title !== currentTitle()) {
       lastSync.title = currentTitle();
@@ -669,6 +1010,12 @@
 
   window.openDesktopPlayer = open;
   window.closeDesktopPlayer = close;
+  /* The context menu's "My playlists" opens the sheet straight onto it. */
+  window.openDesktopPlaylists = function () {
+    open();
+    var ov = document.getElementById(OV);
+    if (ov) switchTab(ov, "playlists");
+  };
 
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && document.getElementById(OV)) close();

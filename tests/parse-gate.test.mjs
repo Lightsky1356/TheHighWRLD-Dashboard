@@ -2641,12 +2641,10 @@ function safeDecode4(v) {
     structureOk("the Covers wall grows as the reader scrolls, and its batches finish");
   }
 
-  if (!/id="page-nav-trending"[^>]*>[^<]*<i class="fas fa-arrow-trend-up"/.test(page)) {
-    structureFail("the nav's Trending button does not wear the arrow - it still wears the flame");
-  } else if (/id="page-nav-trending"[^>]*>[^<]*<i class="fas fa-fire"/.test(page)) {
-    structureFail("the nav's Trending button still wears the flame");
+  if (/id="page-nav-trending"/.test(page)) {
+    structureFail("the nav's Trending arrow is still in the pill nav - there is no Trending page, the list lives inside the player, and the button was asked to go");
   } else {
-    structureOk("the nav's Trending button wears an arrow that goes up");
+    structureOk("the nav's Trending arrow is gone from the pill nav");
   }
 }
 

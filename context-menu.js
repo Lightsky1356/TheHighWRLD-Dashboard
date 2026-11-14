@@ -115,6 +115,7 @@
       '<p class="thw-ctx-title"></p>' +
       '<button class="thw-ctx-item" data-act="like" role="menuitem"><i class="far fa-heart"></i><span class="thw-ctx-like-label">Like</span></button>' +
       '<button class="thw-ctx-item" data-act="addplaylist" role="menuitem"><i class="fas fa-plus"></i><span>Add to playlist</span><i class="fas fa-chevron-right thw-ctx-chev"></i></button>' +
+      '<button class="thw-ctx-item" data-act="myplaylists" role="menuitem"><i class="fas fa-compact-disc"></i><span>My playlists<span class="thw-ctx-sub">Play or queue what you saved</span></span></button>' +
       '<button class="thw-ctx-item" data-act="cover" role="menuitem"><i class="fas fa-image"></i><span>Change cover<span class="thw-ctx-sub">Only you see it</span></span></button>' +
       '<div class="thw-ctx-div"></div>' +
       '<button class="thw-ctx-item" data-act="share" role="menuitem"><i class="fas fa-share-nodes"></i><span>Share</span></button>' +
@@ -176,6 +177,13 @@
     }
 
     if (a === "addplaylist") { openPicker(menu, t); return; }
+
+    if (a === "myplaylists") {
+      closeMenu();
+      if (window.openDesktopPlaylists) window.openDesktopPlaylists();
+      else if (window.openDesktopPlayer) window.openDesktopPlayer();
+      return;
+    }
 
     if (a === "cover") { pickCover(); return; }
 

@@ -118,6 +118,37 @@
     return false;
   }
 
+  /* The user's avatar, the same one the nav carries. Rebuilt rarely and
+     cached: the nav node is not ours to re-render. */
+  var myAvatarCache = null;
+  function myAvatarHTML() {
+    if (myAvatarCache !== null) return myAvatarCache;
+    var html = '<i class="fas fa-user" aria-hidden="true"></i>';
+    try {
+      var holder = document.getElementById("navAvatarInner");
+      var img = holder && holder.querySelector ? holder.querySelector("img") : null;
+      if (img && img.src) html = '<img decoding="async" src="' + esc(img.src) + '" alt="">';
+    } catch (e) {}
+    myAvatarCache = html;
+    return html;
+  }
+
+  /* Paint only the parts of the composer that follow the song's clock -
+     the same way juicewrld.io's composer moves with the moment. No thread
+     re-render, just the two labels. */
+  function paintMomentLabels() {
+    var m = nowMoment();
+    var wholeSong = state.mode === "song";
+    var input = document.getElementById("song-comments-input");
+    if (input && state.signedIn && !wholeSong) {
+      input.placeholder = "Comment at " + (m.label || "0:00");
+    }
+    var postAt = document.getElementById("song-comments-post-at");
+    if (postAt) {
+      postAt.textContent = wholeSong ? "Post" : (state.track && m.label ? "Post at " + m.label : "Post");
+    }
+  }
+
   /* ---- the markup ---- */
   function mount() {
     if (document.getElementById("song-comments-root")) return;
@@ -152,15 +183,17 @@
               '<span id="song-comments-replying-label"></span>' +
               '<button id="song-comments-replying-cancel" type="button">Cancel</button>' +
             '</div>' +
-            '<div class="song-moment-toggle" role="group" aria-label="When this comment applies to">' +
-              '<button type="button" class="song-moment-btn is-on" data-mode="moment">This moment</button>' +
-              '<button type="button" class="song-moment-btn" data-mode="song">Whole song</button>' +
+            '<div class="scc-row">' +
+              '<span class="scc-avatar" id="song-comments-avatar"><i class="fas fa-user" aria-hidden="true"></i></span>' +
+              '<input id="song-comments-input" class="scc-input" type="text" maxlength="2000" enterkeyhint="send" placeholder="Comment at 0:00" aria-label="Write a comment">' +
+              '<button id="song-comments-send" type="button" class="scc-send" aria-label="Send the comment"><i class="fas fa-arrow-right" aria-hidden="true"></i></button>' +
             '</div>' +
-            '<textarea id="song-comments-input" class="song-comments-input" rows="2" maxlength="2000" ' +
-              'placeholder="Say something about this song"></textarea>' +
-            '<div class="song-comments-compose-foot">' +
-              '<span id="song-comments-moment" class="song-comments-moment"></span>' +
-              '<button id="song-comments-send" type="button" class="song-comments-send">Post</button>' +
+            '<div class="scc-moment-row">' +
+              '<div class="song-moment-toggle" role="group" aria-label="When this comment applies to">' +
+                '<button type="button" class="song-moment-btn is-on" data-mode="moment">This moment</button>' +
+                '<button type="button" class="song-moment-btn" data-mode="song">Whole song</button>' +
+              '</div>' +
+              '<button id="song-comments-post-at" type="button" class="scc-post-at is-on">Post at 0:00</button>' +
             '</div>' +
             '<p id="song-comments-note" class="song-comments-note"></p>' +
           '</div>' +
@@ -176,7 +209,7 @@
       render();
     });
     document.getElementById("song-comments-input").addEventListener("keydown", function (e) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); send(); }
+      if (e.key === "Enter") { e.preventDefault(); send(); }
     });
     document.getElementById("song-comments-input").addEventListener("input", function () {
       document.getElementById("song-comments-note").textContent = "";
@@ -490,20 +523,23 @@
     /* The composer. */
     var send = document.getElementById("song-comments-send");
     var input = document.getElementById("song-comments-input");
-    var moment = document.getElementById("song-comments-moment");
+    var postAt = document.getElementById("song-comments-post-at");
+    var avatar = document.getElementById("song-comments-avatar");
+    var mm = nowMoment();
+    var wholeSong = state.mode === "song";
     if (send) send.disabled = !state.signedIn;
     if (input) {
       input.disabled = !state.signedIn;
-      input.placeholder = state.signedIn
-        ? "Say something about this song"
-        : "Sign in to comment on this song";
+      input.placeholder = !state.signedIn
+        ? "Sign in to comment"
+        : wholeSong ? "Comment on the song" : "Comment at " + (mm.label || "0:00");
     }
-    if (moment) {
-      var m = nowMoment();
-      moment.textContent = state.track
-        ? (state.mode === "song" ? "the whole song" : "at " + m.label)
-        : "";
+    if (avatar) {
+      var html = myAvatarHTML();
+      if (avatar.__sccAvatar !== html) { avatar.__sccAvatar = html; avatar.innerHTML = html; }
     }
+    var note = document.getElementById("song-comments-note");
+    if (note && !state.signedIn) note.textContent = "Sign in to comment on this song.";
 
     /* The moment toggle and the post button follow the mode. */
     var modeBtns = document.querySelectorAll(".song-moment-btn");
@@ -512,9 +548,10 @@
       btn.classList.toggle("is-on", on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
     });
-    if (send) {
-      var mm = nowMoment();
-      send.textContent = state.mode === "song" ? "Post" : (state.track && mm.label ? "Post at " + mm.label : "Post");
+    if (postAt) {
+      postAt.textContent = wholeSong ? "Post" : (state.track && mm.label ? "Post at " + mm.label : "Post");
+      postAt.classList.toggle("is-on", !wholeSong);
+      postAt.setAttribute("aria-pressed", wholeSong ? "false" : "true");
     }
   }
 
@@ -648,6 +685,13 @@
 
   function boot() {
     mount();
+    var audio = document.querySelector("audio");
+    if (audio) {
+      audio.addEventListener("timeupdate", paintMomentLabels);
+      audio.addEventListener("seeked", paintMomentLabels);
+    }
+    /* timeupdate is enough, and this catches anything it misses. */
+    setInterval(paintMomentLabels, 1000);
     /* The count on the player's button, kept fresh without a request for
        every song: the panel loads the thread when it opens, and the badge
        follows the song that is playing. */
