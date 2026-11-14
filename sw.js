@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v289';;;;;;;;;;;;;;;;;
+const VERSION = 'thw-v290';;;;;;;;;;;;;;;;;
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -240,13 +240,22 @@ function isStaticAsset(url) {
  *
  * If the page never says - an old one, or one that was already up - the wait
  * ends anyway after a few seconds, so the cache is still filled. */
+/* The page tells the worker when it is up. Registered HERE, at the top level,
+   because the worker only gets the page-ready message if the listener is in
+   place the moment the worker is evaluated - a listener attached later can
+   miss it entirely (which is the console warning the browser flags). */
+var pageReadyResolve = null;
+self.addEventListener('message', function (event) {
+  if (event.data && event.data.type === 'thw:page-ready' && pageReadyResolve) {
+    pageReadyResolve();
+  }
+});
+
 function waitForThePage() {
   return new Promise(function (resolve) {
     var said = false;
-    function go() { if (said) return; said = true; resolve(); }
-    self.addEventListener('message', function (event) {
-      if (event.data && event.data.type === 'thw:page-ready') go();
-    });
+    function go() { if (said) return; said = true; pageReadyResolve = null; resolve(); }
+    pageReadyResolve = go;
     setTimeout(go, 8000);
   });
 }
@@ -332,6 +341,23 @@ function precacheShell() {
       if (failed.length) {
         console.warn('[SW] precache missed ' + failed.length + ':', failed.join(', '));
       }
+      /* The index.html shell is the ONE entry this app cannot work offline
+         without, and it is the one entry network flakiness has dropped most
+         often. One extra attempt, without the reload request mode - if a
+         200 comes back it is stored; if it does not, the navigation path
+         refreshes it anyway on the user's next page load. */
+      return caches.open(SHELL_CACHE)
+        .then(function (c) {
+          return c.match('./index.html').then(function (hit) {
+            if (hit) return;
+            return fetch('./index.html').then(function (res) {
+              if (res && res.ok) return c.put('./index.html', res);
+            }).catch(function () {});
+          });
+        })
+        .then(function () {
+          if (failed.length) console.warn('[SW] precache missed ' + failed.length + ' (retried the shell)');
+        });
     });
   });
 }
