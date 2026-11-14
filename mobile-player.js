@@ -320,7 +320,7 @@
       /* the search pill, dead centre, the same shape juicewrld.io carries */
       /* the search pill, inside the queue page */ +
       ".mp2-search{position:relative;width:100%;height:40px;margin:0 0 12px}" +
-      ".mp2-search-input{width:100%;height:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 40px 0 36px;transition:border-color .2s ease,background .2s ease}" +
+      ".mp2-search-input{display:block;width:100%;height:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 40px 0 36px;transition:border-color .2s ease,background .2s ease;line-height:40px}" +
       ".mp2-search-input::placeholder{color:rgba(255,255,255,.36)}" +
       ".mp2-search-input:focus{border-color:rgba(34,211,238,.45);background:rgba(255,255,255,.11)}" +
       ".mp2-search-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.42);font-size:12px;pointer-events:none}" +

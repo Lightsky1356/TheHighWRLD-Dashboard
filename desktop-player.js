@@ -356,7 +356,7 @@
       /* the search pill in the top bar */ +
       ".dpl-searchwrap{position:relative;width:100%;height:38px;z-index:6}" +
       ".dpl-search-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.42);font-size:12px;pointer-events:none}" +
-      ".dpl-search-input{width:100%;height:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 36px 0 36px;transition:border-color .2s ease,background .2s ease}" +
+      ".dpl-search-input{display:block;width:100%;height:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 36px 0 36px;transition:border-color .2s ease,background .2s ease;line-height:38px}" +
       ".dpl-search-input::placeholder{color:rgba(255,255,255,.36)}" +
       ".dpl-search-input:focus{border-color:rgba(34,211,238,.45);background:rgba(255,255,255,.12)}" +
       ".dpl-search-clear{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.5);width:30px;height:30px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:12px;cursor:pointer}" +
