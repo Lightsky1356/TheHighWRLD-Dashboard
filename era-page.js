@@ -366,18 +366,24 @@
      leaderboard wakes itself: the switch only toggles classes. Cold boots
      into /era and every in-app button call switchAppPage("era") long before
      any renderer runs, so without this the section appears with nothing
-     in it. Render only when the pane is empty - never stomp an era page
-     that is already open. */
+     in it. Only for the bare /era chooser, and never while we ourselves
+     are mid-render - renderChoose flips the switch again, and without the
+     guard the tab recursed itself to a freeze. */
+  function wakeEra() {
+    var pane = document.getElementById("page-section-era");
+    var bare = /^\/era\/?$/i.test(location.pathname || "");
+    if (bare && pane && !pane.innerHTML.trim() && !window.__eraRendering) {
+      window.__eraRendering = true;
+      try { renderChoose(); } catch (e) {} finally { window.__eraRendering = false; }
+    }
+  }
   if (typeof window.switchAppPage === "function" && !window.__eraWakeWrapped) {
     window.__eraWakeWrapped = true;
     var origSwitchEra = window.switchAppPage;
     window.switchAppPage = function (page) {
       var out = origSwitchEra.apply(this, arguments);
       if (page === "era") {
-        try {
-          var pane = document.getElementById("page-section-era");
-          if (pane && !pane.innerHTML.trim()) renderChoose();
-        } catch (e) {}
+        try { wakeEra(); } catch (e) {}
       }
       return out;
     };
