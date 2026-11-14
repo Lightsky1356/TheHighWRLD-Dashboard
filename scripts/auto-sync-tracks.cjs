@@ -234,11 +234,19 @@ function metadataFromJuiceIO(core, bare) {
       if (k && map.has(k)) { entry = map.get(k); break; }
     }
     if (!entry) {
-      /* containment: the shortest tracker title the filename starts with wins */
+      /* containment: the filename is (almost) the tracker's title, or the
+         reverse. A loose word-prefix match is not a match at all - "fuck"
+         drives "fuckedup", and the entire point of this branch is to refuse
+         that. Require the shorter side to be at least 3/4 of the longer, or
+         nothing is attached. */
       const bareTarget = bareKey(core);
       let bestLen = 0;
       for (const [key, e] of map) {
-        if (!key || key.length < 4 || !bareTarget.startsWith(key)) continue;
+        if (!key || key.length < 4) continue;
+        const shorter = Math.min(key.length, bareTarget.length);
+        const longer = Math.max(key.length, bareTarget.length);
+        if (shorter / longer < 0.75) continue;   /* unrelated-song noise */
+        if (!bareTarget.startsWith(key) && !key.startsWith(bareTarget)) continue;
         if (key.length > bestLen && e.pr) { bestLen = key.length; entry = e; }
       }
     }
@@ -266,9 +274,13 @@ function metadataFromJuiceAPI(core, bare) {
       let data;
       try { data = JSON.parse(r.body.toString("utf8")); } catch (_) { return null; }
       const results = data && data.results ? data.results : [];
-      const target = norm(core);
-      /* The closest answer: its own title (or any of the alias titles) sits
-         inside the filename's core, or the core sits inside the title. */
+      /* Score against the readable title this search carried for, not the
+         filename's core - otherwise the live answer ("Fucked Up" vs
+         "fuckedupburningmeout") is 0.4 short of exact and gets discarded,
+         while a same-word prefix 0.4 was enough before. Same rule for every
+         source: the shorter side must be at least 3/4 of the longer and
+         anchored, otherwise the record is a different song. */
+      const target = norm(bare || core);
       let best = null, bestScore = -1;
       for (const song of results) {
         const titles = [song.name].concat(song.track_titles || []);
@@ -277,13 +289,17 @@ function metadataFromJuiceAPI(core, bare) {
           if (!n) continue;
           let score = 0;
           if (n === target) score = 8;
-          else if (n.length && target.startsWith(n)) score = 6 + Math.min(n.length / target.length, 1);
-          else if (target.length && n.startsWith(target)) score = 5;
-          else if (target.length && n.includes(target)) score = 3;
+          else {
+            const shorter = Math.min(n.length, target.length);
+            const longer = Math.max(n.length, target.length);
+            const ratio = shorter / longer;
+            const anchored = n.startsWith(target) || target.startsWith(n) || n.includes(target);
+            if (ratio >= 0.75 && anchored) score = 6 * ratio;
+          }
           if (score > bestScore) { bestScore = score; best = song; }
         }
       }
-      if (!best || bestScore < 3) return null;
+      if (!best || bestScore < 4) return null;
       const year =
         firstYear(best.record_dates) || firstYear(best.release_date) ||
         firstYear(best.dates) || firstYear(best.era && best.era.time_frame) || "";
@@ -304,6 +320,18 @@ function metadataFromJuiceVault(core) {
       let data;
       try { data = JSON.parse(r.body.toString("utf8")); } catch (_) { return null; }
       if (!data || (!data.producer && !data.year && !data.title)) return null;
+      /* Same anchoring rule as every other source: the tracker's title must
+         be recognisable in the request, or this is someone else's song. */
+      if (data.title) {
+        const n = norm(data.title);
+        const target = norm(core);
+        if (n && target) {
+          const shorter = Math.min(n.length, target.length);
+          const longer = Math.max(n.length, target.length);
+          const anchored = n.startsWith(target) || target.startsWith(n) || n.includes(target);
+          if (n !== target && !(anchored && shorter / longer >= 0.75)) return null;
+        }
+      }
       return {
         source: "juicevault",
         name: data.title || "",
@@ -317,6 +345,31 @@ function metadataFromJuiceVault(core) {
 
 function bareKey(s) {
   return norm((s || "").replace(/\([^()]*\)/g, " ").replace(/\s+/g, " ").trim());
+}
+
+/* The tag's parentheticals are this file's own ground truth: era codes, the
+   Sessions/Halloween/Leaks category note and the vN version note are not alt
+   names - everything else is (or is not) an aka the tag already names. The
+   tracker's aka list is never used for a file the site just found, because
+   it is tied to a specific recording and the file we publish may be a
+   different cut of the same song. Group order is preserved. */
+function filenameAltnames(stem) {
+  const groups = stem.match(/\([^()]*\)/g) || [];
+  const seen = new Set();
+  const alts = [];
+  for (const g of groups) {
+    const inner = g.slice(1, -1).trim();
+    if (!inner) continue;
+    const upper = inner.toUpperCase();
+    if (ERA_SET.has(upper)) continue;                       /* WOD, GB&GR, JW3 ... */
+    if (VERSION_RE.test(g)) continue;                        /* "(v2)" version note */
+    if (/^(Sessions|Halloween|Leaks?)$/i.test(inner)) continue;   /* category */
+    const key = norm(inner);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    alts.push(inner);
+  }
+  return alts;
 }
 
 /* The bare title as a human would read it - parens stripped, spaces kept -
@@ -366,21 +419,22 @@ function mp3Duration(buf) {
       if (ver === 3) { bitrate = BR_WIDTHS[bindex]; sampleRate = SR1[sindex]; samples = 1152; }
       else { bitrate = V2_BR[bindex]; sampleRate = ver === 2 ? SR2[sindex] : SR25[sindex]; samples = 576; }
       if (!bitrate || !sampleRate) continue;
-      /* Xing / Info header: frame count, so VBR files read exactly.
-         The side-info block's size varies: MPEG1 stereo files carry 32
-         bytes of it (mono 17), MPEG2/2.5 stereo 17 (mono 9). The Xing
-         tag lives right after it, so the channel mode is read from the
-         frame header rather than guessed. */
+      /* Xing / Info header: header tag -> flags (4 bytes) -> frames (4) ->
+         bytes (4) -> TOC (100) -> quality (4). Reading the frame count as if
+         it were the flags produced a wrong "frames" value, which silently
+         failed the flags test and dropped into the CBR estimate. Every byte
+         here is keyed off the side-info size, so a stereo MPEG1 with 32
+         bytes of it lands on Xing as well. */
       const chanMode = (buf[p + 3] >> 6) & 3;   /* 3 = mono */
       const stereo = chanMode !== 3;
       const sideInfo = ver === 3 ? (stereo ? 32 : 17) : (stereo ? 17 : 9);
       const tag = buf.slice(p + 4 + sideInfo, p + 8 + sideInfo).toString("latin1");
       if (tag === "Xing" || tag === "Info") {
-        const flags = (buf[p + 8 + sideInfo + 4] << 24) | (buf[p + 8 + sideInfo + 5] << 16) |
-          (buf[p + 8 + sideInfo + 6] << 8) | buf[p + 8 + sideInfo + 7];
+        const flags = (buf[p + 8 + sideInfo] << 24) | (buf[p + 8 + sideInfo + 1] << 16) |
+          (buf[p + 8 + sideInfo + 2] << 8) | buf[p + 8 + sideInfo + 3];
         if (flags & 1) {
-          const f = (buf[p + 8 + sideInfo + 8] << 24) | (buf[p + 8 + sideInfo + 9] << 16) |
-            (buf[p + 8 + sideInfo + 10] << 8) | buf[p + 8 + sideInfo + 11];
+          const f = (buf[p + 12 + sideInfo] << 24) | (buf[p + 12 + sideInfo + 1] << 16) |
+            (buf[p + 12 + sideInfo + 2] << 8) | buf[p + 12 + sideInfo + 3];
           return Math.round((f * samples) / sampleRate);
         }
       }
@@ -682,29 +736,28 @@ function coverFor(stem, coverFiles) {
     let producer = "";
     let year = "";
     let altnames = [];
-    /* Was this file only found because of the duration check? Then the
-       metadata match is NOT trustworthy for the alias list — the tracker
-       cannot tell the two recordings apart, and its alias might belong to
-       the other one. Producer/year are much more likely to match both, so
-       they keep coming through. The alias is left for a human. */
-    const fromTitleCollision = cachedDurations.has(file);
     if (meta) {
       title = meta.name || title;
       if (isSessions && !/\(Sessions\)/i.test(title)) title += " (Sessions)";
       producer = meta.producers || "";
       year = meta.year || "";
-      const seen = new Set([norm(title), norm(core), norm(stem), norm(bareTitle(stem)),
-        norm(title.replace(/\s*\((Sessions|Halloween)\)/i, ""))]);
-      altnames = (meta.trackTitles || []).filter(function (t) {
-        const nn = norm(t);
-        if (!nn || seen.has(nn)) return false;
-        seen.add(nn); return true;
-      });
-      if (fromTitleCollision) altnames = [];
-      log("   meta: " + meta.source + " | title=" + title + " | producer=" + producer + " | year=" + year + " | altnames=" + altnames.length);
+      log("   meta: " + meta.source + " | title=" + title + " | producer=" + producer + " | year=" + year);
     } else {
       missingMeta++;
-      warn("no metadata found for \"" + bareTitle(stem) + "\" - leaving producer/year/altnames empty");
+      warn("no metadata found for \"" + bareTitle(stem) + "\" - leaving producer/year empty");
+    }
+    /* Alt names come from the tag's own parentheticals - the only record this
+       specific file has. Trackers bind their aka list to a specific recording
+       and the file dropped in here is not guaranteed to be that cut. */
+    {
+      const seenTitle = new Set([norm(title), norm(core), norm(stem), norm(bareTitle(stem)),
+        norm(title.replace(/\s*\((Sessions|Halloween)\)/i, ""))]);
+      altnames = filenameAltnames(stem).filter(function (t) {
+        const nn = norm(t);
+        if (!nn || seenTitle.has(nn)) return false;
+        seenTitle.add(nn);
+        return true;
+      });
     }
 
     /* duration: read the file's own frame headers. When this file was only

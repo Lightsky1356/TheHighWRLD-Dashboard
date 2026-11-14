@@ -3225,15 +3225,15 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "FUCK! (Sessions)",
+    title: "Fucked Up (Sessions)",
     tag: "Fucked Up (Burning Me Out) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
-    altnames: ["FUCK EXCLAMATION POINT"],
+    altnames: ["Burning Me Out"],
     category: "sessions",
     url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Fucked%20Up%20(Burning%20Me%20Out)%20(Sessions)%20(GB%26GR).mp3",
-    duration: 1724,
+    duration: 1013,
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Fucked%20Up.png",
-    producer: "NiGEL CROWN",
+    producer: "DT & Nick Mira",
     year: "2018"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});
