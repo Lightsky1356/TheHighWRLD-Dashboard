@@ -324,6 +324,7 @@
       /* the action row: heart + add to queue on the left, share on the right */
       ".mp2-actions{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:auto;padding:4px 2px 6px}" +
       ".mp2-actions-left{display:flex;align-items:center;gap:14px}" +
+      ".mp2-actions-right{display:flex;align-items:center;gap:14px}" +
       ".mp2-act{background:none;border:none;color:rgba(255,255,255,.78);width:44px;height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer}" +
       ".mp2-act:active{transform:scale(.88)}" +
       ".mp2-act.is-on{color:#fb7185}" +
@@ -463,6 +464,7 @@
       ".mp2-knob{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.45);left:0%}" +
       ".mp2-scrub:focus-visible{outline:2px solid #e879f9;outline-offset:3px;border-radius:8px}" +
       ".mp2-times{position:relative;z-index:1;display:flex;justify-content:space-between;padding:0 22px;font-size:10px;color:rgba(255,255,255,.5);font-variant-numeric:tabular-nums}" +
+      ".mp2-markers{width:100%;margin-top:2px}" +
 
       /* transport */
       ".mp2-transport{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:14px;padding:6px 0 2px}" +
@@ -1362,6 +1364,7 @@
     if (force || lastSync.title !== t) {
       lastSync.title = t;
       if (currentView === "comments") { paintComposeState(ov); loadComments(ov); }
+      if (window.THWCommentMarkers) window.THWCommentMarkers.refresh(ov);
     }
     if (queueOpen) paintQueuePage(ov, force);
     if (currentView === "comments") paintComposeState(ov);
@@ -1494,6 +1497,7 @@
     var ov = document.createElement("div");
     ov.className = "mp2";
     ov.id = OV;
+    ov.setAttribute("data-markers-root", "");
     ov.setAttribute("role", "dialog");
     ov.setAttribute("aria-modal", "true");
     ov.setAttribute("aria-label", "Now playing");
@@ -1525,7 +1529,10 @@
               '<button type="button" class="mp2-act" data-mp="fav" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
               '<button type="button" class="mp2-act" data-mp="addqueue" aria-label="Add to the queue"><i class="fas fa-plus" aria-hidden="true"></i></button>' +
             '</div>' +
-            '<button type="button" class="mp2-act" data-mp="share" aria-label="Share this song"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></button>' +
+            '<div class="mp2-actions-right">' +
+              '<button type="button" class="mp2-act" data-mp="share" aria-label="Share this song"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></button>' +
+              '<button type="button" class="mp2-act" data-mp="vault-pull" aria-label="Vault pull — a random song"><i class="fas fa-dice" aria-hidden="true"></i></button>' +
+            '</div>' +
           '</div>' +
         '</section>' +
 
@@ -1557,6 +1564,7 @@
         '<div class="mp2-scrub-line"></div><div class="mp2-fill" data-mp="fill"></div><div class="mp2-knob" data-mp="thumb"></div>' +
       '</div>' +
       '<div class="mp2-times"><span data-mp="cur">0:00</span><span data-mp="dur">0:00</span></div>' +
+      '<div class="mp2-markers thw-markers" data-thw-markers></div>' +
 
       '<div class="mp2-transport">' +
         '<button type="button" class="mp2-tbtn" data-mp="shuffle" aria-label="Shuffle" aria-pressed="false"><i class="fas fa-shuffle" aria-hidden="true"></i></button>' +
@@ -1732,6 +1740,8 @@
           if (ci >= 0 && typeof addToQueue === "function") { addToQueue(ci); toast("Added to the queue", "success"); }
         } else if (action === "share") {
           shareSong(currentTitle());
+        } else if (action === "vault-pull") {
+          if (window.vaultPull) window.vaultPull();
         } else if (action === "view-comments") {
           toggleView(ov, "comments");
         } else if (action === "view-queue") {
@@ -1838,6 +1848,7 @@
     stopSync();
     syncIv = setInterval(sync, 1000);
     sync(true);
+    if (window.THWCommentMarkers) window.THWCommentMarkers.refresh(ov);
 
     try {
       var au = audioEl();

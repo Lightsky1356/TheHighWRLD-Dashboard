@@ -404,6 +404,13 @@
         if (f.href) {
           var link = el("a", "song-fact-value song-fact-link", f.value);
           link.href = f.href;
+          var eraSlug = f.href.indexOf("/era/") === 0 ? (f.href.split("/era/")[1] || "") : "";
+          if (eraSlug && window.openEraPage) {
+            link.addEventListener("click", function (ev) {
+              ev.preventDefault();
+              window.openEraPage(eraSlug);
+            });
+          }
           cell.appendChild(link);
         } else {
           cell.appendChild(el("b", "song-fact-value", f.value));

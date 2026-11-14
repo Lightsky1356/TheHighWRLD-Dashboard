@@ -658,7 +658,18 @@
       var c = el("div", "song-credit-cell" + (opts.wide ? " song-credit-cell--wide" : ""));
       c.appendChild(el("span", "song-credit-label", label));
       var b = opts.link
-        ? (function () { var a = el("a", "song-credit-value song-credit-link", String(value)); a.href = opts.link; return a; })()
+        ? (function () {
+            var a = el("a", "song-credit-value song-credit-link", String(value));
+            a.href = opts.link;
+            var eraSlug = opts.link.indexOf("/era/") === 0 ? (opts.link.split("/era/")[1] || "") : "";
+            if (eraSlug && window.openEraPage) {
+              a.addEventListener("click", function (ev) {
+                ev.preventDefault();
+                window.openEraPage(eraSlug);
+              });
+            }
+            return a;
+          })()
         : el("b", "song-credit-value", String(value));
       c.appendChild(b);
       grid.appendChild(c);

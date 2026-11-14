@@ -21,6 +21,19 @@
   var OV = "dplayer-ov";
   var syncIv = null;
   var plState = { list: null, current: null };
+
+  var DPL_COLLAPSE_KEY = "thw-dpl-panel";
+  function setCollapsed(ov, v) {
+    if (!ov) return;
+    ov.classList.toggle("is-collapsed", !!v);
+    try { localStorage.setItem(DPL_COLLAPSE_KEY, v ? "1" : "0"); } catch (e) {}
+  }
+  function restoreCollapsed(ov) {
+    if (!ov) return;
+    var v = false;
+    try { v = localStorage.getItem(DPL_COLLAPSE_KEY) === "1"; } catch (e) {}
+    if (v) ov.classList.add("is-collapsed");
+  }
   var dplMomentMode = "moment"; /* "moment" | "song" */
 
   function signedInDpl() {
@@ -56,7 +69,6 @@
     var wholeSong = dplMomentMode === "song";
     var input = q(ov, "[data-dpl='comment-input']");
     var send = q(ov, "[data-dpl='comment-send']");
-    var postAt = q(ov, "[data-dpl='post-at']");
     var note = q(ov, "[data-dpl='comments-note']");
     var avatar = q(ov, "[data-dpl='avatar']");
     if (input) {
@@ -65,12 +77,6 @@
       if (input.__dplPh !== ph) { input.__dplPh = ph; input.placeholder = ph; }
     }
     if (send) send.disabled = !can;
-    if (postAt) {
-      var label = wholeSong ? "Post" : "Post at " + (m.label || "0:00");
-      if (postAt.__dplLabel !== label) { postAt.__dplLabel = label; postAt.textContent = label; }
-      postAt.classList.toggle("is-on", !wholeSong);
-      postAt.setAttribute("aria-pressed", wholeSong ? "false" : "true");
-    }
     qa(ov, "[data-dpl='moment-moment'],[data-dpl='moment-song']").forEach(function (btn) {
       var on = (btn.getAttribute("data-dpl") === "moment-moment") === !wholeSong;
       btn.classList.toggle("is-on", on);
@@ -222,27 +228,38 @@
     var st = document.createElement("style");
     st.id = "dplayer-style";
     st.textContent =
-      ".dpl-ov{position:fixed;inset:0;z-index:10500;display:flex;background:#0e0c0a;color:#fff;font-family:inherit;overflow:hidden}" +
+      ".dpl-ov{position:fixed;inset:0;z-index:10500;display:flex;flex-direction:column;background:#0e0c0a;color:#fff;font-family:inherit;overflow:hidden}" +
       ".dpl-ov[hidden]{display:none}" +
       ".dpl-bg{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,#17120f,#100d0b);transition:background .6s ease}" +
       ".dpl-vignette{position:absolute;inset:0;z-index:0;background:radial-gradient(130% 90% at 30% 60%,transparent 40%,rgba(4,3,2,.55) 100%);pointer-events:none}" +
 
       /* top bar */
-      ".dpl-top{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:18px 26px 0;min-height:56px}" +
+      ".dpl-top{position:relative;z-index:1;display:flex;align-items:center;padding:14px 24px 0;min-height:52px;flex-shrink:0}" +
+      ".dpl-topleft{display:flex;align-items:center;gap:10px}" +
       ".dpl-context{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.45);font-weight:700}" +
-      ".dpl-more{background:none;border:none;color:rgba(255,255,255,.6);width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer}" +
+      ".dpl-more{position:absolute;top:10px;right:10px;z-index:2;background:none;border:none;color:rgba(255,255,255,.6);width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;transition:background .18s ease,color .18s ease}" +
+      ".dpl-more:hover{background:rgba(255,255,255,.08);color:#fff}" +
       ".dpl-more:hover{background:rgba(255,255,255,.07);color:#fff}" +
       ".dpl-close{background:none;border:none;color:rgba(255,255,255,.6);width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer}" +
       ".dpl-close:hover{background:rgba(255,255,255,.07);color:#fff}" +
 
       /* the two columns */
-      ".dpl-body{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,680px);gap:36px;min-height:0;height:100%;padding:6px 36px 30px}" +
+      ".dpl-body{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,680px);gap:36px;min-height:0;height:100%;padding:6px 36px 30px;transition:grid-template-columns .3s ease}" +
+      ".dpl-ov.is-collapsed .dpl-body{grid-template-columns:minmax(0,1fr) 0px}" +
+      ".dpl-ov.is-collapsed .dpl-right{visibility:hidden;opacity:0;pointer-events:none;transform:translateX(48px)}" +
+      ".dpl-ov.is-collapsed .dpl-cover{width:min(58%,560px)}" +
+      ".dpl-collapse{position:absolute;left:-22px;top:50%;transform:translateY(-50%);z-index:4;width:30px;height:84px;border:1px solid rgba(255,255,255,.09);border-right:none;border-radius:10px 0 0 10px;background:#1b1714;color:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:color .18s ease}" +
+      ".dpl-collapse:hover{color:#fff}" +
+      ".dpl-reveal{position:absolute;top:14px;right:22px;z-index:4;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.72);display:none;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:background .18s ease,color .18s ease}" +
+      ".dpl-reveal:hover{background:rgba(255,255,255,.13);color:#fff}" +
+      ".dpl-ov.is-collapsed .dpl-reveal{display:flex}" +
 
       /* left */
       ".dpl-left{display:flex;flex-direction:column;align-items:center;min-height:0;min-width:0;justify-content:center;overflow-y:auto;overscroll-behavior:contain;padding:10px 6px}" +
       ".dpl-cover{width:min(56%,520px);aspect-ratio:1/1;object-fit:cover;border-radius:18px;background:#1c1530;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 .5px rgba(255,255,255,.06) inset}" +
       ".dpl-title{margin:22px 0 0;font-size:clamp(24px,2.4vw,32px);line-height:1.1;font-weight:900;letter-spacing:-.02em;text-align:center;max-width:100%}" +
-      ".dpl-artist{margin:8px 0 0;font-size:19px;font-weight:700;color:rgba(255,255,255,.75);text-align:center}" +
+      ".dpl-artist{margin:6px 0 0;font-size:19px;font-weight:700;color:rgba(255,255,255,.75);text-align:center}" +
+      ".dpl-album{margin:6px 0 0;font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.4);text-align:center}" +
 
       ".dpl-actions{display:flex;align-items:center;gap:16px;margin-top:16px}" +
       ".dpl-act{background:none;border:none;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.65);font-size:18px;cursor:pointer;border:1px solid rgba(255,255,255,.1)}" +
@@ -264,6 +281,7 @@
       ".dpl-knob{position:absolute;top:50%;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);left:0%}" +
       ".dpl-times{font-size:10.5px;color:rgba(255,255,255,.45);font-variant-numeric:tabular-nums;min-width:34px;text-align:center}" +
 
+      ".dpl-markers{width:min(640px,100%);margin:0 auto}" +
       ".dpl-transport{display:flex;align-items:center;gap:14px;margin-top:18px}" +
       ".dpl-tbtn{background:none;border:none;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:17px;cursor:pointer}" +
       ".dpl-tbtn:hover{color:#fff;background:rgba(255,255,255,.06)}" +
@@ -272,16 +290,14 @@
       ".dpl-play:active{transform:scale(.93)}" +
 
       ".dpl-volume{display:flex;align-items:center;gap:12px;margin-top:16px}" +
-      ".dpl-vol-ic{background:none;border:none;color:rgba(255,255,255,.5);width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer}" +
+      ".dpl-vol-ic{background:none;border:none;color:rgba(255,255,255,.5);width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:color .18s ease}" +
+      ".dpl-vol-ic:hover{color:#fff}" +
       ".dpl-vol{position:relative;width:170px;height:5px;border-radius:99px;background:rgba(255,255,255,.14);cursor:pointer}" +
       ".dpl-vol-fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:rgba(255,255,255,.7);width:75%}" +
 
-      ".dpl-signin{margin-top:22px}" +
-      ".dpl-signin a{color:#fcd34d;font-size:12px;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(252,211,77,.3)}" +
-
       /* right: the tabbed panel */
-      ".dpl-right{display:flex;flex-direction:column;min-height:0;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:22px;overflow:hidden;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}" +
-      ".dpl-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}" +
+      ".dpl-right{position:relative;display:flex;flex-direction:column;min-height:0;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:22px;overflow:hidden;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .3s ease,opacity .3s ease,visibility .3s ease}" +
+      ".dpl-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;padding-right:64px}" +
       ".dpl-tab{flex:1;background:none;border:none;color:rgba(255,255,255,.45);font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.01em;padding:16px 10px;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s ease,border-color .15s ease}" +
       ".dpl-tab:hover{color:#fff}" +
       ".dpl-tab.is-active{color:#fff;border-bottom-color:#e879f9}" +
@@ -376,6 +392,7 @@
     var ov = document.createElement("div");
     ov.className = "dpl-ov";
     ov.id = OV;
+    ov.setAttribute("data-markers-root", "");
     ov.setAttribute("role", "dialog");
     ov.setAttribute("aria-modal", "true");
     ov.setAttribute("aria-label", "Now playing");
@@ -387,24 +404,20 @@
     ov.innerHTML =
       '<div class="dpl-bg" aria-hidden="true"></div><div class="dpl-vignette" aria-hidden="true"></div>' +
       '<header class="dpl-top">' +
-        '<span class="dpl-context">Playing from The Vault</span>' +
-        '<div style="display:flex;gap:8px;align-items:center">' +
-          '<button type="button" class="dpl-more" data-dpl="more" aria-label="More options"><i class="fas fa-ellipsis" aria-hidden="true"></i></button>' +
+        '<div class="dpl-topleft">' +
           '<button type="button" class="dpl-close" data-dpl="close" aria-label="Close"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
+          '<span class="dpl-context">Playing from The Vault</span>' +
         '</div>' +
       '</header>' +
+      '<button type="button" class="dpl-reveal" data-dpl="reveal" aria-label="Show the panel"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>' +
       '<div class="dpl-body">' +
 
         /* -------- the left column -------- */
         '<section class="dpl-left">' +
           '<img decoding="async" class="dpl-cover" data-dpl="cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
           '<h1 class="dpl-title" data-dpl="title">' + esc(title) + '</h1>' +
+          '<p class="dpl-album" data-dpl="album"></p>' +
           '<p class="dpl-artist" data-dpl="artist">' + esc(artist) + '</p>' +
-          '<div class="dpl-actions">' +
-            '<button type="button" class="dpl-act" data-dpl="fav" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
-            '<button type="button" class="dpl-act primary" data-dpl="addqueue" aria-label="Add to the queue"><i class="fas fa-plus" aria-hidden="true"></i></button>' +
-            '<button type="button" class="dpl-act" data-dpl="songpage" aria-label="Open the song page"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></button>' +
-          '</div>' +
           '<div class="dpl-chips">' +
             '<span class="dpl-chip ' + chipClass + '" data-dpl="chip-cat">' + esc(catLabel(t) || "") + '</span>' +
             '<span class="dpl-chip chip-era" data-dpl="chip-era">' + esc(eraName(t)) + '</span>' +
@@ -415,6 +428,7 @@
             '<div class="dpl-prog-bar" data-dpl="scrub"><div class="dpl-prog-fill" data-dpl="fill"></div><div class="dpl-knob" data-dpl="knob"></div></div>' +
             '<span class="dpl-times" data-dpl="dur">0:00</span>' +
           '</div>' +
+          '<div class="dpl-markers thw-markers" data-thw-markers></div>' +
           '<div class="dpl-transport">' +
             '<button type="button" class="dpl-tbtn" data-dpl="shuffle" aria-label="Shuffle" aria-pressed="false"><i class="fas fa-shuffle" aria-hidden="true"></i></button>' +
             '<button type="button" class="dpl-tbtn" data-dpl="prev" aria-label="Previous track"><i class="fas fa-backward-step" aria-hidden="true"></i></button>' +
@@ -426,11 +440,18 @@
             '<button type="button" class="dpl-vol-ic" data-dpl="mute" aria-label="Mute"><i class="fas fa-volume-high" aria-hidden="true"></i></button>' +
             '<div class="dpl-vol" data-dpl="vol" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-label="Volume"><div class="dpl-vol-fill" data-dpl="vol-fill"></div></div>' +
           '</div>' +
-          '<div class="dpl-signin" id="dpl-signin"></div>' +
+          '<div class="dpl-actions">' +
+            '<button type="button" class="dpl-act" data-dpl="fav" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
+            '<button type="button" class="dpl-act primary" data-dpl="addqueue" aria-label="Add to the queue"><i class="fas fa-plus" aria-hidden="true"></i></button>' +
+            '<button type="button" class="dpl-act" data-dpl="songpage" aria-label="Open the song page"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></button>' +
+            '<button type="button" class="dpl-act" data-dpl="vault-pull" aria-label="Vault pull — a random song" title="Vault pull — a random song from the vault"><i class="fas fa-dice" aria-hidden="true"></i></button>' +
+          '</div>' +
         '</section>' +
 
         /* -------- the right column: tabbed panel -------- */
         '<section class="dpl-right">' +
+          '<button type="button" class="dpl-more" data-dpl="more" aria-label="More options"><i class="fas fa-ellipsis" aria-hidden="true"></i></button>' +
+          '<button type="button" class="dpl-collapse" data-dpl="collapse" aria-label="Hide the panel"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>' +
           '<nav class="dpl-tabs" aria-label="Now playing panel">' +
             '<button type="button" class="dpl-tab" data-dpl="tab-queue">Up next<small data-dpl="upnext-count"></small></button>' +
             '<button type="button" class="dpl-tab is-active" data-dpl="tab-comments">Comments<small data-dpl="comments-count"></small></button>' +
@@ -454,7 +475,6 @@
                   '<button type="button" class="song-moment-btn is-on" data-dpl="moment-moment">This moment</button>' +
                   '<button type="button" class="song-moment-btn" data-dpl="moment-song">Whole song</button>' +
                 '</div>' +
-                '<button type="button" class="scc-post-at is-on" data-dpl="post-at">Post at 0:00</button>' +
               '</div>' +
               '<p class="song-comments-note" data-dpl="comments-note"></p>' +
             '</div>' +
@@ -516,6 +536,9 @@
         if (a === "mute") { if (typeof toggleMute === "function") toggleMute(); else { var vb = document.getElementById("volume-btn"); if (vb) vb.click(); } return; }
         if (a === "clear-queue") { try { if (typeof clearQueue === "function") window.clearQueue(); } catch (e) {} return; }
         if (a === "tab-queue" || a === "tab-comments" || a === "tab-credits" || a === "tab-playlists") { switchTab(ov, a.slice(4)); return; }
+        if (a === "collapse") { setCollapsed(ov, !ov.classList.contains("is-collapsed")); return; }
+        if (a === "reveal") { setCollapsed(ov, false); return; }
+        if (a === "vault-pull") { if (window.vaultPull) window.vaultPull(); return; }
         if (a === "pl-refresh") { loadPlaylists(ov); return; }
         if (a === "pl-back") { plState.current = null; paintPlView(ov, "list"); return; }
         if (a === "pl-playall") {
@@ -771,13 +794,7 @@
     var cnt = document.getElementById("song-comments-count");
     var badge = q(ov, "[data-dpl='comments-count']");
     if (badge && cnt) badge.textContent = cnt.textContent || "0";
-    /* the sign-in line */
-    var sign = document.getElementById("dpl-signin");
-    var signedIn = false;
-    try { signedIn = typeof window.__thwAuthSignedIn === "boolean" ? window.__thwAuthSignedIn : false; } catch (e) {}
-    if (sign && !signedIn) {
-      sign.innerHTML = '<a href="/login">Sign in to comment</a>';
-    } else if (sign) sign.innerHTML = "";
+    /* the sign-in note lives in the composer, only for signed-out readers */
   }
 
   function producerSongCount(name) {
@@ -901,6 +918,13 @@
 
     qa(ov, "[data-dpl='title']").forEach(function (el) { el.textContent = currentTitle(); });
     qa(ov, "[data-dpl='artist']").forEach(function (el) { el.textContent = currentArtist(); });
+    qa(ov, "[data-dpl='album']").forEach(function (el) {
+      var album = "";
+      try { if (typeof getTrackAlbum === "function" && t) album = getTrackAlbum(t) || ""; } catch (e) {}
+      if (!album && t) album = eraName(t);
+      el.textContent = album || "";
+      el.style.display = album ? "" : "none";
+    });
     qa(ov, "[data-dpl='cover']").forEach(function (img) {
       var src = t && t.cover ? String(t.cover) : "Juice-WRLD.png";
       if (img.getAttribute("src") !== src) img.src = src;
@@ -976,6 +1000,7 @@
     /* track changed: refresh the tab that shows the song */
     if (force || lastSync.title !== currentTitle()) {
       lastSync.title = currentTitle();
+      if (window.THWCommentMarkers) window.THWCommentMarkers.refresh(ov);
       var paneComments = q(ov, "[data-dpl='pane-comments']");
       if (paneComments && !paneComments.hidden) loadComments(ov);
       var paneCredits = q(ov, "[data-dpl='pane-credits']");
@@ -994,10 +1019,12 @@
     lastSync = { pct: -1, playing: null, title: null };
     var ov = build();
     document.body.appendChild(ov);
+    restoreCollapsed(ov);
     stopSync();
     syncIv = setInterval(function () { sync(false); }, 1000);
     sync(true);
     loadComments(ov);
+    if (window.THWCommentMarkers) window.THWCommentMarkers.refresh(ov);
   }
 
   function close() {

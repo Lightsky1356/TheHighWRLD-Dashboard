@@ -3836,7 +3836,7 @@ html.foot-in-view #scrollTopBtn{
    most played, and then every entry from that chapter as a tappable list.
    ------------------------------------------------------------------ */
 #page-section-era{position:relative}
-.era-page{max-width:1040px;margin:0 auto;padding:34px 18px 70px}
+.era-page{max-width:1040px;margin:0 auto;padding:104px 18px 70px}
 .era-toolbar{margin-bottom:14px}
 .era-back{display:inline-flex;align-items:center;gap:8px;background:none;border:none;color:rgba(255,255,255,.55);font-size:12px;font-weight:700;font-family:inherit;padding:8px 4px;cursor:pointer}
 .era-back:hover{color:#fff}
@@ -3952,7 +3952,7 @@ html.foot-in-view #scrollTopBtn{
    The same shape as the tracker's top 100, minus the tracker of course:
    rank, avatar, name, level, a thin bar into the next level, points.
    ------------------------------------------------------------------ */
-.lb-page{max-width:880px;margin:0 auto;padding:44px 16px 80px}
+.lb-page{max-width:880px;margin:0 auto;padding:104px 16px 80px}
 .lb-hero{display:flex;align-items:center;gap:18px;margin-bottom:26px}
 .lb-hero-trophy{width:64px;height:64px;min-width:64px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fcd34d;background:linear-gradient(145deg,rgba(251,191,36,.16),rgba(251,191,36,.05));border:1px solid rgba(251,191,36,.3);box-shadow:0 0 40px rgba(251,191,36,.1) inset}
 .lb-title{margin:0;font-size:clamp(1.7rem,4.6vw,2.3rem);font-weight:900;letter-spacing:-.02em;color:#fff}
