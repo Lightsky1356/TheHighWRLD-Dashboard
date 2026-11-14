@@ -860,15 +860,26 @@
       var c = el("div", "song-credit-cell" + (opts.wide ? " song-credit-cell--wide" : ""));
       c.appendChild(el("span", "song-credit-label", label));
       var b = opts.link
-        ? el("a", "song-credit-value song-credit-link", String(value)) : el("b", "song-credit-value", String(value));
-      if (opts.link) b.href = opts.link;
+        ? (function () {
+            var a = el("a", "song-credit-value song-credit-link", String(value));
+            a.href = opts.link;
+            var eraSlug = opts.link.indexOf("/era/") === 0 ? (opts.link.split("/era/")[1] || "") : "";
+            if (eraSlug && window.openEraPage) {
+              a.addEventListener("click", function (ev) {
+                ev.preventDefault();
+                window.openEraPage(eraSlug);
+              });
+            }
+            return a;
+          })()
+        : el("b", "song-credit-value", String(value));
       c.appendChild(b);
       grid.appendChild(c);
     }
     var status = statusLabel(t);
     if (status) cell("Status", status);
     var era = eraInfoOf(t);
-    if (era) cell("Era", ERA_INFO[era.code].name);
+    if (era) cell("Era", ERA_INFO[era.code].name, { link: "/era/" + ERA_INFO[era.code].slug });
     var alts = altNames(t);
     if (alts.length) cell("Alt names", alts.join(" · "), { wide: true });
     var vlabel = versionLabel(t);

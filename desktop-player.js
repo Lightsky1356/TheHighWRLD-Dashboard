@@ -1026,6 +1026,12 @@
         a.className = "dpl-credit-value dpl-credit-link";
         a.href = opts.link;
         a.textContent = String(value);
+        var eraSlugFromLink = opts.link.indexOf("/era/") === 0 ? (opts.link.split("/era/")[1] || "") : "";
+        if (eraSlugFromLink) {
+          a.addEventListener("click", function (ev) {
+            if (window.openEraPage) { ev.preventDefault(); window.openEraPage(eraSlugFromLink); }
+          });
+        }
         c.appendChild(a);
       } else {
         var span = document.createElement("span");
@@ -1038,7 +1044,7 @@
     var cat = String(t.category || "").toLowerCase();
     cell("Status", cat === "leaks" ? "Leaked" : cat === "sessions" ? "Session" : cat === "halloween" ? "Halloween" : "");
     var era = eraCode(t);
-    cell("Era", eraName(t));
+    cell("Era", eraName(t), { link: "/era/" + eraSlug(t) });
     var alts = altNames(t);
     if (alts.length) cell("Alt names", alts.join(" · "), { wide: true });
     var vlabel = versionLabel(t);
