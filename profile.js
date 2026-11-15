@@ -463,7 +463,7 @@
     { t: "Righteous", l: 60, dot: "#60a5fa" },
     { t: "Legend", l: 150, dot: "#22d3ee" },
     { t: "999", l: 400, dot: "#fb7185" },
-    { t: "Forever", l: 999, dot: "#f43f5e" }
+    { t: "Forever 999", l: 999, dot: "#f43f5e" }
   ];
   function xpForLevel(n) { return 50 * (n - 1) * (n - 1); }
   function rankTitle(level) {
