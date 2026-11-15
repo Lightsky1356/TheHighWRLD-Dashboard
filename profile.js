@@ -160,20 +160,20 @@
 
   /* ---------- milestones ---------- */
   var MILESTONES = [
-    { id: "first", label: "First play", icon: "fa-play", test: function (s) { return s.plays >= 1; } },
-    { id: "ten", label: "10 plays", icon: "fa-headphones", test: function (s) { return s.plays >= 10; } },
-    { id: "fifty", label: "50 plays", icon: "fa-bolt", test: function (s) { return s.plays >= 50; } },
-    { id: "hundred", label: "100 plays", icon: "fa-fire", test: function (s) { return s.plays >= 100; } },
-    { id: "twofifty", label: "250 plays", icon: "fa-rocket", test: function (s) { return s.plays >= 250; } },
-    { id: "fivehundred", label: "500 plays", icon: "fa-crown", test: function (s) { return s.plays >= 500; } },
-    { id: "thousand", label: "1,000 plays", icon: "fa-gem", test: function (s) { return s.plays >= 1000; } },
-    { id: "unique25", label: "25 songs", icon: "fa-box-archive", test: function (s) { return s.unique >= 25; } },
-    { id: "unique100", label: "100 songs", icon: "fa-layer-group", test: function (s) { return s.unique >= 100; } },
-    { id: "streak7", label: "7-day streak", icon: "fa-calendar-check", test: function (s) { return s.streak >= 7; } },
-    { id: "streak30", label: "30-day streak", icon: "fa-calendar-days", test: function (s) { return s.streak >= 30; } },
-    { id: "level5", label: "Level 5", icon: "fa-star", test: function (s) { return s.level >= 5; } },
-    { id: "level10", label: "Level 10", icon: "fa-star-of-life", test: function (s) { return s.level >= 10; } },
-    { id: "top25", label: "Top 25 all-time", icon: "fa-ranking-star", test: function (s) { return s.rank != null && s.rank <= 25; } }
+    { id: "first", label: "First play", icon: "fa-play", how: "Play any song in the vault", test: function (s) { return s.plays >= 1; } },
+    { id: "ten", label: "10 plays", icon: "fa-headphones", how: "10 total plays in the vault", test: function (s) { return s.plays >= 10; } },
+    { id: "fifty", label: "50 plays", icon: "fa-bolt", how: "50 total plays in the vault", test: function (s) { return s.plays >= 50; } },
+    { id: "hundred", label: "100 plays", icon: "fa-fire", how: "100 total plays in the vault", test: function (s) { return s.plays >= 100; } },
+    { id: "twofifty", label: "250 plays", icon: "fa-rocket", how: "250 total plays in the vault", test: function (s) { return s.plays >= 250; } },
+    { id: "fivehundred", label: "500 plays", icon: "fa-crown", how: "500 total plays in the vault", test: function (s) { return s.plays >= 500; } },
+    { id: "thousand", label: "1,000 plays", icon: "fa-gem", how: "1,000 total plays in the vault", test: function (s) { return s.plays >= 1000; } },
+    { id: "unique25", label: "25 songs", icon: "fa-box-archive", how: "Play 25 different songs", test: function (s) { return s.unique >= 25; } },
+    { id: "unique100", label: "100 songs", icon: "fa-layer-group", how: "Play 100 different songs", test: function (s) { return s.unique >= 100; } },
+    { id: "streak7", label: "7-day streak", icon: "fa-calendar-check", how: "Listen on 7 consecutive days", test: function (s) { return s.streak >= 7; } },
+    { id: "streak30", label: "30-day streak", icon: "fa-calendar-days", how: "Listen on 30 consecutive days", test: function (s) { return s.streak >= 30; } },
+    { id: "level5", label: "Level 5", icon: "fa-star", how: "Reach level 5 by earning XP", test: function (s) { return s.level >= 5; } },
+    { id: "level10", label: "Level 10", icon: "fa-star-of-life", how: "Reach level 10 by earning XP", test: function (s) { return s.level >= 10; } },
+    { id: "top25", label: "Top 25 all-time", icon: "fa-ranking-star", how: "Place in the top 25 of the all-time XP leaderboard", test: function (s) { return s.rank != null && s.rank <= 25; } }
   ];
 
   /* ---------- HTML builders ---------- */
@@ -292,11 +292,11 @@
     var unlockedCount = MILESTONES.filter(function (m) { return m.test(stats); }).length;
     var html = '<div class="pv2-ach-grid">';
     MILESTONES.forEach(function (m) {
-      var on = m.test(stats);
-      html += '<span class="pv2-ach' + (on ? ' unlocked' : ' locked') + '" title="' + esc2(m.label) + '"><i class="fas ' + m.icon + '"></i><small>' + esc2(m.label) + '</small></span>';
+      var unlocked = m.test(stats);
+      html += '<button type="button" class="pv2-ach' + (unlocked ? ' unlocked' : ' locked') + '" data-ach-id="' + esc2(m.id) + '" title="' + esc2(m.how) + '"><i class="fas ' + m.icon + '"></i><small>' + esc2(m.label) + '</small></button>';
     });
     html += '</div>';
-    html += '<p class="pv2-card-note" style="margin-top:10px">' + unlockedCount + ' of ' + MILESTONES.length + ' unlocked</p>';
+    html += '<p class="pv2-card-note" style="margin-top:10px">' + unlockedCount + ' of ' + MILESTONES.length + ' unlocked &middot; <a class="pv2-xp-link" href="#" id="pv2AchHow">How to unlock <i class="fas fa-arrow-right" style="font-size:9px"></i></a></p>';
     return html;
   }
   function collageHTML(favorites) {
@@ -354,6 +354,8 @@
       level: level,
       rank: rank
     };
+    /* Share with the achievements panel so it can render without a re-fetch. */
+    try { _profileStats = { plays: stats.plays, unique: stats.unique, streak: stats.streak, level: stats.level, rank: stats.rank }; } catch (e) {}
     var eraCounts = {};
     topList.forEach(function (t) { var e = eraFromTrackId(t.track_id); if (e) eraCounts[e] = (eraCounts[e] || 0) + (Number(t.n) || 0); });
     var topEra = null, topEraPlays = 0;
@@ -476,6 +478,7 @@
         host.innerHTML = '<div class="pv2-page">' + buildPage(d.profile, d.xp) + '</div>';
         bindCopy(host, d.profile);
         bindSongs(host);
+        wireAchievementClicks(host);
         fillRecent();
         afterMount();
         window.__pv2Mounted = true;
@@ -485,6 +488,41 @@
       }
     })["catch"](function () {
       renderInto(host, renderError("The vault didn't answer. Try again in a moment."));
+    });
+  }
+
+  /* ---------- Achievements panel (how to unlock) ---------- */
+  /* Stats bundle kept from the last render so the panel can show real state. */
+  var _profileStats = { plays: 0, unique: 0, streak: 0, level: 1, rank: null };
+  function renderAchievementsPanel(stats) {
+    var host = document.getElementById("achievementsBody");
+    if (!host) return;
+    var html = '';
+    MILESTONES.forEach(function (m) {
+      var unlocked = m.test(stats);
+      html += '<div class="ach-row' + (unlocked ? ' unlocked' : '') + '">' +
+        '<span class="ach-row-icon"><i class="fas ' + esc2(m.icon) + '"></i></span>' +
+        '<span class="ach-row-meta"><b>' + esc2(m.label) + '</b><span>' + esc2(m.how) + '</span></span>' +
+        '<span class="ach-row-state">' + (unlocked ? '<i class="fas fa-check-circle" aria-hidden="true"></i>Unlocked' : '<i class="fas fa-lock" aria-hidden="true"></i>Locked') + '</span>' +
+      '</div>';
+    });
+    host.innerHTML = html;
+  }
+  function openAchievementsPanel() {
+    /* Uses the stats bundle captured at render time — no second request. */
+    var stats = _profileStats || { plays: 0, unique: 0, streak: 0, level: 1, rank: null };
+    renderAchievementsPanel(stats);
+    setModalOpen("achievementsModal", true);
+  }
+  window.openAchievementsPanel = openAchievementsPanel;
+
+  /* Wire clicks on the badge grid and the "How to unlock" link. */
+  function wireAchievementClicks(hostEl) {
+    hostEl.addEventListener("click", function (e) {
+      var badge = e.target.closest ? e.target.closest(".pv2-ach") : null;
+      var how = e.target.closest ? e.target.closest("#pv2AchHow") : null;
+      if (how) { e.preventDefault(); openAchievementsPanel(); return; }
+      if (badge) { openAchievementsPanel(); }
     });
   }
 
@@ -579,6 +617,17 @@
     });
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && overlay.classList.contains("open")) setModalOpen("xpPanelModal", false);
+    });
+  })();
+
+  (function wireAchievementsModalDismiss() {
+    var overlay = document.getElementById("achievementsModal");
+    if (!overlay) return;
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) setModalOpen("achievementsModal", false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && overlay.classList.contains("open")) setModalOpen("achievementsModal", false);
     });
   })();
 

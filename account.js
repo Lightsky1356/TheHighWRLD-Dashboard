@@ -2823,7 +2823,7 @@ function compactProfileViewHtml(d) {
         }
         return;
       }
-      var link = e.target.closest(".nam-link");
+      var link = e.target.closest(".acct-item, .nam-link");
       if (link) {
         if (link.getAttribute("data-acct-open-profile")) {
           if (wrap) wrap.classList.remove("open");
