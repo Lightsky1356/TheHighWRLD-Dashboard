@@ -1481,7 +1481,7 @@ body[data-theme] .settings-section>.card.set-card{background:var(--ac-glass2,rgb
   .set-nav{position:static;padding:12px!important;border-radius:18px!important}
   .set-nav-head{display:none!important}
   .set-subnav{flex-direction:row!important;flex-wrap:wrap!important;gap:8px!important}
-  .set-nav-item{width:auto!important;flex:0 0 auto;gap:7px;padding:9px 16px!important;border-radius:999px;border:1px solid rgba(255,255,255,.09)!important;background:rgba(255,255,255,.06)!important;font-size:12px!important}
+  .set-nav-item{width:auto!important;flex:0 0 auto;gap:7px;padding:12px 18px!important;border-radius:999px;border:1px solid rgba(255,255,255,.09)!important;background:rgba(255,255,255,.06)!important;font-size:13px!important}
   .set-nav-item i{width:auto;font-size:11px}
   .set-nav-item.active,.set-nav-item[aria-current="true"]{background:linear-gradient(140deg,#8fd4ff 0%,#4bb0e5 100%)!important;border-color:rgba(255,255,255,.25)!important}
   .settings-section{scroll-mt:calc(var(--nav-offset,72px) + 140px)}
