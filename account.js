@@ -3415,8 +3415,12 @@ window.profileSectionShown = function () {
       document.documentElement.style.removeProperty("--th-accent");
       document.documentElement.style.removeProperty("--th-accent2");
     }
+    /* Tiles express: Auto / Plain / era / pick-* / custom. A built-in theme
+       wearing the page (aurora and friends) reads as Auto - it is the page's
+       own colours, which is what the Auto definition says. */
+    var picks = "auto plain era-jute era-aff era-hih era-jw999 era-bdm era-nd era-gbgr era-wod era-drfl era-out era-post pick-999 pick-ocean pick-ember pick-forest pick-dusk pick-custom".split(" ");
     document.querySelectorAll('input[name="appearanceTheme"]').forEach(function (r) {
-      r.checked = (r.value === v) || (v === "default" && r.value === "auto");
+      r.checked = (r.value === v) || (v === "default" && r.value === "auto") || (picks.indexOf(v) === -1 && r.value === "auto");
     });
   };
 

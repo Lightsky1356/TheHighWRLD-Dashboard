@@ -756,5 +756,5 @@ html[data-motion="still"] .th-blob{animation:none!important}
 
 /* The member-picked accent. The settings page and anything reading
    var(--accent) follow it; the vault's own gold stays the identity. */
-html{--accent:#fcd34d;--accent-hover:#ffe37e;--accent-ink:#22130a}
+html{--accent:#b7a3ff;--accent-hover:#d0c2ff;--accent-ink:#171029}
 @media (prefers-reduced-motion:reduce){html[data-theme="plain"] .th-blob{animation:none!important}}
