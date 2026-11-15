@@ -151,9 +151,15 @@ export async function onRequestGet(context) {
       try {
         if (isSelf || showActivity !== 0) {
           const np = await db.prepare(
-            "SELECT track_id, title, artist, artwork FROM friend_activity WHERE uid = ? AND type = 'listening' AND expires_at IS NOT NULL AND expires_at > ? ORDER BY created_at DESC LIMIT 1"
+            "SELECT track_id, title, artist, artwork, position_ms, duration_ms, playing, position_at FROM friend_activity WHERE uid = ? AND type = 'listening' AND expires_at IS NOT NULL AND expires_at > ? ORDER BY created_at DESC LIMIT 1"
           ).bind(uid, new Date().toISOString()).first();
-          if (np) nowPlaying = { trackId: np.track_id || "", title: np.title || "", artist: np.artist || "", artwork: np.artwork || "" };
+          if (np) nowPlaying = {
+            trackId: np.track_id || "", title: np.title || "", artist: np.artist || "", artwork: np.artwork || "",
+            positionMs: Number(np.position_ms) || 0,
+            durationMs: Number(np.duration_ms) || 0,
+            playing: Number(np.playing) !== 0,
+            positionAt: np.position_at || "",
+          };
         }
       } catch (_) {}
       return json({
@@ -279,19 +285,6 @@ export async function onRequestGet(context) {
     // 30-day daily activity + 24h listening-hour histogram for profile panels.
     let activity30 = stats.activity30 || [], hours = stats.hours || new Array(24).fill(0);
 
-    /* Live "listening now" - the member's latest unexpired listening row.
-       Gated by show_activity ("Show what I'm listening to") for viewers other
-       than the owner, so nobody's live status goes out without consent. */
-    let nowPlaying = null;
-    try {
-      if (vis.activity) {
-        const np = await db.prepare(
-          "SELECT track_id, title, artist, artwork FROM friend_activity WHERE uid = ? AND type = 'listening' AND expires_at IS NOT NULL AND expires_at > ? ORDER BY created_at DESC LIMIT 1"
-        ).bind(uid, new Date().toISOString()).first();
-        if (np) nowPlaying = { trackId: np.track_id || "", title: np.title || "", artist: np.artist || "", artwork: np.artwork || "" };
-      }
-    } catch (_) {}
-
     // Privacy: viewers other than the owner only see flagged-visible sections.
     // Missing privacy row = all visible (legacy default). Non-owners additionally
     // only ever see public playlists, never private/unlisted ones.
@@ -325,6 +318,25 @@ export async function onRequestGet(context) {
             activity: Number(pr.show_activity) !== 0,
           };
         }
+      }
+    } catch (_) {}
+
+    /* Live "listening now" - read the latest unexpired listening row. Gated
+       on the activity flag: a viewer who turned off listen sharing is a
+       private citizen everywhere, to every viewer. */
+    let nowPlaying = null;
+    try {
+      if (vis.activity) {
+        const np = await db.prepare(
+          "SELECT track_id, title, artist, artwork, position_ms, duration_ms, playing, position_at FROM friend_activity WHERE uid = ? AND type = 'listening' AND expires_at IS NOT NULL AND expires_at > ? ORDER BY created_at DESC LIMIT 1"
+        ).bind(uid, new Date().toISOString()).first();
+        if (np) nowPlaying = {
+          trackId: np.track_id || "", title: np.title || "", artist: np.artist || "", artwork: np.artwork || "",
+          positionMs: Number(np.position_ms) || 0,
+          durationMs: Number(np.duration_ms) || 0,
+          playing: Number(np.playing) !== 0,
+          positionAt: np.position_at || "",
+        };
       }
     } catch (_) {}
 

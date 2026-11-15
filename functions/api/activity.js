@@ -58,6 +58,8 @@ const SCHEMA = [
     "track_id TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', artist TEXT NOT NULL DEFAULT '', " +
     "artwork TEXT NOT NULL DEFAULT '', label TEXT NOT NULL DEFAULT '', detail TEXT NOT NULL DEFAULT '', " +
     "link TEXT NOT NULL DEFAULT '', expires_at TEXT, " +
+    "position_ms INTEGER NOT NULL DEFAULT 0, duration_ms INTEGER NOT NULL DEFAULT 0, " +
+    "playing INTEGER NOT NULL DEFAULT 1, position_at TEXT, " +
     "created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))",
   "CREATE INDEX IF NOT EXISTS idx_friend_activity_uid ON friend_activity(uid, created_at DESC)",
   "CREATE INDEX IF NOT EXISTS idx_friend_activity_created ON friend_activity(created_at DESC)",
@@ -285,6 +287,13 @@ async function publish(context, me, body) {
   const label = clean(body.label, 160);
   const detail = clean(body.detail, 300);
   const link = clean(body.link, 300);
+  /* The live edge: where the listener is in the song, its length, whether it
+     is playing/paused, and the moment the estimate was taken. All optional -
+     older clients that don't send them still get the rest of the feed. */
+  const positionMs = Math.max(0, Math.floor(Number(body.positionMs) || 0));
+  const durationMs = Math.max(0, Math.floor(Number(body.durationMs) || 0));
+  const playing = body.playing === false || body.playing === 0 || body.playing === "0" || body.playing === "false" ? 0 : 1;
+  const positionAt = clean(String(body.positionAt || ""), 40) || "";
 
   /* A link is only kept when it points at this site. Anything else - an
      audio file, a token, a remote address - is dropped rather than stored. */
@@ -299,13 +308,17 @@ async function publish(context, me, body) {
        stacking up. The id is stable, which is what makes it a replace rather
        than an insert. */
     await db.prepare(
-      "INSERT INTO friend_activity (id, uid, type, track_id, title, artist, artwork, label, detail, link, expires_at, created_at) " +
-      "VALUES (?, ?, 'listening', ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+      "INSERT INTO friend_activity (id, uid, type, track_id, title, artist, artwork, label, detail, link, position_ms, duration_ms, playing, position_at, expires_at, created_at) " +
+      "VALUES (?, ?, 'listening', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
       "ON CONFLICT(id) DO UPDATE SET track_id = excluded.track_id, title = excluded.title, " +
-      "artist = excluded.artist, artwork = excluded.artwork, expires_at = excluded.expires_at, created_at = excluded.created_at"
+      "artist = excluded.artist, artwork = excluded.artwork, position_ms = excluded.position_ms, " +
+      "duration_ms = excluded.duration_ms, playing = excluded.playing, position_at = excluded.position_at, " +
+      "expires_at = excluded.expires_at, created_at = excluded.created_at"
     ).bind(
       "act_listening_" + me.uid, me.uid, trackId, title, artist, artwork,
-      label, detail, safeLink, new Date(Date.now() + LISTENING_TTL_MS).toISOString(), now
+      label, detail, safeLink,
+      positionMs, durationMs, playing, positionAt,
+      new Date(Date.now() + LISTENING_TTL_MS).toISOString(), now
     ).run();
     return json({ ok: true, published: true });
   }

@@ -3969,7 +3969,27 @@ window.profileSectionShown = function () {
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    /* The session is the truth: if localStorage wantedUserId points at a
+       stale or different account, correct it once before anything downstream
+       reads it. A single guarded reload lands the whole account on the right
+       session instead of flashing an empty/wrong account. */
     try { uid = localStorage.getItem("wantedUserId") || ""; } catch (e) {}
+    try {
+      fetch("/api/users/me", { cache: "no-store", credentials: "same-origin" }).then(function (r) { return r.json(); }).catch(function () { return null; }).then(function (d) {
+        var sessionUid = d && d.ok && d.signedIn && d.uid ? String(d.uid) : "";
+        if (sessionUid && sessionUid !== uid) {
+          try { localStorage.setItem("wantedUserId", sessionUid); } catch (e) {}
+          uid = sessionUid;
+          try {
+            if (sessionStorage.getItem("ac_session_sync_done")) return;
+            sessionStorage.setItem("ac_session_sync_done", "1");
+            location.reload();
+          } catch (e) {
+            if (window.renderProfilePageBody) { try { window.renderProfilePageBody(); } catch (e) {} }
+          }
+        }
+      });
+    } catch (e) {}
     /* Always on, signed in or not. A guest cannot have personal notifications,
        but announcements are public and live in the bell now, so the bell is how
        a visitor finds one.

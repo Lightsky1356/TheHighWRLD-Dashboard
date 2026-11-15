@@ -374,20 +374,42 @@ a.pv2-song:hover{background:rgba(255,255,255,.06);border-color:var(--pv-border-s
 /* ---------- bio line (hero) ---------- */
 .pv2-bio{margin:8px 0 0;font-size:13px;line-height:1.55;color:rgba(244,242,255,.82);max-width:520px;white-space:pre-wrap;word-break:break-word}
 
-/* ---------- "listening now" presence card ---------- */
-.pv2-now{display:flex;align-items:center;gap:14px;margin:0 0 14px;padding:12px 14px;border-radius:16px;border:1px solid rgba(52,211,153,.22);background:linear-gradient(90deg,rgba(16,185,129,.12),rgba(16,185,129,.04) 60%,transparent);overflow:hidden}
-.pv2-now-art{width:58px;height:58px;border-radius:11px;object-fit:cover;flex:0 0 auto;box-shadow:0 6px 18px rgba(0,0,0,.45)}
-.pv2-now-meta{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 auto}
-.pv2-now-label{display:inline-flex;align-items:center;gap:7px;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#34d399}
-.pv2-eq{display:inline-flex;align-items:flex-end;gap:2px;height:11px}
+/* ---------- "listening now" - rich mini presence player ---------- */
+.pv2-now{display:flex;align-items:stretch;gap:14px;margin:0 0 14px;padding:14px;border-radius:16px;border:1px solid rgba(52,211,153,.22);background:linear-gradient(90deg,rgba(16,185,129,.13),rgba(16,185,129,.04) 60%,transparent);overflow:hidden;position:relative}
+.pv2-now-art-wrap{position:relative;flex:0 0 auto;display:flex;align-items:center}
+.pv2-now-art{width:88px;height:88px;border-radius:12px;object-fit:cover;box-shadow:0 8px 22px rgba(0,0,0,.5)}
+.pv2-eq{position:absolute;left:8px;bottom:8px;display:flex;align-items:flex-end;gap:2px;height:12px;padding:2px 5px;border-radius:6px;background:rgba(3,8,6,.66)}
 .pv2-eq i{width:2.5px;border-radius:2px;background:#34d399;animation:pv2-eq-bounce 1.1s ease-in-out infinite}
-.pv2-eq i:nth-child(1){animation-delay:0s;height:60%}
-.pv2-eq i:nth-child(2){animation-delay:.28s;height:100%}
-.pv2-eq i:nth-child(3){animation-delay:.56s;height:40%}
-@keyframes pv2-eq-bounce{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
-.pv2-now-title{font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pv2-now-site{flex:0 0 auto;font-size:10px;color:var(--pv-faint);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
-@media (max-width:560px){.pv2-now-site{display:none}}
+.pv2-eq i:nth-child(1){animation-delay:0s;height:100%}
+.pv2-eq i:nth-child(2){animation-delay:.28s;height:60%}
+.pv2-eq i:nth-child(3){animation-delay:.56s;height:80%}
+.pv2-eq i:nth-child(4){animation-delay:.14s;height:40%}
+.pv2-eq.paused i{animation:none;transform:scaleY(.35)}
+.pv2-now-body{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 auto;justify-content:center}
+.pv2-now-top{display:flex;align-items:center;gap:8px}
+.pv2-now-live{display:inline-flex;align-items:center;gap:6px;font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#34d399}
+.pv2-eq-sm{display:inline-flex;align-items:flex-end;gap:2px;height:9px}
+.pv2-eq-sm i{width:2px;border-radius:2px;background:#34d399;animation:pv2-eq-bounce 1.1s ease-in-out infinite}
+.pv2-eq-sm i:nth-child(1){animation-delay:0s;height:100%}
+.pv2-eq-sm i:nth-child(2){animation-delay:.3s;height:60%}
+.pv2-eq-sm i:nth-child(3){animation-delay:.6s;height:80%}
+.pv2-now-live.paused{color:rgba(244,242,255,.45)}
+.pv2-now-live.paused .pv2-eq-sm i{animation:none;transform:scaleY(.4)}
+.pv2-now-src{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--pv-faint)}
+.pv2-now-title{font-size:13.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv2-now-sub{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--pv-mute);white-space:nowrap;overflow:hidden}
+.pv2-now-era{padding:1px 6px;border-radius:5px;background:rgba(252,211,77,.13);color:#fcd34d;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.pv2-now-bar{height:5px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:2px}
+.pv2-now-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#10b981,#34d399);transition:width .4s linear}
+.pv2-now-time{display:flex;justify-content:space-between;font-size:9.5px;color:var(--pv-faint);font-variant-numeric:tabular-nums}
+.pv2-now-play{flex:0 0 auto;align-self:center;display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;border:1px solid rgba(52,211,153,.4);background:rgba(16,185,129,.14);color:#34d399;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s}
+.pv2-now-play:hover{background:rgba(16,185,129,.24)}
+.pv2-now-play:disabled{opacity:.45;cursor:default}
+@media (max-width:560px){
+  .pv2-now{flex-wrap:wrap}
+  .pv2-now-art{width:64px;height:64px}
+  .pv2-now-play{width:100%;justify-content:center;align-self:stretch}
+}
 
 /* ---------- DRP (Rich Presence) preview inside the Edit panel rail ---------- */
 .editpf-drp{margin-top:12px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}

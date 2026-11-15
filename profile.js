@@ -109,6 +109,18 @@
   function fetchJson(url) {
     return fetch(url, { cache: "no-store", credentials: "same-origin" }).then(function (r) { return r.json(); }).catch(function () { return null; });
   }
+  var sessionUidCache = null;
+  function sessionOwnUid() {
+    if (sessionUidCache !== null) return Promise.resolve(sessionUidCache);
+    return fetch("/api/users/me", { cache: "no-store", credentials: "same-origin" }).then(function (r) { return r.json(); }).catch(function () { return null; }).then(function (d) {
+      var uid = d && d.ok && d.signedIn ? d.uid : "";
+      sessionUidCache = uid || "";
+      /* Keep the local guess in line with the session - everything else on
+         the site (presets, skeletons, cleanup) reads this too. */
+      try { if (uid) localStorage.setItem("wantedUserId", uid); } catch (e) {}
+      return sessionUidCache;
+    });
+  }
   function isSelfView() {
     try { return !window.isOtherProfilePath || !window.isOtherProfilePath(); } catch (e) { return true; }
   }
@@ -117,13 +129,22 @@
   }
   function loadData() {
     var self = isSelfView(), key = profileKey();
-    /* The account sign-in flow identifies this browser via wantedUserId. */
-    var ownUid = "";
-    try { ownUid = (self ? (localStorage.getItem("wantedUserId") || "") : key) || ""; } catch (e) { ownUid = self ? "" : key; }
-    if (self && !ownUid) return Promise.resolve({ profile: null, xp: null, self: true });
-    var url = "/api/profile?user=" + encodeURIComponent(ownUid);
-    return Promise.all([fetchJson(url), fetchJson("/api/xp?limit=100")]).then(function (r) {
-      return { profile: r[0], xp: r[1], self: self };
+    /* The account session is the truth when it exists: wantedUserId in
+       localStorage is a cache that a fresh sign-in can refresh later. */
+    return sessionOwnUid().then(function (sessionUid) {
+      var ownUid = "";
+      if (self) {
+        var cached = "";
+        try { cached = localStorage.getItem("wantedUserId") || ""; } catch (e) {}
+        ownUid = sessionUid || cached;
+      } else {
+        ownUid = key;
+      }
+      if (self && !ownUid) return { profile: null, xp: null, self: true };
+      var url = "/api/profile?user=" + encodeURIComponent(ownUid);
+      return Promise.all([fetchJson(url), fetchJson("/api/xp?limit=100")]).then(function (r) {
+        return { profile: r[0], xp: r[1], self: self };
+      });
     });
   }
 
@@ -165,11 +186,25 @@
     return '<button type="button" class="pv2-favsong" id="pv2FavChip"' + (idx >= 0 ? ' data-play-idx="' + idx + '"' : ' disabled') + ' title="Play it"><i class="fas fa-music"></i><span>' + esc2(favSong) + '</span>' + (idx >= 0 ? '<i class="fas fa-play pv2-favsong-play"></i>' : '') + '</button>';
   }
   function nowPlayingHTML(np) {
-    if (!np || !np.title) return '<div class="pv2-now hidden" id="pv2Now"></div>';
-    return '<div class="pv2-now" id="pv2Now">' +
-      '<img class="pv2-now-art" id="pv2NowArt" src="' + esc2(np.artwork || "AlbumArt/999.jpg") + '" alt="" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'">' +
-      '<span class="pv2-now-meta"><span class="pv2-now-label"><span class="pv2-eq"><i></i><i></i><i></i></span>Listening now</span><b class="pv2-now-title" id="pv2NowTitle">' + esc2(np.title) + '</b></span>' +
-      '<span class="pv2-now-site">TheHighWRLD Dashboard</span>' +
+    var t = np ? trackByTitle(np.trackId || np.title) : null;
+    var idx = playIndexById(np ? (np.trackId || np.title) : "");
+    var art = t && t.track && t.track.cover ? t.track.cover : eraArt(t ? eraOfTag(t.track.tag) : null);
+    var album = t && t.track ? eraLabel(eraOfTag(t.track.tag)) : "Juice WRLD";
+    var year = t && t.track && t.track.year ? t.track.year : "";
+    return '<div class="pv2-now' + (np && np.title ? '' : ' hidden') + '" id="pv2Now" data-title="' + esc2(np ? np.title : "") + '">' +
+      '<div class="pv2-now-art-wrap"><img class="pv2-now-art" id="pv2NowArt" src="' + esc2(art) + '" alt="" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'">' +
+      '<span class="pv2-eq" id="pv2NowEq"><i></i><i></i><i></i><i></i></span>' +
+      '</div>' +
+      '<div class="pv2-now-body">' +
+        '<div class="pv2-now-top"><span class="pv2-now-live"><span class="pv2-eq-sm"><i></i><i></i><i></i></span>Listening now</span><span class="pv2-now-src">TheHighWRLD Dashboard</span></div>' +
+        '<b class="pv2-now-title" id="pv2NowTitle">' + esc2(np ? np.title : "") + '</b>' +
+        '<span class="pv2-now-sub"><span id="pv2NowAlbum">' + esc2(album + (year ? " · " + year : "")) + '</span>' +
+          (t && t.track && eraOfTag(t.track.tag) ? ' <span class="pv2-now-era">' + esc2(eraOfTag(t.track.tag)) + '</span>' : '') +
+        '</span>' +
+        '<div class="pv2-now-bar" id="pv2NowBar" role="progressbar" aria-label="Playback progress"><div class="pv2-now-bar-fill" id="pv2NowBarFill" style="width:0%"></div></div>' +
+        '<div class="pv2-now-time"><span id="pv2NowCur">0:00</span><span id="pv2NowDur">0:00</span></div>' +
+      '</div>' +
+      '<button type="button" class="pv2-now-play" id="pv2NowPlay" data-play-idx="' + idx + '"' + (idx < 0 ? ' disabled title="Track not in catalogue"' : '') + '><i class="fas fa-play"></i> Play this track</button>' +
     '</div>';
   }
   function initials(name) {
@@ -547,11 +582,17 @@
     });
   })();
 
-  /* ---------- live updates: head poll + self presence ---------- */
-  var headTimer = null, headKnown = null;
+  /* ---------- live presence (rich mini-player) ---------- */
+  var headTimer = null, headKnown = null, presenceTimer = null;
+  var presenceState = null;
+  var ownTrackIsCatalogue = false;
+  var presenceTrackIndex = -1;
 
   function headPollUid() {
-    try { return isSelfView() ? (localStorage.getItem("wantedUserId") || "") : profileKey(); } catch (e) { return ""; }
+    try {
+      if (sessionUidCache) return sessionUidCache;
+      return isSelfView() ? (localStorage.getItem("wantedUserId") || "") : profileKey();
+    } catch (e) { return ""; }
   }
   function stopHeadPoll() { if (headTimer) { clearInterval(headTimer); headTimer = null; } }
   function startHeadPoll() {
@@ -560,16 +601,73 @@
     if (!uid) return;
     headTimer = setInterval(pollHead, 5000);
   }
-  function renderNowPlaying(np) {
+  function secs(x) { x = Math.max(0, Number(x) || 0); var m = Math.floor(x / 60), s = Math.floor(x % 60); return m + ":" + (s < 10 ? "0" : "") + s; }
+  function presenceTick() {
+    if (!presenceState || !presenceState.title) return;
+    var now = Date.now();
+    var pos = presenceState.anchorMs;
+    if (presenceState.playing) pos += now - presenceState.anchorAt;
+    pos = Math.max(0, Math.min(presenceState.durationMs || pos, pos));
+    var pct = presenceState.durationMs ? Math.min(100, (pos / presenceState.durationMs) * 100) : 0;
+    var fill = document.getElementById("pv2NowBarFill");
+    if (fill) fill.style.width = pct + "%";
+    var cur = document.getElementById("pv2NowCur");
+    if (cur) cur.textContent = secs(pos / 1000);
+    var dur = document.getElementById("pv2NowDur");
+    if (dur) dur.textContent = presenceState.durationMs ? secs(presenceState.durationMs / 1000) : "--:--";
+  }
+  function stopPresenceTimer() { if (presenceTimer) { clearInterval(presenceTimer); presenceTimer = null; } }
+  function startPresenceTimer() {
+    stopPresenceTimer();
+    presenceTimer = setInterval(presenceTick, 500);
+    presenceTick();
+  }
+  function applyNowPlaying(np) {
     var block = document.getElementById("pv2Now");
     if (!block) return;
     var title = document.getElementById("pv2NowTitle");
     var art = document.getElementById("pv2NowArt");
-    if (!np || !np.title) { block.classList.add("hidden"); return; }
+    var live = document.getElementById("pv2NowEq");
+    if (!np || !np.title) {
+      block.classList.add("hidden");
+      presenceState = null;
+      stopPresenceTimer();
+      return;
+    }
+    var rec = trackByTitle(np.trackId || np.title);
+    var idx = (typeof playIndexById === "function") ? playIndexById(np.trackId || np.title) : -1;
+    var el = function (id) { return document.getElementById(id); };
     block.classList.remove("hidden");
+    block.dataset.title = np.title;
     if (title) title.textContent = np.title;
-    if (art) art.src = np.artwork || "AlbumArt/999.jpg";
+    var album = el("pv2NowAlbum");
+    if (album) {
+      var a = rec && rec.track ? eraLabel(eraOfTag(rec.track.tag)) + " · " + (rec.track.year || "") : "Juice WRLD";
+      album.textContent = a;
+    }
+    if (art) art.src = (rec && rec.track && rec.track.cover) ? rec.track.cover : eraArt(rec && rec.track ? eraOfTag(rec.track.tag) : null);
+    var playBtn = el("pv2NowPlay");
+    if (playBtn) {
+      playBtn.setAttribute("data-play-idx", idx);
+      playBtn.disabled = idx < 0;
+      playBtn.title = idx >= 0 ? "Play this track" : "Not in the catalogue";
+    }
+    if (live) live.classList.toggle("paused", np.playing === false);
+    var liveEl = block.querySelector(".pv2-now-live");
+    if (liveEl) liveEl.classList.toggle("paused", np.playing === false);
+    /* Re-anchor. Seek backwards bends the anchor into the past; it lands here
+       because every publish/protocol is client-authoritative on position. */
+    presenceState = {
+      title: np.title,
+      anchorMs: Math.max(0, Number(np.positionMs) || 0),
+      durationMs: Number(np.durationMs) || 0,
+      playing: np.playing !== false,
+      anchorAt: typeof np.positionAt === "string" || typeof np.positionAt === "number" ? (typeof np.positionAt === "number" ? np.positionAt : Date.parse(np.positionAt)) : Date.now(),
+    };
+    if (!isFinite(presenceState.anchorAt) || presenceState.anchorAt > Date.now() + 60000) presenceState.anchorAt = Date.now();
+    startPresenceTimer();
   }
+  function renderNowPlaying(np) { applyNowPlaying(np); }
   function applyHead(d) {
     var changed = false;
     var prev = headKnown;
@@ -614,9 +712,14 @@
     });
   }
 
-  /* While signed in and playing, tell the vault what's on (one row, 5-min TTL). */
+  /* While signed in and playing, tell the vault what's on (one row, 5-min TTL).
+     The position rides along so a friend watching this page sees the same
+     seek, not a stale one. The anchor is published on track change, on
+     every play/seek, and at most every ~2.5 s otherwise - enough for the
+     viewer's progress bar to stay smooth. */
   var lastPresenceTrack = null;
-  function publishPresence() {
+  var presenceRateAt = 0;
+  function publishPresence(force) {
     try {
       if (!isSelfView()) return;
       var uid = headPollUid();
@@ -626,15 +729,35 @@
       var src = (typeof trackList !== "undefined" && trackList) ? trackList : [];
       var t = idx >= 0 ? src[idx] : null;
       if (!t || !t.title) return;
-      if (t.title === lastPresenceTrack) return;
-      lastPresenceTrack = t.title;
+      var a = document.querySelector("audio");
       var artwork = "AlbumArt/999.jpg";
       if (t.cover) artwork = String(t.cover);
       else { var cr = coverForId(t.title); if (cr) artwork = cr; }
+      if (!force) {
+        var now = Date.now();
+        if (t.title === lastPresenceTrack && now - presenceRateAt < 8000) return;
+        if (now - presenceRateAt < 2000) return;
+        presenceRateAt = now;
+      } else {
+        presenceRateAt = Date.now();
+      }
+      lastPresenceTrack = t.title;
+      var positionMs = a ? Math.max(0, Math.floor((a.currentTime || 0) * 1000)) : 0;
+      var durationMs = a && isFinite(a.duration) && a.duration > 0 ? Math.floor(a.duration * 1000) : 0;
+      var playing = a ? !a.paused : true;
       fetch("/api/activity", {
         method: "POST", credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "listening", trackId: String(t.title).slice(0, 140), title: String(t.title).slice(0, 160), artist: String(t.artist || "Juice WRLD").slice(0, 120), artwork: artwork.slice(0, 300) })
+        body: JSON.stringify({
+          type: "listening", trackId: String(t.title).slice(0, 140),
+          title: String(t.title).slice(0, 160),
+          artist: String(t.artist || "Juice WRLD").slice(0, 120),
+          artwork: artwork.slice(0, 300),
+          positionMs: positionMs,
+          durationMs: durationMs,
+          playing: playing,
+          positionAt: Date.now(),
+        })
       }).catch(function () {});
     } catch (e) {}
   }
@@ -667,7 +790,23 @@
   function afterMount() {
     startHeadPoll();
     publishPresence();
-    setInterval(publishPresence, 20000);
+    setInterval(publishPresence, 8000);
+    /* Position/anchor publishes for the viewer watching from anywhere: stay
+       smooth without a flood of requests while still landing every seek. */
+    var a = document.querySelector("audio");
+    if (a && !a._presenceWired) {
+      a._presenceWired = true;
+      var last = 0;
+      a.addEventListener("timeupdate", function () {
+        var now = Date.now();
+        if (now - last < 2500) return;
+        last = now;
+        publishPresence(true);
+      });
+      a.addEventListener("seeked", function () { last = 0; publishPresence(true); });
+      a.addEventListener("play", function () { publishPresence(true); });
+      a.addEventListener("pause", function () { publishPresence(true); });
+    }
   }
 
   /* Take the profile page over completely. */
@@ -708,6 +847,7 @@
         }
       }
       if (!locked && document.querySelector(".modal-overlay.open")) locked = true;
+      if (!locked && document.body && document.body.style.overflow === "hidden") document.body.style.overflow = "";
       document.documentElement.classList.toggle("thw-scroll-locked", !!locked);
     }
     function queueSync() { if (!lockQueued) { lockQueued = true; requestAnimationFrame(syncScrollLock); } }
