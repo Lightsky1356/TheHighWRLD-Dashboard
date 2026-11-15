@@ -265,6 +265,7 @@
     var pb = document.getElementById("profBio"); if (pb) pb.value = p.bio;
     var ap = document.getElementById("avatarPreview"); if (ap) ap.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="">' : '<i class="fas fa-user"></i>';
     var mp = document.getElementById("mAvatarPreview"); if (mp) mp.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="">' : '<i class="fas fa-user"></i>';
+    if (window.__pv2ApplyLive) window.__pv2ApplyLive({ avatar: p.avatar });
     var pp = document.getElementById("mPicPreview"); if (pp) pp.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="">' : '<i class="fas fa-user"></i>';
     /* Edit-profile rail preview */
     var rp = document.getElementById("mPreviewName"); if (rp) rp.textContent = p.name || ("999_" + uidSuffix);
@@ -273,7 +274,18 @@
     var rf = document.getElementById("mPreviewFav"), rft = document.getElementById("mPreviewFavText");
     if (rf && rft) { if (p.favSong) { rft.textContent = p.favSong; rf.classList.remove("hidden"); } else { rf.classList.add("hidden"); } }
     var bc = document.getElementById("mBioCount"); if (bc) bc.textContent = String((p.bio || "").length) + " / 160";
-    var bi = document.getElementById("mBannerImg"); if (bi) bi.src = p.bannerChoice === "classic" ? "AlbumArt/999.jpg" : (window.__pv2TopEraArt || "AlbumArt/999.jpg");
+    var bi = document.getElementById("mBannerImg");
+    if (bi) bi.src = (p.bannerChoice === "custom" && p.banner) ? p.banner : (p.bannerChoice === "classic" ? "AlbumArt/999.jpg" : (window.__pv2TopEraArt || "AlbumArt/999.jpg"));
+    /* Custom banner card state: preview thumb + checked radio */
+    var bcImg = document.getElementById("mBannerCustomImg");
+    var bcIcon = document.getElementById("mBannerCustomIcon");
+    if (bcImg) {
+      if (p.bannerChoice === "custom" && p.banner) { bcImg.src = p.banner; bcImg.hidden = false; if (bcIcon) bcIcon.style.display = "none"; }
+      else { bcImg.hidden = true; if (bcIcon) bcIcon.style.display = ""; }
+    }
+    /* Keep the custom card's check state consistent with the stored choice */
+    var bcRadio = document.getElementById("mBannerCustom");
+    if (bcRadio) bcRadio.checked = p.bannerChoice === "custom";
     var eraLabelTxt = window.__pv2TopEraLabel || "Your top era";
     var bt = document.getElementById("mBannerTopEra"); if (bt) bt.textContent = eraLabelTxt;
     var bn = document.getElementById("mBannerEraName"); if (bn) bn.textContent = eraLabelTxt;
@@ -3095,17 +3107,65 @@ function compactProfileViewHtml(d) {
       });
 
       /* Banner radios */
-      var ba = document.getElementById("mBannerAuto"), bcb = document.getElementById("mBannerClassic");
-      if (ba && bcb) {
-        [ba, bcb].forEach(function (radio) {
-          radio.addEventListener("change", function () {
-            _profile.bannerChoice = bcb.checked ? "classic" : "auto";
-            applyProfile();
-            markDirty();
-            fillDrpPreview();
-          });
-        });
+      var ba = document.getElementById("mBannerAuto"), bcb = document.getElementById("mBannerClassic"), bcu = document.getElementById("mBannerCustom");
+      function _pickCustomIfPossible() {
+        if (!_profile.banner) {
+          /* No custom banner yet - go straight to the file picker so selecting
+             works like every other chooser. */
+          var bf = document.getElementById("mBannerFile"); if (bf) bf.click();
+        }
       }
+      [ba, bcb, bcu].forEach(function (radio) {
+        if (!radio) return;
+        radio.addEventListener("change", function () {
+          if (bcu && bcu.checked) {
+            _profile.bannerChoice = "custom";
+            _pickCustomIfPossible();
+          } else if (bcb.checked) {
+            _profile.bannerChoice = "classic";
+          } else {
+            _profile.bannerChoice = "auto";
+          }
+          applyProfile();
+          markDirty();
+          fillDrpPreview();
+        });
+      });
+
+      /* Custom banner upload */
+      var bannerUploadBtn = document.getElementById("mBannerUploadBtn");
+      if (bannerUploadBtn) bannerUploadBtn.addEventListener("click", function () {
+        var bf = document.getElementById("mBannerFile"); if (bf) bf.click();
+      });
+      var bannerFile = document.getElementById("mBannerFile");
+      function _applyBannerDataUrl(url) {
+        _profile.banner = url;
+        _profile.bannerChoice = "custom";
+        var img = document.getElementById("mBannerCustomImg");
+        if (img) { img.src = url; img.hidden = false; }
+        var icon = document.getElementById("mBannerCustomIcon");
+        if (icon) icon.style.display = "none";
+        var radioC = document.getElementById("mBannerCustom"); if (radioC) radioC.checked = true;
+        applyProfile();
+        markDirty();
+        fillDrpPreview();
+      }
+      if (bannerFile) bannerFile.addEventListener("change", function () {
+        var file = bannerFile.files && bannerFile.files[0];
+        if (!file) return;
+        if (!/^image\//.test(file.type)) { toast("That's not an image", "error"); return; }
+        if (file.size > 6 * 1024 * 1024) { toast("Image is too large - keep it under 6 MB", "error"); return; }
+        fileToDataURL(file, 1600, 500, function (url) {
+          if (url.length > 285000) {
+            fileToDataURL(file, 1100, 340, function (smaller) {
+              if (smaller.length > 285000) { toast("That image is too heavy even after downscaling - try a smaller one", "error"); return; }
+              _applyBannerDataUrl(smaller);
+            });
+            return;
+          }
+          _applyBannerDataUrl(url);
+        });
+      });
 
       /* Expose the preview + autosave for the avatar flow registered elsewhere. */
       window.__refreshDrpPreview = refreshDrpPreview;

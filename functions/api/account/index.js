@@ -453,7 +453,7 @@ export async function onRequestPost(context) {
         const avatar = String(body.avatar || "").slice(0, 300000);
         const banner = String(body.banner || "").slice(0, 300000);
         const favSong = String(body.favSong || "").slice(0, 160);
-        const bannerChoice = ["auto", "classic"].includes(String(body.bannerChoice)) ? String(body.bannerChoice) : "auto";
+        const bannerChoice = ["auto", "classic", "custom"].includes(String(body.bannerChoice)) ? String(body.bannerChoice) : "auto";
         await db.prepare(
           `INSERT INTO user_profiles (site_uid, name, bio, status, avatar, banner, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?)

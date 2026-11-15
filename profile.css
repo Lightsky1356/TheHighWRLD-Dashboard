@@ -406,3 +406,13 @@ a.pv2-song:hover{background:rgba(255,255,255,.06);border-color:var(--pv-border-s
 .editpf-save-state{font-size:11px;color:var(--pv-mute);align-self:center;min-width:64px;text-align:right;transition:opacity .25s}
 .editpf-save-state.ok{color:#34d399}
 .editpf-save-state.busy{color:#fcd34d}
+
+/* ---------- global scroll lock while any overlay owns the screen ---------- */
+html.thw-scroll-locked,
+html.thw-scroll-locked body{overflow:hidden !important;overscroll-behavior:none !important}
+
+/* ---------- custom banner card art ---------- */
+.editpf-banner-custom-art{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#2c2c33;color:rgba(255,255,255,.45);font-size:17px}
+.editpf-banner-custom-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.editpf-banner-custom-art i{position:absolute}
+.editpf-banner-custom-art img[hidden]{display:none}

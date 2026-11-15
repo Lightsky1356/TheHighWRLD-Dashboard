@@ -324,7 +324,7 @@
     var topEra = null, topEraPlays = 0;
     Object.keys(eraCounts).forEach(function (k) { if (eraCounts[k] > topEraPlays) { topEra = k; topEraPlays = eraCounts[k]; } });
 
-    var banner = (p.bannerChoice === "classic") ? "AlbumArt/999.jpg" : eraArt(topEra);
+    var banner = (p.bannerChoice === "classic") ? "AlbumArt/999.jpg" : (p.bannerChoice === "custom" && p.banner ? p.banner : eraArt(topEra));
     try { window.__pv2TopEraArt = eraArt(topEra); window.__pv2TopEraLabel = topEra ? eraLabel(topEra) : ""; } catch (e) {}
     var html = '';
 
@@ -684,6 +684,39 @@
       var el = document.getElementById(id);
       if (el && el.parentElement !== document.body) document.body.appendChild(el);
     });
+  } catch (e) {}
+
+  /* Scroll lock, one rule for every overlay that owns the screen:
+       - #app-boot (the boot splash) until it fades out,
+       - #wrldlog-overlay (the WRLD Log splash) while it is shown,
+       - any element carrying .modal-overlay.open (all site modals).
+     A single MutationObserver watches classes/styles and flips one class on
+     <html>; profile.css freezes scroll while it is set. */
+  try {
+    var lockQueued = false;
+    function syncScrollLock() {
+      lockQueued = false;
+      var locked = false;
+      var boot = document.getElementById("app-boot");
+      if (boot && !boot.classList.contains("gone")) locked = true;
+      if (!locked) {
+        var wl = document.getElementById("wrldlog-overlay");
+        if (wl) {
+          var d = "";
+          try { d = getComputedStyle(wl).display; } catch (e) {}
+          if (d && d !== "none") locked = true;
+        }
+      }
+      if (!locked && document.querySelector(".modal-overlay.open")) locked = true;
+      document.documentElement.classList.toggle("thw-scroll-locked", !!locked);
+    }
+    function queueSync() { if (!lockQueued) { lockQueued = true; requestAnimationFrame(syncScrollLock); } }
+    var observer = new MutationObserver(queueSync);
+    observer.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ["class", "style"] });
+    syncScrollLock();
+    /* The boot splash transitions in after load; make sure the class settles. */
+    setTimeout(syncScrollLock, 500);
+    setTimeout(syncScrollLock, 1500);
   } catch (e) {}
 
   /* If the profile page is already active when this script loads (deep link), render now. */
