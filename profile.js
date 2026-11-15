@@ -862,7 +862,8 @@
   /* If the profile page is already active when this script loads (deep link), render now. */
   try {
     var page = document.getElementById("page-section-profile");
-    if (page && (page.classList.contains("active") || (location.pathname || "").toLowerCase().indexOf("/profile") === 0)) {
+    if (page && ((location.pathname || "").toLowerCase().indexOf("/profile") === 0)) {
+      if (window.switchAppPage) window.switchAppPage("profile");
       window.setTimeout(renderFullProfile, 0);
     }
   } catch (e) {}

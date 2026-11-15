@@ -827,9 +827,11 @@ html.scroll-locked,html.scroll-locked body{overflow:hidden}
    settings cog, wrapped toolbar, full-width category select, clearer rows.
    Desktop (>=768px) is untouched by this block. */
 @media (max-width:767px){
-  /* Player page header: trim top spacing so the taller card clears the
-     fixed bottom-left badges / Top button / Night Light at scroll top */
-  #page-section-player #audio-preview{padding-top:44px !important}
+  /* Player page header: clear the fixed mobile nav bar (notched phones run
+     taller — the 44px let the page title sit under it). */
+  #page-section-player #audio-preview{padding-top:calc(104px + env(safe-area-inset-top, 0px)) !important}
+  /* The Vault page: same fix. */
+  #community-updates{padding-top:calc(104px + env(safe-area-inset-top, 0px)) !important}
 
   /* ---- Main player card: better vertical spacing ---- */
   #player-panel{

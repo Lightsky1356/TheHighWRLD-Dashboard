@@ -239,6 +239,23 @@
     }
     var nav = document.getElementById("navAvatarInner");
     if (nav) nav.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : esc(initial(p.name));var mbn = document.getElementById("mbnAvatarInner");if (mbn) mbn.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : esc(initial(p.name));
+    /* Account dropdown + mobile sheet: mirror the avatar and the sheet head */
+    ["acctAvatarInnerMenu", "thwSheetAvatarInner"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : esc(initial(p.name));
+    });
+    /* Sheet head: display name (the session username when present, else name). */
+    var sheetName = document.querySelector(".thw-sheet-name");
+    var sheetUsername = (_data && _data.profile && _data.profile.username) ? _data.profile.username : "";
+    if (sheetName) sheetName.textContent = sheetUsername || p.name || "THW Listener";
+    var sheetTag = document.querySelector(".thw-sheet-tag");
+    if (sheetTag) sheetTag.textContent = (_data && _data.discord && _data.discord.linked) ? "Verified on TheHighWRLD" : "TheHighWRLD Listener";
+    /* Desktop account dropdown: mirror the same head */
+    var acctName = document.querySelector("#navAccountSignedIn .acct-name");
+    if (acctName) acctName.textContent = sheetUsername || p.name || "THW Listener";
+    var acctTag = document.querySelector("#navAccountSignedIn .acct-tag");
+    if (acctTag) acctTag.textContent = (_data && _data.discord && _data.discord.linked) ? "Verified on TheHighWRLD" : "TheHighWRLD Listener";
     var n = document.getElementById("profileName"); if (n) n.textContent = p.name || "999_" + uidSuffix;
     var h = document.getElementById("profileHandle");
     if (h) h.innerHTML = "@" + esc(String(profileUsername() || p.name || "999").toLowerCase()) + ((_data && _data.discord && _data.discord.linked) ? ' <span class="disc-tag"><i class="fab fa-discord"></i> #' + uidSuffix + "</span>" : "");
@@ -4369,21 +4386,39 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
 (function () {
   "use strict";
   function fillStats() {
-    try {
-      var counts = {};
-      try { counts = JSON.parse(localStorage.getItem("jw_play_counts") || "{}") || {}; } catch (e2) {}
-      var total = 0, secs = 0;
-      for (var k in counts) {
-        if (!Object.prototype.hasOwnProperty.call(counts, k)) continue;
-        var idx = Number(k), n = Number(counts[k]) || 0;
-        if (!isFinite(idx) || !isFinite(n)) continue;
-        total += n;
-        try { if (typeof trackList !== "undefined" && trackList && trackList[idx]) secs += (Number(trackList[idx].duration) || 0) * n; } catch (e) {}
-      }
-      var mins = Math.floor(secs / 60);
+    function set(total, mins) {
       ["acctMenuPlays", "thwSheetPlays"].forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = String(total); });
       ["acctMenuMinutes", "thwSheetMinutes"].forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = String(mins); });
-    } catch (e) {}
+    }
+    function fillLocal() {
+      try {
+        var counts = {};
+        try { counts = JSON.parse(localStorage.getItem("jw_play_counts") || "{}") || {}; } catch (e2) {}
+        var total = 0, secs = 0;
+        for (var k in counts) {
+          if (!Object.prototype.hasOwnProperty.call(counts, k)) continue;
+          var idx = Number(k), n = Number(counts[k]) || 0;
+          if (!isFinite(idx) || !isFinite(n)) continue;
+          total += n;
+          try { if (typeof trackList !== "undefined" && trackList && trackList[idx]) secs += (Number(trackList[idx].duration) || 0) * n; } catch (e) {}
+        }
+        set(total, Math.floor(secs / 60));
+      } catch (e) {}
+    }
+    var uid = "";
+    try { uid = localStorage.getItem("wantedUserId") || ""; } catch (_) {}
+    if (!uid) { fillLocal(); return; }
+    /* Signed-in on this device: read the server's own numbers - the local
+       counter is per-device and never matched the server's totals. */
+    fetch("/api/account?user=" + encodeURIComponent(uid), { cache: "no-store", credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok || !d.stats) { fillLocal(); return; }
+        var plays = Number(d.stats.plays) || 0;
+        var hours = Number(d.stats.hours) || 0;
+        set(plays, Math.floor(hours * 60));
+      })
+      .catch(fillLocal);
   }
   function mirrorOnline() {
     try {
