@@ -233,6 +233,8 @@
     if (navBtn) navBtn.style.display = "none";
     if (menu) menu.style.display = "block";
     if (signedInGroup) signedInGroup.style.display = "block";
+    var sheetHead = document.querySelector("#mobile-profile-popup .thw-sheet-head");
+    if (sheetHead) sheetHead.style.display = "";
     if (sUp) sUp.style.display = "none";
     if (sIn) sIn.style.display = "none";
     if (sOut) sOut.style.display = "flex";
@@ -269,6 +271,8 @@
     if (navBtn) navBtn.style.display = "flex";
     if (menu) menu.style.display = "none";
     if (signedInGroup) signedInGroup.style.display = "none";
+    var sheetHead = document.querySelector("#mobile-profile-popup .thw-sheet-head");
+    if (sheetHead) sheetHead.style.display = "none";
     if (sUp) sUp.style.display = "flex";
     if (sIn) sIn.style.display = "flex";
     if (sOut) sOut.style.display = "none";

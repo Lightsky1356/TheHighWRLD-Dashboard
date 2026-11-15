@@ -3571,7 +3571,7 @@ html.is-scrolling .player-lightning{
    its top edge.
    ------------------------------------------------------------------ */
 @media (max-width:520px){
-  .foot{padding:30px 14px calc(var(--mbn-h,54px) + 20px);margin-top:32px}
+  .foot{padding:30px 14px calc(var(--mbn-h,54px) + 8px);margin-top:32px}
   .foot-cols{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 14px}
   .foot-head{font-size:9px;margin-bottom:9px;letter-spacing:.12em}
   .foot-list{gap:7px}
@@ -4388,7 +4388,7 @@ body.deck-no-track #deck-handle{display:none !important}
 .thw-sheet{position:fixed;inset:0;z-index:5200;font-family:inherit}
 .thw-sheet-backdrop{position:absolute;inset:0;background:rgba(4,5,12,.66);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:thwSheetFade .18s ease}
 @keyframes thwSheetFade{from{opacity:0}}
-.thw-sheet-panel{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;background:linear-gradient(180deg,rgba(23,22,44,.97),rgba(13,14,26,.98));border-top:1px solid rgba(255,255,255,.12);border-radius:22px 22px 0 0;padding:8px 14px calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -20px 60px rgba(0,0,0,.6);animation:thwSheetUp .22s cubic-bezier(.2,.8,.2,1)}
+.thw-sheet-panel{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;background:linear-gradient(180deg,rgba(28,28,52,.72) 0%,rgba(12,13,26,.72) 100%);-webkit-backdrop-filter:blur(28px) saturate(1.15);backdrop-filter:blur(28px) saturate(1.15);border-top:1px solid rgba(255,255,255,.18);border-radius:22px 22px 0 0;padding:8px 14px calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -24px 80px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.09);animation:thwSheetUp .22s cubic-bezier(.2,.8,.2,1)}
 @keyframes thwSheetUp{from{transform:translateY(24px);opacity:.5}}
 .thw-sheet-handle{width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,.22);margin:2px auto 12px}
 .thw-sheet-head{display:flex;align-items:center;gap:14px;padding:2px 2px 16px;border-bottom:1px solid rgba(255,255,255,.09);margin-bottom:10px}
