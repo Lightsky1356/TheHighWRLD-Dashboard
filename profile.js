@@ -1,0 +1,442 @@
+/* ============================================================================
+   PROFILE - the rebuilt self / member page
+   Replaces the old layout entirely. All data comes from /api/profile
+   (fallbacks honest: guest = sign-in gate, missing numbers = omitted).
+   ========================================================================== */
+(function () {
+  "use strict";
+
+  /* ---------- shared bits ---------- */
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function fmtNum(n) {
+    n = Number(n) || 0;
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+    if (n >= 10000) return Math.round(n / 1000) + "k";
+    return n.toLocaleString();
+  }
+  function hoursToMin(h) { return Math.round((Number(h) || 0) * 60); }
+  function ordinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+
+  /* ---------- era helpers ---------- */
+  var ERA_ORDER = ["GB&GR", "WOD", "DRFL", "JW3", "POST", "OUT", "AF", "ND", "BDM", "HIH", "999", "JW999", "JTK"];
+  var ERA_ART = {
+    "GB&GR": "AlbumArt/goodbye.jpg",
+    "DRFL": "AlbumArt/death.jpg",
+    "JW3": "AlbumArt/legends.jpg",
+    "POST": "AlbumArt/party.jpg",
+    "999": "AlbumArt/999.jpg",
+    "JW999": "AlbumArt/999.jpg"
+  };
+  var ERA_TINT = {
+    "GB&GR": ["#3b82f6", "#9e8000"],
+    "WOD": ["#db2777", "#cc4d92"],
+    "DRFL": ["#ef4444", "#d05c00"],
+    "JW3": ["#8f80c4", "#a67c00"],
+    "POST": ["#767fea", "#008fc1"],
+    "OUT": ["#767fea", "#008fc1"],
+    "AF": ["#009585", "#0f766e"],
+    "ND": ["#009585", "#0f766e"],
+    "BDM": ["#c17b00", "#7a3711"],
+    "HIH": ["#9f1239", "#d44e65"],
+    "999": ["#dc2626", "#d45154"],
+    "JW999": ["#dc2626", "#d45154"],
+    "JTK": ["#3b82f6", "#b57300"]
+  };
+  function eraOfTag(tag) {
+    var m = String(tag || "").replace(/\[?\d+m/g, "").match(/\((999|JW999|GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|HIH|JTK)\)/i);
+    return m ? m[1].toUpperCase() : null;
+  }
+  function eraLabel(era) {
+    if (!era) return "Mystery";
+    if (era === "GB&GR") return "Goodbye & Good Riddance";
+    if (era === "WOD") return "WRLD ON DRUGS";
+    if (era === "DRFL") return "Death Race For Love";
+    if (era === "JW3") return "Legends Never Die";
+    if (era === "POST") return "The Party Never Ends";
+    if (era === "OUT") return "Outsiders";
+    if (era === "AF") return "Affliction";
+    if (era === "ND") return "NOTHING'S DIFFERENT";
+    if (era === "BDM") return "BINGEDRINKINGMUSIC";
+    if (era === "HIH") return "Heartbroken In Hollywood 999";
+    if (era === "JTK") return "JUICED UP THE EP";
+    return era;
+  }
+  function eraArt(era) { return (era && ERA_ART[era]) || "AlbumArt/999.jpg"; }
+  function eraTint(era) { return (era && ERA_TINT[era]) || ["#fcd34d", "#d4a574"]; }
+  function trackByTitle(title) {
+    if (typeof trackList === "undefined" || !trackList) return null;
+    var t = String(title || "").toLowerCase();
+    if (/^[0-9]+$/.test(String(title || "").trim())) {
+      var ni = parseInt(String(title).trim(), 10);
+      if (ni >= 0 && ni < trackList.length) return { index: ni, track: trackList[ni] };
+      return null;
+    }
+    for (var i = 0; i < trackList.length; i++) {
+      if (String(trackList[i].title || "").toLowerCase() === t) return { index: i, track: trackList[i] };
+    }
+    var base = String(title || "").replace(/\s*\(.*\)\s*/, "").trim().toLowerCase();
+    if (base) {
+      for (var k = 0; k < trackList.length; k++) {
+        var tn = trackList[k] && trackList[k].title ? String(trackList[k].title) : "";
+        if (tn.replace(/\s*\(.*\)\s*/, "").trim().toLowerCase() === base) return { index: k, track: trackList[k] };
+      }
+    }
+    return null;
+  }
+
+  function eraFromTrackId(id) {
+    if (typeof trackList === "undefined" || !trackList) return null;
+    /* Top-plays store the track title, sometimes with the era parenthetical
+       intact. Match on the title stem first, era tag as-is second. */
+    var t = String(id || "");
+    var byIdx = null;
+    for (var i = 0; i < trackList.length; i++) {
+      var cur = String(trackList[i].title || "");
+      if (cur === t || cur.toLowerCase() === t.toLowerCase()) { byIdx = i; break; }
+    }
+    if (byIdx != null) return eraOfTag(trackList[byIdx].tag);
+    return eraOfTag(t);
+  }
+  function coverForId(id) {
+    var rec = trackByTitle(id);
+    if (rec && rec.track && rec.track.cover) { var c = String(rec.track.cover); return c.indexOf("http") === 0 ? c : c.replace(/^Covers\//, "Covers/"); }
+    var era = eraFromTrackId(id);
+    return eraArt(era);
+  }
+  function playIndexById(id) { var rec = trackByTitle(id); return rec ? rec.index : -1; }
+
+  /* ---------- data loading ---------- */
+  function fetchJson(url) {
+    return fetch(url, { cache: "no-store", credentials: "same-origin" }).then(function (r) { return r.json(); }).catch(function () { return null; });
+  }
+  function isSelfView() {
+    try { return !window.isOtherProfilePath || !window.isOtherProfilePath(); } catch (e) { return true; }
+  }
+  function profileKey() {
+    try { return window.profilePathKey ? window.profilePathKey() : ""; } catch (e) { return ""; }
+  }
+  function loadData() {
+    var self = isSelfView(), key = profileKey();
+    /* The account sign-in flow identifies this browser via wantedUserId. */
+    var ownUid = "";
+    try { ownUid = (self ? (localStorage.getItem("wantedUserId") || "") : key) || ""; } catch (e) { ownUid = self ? "" : key; }
+    if (self && !ownUid) return Promise.resolve({ profile: null, xp: null, self: true });
+    var url = "/api/profile?user=" + encodeURIComponent(ownUid);
+    return Promise.all([fetchJson(url), fetchJson("/api/xp?limit=100")]).then(function (r) {
+      return { profile: r[0], xp: r[1], self: self };
+    });
+  }
+
+  /* ---------- hour histogram note ---------- */
+  function mostActiveWindow(hours) {
+    if (!Array.isArray(hours) || !hours.length) return null;
+    var max = 0, idx = 0;
+    for (var i = 0; i < 24; i++) { if ((hours[i] || 0) > max) { max = hours[i]; idx = i; } }
+    if (!max) return null;
+    var ampm = idx >= 12 ? "PM" : "AM", hr = ((idx + 11) % 12) + 1;
+    return "most around " + hr + " " + ampm;
+  }
+
+  /* ---------- milestones ---------- */
+  var MILESTONES = [
+    { id: "first", label: "First play", icon: "fa-play", test: function (s) { return s.plays >= 1; } },
+    { id: "ten", label: "10 plays", icon: "fa-headphones", test: function (s) { return s.plays >= 10; } },
+    { id: "fifty", label: "50 plays", icon: "fa-bolt", test: function (s) { return s.plays >= 50; } },
+    { id: "hundred", label: "100 plays", icon: "fa-fire", test: function (s) { return s.plays >= 100; } },
+    { id: "twofifty", label: "250 plays", icon: "fa-rocket", test: function (s) { return s.plays >= 250; } },
+    { id: "fivehundred", label: "500 plays", icon: "fa-crown", test: function (s) { return s.plays >= 500; } },
+    { id: "thousand", label: "1,000 plays", icon: "fa-gem", test: function (s) { return s.plays >= 1000; } },
+    { id: "unique25", label: "25 songs", icon: "fa-box-archive", test: function (s) { return s.unique >= 25; } },
+    { id: "unique100", label: "100 songs", icon: "fa-layer-group", test: function (s) { return s.unique >= 100; } },
+    { id: "streak7", label: "7-day streak", icon: "fa-calendar-check", test: function (s) { return s.streak >= 7; } },
+    { id: "streak30", label: "30-day streak", icon: "fa-calendar-days", test: function (s) { return s.streak >= 30; } },
+    { id: "level5", label: "Level 5", icon: "fa-star", test: function (s) { return s.level >= 5; } },
+    { id: "level10", label: "Level 10", icon: "fa-star-of-life", test: function (s) { return s.level >= 10; } },
+    { id: "top25", label: "Top 25 all-time", icon: "fa-ranking-star", test: function (s) { return s.rank != null && s.rank <= 25; } }
+  ];
+
+  /* ---------- HTML builders ---------- */
+  function esc2(s) { return esc(s); }
+  function initials(name) {
+    var t = String(name || "9").trim();
+    if (!t) return "9";
+    var parts = t.split(/\s+/);
+    return ((parts[0] || "")[0] || "9").toUpperCase();
+  }
+  function avatarHtml(p) {
+    if (p.avatar) return '<img class="pv2-avatar" src="' + esc2(p.avatar) + '" alt="" decoding="async" onerror="this.onerror=null;this.style.display=\'none\'">';
+    return '<div class="pv2-avatar-fallback" aria-hidden="true">' + esc2(initials(p.name)) + '</div>';
+  }
+  function joinedStr(j) {
+    if (!j) return "";
+    try {
+      var d = new Date(String(j).replace(" ", "T") + "Z");
+      if (isNaN(d.getTime())) d = new Date(String(j));
+      if (isNaN(d.getTime())) return String(j).slice(0, 10);
+      return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    } catch (e) { return String(j).slice(0, 10); }
+  }
+  function statBlock(n, label) {
+    return '<div><b>' + esc2(String(n)) + '</b><span>' + esc2(label) + '</span></div>';
+  }
+  function eraStackHTML(topList) {
+    /* Sum plays per era across the top track list we can see (honest: label
+       says these come from the vault). */
+    var sums = {}, order = [];
+    for (var i = 0; i < topList.length; i++) {
+      var era = eraFromTrackId(topList[i].track_id);
+      if (!era) continue;
+      if (sums[era] == null) { sums[era] = 0; order.push(era); }
+      sums[era] += Number(topList[i].n) || 0;
+    }
+    var rows = order.map(function (era) { return { era: era, plays: sums[era] }; })
+      .sort(function (a, b) { return b.plays - a.plays; }).slice(0, 5);
+    if (!rows.length) return '<p class="pv2-none">Play some songs from the vault and the eras you love most will show up here.</p>';
+    var max = rows[0].plays || 1;
+    return '<div class="pv2-eras">' + rows.map(function (r, i) {
+      var tint = eraTint(r.era);
+      var pct = Math.round((r.plays / max) * 100);
+      return '<div class="pv2-era-row"><span class="pv2-era-num">' + (i + 1) + '</span>' +
+        '<img class="pv2-era-art" src="' + esc2(eraArt(r.era)) + '" alt="" loading="lazy" decoding="async">' +
+        '<div class="pv2-era-body"><div class="pv2-era-name-row"><span class="pv2-era-name-sm">' + esc2(eraLabel(r.era)) + '</span><span class="pv2-era-n">' + fmtNum(r.plays) + ' plays</span></div>' +
+        '<div class="pv2-era-bar"><span class="pv2-era-fill" style="width:' + pct + '%;background:linear-gradient(90deg,' + esc2(tint[0]) + ',' + esc2(tint[1]) + ')"></span></div>' +
+      '</div></div>';
+    }).join("") + '</div>';
+  }
+  function topSongsHTML(topList) {
+    if (!topList || !topList.length) return '<p class="pv2-none">Nothing played yet - press play on anything in the vault.</p>';
+    var maxPlays = Number(topList[0].n) || 1;
+    return '<div class="pv2-top-list">' + topList.slice(0, 8).map(function (t, i) {
+      var idx = playIndexById(t.track_id);
+      var cover = coverForId(t.track_id);
+      var era = eraFromTrackId(t.track_id);
+      var plays = Number(t.n) || 0;
+      var pct = Math.max(4, Math.round((plays / maxPlays) * 100));
+      var inner = '<span class="pv2-rank">' + (i + 1) + '</span>' +
+        '<img class="pv2-song-cover" src="' + esc2(cover) + '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'">' +
+        '<span class="pv2-song-t"><span class="pv2-song-title">' + esc2(t.track_id) + '</span>' +
+          '<span class="pv2-song-meta">' + (era ? '<span class="pv2-song-era">' + esc2(era) + '</span>' : '') + ((typeof trackList !== "undefined" && (function () { var r = trackByTitle(t.track_id); return r && r.track.producer ? '<span class="pv2-song-prod">prod. ' + esc2(r.track.producer) + '</span>' : ''; })()) || '') + '</span>' +
+        '</span>' +
+        '<span class="pv2-plays">' + fmtNum(plays) + '<span>plays</span></span>';
+      return idx >= 0
+        ? '<button type="button" class="pv2-song" data-play-idx="' + idx + '">' + inner + '</button>'
+        : '<div class="pv2-song">' + inner + '</div>';
+    }).join("") + '</div>';
+  }
+  function hourHistogramHTML(hours) {
+    if (!Array.isArray(hours) || hours.length < 24) return '<p class="pv2-none">Play something and your listening pattern will draw itself here.</p>';
+    var max = Math.max.apply(null, hours.map(function (h) { return Number(h) || 0; }));
+    if (!max) return '<p class="pv2-none">No hourly pattern yet.</p>';
+    var bars = '';
+    for (var h = 0; h < 24; h++) {
+      var v = Number(hours[h]) || 0;
+      var pct = Math.round((v / max) * 100);
+      var lb = h === 0 ? "12" : (h === 12 ? "12" : ((h % 12) || 12)) + (h < 12 ? "a" : "");
+      bars += '<div class="pv2-hr"><span class="pv2-hr-bar' + (pct >= 88 ? ' hot' : '') + '" style="height:' + Math.max(4, pct) + '%"></span><span class="pv2-hr-lb">' + lb + '</span></div>';
+    }
+    var note = mostActiveWindow(hours);
+    return '<div class="pv2-hours">' + bars + '</div>' +
+      '<p class="pv2-hours-note">Plays by hour of the day' + (note ? ' &middot; <b>' + esc2(note) + '</b>' : "") + '</p>';
+  }
+  function milestonesHTML(stats) {
+    var unlocked = MILESTONES.filter(function (m) { return m.test(stats); });
+    var html = '<div class="pv2-milestones">';
+    MILESTONES.forEach(function (m) {
+      var on = m.test(stats);
+      html += '<span class="pv2-ms' + (on ? ' unlocked' : '') + '"><i class="fas ' + m.icon + '"></i>' + esc2(m.label) + '</span>';
+    });
+    html += '</div>';
+    html += '<p class="pv2-card-note" style="margin-top:10px">' + unlocked.length + ' of ' + MILESTONES.length + ' milestones unlocked</p>';
+    return html;
+  }
+  function collageHTML(favorites) {
+    if (!favorites || !favorites.length) return '<p class="pv2-none">No favourites yet.</p>';
+    var picks = favorites.slice(0, 8).map(function (f) { return f && f.title; }).filter(Boolean);
+    return '<div class="pv2-collage">' + picks.map(function (title) {
+      var cover = coverForId(title);
+      return '<img src="' + esc2(cover) + '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'">';
+    }).join("") + '</div>';
+  }
+
+  /* ---------- render ---------- */
+  function renderInto(body, html) {
+    body.innerHTML = html;
+    body.removeAttribute("aria-busy");
+  }
+
+  function signInGate() {
+    return '<div class="pv2-signin"><i class="fas fa-user-lock"></i><h2>Your profile lives here</h2><p>Sign in and the page fills with your plays, your level, your top songs, your eras.</p><button type="button" class="pv2-link" onclick="if(window.switchAppPage)window.switchAppPage(\'login\')"><i class="fas fa-right-to-bracket"></i> Sign in</button></div>';
+  }
+
+  function renderError(msg) {
+    return '<div class="pv2-signin"><i class="fas fa-triangle-exclamation"></i><h2>Couldn\'t load the profile</h2><p>' + esc2(msg || "Something went sideways. Try again in a moment.") + '</p></div>';
+  }
+
+  function buildPage(d, xp) {
+    var p = d.profile || {}, s = d.stats || {}, dc = d.discord || {};
+    var isMe = isSelfView();
+    var name = p.name || dc.name || (isMe ? "You" : "999_" + String(d.uid || "").slice(-4));
+    var uname = p.username || d.handle || String(d.uid || "");
+    var xpObj = (xp && xp.me) || null;
+    var rank = xpObj && xpObj.rankAll != null ? xpObj.rankAll : null;
+    var xpTotal = xpObj ? xpObj.xp : 0;
+    var level = xpObj ? xpObj.level : 1;
+    var prog = xpObj && typeof xpObj.levelProgress === "number" ? xpObj.levelProgress : 0;
+    var curXp = 0, nextXp = 50;
+    try {
+      var lvl = Math.max(1, Number(level) || 1);
+      var base = 50 * (lvl - 1) * (lvl - 1), next = 50 * lvl * lvl;
+      curXp = Math.max(0, xpTotal - base); nextXp = Math.max(1, next - base);
+    } catch (e) {}
+    var hoursArr = Array.isArray(d.hours) ? d.hours : null;
+    var topList = Array.isArray(d.topPlays) ? d.topPlays : [];
+    var favs = Array.isArray(d.favorites) ? d.favorites : [];
+    var activity = Array.isArray(d.activity) ? d.activity : [];
+    var stats = {
+      plays: Number(s.plays) || 0,
+      unique: Number(s.unique != null ? s.unique : (s.unique_tracks != null ? s.unique_tracks : 0)) || 0,
+      hours: Number(s.hours) || 0,
+      streak: Number(d.streak) || 0,
+      level: level,
+      rank: rank
+    };
+    var eraCounts = {};
+    topList.forEach(function (t) { var e = eraFromTrackId(t.track_id); if (e) eraCounts[e] = (eraCounts[e] || 0) + (Number(t.n) || 0); });
+    var topEra = null, topEraPlays = 0;
+    Object.keys(eraCounts).forEach(function (k) { if (eraCounts[k] > topEraPlays) { topEra = k; topEraPlays = eraCounts[k]; } });
+
+    var banner = eraArt(topEra);
+    var html = '';
+
+    /* Hero */
+    html += '<div class="pv2-hero">';
+    html += '<img class="pv2-hero-art" src="' + esc2(banner) + '" alt="" loading="eager" decoding="async" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'"><div class="pv2-hero-shade"></div>';
+    html += '<div class="pv2-hero-inner">';
+    html += '<div class="pv2-hero-top"><div><div class="pv2-era-label">Top era</div><div class="pv2-era-name">' + esc2(eraLabel(topEra)) + '</div></div>';
+    if (isMe) html += '<button type="button" class="pv2-copy-btn" id="pv2CopyLink" title="Copy profile link" aria-label="Copy profile link"><i class="fas fa-link"></i></button>';
+    html += '</div>';
+    html += '<div class="pv2-hero-mid"><div class="pv2-avatar-wrap">' + avatarHtml(p) + '<span class="pv2-dot" style="background:#10b981"></span></div>';
+    html += '<div class="pv2-meta"><h1 class="pv2-name">' + esc2(name) + '</h1><p class="pv2-handle">@' + esc2(String(uname).toLowerCase()) + '</p>';
+    html += '<p class="pv2-joined">' + (p.joined ? 'Joined ' + esc2(joinedStr(p.joined)) : '') + (dc.linked ? (p.joined ? ' &middot; ' : '') + 'Discord linked' : '') + '</p>';
+    if (topEra) html += '<span class="pv2-era-chip"><i class="fas fa-crown"></i>' + esc2(eraLabel(topEra)) + '</span>';
+    if (isMe) html += '<div class="pv2-hero-actions"><button type="button" class="pv2-mini-btn" onclick="if(window.openEditProfile)window.openEditProfile()"><i class="fas fa-pen"></i>Edit profile</button><button type="button" class="pv2-mini-btn" onclick="if(window.authSignOut)window.authSignOut();else window.location.href=\'/api/auth/logout\'"><i class="fas fa-right-from-bracket"></i>Sign out</button></div>';
+    html += '</div></div>';
+    html += '<div class="pv2-strip">';
+    html += statBlock(isMe && rank != null ? ordinal(rank) : (rank != null ? ordinal(rank) : "-"), rank != null ? "Leaderboard" : "Unranked");
+    html += statBlock(fmtNum(stats.plays), "Plays");
+    html += statBlock(Math.round(hoursToMin(stats.hours)) + "m", "Listened");
+    html += statBlock(fmtNum(stats.unique), "Songs");
+    html += statBlock(fmtNum(stats.streak), "Day streak");
+    html += '</div>';
+    html += '</div></div>'; /* hero inner / hero */
+
+    /* Level + milestones card */
+    html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-bolt"></i>Fan level</h2><span class="pv2-card-note">' + fmtNum(xpTotal) + ' XP all time</span></div>';
+    html += '<div class="pv2-levelrow"><div class="pv2-level-badge"><b>' + esc2(String(level)) + '</b><span>Level</span></div>';
+    html += '<div class="pv2-level-meta"><div class="pv2-level-top"><span class="pv2-level-fan">Fan</span><span class="pv2-level-xp">' + fmtNum(curXp) + ' / ' + fmtNum(nextXp) + ' XP</span></div>';
+    html += '<div class="pv2-level-bar"><span class="pv2-level-fill" id="pv2LevelFill" style="width:' + Math.round(Math.min(1, Math.max(0, prog)) * 100) + '%"></span></div>';
+    html += '<div class="pv2-level-foot"><span class="pv2-level-next">' + (level >= 10 ? "Max level fan in the vault" : (fmtNum(nextXp - curXp) + ' XP to level ' + (level + 1))) + '</span><a class="pv2-xp-link" href="#" onclick="if(window.switchAppPage)window.switchAppPage(\'leaderboard\');return false">How XP works <i class="fas fa-arrow-right" style="font-size:9px"></i></a></div>';
+    html += '</div></div>'; /* levelrow */
+    html += milestonesHTML(stats);
+    html += '</div>';
+
+    /* Grid: top songs / top eras / hours / recent strip */
+    html += '<div class="pv2-grid" style="margin-top:16px">';
+    html += '<div class="pv2-card" style="grid-column:span 2"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-fire"></i>Top songs</h2><span class="pv2-card-note">' + topList.length + ' ranked</span></div>' + topSongsHTML(topList) + '</div>';
+    html += '<div class="pv2-card"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-layer-group"></i>Top eras</h2><span class="pv2-card-note">by your top plays</span></div>' + eraStackHTML(topList) + '</div>';
+    html += '<div class="pv2-card" style="grid-column:span 2"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-clock-rotate-left"></i>When you listen</h2><span class="pv2-card-note">24-hour pattern</span></div>' + hourHistogramHTML(hoursArr) + '</div>';
+    html += '</div>'; /* grid */
+
+    /* Recently played (self only — the API only answers the signed-in member) */
+    if (isMe) {
+      html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-rotate"></i>Recently played</h2></div><div class="pv2-recent" id="pv2Recent"><p class="pv2-none">Loading&hellip;</p></div></div>';
+    }
+
+    /* Favourites collage */
+    if (favs.length) {
+      html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-heart"></i>Favourites</h2><span class="pv2-card-note">' + favs.length + ' saved</span></div>' + collageHTML(favs) + '</div>';
+    }
+
+    return html;
+  }
+
+  function bindCopy(body, d) {
+    var btn = document.getElementById("pv2CopyLink");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var url = window.location.origin + (isSelfView() ? "/profile" : ("/profile/" + encodeURIComponent(profileKey())));
+      var done = function () {
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(function () { btn.innerHTML = '<i class="fas fa-link"></i>'; }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, done);
+      else {
+        try { var ta = document.createElement("textarea"); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); done(); } catch (e) {}
+      }
+    });
+  }
+  function bindSongs(body) {
+    body.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest("[data-play-idx]") : null;
+      if (!b) return;
+      var idx = parseInt(b.getAttribute("data-play-idx"), 10);
+      if (!isNaN(idx) && window.selectTrackFromList) {
+        try { window.selectTrackFromList(idx); if (window.switchAppPage) window.switchAppPage("player"); } catch (e) {}
+      }
+    });
+  }
+  function fillRecent() {
+    var host = document.getElementById("pv2Recent");
+    if (!host) return;
+    fetchJson("/api/recent?limit=12").then(function (d) {
+      if (!d || d.ok === false) { host.innerHTML = '<p class="pv2-none">No recent plays yet.</p>'; return; }
+      var rows = Array.isArray(d) ? d : (d.recent || []);
+      rows = rows.map(function (r) { return r && (r.title || r.track_id || ""); }).filter(Boolean);
+      var seen = {}, out = [];
+      rows.forEach(function (t) { var k = t.toLowerCase(); if (seen[k]) return; seen[k] = 1; out.push(t); });
+      if (!out.length) { host.innerHTML = '<p class="pv2-none">No recent plays yet. Press play.</p>'; return; }
+      host.innerHTML = out.slice(0, 10).map(function (title) {
+        var cover = coverForId(title);
+        return '<a class="pv2-recent-item" href="#" onclick="return false">' +
+          '<img class="pv2-recent-art" src="' + esc2(cover) + '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'">' +
+          '<span class="pv2-recent-t">' + esc2(title) + '</span></a>';
+      }).join("");
+    });
+  }
+
+  function renderFullProfile() {
+    var host = document.getElementById("profilePageBody");
+    if (!host) return;
+    host.classList.remove("cmp-profile-host");
+    host.innerHTML = '<div class="pv2-signin"><i class="fas fa-circle-notch fa-spin"></i><p>Loading your profile&hellip;</p></div>';
+    loadData().then(function (d) {
+      if (!d || !d.profile) { host.innerHTML = '<div class="pv2-page">' + signInGate() + '</div>'; return; }
+      if (d.profile.ok === false) { host.innerHTML = '<div class="pv2-page">' + signInGate() + '</div>'; return; }
+      try {
+        host.innerHTML = '<div class="pv2-page">' + buildPage(d.profile, d.xp) + '</div>';
+        bindCopy(host, d.profile);
+        bindSongs(host);
+        fillRecent();
+        window.__pv2Mounted = true;
+      } catch (e) {
+        console.error("profile render failed", e);
+        host.innerHTML = renderError("Something broke while drawing the page.");
+      }
+    })["catch"](function () {
+      renderInto(host, renderError("The vault didn't answer. Try again in a moment."));
+    });
+  }
+
+  /* Take the profile page over completely. */
+  window.renderProfilePageBody = renderFullProfile;
+  window.profileSectionShown = function () { renderFullProfile(); };
+  window.__THW_PROFILE_V2 = true;
+
+  /* If the profile page is already active when this script loads (deep link), render now. */
+  try {
+    var page = document.getElementById("page-section-profile");
+    if (page && (page.classList.contains("active") || (location.pathname || "").toLowerCase().indexOf("/profile") === 0)) {
+      window.setTimeout(renderFullProfile, 0);
+    }
+  } catch (e) {}
+})();

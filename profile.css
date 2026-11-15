@@ -1,0 +1,176 @@
+/* ============================================================================
+   PROFILE - the rebuilt self / member page, juicewrld.io-style
+   ========================================================================== */
+
+:root{
+  --pv-glass:linear-gradient(180deg,rgba(22,22,36,.72),rgba(15,16,28,.78));
+  --pv-border:rgba(255,255,255,.1);
+  --pv-border-soft:rgba(255,255,255,.07);
+  --pv-text:#f4f2ff;
+  --pv-mute:rgba(244,242,255,.62);
+  --pv-faint:rgba(244,242,255,.4);
+  --pv-gold:#fcd34d;
+  --pv-gold-2:#d4a574;
+}
+
+/* ---------- shell ---------- */
+#profile-page .ac-main{max-width:1180px !important;margin:0 auto !important;padding:0 !important;width:100%}
+.pv2-page{
+  display:block !important;
+  grid-template-columns:none !important;
+  gap:0 !important;
+  align-items:stretch !important;
+  width:100%;
+  max-width:1180px;
+  margin:0 auto;
+  padding:96px 18px 72px;
+  color:var(--pv-text);
+  font-family:"Sora",ui-sans-serif,system-ui,sans-serif;
+  box-sizing:border-box;
+}
+#profilePageBody,
+.profile-v2-mount{display:block !important;grid-template-columns:none !important;gap:0 !important;align-items:stretch !important;width:100%}
+.pv2-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (min-width:1100px){.pv2-grid{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:640px){.pv2-page{padding:80px 10px 48px}}
+
+.pv2-card{
+  background:var(--pv-glass);
+  border:1px solid var(--pv-border);
+  border-radius:20px;
+  padding:20px;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  box-shadow:0 18px 48px rgba(0,0,0,.38);
+  min-width:0;
+}
+
+/* ---------- page head ---------- */
+.pv2-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:16px}
+.pv2-title{margin:0;font-size:clamp(30px,6vw,44px);font-weight:900;letter-spacing:-.02em;color:#fff}
+.pv2-sub{margin:2px 0 0;font-size:13px;color:var(--pv-mute)}
+.pv2-link{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--pv-border);background:rgba(255,255,255,.05);color:var(--pv-text);font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;font-family:inherit;white-space:nowrap;transition:background .15s,border-color .15s}
+.pv2-link:hover{background:rgba(255,255,255,.09)}
+@media (max-width:640px){.pv2-head{flex-wrap:wrap;align-items:flex-start}}
+
+/* ---------- hero (span all) ---------- */
+.pv2-hero{position:relative;overflow:hidden;border-radius:20px;border:1px solid var(--pv-border);min-height:230px;box-shadow:0 26px 60px rgba(0,0,0,.4)}
+.pv2-hero-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.pv2-hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,8,16,.15) 0%,rgba(6,8,16,.42) 40%,rgba(6,8,16,.93) 100%)}
+.pv2-hero-inner{position:relative;display:flex;flex-direction:column;height:100%;padding:22px}
+.pv2-hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pv2-era-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,242,255,.55);font-weight:800}
+.pv2-era-name{font-size:15px;font-weight:800;color:#fff;letter-spacing:-.01em;margin-top:2px}
+.pv2-hero-mid{display:flex;align-items:flex-end;gap:18px;margin-top:auto;padding-top:26px}
+.pv2-avatar-wrap{position:relative;flex:0 0 auto}
+.pv2-avatar{width:104px;height:104px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.22);box-shadow:0 12px 40px rgba(0,0,0,.55);background:#0f0f1e}
+.pv2-avatar-fallback{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;font-size:38px;font-weight:800;color:#0f0f1e;background:linear-gradient(135deg,#fcd34d,#d4a574);border:3px solid rgba(255,255,255,.3)}
+.pv2-dot{position:absolute;right:8px;bottom:8px;width:16px;height:16px;border-radius:50%;border:3px solid #06070f;background:#10b981}
+.pv2-meta{min-width:0;flex:1;position:relative;z-index:1}
+.pv2-name{margin:0;font-size:clamp(20px,4.6vw,28px);font-weight:900;letter-spacing:-.02em;text-shadow:0 4px 22px rgba(0,0,0,.6)}
+.pv2-handle{color:rgba(244,242,255,.72);font-size:13px;font-weight:600;margin-top:3px}
+.pv2-joined{color:var(--pv-mute);font-size:12px;margin-top:6px}
+.pv2-era-chip{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:5px 11px;border-radius:999px;background:rgba(6,7,15,.5);border:1px solid rgba(255,255,255,.18);font-size:11px;font-weight:700;color:#fff;backdrop-filter:blur(4px)}
+.pv2-era-chip i{color:var(--pv-gold)}
+.pv2-hero-actions{display:flex;gap:8px;margin-top:12px}
+.pv2-mini-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:9px;background:rgba(6,7,15,.55);border:1px solid rgba(255,255,255,.16);color:var(--pv-text);font-size:12px;font-weight:700;cursor:pointer;backdrop-filter:blur(6px);font-family:inherit}
+.pv2-mini-btn:hover{background:rgba(6,7,15,.75)}
+@media (max-width:720px){.pv2-hero-mid{flex-direction:column;align-items:flex-start;gap:12px}.pv2-avatar{width:88px;height:88px}.pv2-avatar-fallback{width:88px;height:88px;font-size:30px}}
+
+/* ---------- banner stats strip ---------- */
+.pv2-strip{display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--pv-border-soft);margin-top:16px}
+.pv2-strip>div{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:110px;padding:12px 14px;flex:1}
+.pv2-strip>div+div{border-left:1px solid var(--pv-border-soft)}
+.pv2-strip b{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.01em}
+.pv2-strip span{font-size:11px;color:var(--pv-mute);text-transform:uppercase;letter-spacing:.12em;font-weight:700}
+@media (max-width:560px){.pv2-strip>div{min-width:33%}.pv2-strip>div+div{border-left:none}}
+
+/* ---------- cards / common ---------- */
+.pv2-card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.pv2-card-title{margin:0;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--pv-mute);display:flex;align-items:center;gap:8px}
+.pv2-card-title i{color:var(--pv-gold)}
+.pv2-card-note{margin:0;font-size:11px;color:var(--pv-faint)}
+.pv2-none{font-size:12.5px;color:var(--pv-faint);padding:18px 8px;text-align:center}
+
+/* ---------- level ---------- */
+.pv2-levelrow{display:flex;align-items:center;gap:16px}
+.pv2-level-badge{display:flex;flex-direction:column;align-items:center;justify-content:center;width:84px;height:84px;border-radius:20px;background:radial-gradient(100% 100% at 30% 0%,#4bb0e5 0%,#2563eb 100%);border:1px solid rgba(255,255,255,.35);box-shadow:0 10px 28px rgba(59,130,246,.4),inset 0 2px 0 rgba(255,255,255,.4)}
+.pv2-level-badge b{font-size:34px;line-height:1;color:#04101c;font-weight:900;letter-spacing:-.03em}
+.pv2-level-badge span{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#031c2e;font-weight:800}
+.pv2-level-meta{flex:1;min-width:0}
+.pv2-level-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px}
+.pv2-level-fan{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--pv-gold)}
+.pv2-level-xp{font-size:11px;color:var(--pv-mute)}
+.pv2-level-bar{height:9px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
+.pv2-level-fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#fcd34d,#f59e0b);width:0;transition:width .9s ease}
+.pv2-level-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.pv2-level-next{font-size:11px;color:var(--pv-mute)}
+.pv2-xp-link{font-size:11px;color:var(--pv-gold-2);text-decoration:none;font-weight:700}
+.pv2-xp-link:hover{text-decoration:underline}
+@media (max-width:560px){.pv2-levelrow{gap:12px}.pv2-level-badge{width:72px;height:72px}.pv2-level-badge b{font-size:28px}}
+
+/* ---------- milestones ---------- */
+.pv2-milestones{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pv2-ms{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:10px;border:1px solid var(--pv-border-soft);background:rgba(255,255,255,.04);font-size:11px;font-weight:700;color:var(--pv-mute)}
+.pv2-ms i{color:rgba(244,242,255,.35);font-size:12px}
+.pv2-ms.unlocked{border-color:rgba(252,211,77,.4);background:rgba(252,211,77,.09);color:#ffeaa3}
+.pv2-ms.unlocked i{color:var(--pv-gold)}
+
+/* ---------- top songs ---------- */
+.pv2-top-list{display:flex;flex-direction:column;gap:6px}
+.pv2-song{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:12px;border:1px solid transparent;background:rgba(255,255,255,.03);transition:background .15s,border-color .15s;text-decoration:none;color:inherit;min-width:0}
+a.pv2-song:hover{background:rgba(255,255,255,.06);border-color:var(--pv-border-soft)}
+.pv2-rank{flex:0 0 18px;text-align:center;font-size:11px;font-weight:800;color:var(--pv-faint);font-variant-numeric:tabular-nums}
+.pv2-song-cover{flex:0 0 46px;width:46px;height:46px;border-radius:8px;object-fit:cover;background:#0f0f1e}
+.pv2-song-t{min-width:0;flex:1}
+.pv2-song-title{font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv2-song-meta{display:flex;align-items:center;gap:8px;margin-top:2px;min-width:0}
+.pv2-song-era{font-size:9px;letter-spacing:.13em;text-transform:uppercase;font-weight:800;color:var(--pv-faint);white-space:nowrap}
+.pv2-song-prod{font-size:10.5px;color:var(--pv-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv2-plays{flex:0 0 auto;font-size:12px;font-weight:800;color:rgba(244,242,255,.72);font-variant-numeric:tabular-nums}
+.pv2-plays span{display:block;text-align:right;font-size:9px;color:var(--pv-faint);letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+@media (max-width:560px){.pv2-song-cover{flex-basis:40px;width:40px;height:40px}.pv2-song-prod{display:none}}
+
+/* ---------- top eras ---------- */
+.pv2-eras{display:flex;flex-direction:column;gap:10px}
+.pv2-era-row{display:flex;align-items:center;gap:10px}
+.pv2-era-num{flex:0 0 14px;font-size:10px;font-weight:800;color:var(--pv-faint)}
+.pv2-era-art{flex:0 0 34px;width:34px;height:34px;border-radius:6px;object-fit:cover;background:#0f0f1e}
+.pv2-era-body{flex:1;min-width:0}
+.pv2-era-name-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.pv2-era-name-sm{font-size:11.5px;font-weight:800;color:var(--pv-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv2-era-n{font-size:10px;color:var(--pv-faint)}
+.pv2-era-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px}
+.pv2-era-fill{display:block;height:100%;border-radius:99px;width:0;transition:width .9s ease}
+
+/* ---------- recently played ---------- */
+.pv2-recent{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 12px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.pv2-recent::-webkit-scrollbar{height:6px}
+.pv2-recent::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:99px}
+.pv2-recent-item{flex:0 0 118px;scroll-snap-align:start;text-align:center;color:var(--pv-text);text-decoration:none}
+.pv2-recent-art{width:118px;height:118px;border-radius:14px;object-fit:cover;border:1px solid var(--pv-border-soft);background:#0f0f1e}
+.pv2-recent-t{margin-top:7px;font-size:11px;font-weight:700;line-height:1.3;color:rgba(244,242,255,.8);height:2.6em;overflow:hidden}
+
+/* ---------- when they listen ---------- */
+.pv2-hours{display:flex;align-items:flex-end;gap:3px;height:110px;padding:12px 0 6px}
+.pv2-hr{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%}
+.pv2-hr-bar{width:100%;border-radius:3px;background:rgba(252,211,77,.16);align-self:flex-end;transition:height .5s ease,background .3s}
+.pv2-hr-bar.hot{background:linear-gradient(180deg,#fcd34d,#f59e0b)}
+.pv2-hr-lb{font-size:9px;color:var(--pv-faint);font-variant-numeric:tabular-nums}
+.pv2-hours-note{margin:4px 0 0;font-size:12px;color:var(--pv-mute)}
+.pv2-hours-note b{color:#fff}
+
+/* ---------- favourites collage ---------- */
+.pv2-collage{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pv2-collage img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--pv-border-soft);background:#0f0f1e}
+@media (max-width:560px){.pv2-collage{grid-template-columns:repeat(3,1fr)}}
+
+/* ---------- misc / responsive ---------- */
+@media (max-width:1099px){.pv2-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:720px){.pv2-grid{grid-template-columns:minmax(0,1fr)}}
+.pv2-signin{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px 20px;min-height:62vh;text-align:center;width:100%;box-sizing:border-box}
+.pv2-signin i{font-size:44px;color:var(--pv-gold);opacity:.85}
+.pv2-signin h2{margin:0;font-size:22px;color:#fff;font-weight:800}
+.pv2-signin p{margin:0;font-size:13px;color:var(--pv-mute);max-width:340px}
+.pv2-copy-btn{position:absolute;top:14px;right:14px;z-index:2;width:38px;height:38px;display:grid;place-items:center;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(6,7,15,.5);color:#fff;cursor:pointer;backdrop-filter:blur(6px)}
+.pv2-copy-btn:hover{background:rgba(6,7,15,.72)}

@@ -105,6 +105,7 @@ function _smallCoverRecent(src) {
   }
 
   function renderProfile(items) {
+    if (window.__THW_PROFILE_V2) return;
     var body = document.getElementById("profilePageBody");
     var old = document.getElementById(WID);
     /* Someone else's profile never gets this block - and if one is left over

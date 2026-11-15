@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v349';;;;;;;;;;;;;;;;;
+const VERSION = 'thw-v360';;;;;;;;;;;;;;;;;
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -39,12 +39,12 @@ const PRECACHE = [
   './tracks.js?v=thw-v18',
   './browser-id3-writer.js?v=thw-v3',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v79',
+  './account.js?v=thw-v81',
   './stats-page.js?v=thw-v1',
   './effects.js?v=thw-v2',
   './theme-drift.js?v=thw-v7',
   './i18n.js?v=9',
-  './script.js?v=thw-v91',
+  './script.js?v=thw-v98',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v14',
@@ -70,9 +70,9 @@ const PRECACHE = [
   './tracker.js?v=thw-v3',
   './song-page.js?v=thw-v4',
   './all.min.css?v=thw-v2',
-  './account.css?v=thw-v15',
+  './account.css?v=thw-v20',
   './account-shared.css?v=thw-v5',
-  'player-settings.css?v=thw-v157',
+  'player-settings.css?v=thw-v158',
   './style.css?v=thw-v52',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
@@ -127,6 +127,8 @@ const PRECACHE = [
   './user-relations.js?v=thw-v2',
   './user-menu.js?v=thw-v6',
   './player-settings.js?v=thw-v16',
+  './profile.js?v=thw-v3',
+  './profile.css?v=thw-v3',
   './cover-pref.js?v=thw-v1',
   './assets/settings-era/JUTE.webp',
   './assets/settings-era/AFF.webp',
@@ -183,7 +185,7 @@ const PRECACHE = [
   './mobile-player.js?v=thw-v23',
   './follows.js?v=thw-v3',
   './privacy.js?v=thw-v4',
-  './playlists-ui.js?v=thw-v6',
+  './playlists-ui.js?v=thw-v7',
   './drops.js?v=thw-v4',
   './legal-info.js?v=thw-v6',
   './grammar-check.js?v=thw-v2',

@@ -80,6 +80,7 @@
   }
 
   function load() {
+    if (window.__THW_PROFILE_V2) return;
     var body = document.getElementById("profilePageBody");
     if (!body || !isSelfProfile()) return;
     if (document.getElementById(WID)) return;

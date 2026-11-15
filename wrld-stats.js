@@ -252,6 +252,7 @@ function _smallCoverStats(src) {
   }
 
   function load() {
+    if (window.__THW_PROFILE_V2) return;
     var body = document.getElementById("profilePageBody");
     if (!body) return;
     var key = profileKey();

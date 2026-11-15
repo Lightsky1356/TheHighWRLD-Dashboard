@@ -2,7 +2,7 @@
 #account-page{
   font-family:"Sora",ui-sans-serif,system-ui,sans-serif;
   background:#020617;
-  color:var(--ac-text);min-height:100vh;overflow-x:hidden;
+  color:var(--ac-text);min-height:100vh;overflow-x:hidden;overflow-x:clip;
   -webkit-user-select:none;user-select:none;
 }
 #account-page input,#account-page textarea,#account-page select{-webkit-user-select:text;user-select:text}
@@ -229,6 +229,9 @@
 #account-page .field input:focus,#account-page .field textarea:focus,#account-page .field select:focus{border-color:rgba(168,85,247,.6);box-shadow:0 0 0 3px rgba(168,85,247,.15)}
 #account-page .field select option{background:#1a1138}
 #account-page .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--ac-border)}
+.guest-note{align-items:flex-start!important;justify-content:flex-start!important;gap:10px!important;padding:12px 4px!important}
+.guest-note i{margin-top:3px;color:rgba(255,255,255,.6);font-size:16px;flex:0 0 auto}
+.guest-note>span{min-width:0;display:flex;flex-direction:column;gap:3px}
 #account-page .toggle-row:last-child{border-bottom:none}
 #account-page .toggle-label{font-size:13px;font-weight:600}
 #account-page .toggle-sub{font-size:11px;color:var(--ac-dim);margin-top:2px}
@@ -392,7 +395,7 @@
 #owner-panel .owner-login-row input:focus{border-color:var(--ac-gold)}
 #owner-panel .owner-login-row button{padding:12px 20px;border-radius:12px;border:none;background:var(--ac-grad-gold);color:#201000;font-weight:800;font-size:13px;cursor:pointer;transition:transform .15s}
 #owner-panel .owner-login-row button:hover{transform:translateY(-1px)}
-#account-page .settings-layout{display:grid;grid-template-columns:230px 1fr;gap:18px;align-items:start}
+#account-page .settings-layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;align-items:start}
 #account-page .set-nav{display:flex;flex-direction:column;gap:14px;position:sticky;top:84px}
 #account-page .set-nav-group{background:rgba(255,255,255,.04);border:1px solid var(--ac-border);border-radius:16px;padding:10px;backdrop-filter:blur(10px)}
 #account-page .set-nav-head{display:flex;align-items:center;gap:10px;padding:8px 10px 12px;border-bottom:1px solid var(--ac-border)}
@@ -411,7 +414,7 @@
 #account-page .set-panel.active{display:block}
 #account-page .sp-head h3{font-size:17px;font-weight:800;color:var(--ac-text);margin:0}
 #account-page .sp-head p{font-size:12px;color:var(--ac-muted);margin:3px 0 16px}
-#account-page .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#account-page .field-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
 #account-page .avatar-upload-row{display:flex;align-items:center;gap:16px}
 #account-page .info-grid{display:flex;flex-direction:column}
 #account-page .info-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid var(--ac-border)}
@@ -1285,12 +1288,15 @@ body:has(#owner-backdrop.show)>*:not(#mini-player):not(#mini-shortcuts):not(#own
 .login-foot a{color:#c4b5fd;text-decoration:none;font-weight:700}
 .login-foot a:hover{color:#ddd6fe;text-decoration:underline}
 @media (max-width:560px){.login-page{padding:72px 14px 40px}.login-card{padding:22px 18px 20px;border-radius:18px;max-width:100%}.login-perks{padding:14px}}
-.ac-guest-banner{display:flex;align-items:center;gap:13px;margin:0 auto 14px;padding:14px 16px;background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.3);border-radius:14px;max-width:100%;font-family:inherit}
-.ac-guest-banner-ico{color:#fcd34d;font-size:22px;flex-shrink:0}
-.ac-guest-banner-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
-.ac-guest-banner-copy b{font-size:12.5px;color:#fff}
-.ac-guest-banner-copy span{font-size:11px;line-height:1.55;color:rgba(255,255,255,.55)}
-.ac-guest-banner-btn{margin-left:auto;flex-shrink:0;background:#fcd34d;border:none;border-radius:10px;color:#22130a;font-family:inherit;font-size:12px;font-weight:800;padding:11px 18px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.set-guest-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 auto 14px;padding:12px 16px;background:rgba(18,18,30,.78);border:1px solid rgba(255,255,255,.09);border-radius:12px;max-width:1180px;font-family:inherit;backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2)}
+.set-guest-banner-copy{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 220px;font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.72)}
+.set-guest-banner-link{display:inline;background:none;border:none;padding:0 2px;color:#a5b4fc;font-family:inherit;font-size:inherit;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(165,180,252,.45)}
+.set-guest-banner-link:hover{color:#c7d2fe;text-decoration-color:#c7d2fe}
+.set-guest-banner-btn{flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:9px;color:rgba(255,255,255,.85);font-family:inherit;font-size:12px;font-weight:700;padding:10px 20px;cursor:pointer;white-space:nowrap}
+.settings-page-head{max-width:1180px;margin:0 auto;padding:8px 22px 0}
+.settings-page-h1{margin:0;font-size:clamp(28px,5.4vw,40px);font-weight:900;letter-spacing:-.02em;color:#fff}
+.settings-page-sub{margin:4px 0 0;font-size:12px;color:rgba(255,255,255,.45)}
+.set-guest-banner-btn:hover{background:rgba(255,255,255,.1);color:#fff}
 .ac-guest-lock{display:flex;align-items:center;gap:12px;padding:18px 18px;margin:14px 0;background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.11);border-radius:14px;color:rgba(255,255,255,.55)}
 .ac-guest-lock>i{font-size:19px;color:rgba(255,255,255,.34);flex-shrink:0}
 .ac-guest-lock b{display:block;font-size:12.5px;font-weight:800;color:rgba(255,255,255,.85)}
@@ -1303,7 +1309,7 @@ body:has(#owner-backdrop.show)>*:not(#mini-player):not(#mini-shortcuts):not(#own
 @media (max-width:767px){#profilePageBody .cmp-page{padding-bottom:40px}#profilePageBody .cmp-head{padding:0 14px 14px}#profilePageBody .cmp-top{flex-direction:column;align-items:flex-start;margin-top:-30px;gap:10px}#profilePageBody .cmp-qstats{width:100%;padding:12px 14px}#profilePageBody .cmp-qstat{min-width:0;padding:0 12px}#profilePageBody .cmp-qstat:first-child{padding-left:0}#profilePageBody .cmp-qstat b{font-size:18px}#profilePageBody .pv-banner-wrap{height:110px}#profilePageBody .cmp-sections{grid-template-columns:1fr}}
 
 /* ===== Settings page v2 - two-pane, era-colour tiles, dark ===== */
-.settings-page{width:100%}
+.settings-page{width:100%;padding-top:calc(var(--nav-offset,72px) + 22px)}
 #page-section-account .settings-layout{display:grid;grid-template-columns:208px minmax(0,1fr);gap:22px;align-items:start;max-width:1180px;margin:0 auto;padding:8px 22px 64px}
 @media (max-width:900px){#page-section-account .settings-layout{grid-template-columns:minmax(0,1fr);padding:0 14px 48px;gap:14px}}
 .set-nav{position:sticky;top:calc(var(--nav-offset,72px) + 12px);align-self:start;background:rgba(15,16,30,.72);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:10px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
@@ -1402,7 +1408,6 @@ body[data-theme] .settings-section>.card.set-card{background:var(--ac-glass2,rgb
 .conn-card:last-child{margin-bottom:0}
 .conn-head{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:10px}
 .field-stack{display:flex;flex-direction:column}
-.ac-guest-banner b{color:#fff}
 
 /* guest banner matches */
 #acGuestBanner{margin:10px auto 0;max-width:1180px}
@@ -1428,3 +1433,79 @@ body[data-theme] .settings-section>.card.set-card{background:var(--ac-glass2,rgb
 .thw-suggest-yes:hover{background:#ffe37e}
 @media (max-width:560px){.thw-suggest-card{flex-direction:column;align-items:stretch;text-align:left}.thw-suggest-actions{justify-content:flex-end}}
 @media (prefers-reduced-motion:reduce){.thw-suggest-card{animation:none}}
+
+/* ===== Settings: all glass, desktop & mobile ===== */
+.settings-page .settings-section>.card.set-card,
+.set-nav,
+.conn-card,
+.thw-more,
+.thw-suggest-card,
+.set-guest-banner{
+  background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03))!important;
+  border:1px solid rgba(255,255,255,.11)!important;
+  backdrop-filter:blur(22px) saturate(1.4)!important;
+  -webkit-backdrop-filter:blur(22px) saturate(1.4)!important;
+  box-shadow:0 24px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.10)!important;
+}
+.settings-page .settings-section>.card.set-card{border-radius:20px!important}
+.set-nav{border-radius:20px!important}
+.set-guest-banner{border-radius:12px!important}
+.conn-card{border-radius:14px!important}
+.danger-title{color:#fda4a4!important}
+.ac-danger-card{background:linear-gradient(180deg,rgba(239,68,68,.16),rgba(239,68,68,.05))!important;border-color:rgba(239,68,68,.4)!important}
+.ac-danger-card .set-title{color:#fda4a4}
+
+/* Sidebar: bright sky pill for the active row (reference), glass for the rest */
+.set-nav-item{border:1px solid transparent;transition:background .18s ease,color .18s ease,box-shadow .18s ease}
+.set-nav-item:hover{background:rgba(255,255,255,.07)}
+.set-nav-item.active,.set-nav-item[aria-current="true"]{
+  background:linear-gradient(140deg,#8fd4ff 0%,#4bb0e5 100%);
+  color:#032233;
+  border-color:rgba(255,255,255,.25);
+  box-shadow:0 8px 24px rgba(75,176,229,.38),inset 0 1px 0 rgba(255,255,255,.55)
+}
+.set-nav-item.active i,.set-nav-item[aria-current="true"] i{opacity:.95;color:#032233}
+
+/* Inputs stay glassy, focus visible on accent */
+.thw-select,.thw-hex,.danger-unlock-row input[type=text],#delTyped{background:rgba(255,255,255,.055)!important;border-color:rgba(255,255,255,.13)!important;color:#fff!important}
+.thw-select:focus-visible,.thw-hex:focus-visible,#delTyped:focus-visible{outline:2px solid var(--accent,#b7a3ff);outline-offset:2px;border-color:transparent!important}
+.set-nav-item:focus-visible{outline:2px solid var(--accent,#b7a3ff);outline-offset:2px}
+
+/* Theme tiles: frosted, not flat */
+.thw-tile{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025))!important;border-color:rgba(255,255,255,.10)!important}
+.thw-tile:hover{background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.045))!important}
+.thw-tile:has(input:checked){background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.06))!important}
+
+/* Mobile: chip-style nav rail like the reference app */
+@media (max-width:900px){
+  .set-nav{position:static;padding:12px!important;border-radius:18px!important}
+  .set-nav-head{display:none!important}
+  .set-subnav{flex-direction:row!important;flex-wrap:wrap!important;gap:8px!important}
+  .set-nav-item{width:auto!important;flex:0 0 auto;gap:7px;padding:9px 16px!important;border-radius:999px;border:1px solid rgba(255,255,255,.09)!important;background:rgba(255,255,255,.06)!important;font-size:12px!important}
+  .set-nav-item i{width:auto;font-size:11px}
+  .set-nav-item.active,.set-nav-item[aria-current="true"]{background:linear-gradient(140deg,#8fd4ff 0%,#4bb0e5 100%)!important;border-color:rgba(255,255,255,.25)!important}
+  .settings-section{scroll-mt:calc(var(--nav-offset,72px) + 140px)}
+}
+
+/* Critical CSS forces .card{backdrop-filter:none !important}; settings glass wins back */
+#account-page .settings-page .settings-section>.card.set-card,
+#account-page .settings-page .settings-page-head,
+#account-page .settings-page .set-nav,
+#account-page .settings-page .set-guest-banner,
+#account-page .settings-page .conn-card,
+#account-page .settings-page .thw-more,
+#account-page .settings-page .thw-suggest-card{
+  backdrop-filter:blur(22px) saturate(1.4)!important;
+  -webkit-backdrop-filter:blur(22px) saturate(1.4)!important;
+}
+@media (max-width:767px){
+  #account-page .settings-page .settings-section>.card.set-card,
+  #account-page .settings-page .settings-page-head,
+  #account-page .settings-page .set-nav,
+  #account-page .settings-page .set-guest-banner,
+  #account-page .settings-page .conn-card,
+  #account-page .settings-page .thw-more{
+    backdrop-filter:blur(22px) saturate(1.4)!important;
+    -webkit-backdrop-filter:blur(22px) saturate(1.4)!important;
+  }
+}

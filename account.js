@@ -300,65 +300,6 @@
   function cmpOwnerHtml(isOwner) {
     return isOwner ? '<span class="cmp-owner"><i class="fas fa-crown"></i> ' + esc(_tt("ownerBadge", "Owner")) + '</span>' : '';
   }
-  function compactProfileHtml(includeSections) {
-    if (!uid) {
-      return '<div class="cmp-page"><div class="cmp-signin"><i class="fas fa-user-circle" style="font-size:26px;color:#22d3ee"></i><div>' + esc(_tt("cmpSignIn", "Sign in to show your profile here.")) + ' <a href="#" onclick="event.preventDefault();if(window.switchAppPage)window.switchAppPage(\'account\')">' + esc(_tt("signIn", "Sign In")) + '</a></div></div></div>';
-    }
-    if (!_data) {
-      return '<div class="cmp-page"><div style="font-size:11px;color:var(--ac-dim);text-align:center;padding:8px">' + esc(_tt("loadingProfile", "Loading profile...")) + '</div></div>';
-    }
-    var p = _data.profile || {};
-    var st = _data.stats || {};
-    var d = _data.discord || {};
-    var uname = profileUsername() || uid || "999_" + uidSuffix;
-    var dotC = "#64748b";
-    if (p.status === "Online") dotC = "#10b981";
-    else if (p.status === "Idle") dotC = "#f59e0b";
-    else if (p.status === "Do Not Disturb") dotC = "#ef4444";
-    var html = '';
-    html += '<div class="cmp-page">';
-    /* Every block below is its own panel and collapses on its own header, so
-       the page reads as a two column grid on desktop instead of one big box
-       with the sections buried inside it. */
-    html += '<div class="cmp-head" data-pnl="profile">';
-    html += '<div class="cmp-sec-title cmp-head-title"><span><i class="fas fa-id-card"></i> ' + esc(_tt("cmpPanelProfile", "Profile")) + '</span></div>';
-    if (p.banner) html += '<div class="pv-banner-wrap"><img decoding="async" src="' + esc(p.banner) + '" alt="" loading="lazy" onerror="this.style.display=&#39;none&#39;"></div>';
-    html += '<div class="cmp-top"><span class="cmp-avatar-wrap"><span class="cmp-avatar-ring"><span class="cmp-avatar">' + cmpAvatarHtml(p.avatar, p.name) + '</span></span><span class="cmp-online" style="background:' + dotC + ';box-shadow:0 0 10px ' + dotC + '"></span></span>';
-    html += '<div class="cmp-id"><div class="cmp-name-row"><h2 class="cmp-name">' + esc(p.name || "999_" + uidSuffix) + '</h2>' + cmpOwnerHtml(!!(_data && _data.isOwner)) + cmpVerifiedHtml(!!d.linked) + '</div>';
-    html += '<div class="cmp-handle">@' + esc(String(uname).toLowerCase()) + '</div>';
-    html += '<div class="cmp-meta">' + esc(stLabel(p.status || "Online")) + (p.joined ? ' &middot; ' + esc(_tt("joinedWord", "Joined")) + ' ' + esc(fmtDate(p.joined)) : '') + '<span class="cmp-site-presence" data-uid="' + esc(String(uid)) + '"></span></div></div></div>';
-    html += '<div class="cmp-bio">' + esc(p.bio || _tt("cmpNoBio", "No bio yet - let the 999s know who you are.")) + '</div>';
-    /* the links belong to the header card, right under the bio - there is no
-       separate Links card anywhere on the page */
-    var links = (_data && _data.links) || [];
-    if (links.length) {
-      html += '<div class="cmp-links">' + links.map(function (l) { return l && l.url ? '<a class="cmp-link" href="' + esc(l.url) + '" target="_blank" rel="noopener nofollow"><i class="fas fa-link"></i>' + esc(l.label || l.url) + '<i class="fas fa-arrow-up-right-from-square" style="margin-left:auto"></i></a>' : ''; }).join("") + '</div>';
-    }
-    html += '<div class="cmp-qstats">';
-    html += qstat((Number(st.plays) || 0).toLocaleString(), _tt("qstatPlays", "Plays"));
-    html += '<div class="cmp-qdiv"></div>';
-    html += qstat(ppTime(st.hours), _tt("listenedWord", "Listened"));
-    html += '</div>';
-    html += '<div class="cmp-actions">';
-    html += '<a class="cmp-btn" href="#" onclick="event.preventDefault();if(window.switchAppPage)window.switchAppPage(\'player\')"><i class="fas fa-play"></i>' + esc(_tt("cmpPlayer", "WRLD Player")) + '</a>';
-    html += '<a class="cmp-btn" href="#" onclick="event.preventDefault();if(window.switchAppPage)window.switchAppPage(\'hub\')"><i class="fas fa-crown"></i>' + esc(_tt("cmpVault", "The Vault")) + '</a>';
-    html += '<button type="button" class="cmp-btn" onclick="if(window.openEditProfile)window.openEditProfile()"><i class="fas fa-pen"></i>' + esc(_tt("editProfile", "Edit Profile")) + '</button>';
-    html += '<button type="button" class="cmp-btn gold" data-cmp-signout="1"><i class="fas fa-right-from-bracket"></i>' + esc(_tt("signOut", "Sign Out")) + '</button>';
-    html += '</div>';
-    html += '</div>';
-    if (includeSections) {
-      var favs = (_data && _data.favorites) || [];
-      var pls = (_data && _data.playlists) || [];
-      html += '<div class="cmp-sections">';
-      html += '<div class="cmp-sec-card" data-pnl="favorites"><div class="cmp-sec-title"><span><i class="fas fa-heart"></i> ' + esc(_tt("t4", "Favorites")) + '</span><span class="cmp-sec-actions"><button type="button" class="cmp-toggle" data-fav-toggle="1" title="' + esc(_tt("cmpToggleView", "Toggle view")) + '"><i class="fas fa-table-cells-large"></i></button><span class="cmp-count">' + favs.length + '</span></span></div>';
-      html += '<div class="cmp-fav-grid"></div></div>';
-      html += '<div class="cmp-sec-card" data-pnl="playlists"><div class="cmp-sec-title"><span><i class="fas fa-list-music"></i> ' + esc(_tt("t11", "My Playlists")) + '</span><span class="cmp-count">' + pls.length + '</span></div>';
-      html += '<div class="cmp-pl-grid grid-2"></div></div>';
-      html += '</div>';
-    }
-    html += '</div>';
-    return html;
-  }
   function renderCompactProfile() {
     var pp = document.getElementById("page-section-profile");
     if (pp && pp.classList.contains("active") && _profilePage && _profilePage.self) renderSelfProfilePage();
@@ -1876,15 +1817,11 @@ function compactProfileViewHtml(d) {
     if (sm) sm.value = v;
   }
   function bindModeSel(sel) {
-    console.log("DIAG bindModeSel called sel=" + (sel ? sel.id : "NULL"));
     if (!sel) return;
-    console.log("DIAG attaching to " + sel.id);
     sel.addEventListener("change", function () {
       var v = sel.value;
-      console.log("DIAG handler fired v=" + v);
       applyMode(v);
       syncMode(v);
-      console.log("DIAG data-mode=" + document.documentElement.getAttribute("data-mode"));
       /* Signed in: this is your account mode and it lives on the server. Only a
          guest (no account) changes the device mode - the same split the theme
          uses, so signing out returns to the mode this device last chose. */
@@ -2319,7 +2256,6 @@ function compactProfileViewHtml(d) {
     };
 
     bindThemeSel(th);
-    console.log("DIAG init reached bind call");
     bindModeSel(document.getElementById("setMode"));
     bindLangSel(lg);
     syncTheme(_data && _data.theme ? _data.theme : (_cachedTheme || "default"));
@@ -2879,55 +2815,12 @@ function compactProfileViewHtml(d) {
   function profilePageError(msg) {
     return '<div class="pp-error"><div class="pp-error-ico"><i class="fas fa-user-slash"></i></div><h2>' + esc(_tt("profileNotFound", "Profile Not Found")) + '</h2><p>' + esc(msg || _tt("profileNotFoundSub", "This profile doesn't exist or was deleted.")) + '</p><button type="button" class="pp-btn pp-btn-ghost" onclick="switchAppPage(&#39;home&#39;)"><i class="fas fa-arrow-left"></i><span>' + esc(_tt("backLobby", "Back to Lobby")) + '</span></button></div>';
   }
-  function wireCompactHost(host, includeSections) {
-    if (!host) return;
-    var so = host.querySelector("[data-cmp-signout]");
-    if (so) so.addEventListener("click", function () {
-      if (window.authSignOut) window.authSignOut();
-      else window.location.href = "/api/auth/logout";
-    });
-    if (!includeSections) return;
-    /* The saved view is applied BEFORE the grid is filled, in the same
-       synchronous task as the innerHTML swap - the browser cannot paint in
-       between, so a re-render (realtime profile updates re-run this) starts
-       in the view the user chose and never flashes the other layout. */
-    var tg = host.querySelector("[data-fav-toggle]");
-    applySavedFavView(host, tg);
-    if (tg) tg.addEventListener("click", function () {
-      var list = host.classList.toggle("cmp-list");
-      try { localStorage.setItem(FAV_VIEW_KEY, list ? "list" : "grid"); } catch (e) {}
-      var ic = tg.querySelector("i");
-      if (ic) ic.className = list ? "fas fa-list" : "fas fa-table-cells-large";
-    });
-    var fg = host.querySelector(".cmp-fav-grid");
-    if (fg) { renderFavRows((_data && _data.favorites) || [], true, fg); bindFavGrid(fg); }
-    var pg = host.querySelector(".cmp-pl-grid");
-    if (pg) { renderPlaylistsRows((_data && _data.playlists) || [], true, pg); bindPlGrid(pg); }
-  }
-  /* Favourites grid vs list: the choice lives for the whole site and survives
-     reloads. "grid" is the default; a corrupt or odd value falls back to it. */
-  var FAV_VIEW_KEY = "thwFavView";
-  function readSavedFavView() {
-    try {
-      var v = localStorage.getItem(FAV_VIEW_KEY);
-      return v === "list" ? "list" : "grid";
-    } catch (e) { return "grid"; }
-  }
-  function applySavedFavView(host, tg) {
-    var list = readSavedFavView() === "list";
-    host.classList.toggle("cmp-list", list);
-    if (tg) {
-      var ic = tg.querySelector("i");
-      if (ic) ic.className = list ? "fas fa-list" : "fas fa-table-cells-large";
-    }
-  }
   function renderSelfProfilePage() {
     var body = document.getElementById("profilePageBody");
     if (!body) return;
-    body.innerHTML = compactProfileHtml(true);
-    wireCompactHost(body, true);
-    /* Your own profile is addressable by your username too, so the link you
-       copy is one that opens on anybody's phone. */
+    /* The old self-profile layout was removed; the overhaul renders itself
+       into this host. Nothing from the old layout remains. */
+    body.innerHTML = '<div id="profileV2Mount" class="profile-v2-mount" aria-busy="true"></div>';
     canonicaliseProfileUrl((_data && _data.username) || "");
   }
 
@@ -3415,6 +3308,8 @@ window.profileSectionShown = function () {
       document.documentElement.style.removeProperty("--th-accent");
       document.documentElement.style.removeProperty("--th-accent2");
     }
+    /* The playing song only drives the page under Auto ("default"). */
+    try { if (window.thwPaintAmbientSync) window.thwPaintAmbientSync(v); } catch (e) {}
     /* Tiles express: Auto / Plain / era / pick-* / custom. A built-in theme
        wearing the page (aurora and friends) reads as Auto - it is the page's
        own colours, which is what the Auto definition says. */

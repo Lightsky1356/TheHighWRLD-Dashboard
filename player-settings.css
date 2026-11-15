@@ -1446,6 +1446,11 @@ html.wrldlog-scrolllock,html.wrldlog-scrolllock body{overflow:hidden!important}
    it? "Enabled" cannot express that, and this is the state that has been
    invisible all along. */
 .thw-push-live{display:flex;align-items:center;gap:9px;margin:0 0 9px}
+.thw-push{margin-top:4px;max-width:100%;min-width:0;overflow:hidden;box-sizing:border-box}
+.thw-push-status,.thw-push-live-text{overflow-wrap:anywhere;word-break:break-word;white-space:normal}
+.thw-push-actions{display:flex;flex-wrap:wrap;gap:8px;max-width:100%}
+.thw-push-devices{width:100%;max-width:100%;box-sizing:border-box}
+.thw-push-btn{max-width:100%}
 .thw-push-dot{width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:rgba(255,255,255,.3)}
 .thw-push-dot--good{background:#3ddc84;box-shadow:0 0 0 3px rgba(61,220,132,.15)}
 .thw-push-dot--warn{background:#ffb020;box-shadow:0 0 0 3px rgba(255,176,32,.15)}
@@ -4473,7 +4478,6 @@ body.deck-no-track #deck-handle{display:none !important}
   filter:none !important;
 }
 .hero-text{ display:inline-block }
-.hero-title-solid{ color:#fff !important }
 
 /* ======================================================================
    THE PUBLIC API — juicewrld.io/docs's two-pane layout, our brand.

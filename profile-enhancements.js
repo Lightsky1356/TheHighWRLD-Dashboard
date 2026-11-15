@@ -453,6 +453,7 @@
   }
 
   function mount() {
+    if (window.__THW_PROFILE_V2) return;
     var body = document.getElementById("profilePageBody");
     if (!body || !isProfilePage()) return;
     css();
