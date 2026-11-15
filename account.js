@@ -265,6 +265,38 @@
     var pb = document.getElementById("profBio"); if (pb) pb.value = p.bio;
     var ap = document.getElementById("avatarPreview"); if (ap) ap.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="">' : '<i class="fas fa-user"></i>';
     var mp = document.getElementById("mAvatarPreview"); if (mp) mp.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="">' : '<i class="fas fa-user"></i>';
+    var pp = document.getElementById("mPicPreview"); if (pp) pp.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="">' : '<i class="fas fa-user"></i>';
+    /* Edit-profile rail preview */
+    var rp = document.getElementById("mPreviewName"); if (rp) rp.textContent = p.name || ("999_" + uidSuffix);
+    var rh = document.getElementById("mPreviewHandle"); if (rh) rh.textContent = "@" + String(profileUsername() || p.name || "999").toLowerCase();
+    var rb = document.getElementById("mPreviewBio"); if (rb) rb.textContent = p.bio || "Your bio shows here.";
+    var rf = document.getElementById("mPreviewFav"), rft = document.getElementById("mPreviewFavText");
+    if (rf && rft) { if (p.favSong) { rft.textContent = p.favSong; rf.classList.remove("hidden"); } else { rf.classList.add("hidden"); } }
+    var bc = document.getElementById("mBioCount"); if (bc) bc.textContent = String((p.bio || "").length) + " / 160";
+    var bi = document.getElementById("mBannerImg"); if (bi) bi.src = p.bannerChoice === "classic" ? "AlbumArt/999.jpg" : (window.__pv2TopEraArt || "AlbumArt/999.jpg");
+    var eraLabelTxt = window.__pv2TopEraLabel || "Your top era";
+    var bt = document.getElementById("mBannerTopEra"); if (bt) bt.textContent = eraLabelTxt;
+    var bn = document.getElementById("mBannerEraName"); if (bn) bn.textContent = eraLabelTxt;
+    var pj = document.getElementById("mPreviewJoined");
+    if (pj && _data && _data.profile && _data.profile.joined) {
+      try { pj.textContent = new Date(String(_data.profile.joined).replace(" ", "T")).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }); } catch (e) { pj.textContent = ""; }
+    }
+    var fa = document.getElementById("mPreviewFavArt");
+    if (fa && p.favSong) {
+      fa.src = (function () {
+        var src = (typeof trackList !== "undefined" && trackList) ? trackList : [];
+        var q = String(p.favSong).toLowerCase();
+        for (var i = 0; i < src.length; i++) {
+          var t = String(src[i] && src[i].title || "").toLowerCase();
+          if (t === q && src[i].cover) return String(src[i].cover);
+        }
+        return "AlbumArt/999.jpg";
+      })();
+    }
+    var ba = document.getElementById("mBannerAuto"), bcb = document.getElementById("mBannerClassic");
+    if (ba && bcb) { ba.checked = p.bannerChoice !== "classic"; bcb.checked = p.bannerChoice === "classic"; }
+    var fc = document.getElementById("mFavCurrent"), fct = document.getElementById("mFavCurrentText");
+    if (fc && fct) { if (p.favSong) { fct.textContent = p.favSong; fc.classList.remove("hidden"); } else { fc.classList.add("hidden"); } }
   }
 
   /* ---------- Compact profile card (Wanted / Suggestions tabs) ---------- */
@@ -2264,7 +2296,7 @@ function compactProfileViewHtml(d) {
 
   /* ---------- Profile persistence ---------- */
   function persistProfile() {
-    api({ action: "updateProfile", name: _profile.name, bio: _profile.bio, status: _profile.status, avatar: _profile.avatar, banner: _profile.banner }).then(function () {
+    return api({ action: "updateProfile", name: _profile.name, bio: _profile.bio, status: _profile.status, avatar: _profile.avatar, banner: _profile.banner, favSong: _profile.favSong || "", bannerChoice: _profile.bannerChoice || "auto" }).then(function () {
       loadAccount();
     });
   }
@@ -2288,10 +2320,10 @@ function compactProfileViewHtml(d) {
   function bindProfile() {
     var editBtn = document.getElementById("editProfileBtn");
     if (editBtn) editBtn.addEventListener("click", function () {
+      if (window.openEditProfile) { window.openEditProfile(); return; }
       var mp = document.getElementById("mAvatarPreview");
       if (mp) mp.innerHTML = _profile.avatar ? '<img decoding="async" src="' + esc(_profile.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : '<i class="fas fa-user"></i>';
       openModal("editProfileModal");
-      fillMLinks();
     });
     var mAv = document.getElementById("mAvatarFile");
     if (mAv) mAv.addEventListener("change", function () {
@@ -2300,6 +2332,10 @@ function compactProfileViewHtml(d) {
         _profile.avatar = url;
         var mp = document.getElementById("mAvatarPreview");
         if (mp) mp.innerHTML = '<img decoding="async" src="' + url + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
+        var pp = document.getElementById("mPicPreview");
+        if (pp) pp.innerHTML = '<img decoding="async" src="' + url + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
+        if (window.__markDirty) window.__markDirty();
+        if (window.__pv2ApplyLive) window.__pv2ApplyLive({ avatar: url });
       });
     });
     var dbiSave = document.getElementById("dbiSaveBtn");
@@ -2319,15 +2355,12 @@ function compactProfileViewHtml(d) {
       _profile.name = document.getElementById("mName").value.trim() || _profile.name;
       _profile.status = document.getElementById("mStatus").value;
       _profile.bio = document.getElementById("mBio").value.trim() || "";
+      var fsEl = document.getElementById("mFavSearch");
+      if (fsEl) _profile.favSong = fsEl.value.trim();
+      var bsel = document.getElementById("mBannerClassic");
+      if (bsel) _profile.bannerChoice = bsel.checked ? "classic" : (_profile.bannerChoice || "auto");
       persistProfile();
       applyProfile();
-      var mBox = document.getElementById("mLinksEditor");
-      if (mBox) {
-        var mLinks = collectLinks(mBox).slice(0, 12);
-        api({ action: "saveLinks", links: mLinks }).then(function (d) {
-          if (!d || !d.ok) toast((d && d.error) || _tt("couldNotSaveLinks", "Could not save links"), "error");
-        });
-      }
       closeModal("editProfileModal");
       toast(_tt("toastProfileUpdated", "Profile updated"), "success");
     });
@@ -2776,9 +2809,317 @@ function compactProfileViewHtml(d) {
     window.openEditProfile = function () {
       var mp = document.getElementById("mAvatarPreview");
       if (mp) mp.innerHTML = _profile.avatar ? '<img decoding="async" src="' + esc(_profile.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : '<i class="fas fa-user"></i>';
+      var mh = document.getElementById("mHandle"); if (mh) mh.value = String(profileUsername() || "").toLowerCase();
+      _favSel = typeof _profile.favSong === "string" ? _profile.favSong : "";
+      var fs = document.getElementById("mFavSearch"); if (fs) fs.value = _favSel;
+      _hideFavResults();
       openModal("editProfileModal");
-      fillMLinks();
+      /* The form container is scrollable; a stale scrollTop left the modal
+         opened scrolled past the Picture row. Always start at the top. */
+      var formEl = document.querySelector("#editProfileModal .editpf-form");
+      if (formEl) formEl.scrollTop = 0;
+      applyProfile();
+      syncEditPrivacy();
+      renderEditSocials();
+      if (window.__refreshDrpPreview) window.__refreshDrpPreview();
     };
+    /* ---------- Edit profile v2: preview rail + form wiring ---------- */
+    var _favSel = "";
+    function _setSwitch(el, on) {
+      if (!el) return;
+      el.classList.toggle("on", !!on);
+      el.setAttribute("aria-checked", on ? "true" : "false");
+    }
+    function syncEditPrivacy() {
+      fetch("/api/privacy", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
+        var p = d && d.privacy; if (!p) return;
+        _setSwitch(document.getElementById("mPublicProfile"), Number(p.show_profile) !== 0);
+        _setSwitch(document.getElementById("mShowListening"), Number(p.show_activity) !== 0);
+      }).catch(function () {});
+    }
+    function postPrivacy(patch) {
+      return fetch("/api/privacy", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) }).then(function (r) { return r.json(); }).catch(function () { return null; });
+    }
+    function _ownUidForProfile() {
+      try { return localStorage.getItem("wantedUserId") || ""; } catch (e) { return ""; }
+    }
+    function _socialLabel(k) {
+      var m = { twitter: "X / Twitter", instagram: "Instagram", youtube: "YouTube", soundcloud: "SoundCloud", spotify: "Spotify", tiktok: "TikTok", facebook: "Facebook", website: "Website" };
+      return m[String(k || "").toLowerCase()] || String(k || "");
+    }
+    function renderEditSocials() {
+      var box = document.getElementById("mLinkList"); if (!box) return;
+      var uid = _ownUidForProfile();
+      if (!uid) { box.innerHTML = '<p class="editpf-hint">Sign in to manage links.</p>'; return; }
+      box.innerHTML = '<p class="editpf-hint">Loading links…</p>';
+      fetch("/api/profile?user=" + encodeURIComponent(uid), { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+        var links = (d && d.links) || [];
+        if (!links.length) { box.innerHTML = '<p class="editpf-hint">No links yet.</p>'; return; }
+        box.innerHTML = links.map(function (l) {
+          var k = String((l && l.label) || ""), url = String((l && l.url) || "");
+          return '<span class="editpf-link-chip"><span><b>' + esc(_socialLabel(k)) + '</b><a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(url.replace(/^https?:\/\//i, "")) + '</a></span><button type="button" data-clearlink="' + esc(k) + '" aria-label="Remove link"><i class="fas fa-xmark"></i></button></span>';
+        }).join("");
+      }).catch(function () { box.innerHTML = '<p class="editpf-hint">Could not load links.</p>'; });
+    }
+    function _hideFavResults() {
+      var box = document.getElementById("mFavResults"); if (box) { box.hidden = true; box.innerHTML = ""; }
+    }
+    function _favMatches(q) {
+      var src = (typeof trackList !== "undefined" && trackList) ? trackList : [];
+      var out = [];
+      for (var i = 0; i < src.length && out.length < 6; i++) {
+        var t = String(src[i] && src[i].title || "");
+        if (!t) continue;
+        if (t.toLowerCase().indexOf(q) !== -1) out.push(t);
+      }
+      return out;
+    }
+    function _syncFavChip() {
+      var chip = document.getElementById("mFavCurrent"), txt = document.getElementById("mFavCurrentText");
+      if (chip && txt) {
+        if (_favSel) { txt.textContent = _favSel; chip.classList.remove("hidden"); } else { chip.classList.add("hidden"); }
+      }
+    }
+
+    function bindEditV2() {
+      /* Name: rail preview + hero, live */
+      var nameEl = document.getElementById("mName");
+      if (nameEl) nameEl.addEventListener("input", function () {
+        var v = nameEl.value.trim();
+        var preview = document.getElementById("mPreviewName");
+        if (preview) preview.textContent = v || ("999_" + uidSuffix);
+        if (window.__pv2ApplyLive) window.__pv2ApplyLive({ name: v || ("999_" + uidSuffix) });
+        markDirty();
+      });
+
+      /* Bio counter + live preview + hero */
+      var bio = document.getElementById("mBio"), bc = document.getElementById("mBioCount");
+      if (bio && bc) bio.addEventListener("input", function () {
+        bc.textContent = String(bio.value.length) + " / 160";
+        var preview = document.getElementById("mPreviewBio");
+        if (preview) preview.textContent = bio.value || "No bio yet.";
+        if (window.__pv2ApplyLive) window.__pv2ApplyLive({ bio: bio.value });
+        markDirty();
+      });
+
+      /* ---------- debounced autosave + state indicator ---------- */
+      var _autoSaveTimer = null, _autoSaveDirty = false;
+      function setSaveState(text, kind) {
+        var el = document.getElementById("editpfSaveState");
+        if (!el) return;
+        el.textContent = text || "";
+        el.className = "editpf-save-state" + (kind ? " " + kind : "");
+      }
+      function markDirty() {
+        _autoSaveDirty = true;
+        setSaveState("Unsaved", "busy");
+        clearTimeout(_autoSaveTimer);
+        _autoSaveTimer = setTimeout(runAutoSave, 1200);
+      }
+      function runAutoSave() {
+        if (!_autoSaveDirty) return;
+        _autoSaveDirty = false;
+        setSaveState("Saving…", "busy");
+        persistProfile().then(function () {
+          setSaveState("Saved", "ok");
+          setTimeout(function () { setSaveState("", ""); }, 1800);
+        }, function () {
+          setSaveState("Couldn't save", "busy");
+        });
+      }
+
+      /* ---------- Rich Presence (live "what visitors see") preview ---------- */
+      function _favArt(title) {
+        var src = (typeof trackList !== "undefined" && trackList) ? trackList : [];
+        var q = String(title).toLowerCase();
+        for (var i = 0; i < src.length; i++) {
+          if (String(src[i] && src[i].title || "").toLowerCase() === q && src[i].cover) return String(src[i].cover);
+        }
+        return "AlbumArt/999.jpg";
+      }
+      function fillDrpPreview() {
+        var art = document.getElementById("mDrpArt");
+        var titleEl = document.getElementById("mDrpTitle");
+        var subEl = document.getElementById("mDrpSub");
+        var liveEl = document.getElementById("mDrpLive");
+        if (!art || !titleEl || !subEl || !liveEl) return;
+        var head = null;
+        try { head = window.__pv2HeadCache || null; } catch (e) {}
+        var live = head && head.nowPlaying && head.nowPlaying.title ? head.nowPlaying : null;
+        var fav = _favSel || (_profile && _profile.favSong) || "";
+        art.src = live ? (live.artwork || "AlbumArt/999.jpg") : (fav ? _favArt(fav) : "AlbumArt/999.jpg");
+        titleEl.textContent = live ? live.title : (fav || "Pin a song");
+        subEl.textContent = live ? "Listening to Juice WRLD" : (fav ? "Your pinned favourite song" : "Not listening right now");
+        liveEl.textContent = live ? "Live" : "Preview";
+      }
+      function refreshDrpPreview() {
+        var uid = _ownUidForProfile();
+        if (!uid) { fillDrpPreview(); return; }
+        fetch("/api/profile?user=" + encodeURIComponent(uid) + "&head=1", { credentials: "same-origin", cache: "no-store" })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (d && d.ok !== false && !d.hidden) { try { window.__pv2HeadCache = d; } catch (e) {} }
+            fillDrpPreview();
+          })
+          .catch(function () { fillDrpPreview(); });
+      }
+
+      /* Remove avatar */
+      var clr = document.getElementById("mAvatarClearBtn");
+      if (clr) clr.addEventListener("click", function () {
+        _profile.avatar = "";
+        applyProfile();
+        persistProfile();
+        if (window.__pv2ApplyLive) window.__pv2ApplyLive({ avatar: "" });
+        fillDrpPreview();
+        toast("Picture removed", "info");
+      });
+
+      /* Privacy switches */
+      var pp = document.getElementById("mPublicProfile");
+      if (pp) pp.addEventListener("click", function () {
+        var next = !pp.classList.contains("on");
+        _setSwitch(pp, next);
+        postPrivacy({ show_profile: next ? 1 : 0 }).then(function (d) {
+          if (!d || d.ok === false) { _setSwitch(pp, !next); toast("Could not save that", "error"); return; }
+          toast(next ? "Your profile is public" : "Your profile is private", "success");
+        });
+      });
+      var pl = document.getElementById("mShowListening");
+      if (pl) pl.addEventListener("click", function () {
+        var next = !pl.classList.contains("on");
+        _setSwitch(pl, next);
+        postPrivacy({ show_activity: next ? 1 : 0 }).then(function (d) {
+          if (!d || d.ok === false) { _setSwitch(pl, !next); toast("Could not save that", "error"); return; }
+          toast(next ? "Listening activity visible" : "Listening activity hidden", "success");
+        });
+      });
+
+      /* Social links: one at a time, platform auto-detected from the URL */
+      var SOCIAL_HOSTS = [["twitter.com", "twitter"], ["x.com", "twitter"], ["instagram.com", "instagram"], ["youtube.com", "youtube"], ["youtu.be", "youtube"], ["soundcloud.com", "soundcloud"], ["open.spotify.com", "spotify"], ["spotify.com", "spotify"], ["tiktok.com", "tiktok"], ["facebook.com", "facebook"], ["fb.com", "facebook"]];
+      function _detectPlatform(url) {
+        try {
+          var h = new URL(/^https?:\/\//i.test(url) ? url : "https://" + url).hostname.toLowerCase().replace(/^www\./, "");
+          for (var i = 0; i < SOCIAL_HOSTS.length; i++) {
+            if (h === SOCIAL_HOSTS[i][0] || h.endsWith("." + SOCIAL_HOSTS[i][0])) return SOCIAL_HOSTS[i][1];
+          }
+        } catch (e) {}
+        return "website";
+      }
+      var linkSave = document.getElementById("mLinkSaveBtn");
+      var linkUrl = document.getElementById("mLinkUrl");
+      if (linkSave && linkUrl) {
+        linkSave.addEventListener("click", function () {
+          var value = linkUrl.value.trim();
+          if (!value) { toast("Type a link first", "info"); return; }
+          var platform = _detectPlatform(value);
+          fetch("/api/profile", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update_social", platform: platform, value: value }) })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+              if (!d || !d.ok) { toast((d && d.error) || "Could not save link", "error"); return; }
+              linkUrl.value = "";
+              renderEditSocials();
+              toast("Link saved", "success");
+            }).catch(function () { toast("Could not save link", "error"); });
+        });
+      }
+      var list = document.getElementById("mLinkList");
+      if (list) list.addEventListener("click", function (e) {
+        var btn = e.target.closest ? e.target.closest("[data-clearlink]") : null;
+        if (!btn) return;
+        var platform = btn.getAttribute("data-clearlink");
+        fetch("/api/profile", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update_social", platform: platform, value: "" }) })
+          .then(function () { renderEditSocials(); })
+          .catch(function () {});
+      });
+
+      /* Profile theme dropdown */
+      var EDIT_THEMES = [["default", "Default"], ["violet", "Violet"], ["embers", "Embers"], ["obsidian", "Obsidian"], ["aurora", "Aurora"], ["ocean", "Ocean"], ["forest", "Forest"], ["sakura", "Sakura"], ["royal", "Royal"], ["neon", "Neon"], ["blood", "Blood"], ["storm", "Storm"], ["sunset", "Sunset"], ["ice", "Ice"], ["matrix", "Matrix"], ["gold", "Gold"], ["midnight", "Midnight"], ["pick-999", "999 (signature)"], ["pick-ocean", "Ocean (signature)"], ["pick-ember", "Ember (signature)"], ["pick-forest", "Forest (signature)"], ["pick-dusk", "Dusk (signature)"], ["oled", "OLED black"], ["ultraviolet", "Ultraviolet"]];
+      var themeSel = document.getElementById("mThemeSelect");
+      if (themeSel && !themeSel.dataset.built) {
+        themeSel.dataset.built = "1";
+        themeSel.innerHTML = EDIT_THEMES.map(function (t) { return '<option value="' + t[0] + '">' + esc(t[1]) + '</option>'; }).join("");
+        var cur = "default";
+        try { cur = (_data && _data.theme) || localStorage.getItem("wantedTheme") || "default"; } catch (e) {}
+        themeSel.value = cur;
+        themeSel.addEventListener("change", function () {
+          var v = themeSel.value;
+          try { localStorage.setItem("wantedTheme", v); } catch (e) {}
+          try { applyTheme(v); } catch (e) {}
+          try { ensureMemberThemeCss(v); } catch (e) {}
+          api({ action: "saveTheme", theme: v });
+          toast("Theme set to " + v, "success");
+        });
+      }
+
+      /* Favourite song search */
+      var fs = document.getElementById("mFavSearch");
+      var results = document.getElementById("mFavResults");
+      if (fs && results) {
+        fs.addEventListener("input", function () {
+          var q = fs.value.trim().toLowerCase();
+          if (q.length < 2) { _hideFavResults(); return; }
+          var matches = _favMatches(q);
+          if (!matches.length) { results.innerHTML = '<div class="editpf-fav-opt" style="opacity:.6">Nothing in the vault matches that.</div>'; results.hidden = false; return; }
+          results.innerHTML = matches.map(function (t) {
+            return '<button type="button" class="editpf-fav-opt" data-fav="' + esc(t) + '"><i class="fas fa-music" style="opacity:.6"></i><span>' + esc(t) + '</span></button>';
+          }).join("");
+          results.hidden = false;
+        });
+        fs.addEventListener("focus", function () { fs.dispatchEvent(new Event("input")); });
+        results.addEventListener("click", function (e) {
+          var btn = e.target.closest ? e.target.closest("[data-fav]") : null;
+          if (!btn) return;
+          _favSel = btn.getAttribute("data-fav") || "";
+          _profile.favSong = _favSel;   /* chip + rail derive from _profile on repaint */
+          fs.value = _favSel;
+          _hideFavResults();
+          _syncFavChip();
+          applyProfile();
+          markDirty();
+          fillDrpPreview();
+        });
+        document.addEventListener("click", function (e) {
+          if (!results.hidden && !results.contains(e.target) && e.target !== fs) _hideFavResults();
+        });
+      }
+      var favClear = document.getElementById("mFavClearBtn");
+      if (favClear) favClear.addEventListener("click", function () {
+        _favSel = "";
+        _profile.favSong = "";
+        var fs2 = document.getElementById("mFavSearch"); if (fs2) fs2.value = "";
+        _syncFavChip();
+        applyProfile();
+        markDirty();
+        fillDrpPreview();
+      });
+
+      /* Banner radios */
+      var ba = document.getElementById("mBannerAuto"), bcb = document.getElementById("mBannerClassic");
+      if (ba && bcb) {
+        [ba, bcb].forEach(function (radio) {
+          radio.addEventListener("change", function () {
+            _profile.bannerChoice = bcb.checked ? "classic" : "auto";
+            applyProfile();
+            markDirty();
+            fillDrpPreview();
+          });
+        });
+      }
+
+      /* Expose the preview + autosave for the avatar flow registered elsewhere. */
+      window.__refreshDrpPreview = refreshDrpPreview;
+      window.__markDirty = markDirty;
+
+      /* Backdrop click + Escape close (data-close buttons are handled globally) */
+      var overlay = document.getElementById("editProfileModal");
+      if (overlay && !overlay.dataset.dismissWired) {
+        overlay.dataset.dismissWired = "1";
+        overlay.addEventListener("click", function (e) { if (e.target === overlay) closeModal("editProfileModal"); });
+        document.addEventListener("keydown", function (e) { if (e.key === "Escape" && overlay.classList.contains("open")) closeModal("editProfileModal"); });
+      }
+    }
+    bindEditV2();
     window.viewMyProfile = function () {
       if (window.openProfile) window.openProfile();
       else acctJump("profile");

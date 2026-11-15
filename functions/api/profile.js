@@ -124,6 +124,53 @@ export async function onRequestGet(context) {
     }
     if (!uid) return json({ error: "not found" }, 404);
 
+    /* Cheap head read for live polling: just the volatile profile bits plus
+       whether the member is listening right now. A handful of small rows, no
+       listening stats, so it can sit behind a 5-second poll. */
+    if (url.searchParams.get("head") === "1") {
+      const viewer = await getSessionUser(db, context.request).catch(() => null);
+      const isSelf = !!(viewer && viewer.uid && viewer.uid === uid);
+      let showProfile = 1, showActivity = 1;
+      try {
+        const pr = await db.prepare("SELECT show_profile, show_activity FROM user_privacy WHERE uid = ?").bind(uid).first();
+        if (pr) {
+          showProfile = Number(pr.show_profile == null ? 1 : pr.show_profile);
+          showActivity = Number(pr.show_activity == null ? 1 : pr.show_activity);
+        }
+      } catch (e) {
+        try {
+          const pr = await db.prepare("SELECT show_activity FROM user_privacy WHERE uid = ?").bind(uid).first();
+          if (pr) showActivity = Number(pr.show_activity == null ? 1 : pr.show_activity);
+        } catch (e2) {}
+      }
+      if (!isSelf && showProfile === 0) return json({ ok: true, uid: uid, hidden: true });
+      const prof = await db.prepare("SELECT * FROM user_profiles WHERE site_uid = ?").bind(uid).first();
+      const userRow = await db.prepare("SELECT name, verified FROM users WHERE uid = ?").bind(uid).first();
+      const link = await db.prepare("SELECT avatar, display_name FROM discord_links WHERE site_uid = ?").bind(uid).first().catch(() => null);
+      let nowPlaying = null;
+      try {
+        if (isSelf || showActivity !== 0) {
+          const np = await db.prepare(
+            "SELECT track_id, title, artist, artwork FROM friend_activity WHERE uid = ? AND type = 'listening' AND expires_at IS NOT NULL AND expires_at > ? ORDER BY created_at DESC LIMIT 1"
+          ).bind(uid, new Date().toISOString()).first();
+          if (np) nowPlaying = { trackId: np.track_id || "", title: np.title || "", artist: np.artist || "", artwork: np.artwork || "" };
+        }
+      } catch (_) {}
+      return json({
+        ok: true,
+        uid,
+        name: (prof && prof.name) || (link && link.display_name) || (userRow && userRow.name) || "999_" + String(uid).slice(-4).toUpperCase(),
+        handle: (userRow && userRow.name) || String(uid || ""),
+        bio: (prof && prof.bio) || "",
+        status: (prof && prof.status) || "Online",
+        avatar: (prof && prof.avatar) || (link && link.avatar) || "",
+        bannerChoice: (prof && prof.banner_choice) || "auto",
+        favSong: (prof && prof.fav_song) || "",
+        joined: (prof && prof.created_at) || (link && link.linked_at) || "",
+        nowPlaying,
+      });
+    }
+
     // Activity-only read. Honours the requested profile (the old version always
     // returned the session user's own rows) and the owner's visibility flag.
     if (activityOnly) {
@@ -188,6 +235,8 @@ export async function onRequestGet(context) {
       status: (prof && prof.status) || "Online",
       avatar: (prof && prof.avatar) || (link && link.avatar) || "",
       banner: (prof && prof.banner) || "",
+      favSong: (prof && prof.fav_song) || "",
+      bannerChoice: (prof && prof.banner_choice) || "auto",
       joined: (prof && prof.created_at) || (link && link.linked_at) || "",
     };
 
@@ -230,6 +279,19 @@ export async function onRequestGet(context) {
     // 30-day daily activity + 24h listening-hour histogram for profile panels.
     let activity30 = stats.activity30 || [], hours = stats.hours || new Array(24).fill(0);
 
+    /* Live "listening now" - the member's latest unexpired listening row.
+       Gated by show_activity ("Show what I'm listening to") for viewers other
+       than the owner, so nobody's live status goes out without consent. */
+    let nowPlaying = null;
+    try {
+      if (vis.activity) {
+        const np = await db.prepare(
+          "SELECT track_id, title, artist, artwork FROM friend_activity WHERE uid = ? AND type = 'listening' AND expires_at IS NOT NULL AND expires_at > ? ORDER BY created_at DESC LIMIT 1"
+        ).bind(uid, new Date().toISOString()).first();
+        if (np) nowPlaying = { trackId: np.track_id || "", title: np.title || "", artist: np.artist || "", artwork: np.artwork || "" };
+      }
+    } catch (_) {}
+
     // Privacy: viewers other than the owner only see flagged-visible sections.
     // Missing privacy row = all visible (legacy default). Non-owners additionally
     // only ever see public playlists, never private/unlisted ones.
@@ -239,9 +301,22 @@ export async function onRequestGet(context) {
       const viewer = await getSessionUser(db, context.request);
       isSelfViewer = !!(viewer && viewer.uid && viewer.uid === uid);
       if (!isSelfViewer) {
-        const pr = await db.prepare(
-          "SELECT show_playlists, show_stats, show_activity, show_favorites FROM user_privacy WHERE uid = ?"
-        ).bind(uid).first();
+        /* show_profile lands with migration 0058. A missing column throws and
+           the legacy four flags are read instead - visibility for existing
+           members is unchanged either way. */
+        let pr = null;
+        try {
+          pr = await db.prepare(
+            "SELECT show_playlists, show_stats, show_activity, show_favorites, show_profile FROM user_privacy WHERE uid = ?"
+          ).bind(uid).first();
+        } catch (e) {
+          pr = await db.prepare(
+            "SELECT show_playlists, show_stats, show_activity, show_favorites FROM user_privacy WHERE uid = ?"
+          ).bind(uid).first().catch(() => null);
+        }
+        if (pr && Number(pr.show_profile) === 0) {
+          return json({ ok: true, uid, hidden: true });
+        }
         if (pr) {
           vis = {
             stats: Number(pr.show_stats) !== 0,
@@ -277,6 +352,7 @@ export async function onRequestGet(context) {
       favorites: vis.favorites ? favRows.results : [],
       topPlays: vis.stats ? topPlays.results : [],
       activity: vis.activity ? recentAct.results : [],
+      nowPlaying,
     });
   } catch (err) {
     return json({ error: String(err && err.message || err) }, 500);

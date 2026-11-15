@@ -168,6 +168,8 @@ async function loadAccountState(env, db, uid, req, session) {
     status: (prof && prof.status) || "Online",
     avatar: (prof && prof.avatar) || (link && link.avatar) || (userRow && userRow.avatar) || "",
     banner: (prof && prof.banner) || "",
+    favSong: (prof && prof.fav_song) || "",
+    bannerChoice: (prof && prof.banner_choice) || "auto",
     joined: (prof && prof.created_at) || (link && link.linked_at) || (userRow && userRow.created_at) || new Date().toISOString(),
   };
 
@@ -450,11 +452,21 @@ export async function onRequestPost(context) {
         const status = String(body.status || "Online").slice(0, 24);
         const avatar = String(body.avatar || "").slice(0, 300000);
         const banner = String(body.banner || "").slice(0, 300000);
+        const favSong = String(body.favSong || "").slice(0, 160);
+        const bannerChoice = ["auto", "classic"].includes(String(body.bannerChoice)) ? String(body.bannerChoice) : "auto";
         await db.prepare(
           `INSERT INTO user_profiles (site_uid, name, bio, status, avatar, banner, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(site_uid) DO UPDATE SET name = excluded.name, bio = excluded.bio, status = excluded.status, avatar = excluded.avatar, banner = excluded.banner, updated_at = excluded.updated_at`
         ).bind(uid, name, bio, status, avatar, banner, nowIso()).run();
+        /* The two edit-form extras land with migration 0058. Until it is
+           applied the columns simply don't exist - so the upsert above still
+           lands and only these two bonus fields are dropped. */
+        try {
+          await db.prepare(
+            "UPDATE user_profiles SET fav_song = ?, banner_choice = ? WHERE site_uid = ?"
+          ).bind(favSong, bannerChoice, uid).run();
+        } catch (_) {}
         await recordActivity(db, uid, "profile", "You updated your profile", name || "profile");
         break;
       }

@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v360';;;;;;;;;;;;;;;;;
+const VERSION = 'thw-v366';;;;;;;;;;;;;;;;;
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -39,7 +39,7 @@ const PRECACHE = [
   './tracks.js?v=thw-v18',
   './browser-id3-writer.js?v=thw-v3',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v81',
+  './account.js?v=thw-v85',
   './stats-page.js?v=thw-v1',
   './effects.js?v=thw-v2',
   './theme-drift.js?v=thw-v7',
@@ -47,7 +47,7 @@ const PRECACHE = [
   './script.js?v=thw-v98',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
-  './auth.js?v=thw-v14',
+  './auth.js?v=thw-v15',
   './wanted-realtime.js?v=thw-v4',
   './community-realtime.js?v=thw-v6',
   './presence.js?v=thw-v8',
@@ -127,8 +127,8 @@ const PRECACHE = [
   './user-relations.js?v=thw-v2',
   './user-menu.js?v=thw-v6',
   './player-settings.js?v=thw-v16',
-  './profile.js?v=thw-v3',
-  './profile.css?v=thw-v3',
+  './profile.js?v=thw-v7',
+  './profile.css?v=thw-v6',
   './cover-pref.js?v=thw-v1',
   './assets/settings-era/JUTE.webp',
   './assets/settings-era/AFF.webp',
@@ -159,7 +159,7 @@ const PRECACHE = [
   './wrld-stats.js?v=thw-v10',
   './recent.js?v=thw-v10',
   './trackinfo.js?v=thw-v3',
-  './profile-enhancements.js?v=thw-v38',
+  './profile-enhancements.js?v=thw-v39',
   './roadmap-data.js?v=thw-v28',
   './roadmap.js?v=thw-v26',
   './timeline.js?v=thw-v6',

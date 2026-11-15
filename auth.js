@@ -226,7 +226,7 @@
     if (typeof window.THWMatureAuthSync === "function") window.THWMatureAuthSync();
     if (window._wantedUserId !== undefined) window._wantedUserId = u.uid;
     if (typeof window.__setAccountUid === "function") window.__setAccountUid(u.uid);
-    var signedInGroup = $("navAccountSignedIn"), sUp = $("authNavSignup"), sIn = $("authNavSignin"), sOut = $("authNavSignout");
+    var signedInGroup = $("navAccountSignedIn"), sUp = $("authNavSettings"), sIn = $("authNavSignin"), sOut = $("authNavSignout");
     var mUp = $("authMNavSignup"), mIn = $("authMNavSignin"), mOut = $("authMNavSignout");
     var wrap = $("nav-account-wrap"), navBtn = $("navPillAuthBtn"), menu = $("nav-account-menu");
     if (wrap) wrap.style.display = "flex";
@@ -239,7 +239,7 @@
     if (mUp) mUp.style.display = "none";
     if (mIn) mIn.style.display = "none";
     if (mOut) mOut.style.display = "";
-    var ppUp = $("ppSignupBtn"), ppIn = $("ppSigninBtn"), ppPr = $("ppProfileBtn"), ppAc = $("ppAccountBtn"), ppSe = $("ppSep"), ppOut = $("ppSignoutBtn");
+    var ppUp = $("ppSettingsBtn"), ppIn = $("ppSigninBtn"), ppPr = $("ppProfileBtn"), ppAc = $("ppAccountBtn"), ppSe = $("ppSep"), ppOut = $("ppSignoutBtn");
     if (ppUp) ppUp.style.display = "none";
     if (ppIn) ppIn.style.display = "none";
     if (ppPr) ppPr.style.display = "";
@@ -262,7 +262,7 @@
     /* Signed out: flagged covers must blur again and the toggle must go away.
        Without this the page would keep the signed-in view of the setting. */
     if (typeof window.THWMatureAuthSync === "function") window.THWMatureAuthSync();
-    var signedInGroup = $("navAccountSignedIn"), sUp = $("authNavSignup"), sIn = $("authNavSignin"), sOut = $("authNavSignout");
+    var signedInGroup = $("navAccountSignedIn"), sUp = $("authNavSettings"), sIn = $("authNavSignin"), sOut = $("authNavSignout");
     var mUp = $("authMNavSignup"), mIn = $("authMNavSignin"), mOut = $("authMNavSignout");
     var wrap = $("nav-account-wrap"), navBtn = $("navPillAuthBtn"), menu = $("nav-account-menu");
     if (wrap) wrap.style.display = "none";
@@ -275,7 +275,7 @@
     if (mUp) mUp.style.display = "";
     if (mIn) mIn.style.display = "";
     if (mOut) mOut.style.display = "none";
-    var ppUp2 = $("ppSignupBtn"), ppIn2 = $("ppSigninBtn"), ppPr2 = $("ppProfileBtn"), ppAc2 = $("ppAccountBtn"), ppSe2 = $("ppSep"), ppOut2 = $("ppSignoutBtn");
+    var ppUp2 = $("ppSettingsBtn"), ppIn2 = $("ppSigninBtn"), ppPr2 = $("ppProfileBtn"), ppAc2 = $("ppAccountBtn"), ppSe2 = $("ppSep"), ppOut2 = $("ppSignoutBtn");
     if (ppUp2) ppUp2.style.display = "";
     if (ppIn2) ppIn2.style.display = "";
     if (ppPr2) ppPr2.style.display = "none";
@@ -453,7 +453,7 @@
     var br = $("btnGoogleRegister"); if (br) br.addEventListener("click", function () { oauthTo("/api/auth/google/start", "google"); });
     var d = $("btnDiscordLogin"); if (d) d.addEventListener("click", function () { oauthTo("/api/discord/login?mode=login", "discord"); });
     var dr = $("btnDiscordRegister"); if (dr) dr.addEventListener("click", function () { oauthTo("/api/discord/login?mode=login", "discord"); });
-    var sUp = $("authNavSignup"); if (sUp) sUp.addEventListener("click", function () { window.showAuthPage("register"); });
+    var sUp = $("authNavSettings"); if (sUp) sUp.addEventListener("click", function () { window.switchAppPage("account"); });
     var navBtn = $("navPillAuthBtn"); if (navBtn) navBtn.addEventListener("click", function () { window.showAuthPage("login"); });
     var sIn = $("authNavSignin"); if (sIn) sIn.addEventListener("click", function () { window.showAuthPage("login"); });
     var sOut = $("authNavSignout"); if (sOut) sOut.addEventListener("click", signOut);

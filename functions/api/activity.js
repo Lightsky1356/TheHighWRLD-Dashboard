@@ -258,9 +258,20 @@ async function publish(context, me, body) {
   if (!TYPES.includes(type)) return json({ error: "invalid_type" }, 400);
 
   const settings = await settingsFor(db, me.uid);
-  if (settings[type === "playlist" ? "playlist" : type === "community" ? "community" : "listening"] === "nobody") {
-    /* Nothing is written, so there is nothing to take down later either. */
-    return json({ ok: true, published: false, reason: "not_shared" });
+  const sharing = settings[type === "playlist" ? "playlist" : type === "community" ? "community" : "listening"];
+  if (sharing === "nobody") {
+    /* The member may still have "Show what I'm listening to" on (it opens the
+       row to anyone viewing their profile) - the listening row is what the
+       site's live status renders from, so it is allowed to exist once that
+       switch is on. */
+    let allowedByPrivacy = false;
+    if (type === "listening") {
+      try {
+        const pr = await db.prepare("SELECT show_activity FROM user_privacy WHERE uid = ?").bind(me.uid).first();
+        allowedByPrivacy = !!(pr && Number(pr.show_activity) === 1);
+      } catch (_) {}
+    }
+    if (!allowedByPrivacy) return json({ ok: true, published: false, reason: "not_shared" });
   }
 
   if (!(await rateLimit(db, me.uid, "friend_activity", 30, 60000))) {

@@ -157,6 +157,21 @@
 
   /* ---------- HTML builders ---------- */
   function esc2(s) { return esc(s); }
+  function favChipHTML(favSong) {
+    favSong = favSong || "";
+    if (!favSong) return '<button type="button" class="pv2-favsong hidden" id="pv2FavChip"></button>';
+    var rec = trackByTitle(favSong);
+    var idx = rec ? rec.index : -1;
+    return '<button type="button" class="pv2-favsong" id="pv2FavChip"' + (idx >= 0 ? ' data-play-idx="' + idx + '"' : ' disabled') + ' title="Play it"><i class="fas fa-music"></i><span>' + esc2(favSong) + '</span>' + (idx >= 0 ? '<i class="fas fa-play pv2-favsong-play"></i>' : '') + '</button>';
+  }
+  function nowPlayingHTML(np) {
+    if (!np || !np.title) return '<div class="pv2-now hidden" id="pv2Now"></div>';
+    return '<div class="pv2-now" id="pv2Now">' +
+      '<img class="pv2-now-art" id="pv2NowArt" src="' + esc2(np.artwork || "AlbumArt/999.jpg") + '" alt="" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'">' +
+      '<span class="pv2-now-meta"><span class="pv2-now-label"><span class="pv2-eq"><i></i><i></i><i></i></span>Listening now</span><b class="pv2-now-title" id="pv2NowTitle">' + esc2(np.title) + '</b></span>' +
+      '<span class="pv2-now-site">TheHighWRLD Dashboard</span>' +
+    '</div>';
+  }
   function initials(name) {
     var t = String(name || "9").trim();
     if (!t) return "9";
@@ -164,8 +179,8 @@
     return ((parts[0] || "")[0] || "9").toUpperCase();
   }
   function avatarHtml(p) {
-    if (p.avatar) return '<img class="pv2-avatar" src="' + esc2(p.avatar) + '" alt="" decoding="async" onerror="this.onerror=null;this.style.display=\'none\'">';
-    return '<div class="pv2-avatar-fallback" aria-hidden="true">' + esc2(initials(p.name)) + '</div>';
+    if (p.avatar) return '<img class="pv2-avatar" id="pv2HeroAvatar" src="' + esc2(p.avatar) + '" alt="" decoding="async" onerror="this.onerror=null;this.style.display=\'none\'">';
+    return '<div class="pv2-avatar-fallback" id="pv2HeroAvatar" aria-hidden="true">' + esc2(initials(p.name)) + '</div>';
   }
   function joinedStr(j) {
     if (!j) return "";
@@ -264,6 +279,10 @@
     body.removeAttribute("aria-busy");
   }
 
+  function privateGate() {
+    return '<div class="pv2-signin"><i class="fas fa-lock"></i><h2>This profile is private</h2><p>The member has chosen to keep their profile to themselves.</p></div>';
+  }
+
   function signInGate() {
     return '<div class="pv2-signin"><i class="fas fa-user-lock"></i><h2>Your profile lives here</h2><p>Sign in and the page fills with your plays, your level, your top songs, your eras.</p><button type="button" class="pv2-link" onclick="if(window.switchAppPage)window.switchAppPage(\'login\')"><i class="fas fa-right-to-bracket"></i> Sign in</button></div>';
   }
@@ -305,22 +324,27 @@
     var topEra = null, topEraPlays = 0;
     Object.keys(eraCounts).forEach(function (k) { if (eraCounts[k] > topEraPlays) { topEra = k; topEraPlays = eraCounts[k]; } });
 
-    var banner = eraArt(topEra);
+    var banner = (p.bannerChoice === "classic") ? "AlbumArt/999.jpg" : eraArt(topEra);
+    try { window.__pv2TopEraArt = eraArt(topEra); window.__pv2TopEraLabel = topEra ? eraLabel(topEra) : ""; } catch (e) {}
     var html = '';
 
     /* Hero */
     html += '<div class="pv2-hero">';
-    html += '<img class="pv2-hero-art" src="' + esc2(banner) + '" alt="" loading="eager" decoding="async" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'"><div class="pv2-hero-shade"></div>';
+    html += '<img class="pv2-hero-art" id="pv2HeroArt" src="' + esc2(banner) + '" alt="" loading="eager" decoding="async" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'"><div class="pv2-hero-shade"></div>';
     html += '<div class="pv2-hero-inner">';
     html += '<div class="pv2-hero-top"><div><div class="pv2-era-label">Top era</div><div class="pv2-era-name">' + esc2(eraLabel(topEra)) + '</div></div>';
     if (isMe) html += '<button type="button" class="pv2-copy-btn" id="pv2CopyLink" title="Copy profile link" aria-label="Copy profile link"><i class="fas fa-link"></i></button>';
     html += '</div>';
     html += '<div class="pv2-hero-mid"><div class="pv2-avatar-wrap">' + avatarHtml(p) + '<span class="pv2-dot" style="background:#10b981"></span></div>';
-    html += '<div class="pv2-meta"><h1 class="pv2-name">' + esc2(name) + '</h1><p class="pv2-handle">@' + esc2(String(uname).toLowerCase()) + '</p>';
+    html += '<div class="pv2-meta"><h1 class="pv2-name" id="pv2HeroName">' + esc2(name) + '</h1><p class="pv2-handle">@' + esc2(String(uname).toLowerCase()) + '</p>';
     html += '<p class="pv2-joined">' + (p.joined ? 'Joined ' + esc2(joinedStr(p.joined)) : '') + (dc.linked ? (p.joined ? ' &middot; ' : '') + 'Discord linked' : '') + '</p>';
+    html += '<p class="pv2-bio' + (p.bio ? '' : ' hidden') + '" id="pv2HeroBio">' + esc2(p.bio || "") + '</p>';
     if (topEra) html += '<span class="pv2-era-chip"><i class="fas fa-crown"></i>' + esc2(eraLabel(topEra)) + '</span>';
+    var favSong = p.favSong || "";
+    html += favChipHTML(favSong);
     if (isMe) html += '<div class="pv2-hero-actions"><button type="button" class="pv2-mini-btn" onclick="if(window.openEditProfile)window.openEditProfile()"><i class="fas fa-pen"></i>Edit profile</button><button type="button" class="pv2-mini-btn" onclick="if(window.authSignOut)window.authSignOut();else window.location.href=\'/api/auth/logout\'"><i class="fas fa-right-from-bracket"></i>Sign out</button></div>';
     html += '</div></div>';
+    html += nowPlayingHTML(d.nowPlaying);
     html += '<div class="pv2-strip">';
     html += statBlock(isMe && rank != null ? ordinal(rank) : (rank != null ? ordinal(rank) : "-"), rank != null ? "Leaderboard" : "Unranked");
     html += statBlock(fmtNum(stats.plays), "Plays");
@@ -335,7 +359,7 @@
     html += '<div class="pv2-levelrow"><div class="pv2-level-badge"><b>' + esc2(String(level)) + '</b><span>Level</span></div>';
     html += '<div class="pv2-level-meta"><div class="pv2-level-top"><span class="pv2-level-fan">Fan</span><span class="pv2-level-xp">' + fmtNum(curXp) + ' / ' + fmtNum(nextXp) + ' XP</span></div>';
     html += '<div class="pv2-level-bar"><span class="pv2-level-fill" id="pv2LevelFill" style="width:' + Math.round(Math.min(1, Math.max(0, prog)) * 100) + '%"></span></div>';
-    html += '<div class="pv2-level-foot"><span class="pv2-level-next">' + (level >= 10 ? "Max level fan in the vault" : (fmtNum(nextXp - curXp) + ' XP to level ' + (level + 1))) + '</span><a class="pv2-xp-link" href="#" onclick="if(window.switchAppPage)window.switchAppPage(\'leaderboard\');return false">How XP works <i class="fas fa-arrow-right" style="font-size:9px"></i></a></div>';
+    html += '<div class="pv2-level-foot"><span class="pv2-level-next">' + (level >= 10 ? "Max level fan in the vault" : (fmtNum(nextXp - curXp) + ' XP to level ' + (level + 1))) + '</span><a class="pv2-xp-link" href="#" onclick="if(window.openXpPanel)window.openXpPanel();return false">How XP works <i class="fas fa-arrow-right" style="font-size:9px"></i></a></div>';
     html += '</div></div>'; /* levelrow */
     html += milestonesHTML(stats);
     html += '</div>';
@@ -412,11 +436,13 @@
     loadData().then(function (d) {
       if (!d || !d.profile) { host.innerHTML = '<div class="pv2-page">' + signInGate() + '</div>'; return; }
       if (d.profile.ok === false) { host.innerHTML = '<div class="pv2-page">' + signInGate() + '</div>'; return; }
+      if (d.profile.hidden) { host.innerHTML = '<div class="pv2-page">' + privateGate() + '</div>'; return; }
       try {
         host.innerHTML = '<div class="pv2-page">' + buildPage(d.profile, d.xp) + '</div>';
         bindCopy(host, d.profile);
         bindSongs(host);
         fillRecent();
+        afterMount();
         window.__pv2Mounted = true;
       } catch (e) {
         console.error("profile render failed", e);
@@ -427,10 +453,242 @@
     });
   }
 
+  /* ---------- Rank / How XP works panel ---------- */
+  var LADDER = [
+    { t: "Newcomer", l: 1 },
+    { t: "Listener", l: 3 },
+    { t: "Fan", l: 7 },
+    { t: "Day One", l: 14 },
+    { t: "Lucid Dreamer", l: 24 },
+    { t: "Righteous", l: 60 },
+    { t: "Legend", l: 150 },
+    { t: "999", l: 400 },
+    { t: "Forever", l: 999 }
+  ];
+  function xpForLevel(n) { return 50 * (n - 1) * (n - 1); }
+  function rankTitle(level) {
+    var title = LADDER[0].t;
+    for (var i = 0; i < LADDER.length; i++) { if (level >= LADDER[i].l) title = LADDER[i].t; }
+    return title;
+  }
+  function fmtInt(n) { return (Number(n) || 0).toLocaleString(); }
+
+  function setModalOpen(id, open) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle("open", !!open);
+    document.body.style.overflow = open ? "hidden" : "";
+  }
+
+  function renderXpPanel(d) {
+    var me = d && d.me ? d.me : null;
+    var progressHost = document.getElementById("rankProgress");
+    var ladderHost = document.getElementById("rankLadder");
+
+    /* Progress strip */
+    if (progressHost) {
+      if (!me) {
+        progressHost.innerHTML = '<p class="rank-progress-signin">Sign in and every play moves you up the ladder. <a href="#" id="rankSignInLink">Sign in</a></p>';
+        var link = document.getElementById("rankSignInLink");
+        if (link) link.addEventListener("click", function (e) {
+          e.preventDefault();
+          setModalOpen("xpPanelModal", false);
+          if (window.switchAppPage) window.switchAppPage("login");
+        });
+      } else {
+        var level = Number(me.level) || 1;
+        var total = Number(me.xp) || 0;
+        var lvlBase = xpForLevel(level), nextBase = xpForLevel(level + 1);
+        var into = Math.max(0, total - lvlBase), span = Math.max(1, nextBase - lvlBase);
+        var pct = Math.round(Math.min(1, into / span) * 100);
+        var title = rankTitle(level);
+        var nextTitle = "Max rank";
+        for (var li = 0; li < LADDER.length; li++) { if (LADDER[li].l > level) { nextTitle = LADDER[li].t; break; } }
+        progressHost.innerHTML =
+          '<div class="rank-progress-badge"><b>' + esc2(String(level)) + '</b><span>Level</span></div>' +
+          '<div class="rank-progress-meta">' +
+            '<div class="rank-progress-top"><span class="rank-progress-title"><em>' + esc2(title) + '</em> in the vault</span>' +
+            '<span class="rank-progress-xp"><b>' + fmtInt(total) + ' XP</b> all time' + (me.week_xp ? ' &middot; <b>' + fmtInt(me.week_xp) + ' XP</b> this week' : '') + '</span></div>' +
+            '<div class="rank-progress-bar"><div class="rank-progress-fill" style="width:' + pct + '%"></div></div>' +
+            '<p class="rank-progress-next">' + (level >= LADDER[LADDER.length - 1].l ? 'You reached the top of the ladder.' : fmtInt(nextBase - total) + ' XP to <b>' + esc2(nextTitle) + '</b> (level ' + (level + 1) + ')') + '</p>' +
+          '</div>';
+      }
+    }
+
+    /* The ladder */
+    if (ladderHost) {
+      var myLevel = me ? (Number(me.level) || 1) : 0;
+      ladderHost.innerHTML = LADDER.map(function (rung, i) {
+        var done = myLevel >= rung.l;
+        var isCurrent = myLevel > 0 && done && (i === LADDER.length - 1 || myLevel < LADDER[i + 1].l);
+        var cls = "rank-rung" + (isCurrent ? " current" : (done ? " done" : ""));
+        return '<li class="' + cls + '">' +
+          '<span class="rank-rung-medal"><i class="fas ' + (isCurrent ? "fa-crown" : (done ? "fa-check" : "fa-lock")) + '"></i></span>' +
+          '<span class="rank-rung-text"><b>' + esc2(rung.t) + '</b><span>Level ' + rung.l + '</span></span>' +
+          '<span class="rank-rung-xp">' + fmtInt(xpForLevel(rung.l)) + '<br>XP</span>' +
+          (done ? '<span class="rank-rung-check"><i class="fas fa-check-circle"></i></span>' : '') +
+        '</li>';
+      }).join("");
+    }
+  }
+
+  function openXpPanel() {
+    setModalOpen("xpPanelModal", true);
+    var ladderHost = document.getElementById("rankLadder");
+    if (ladderHost) ladderHost.innerHTML = '<li class="rank-rung"><span class="rank-rung-medal"><i class="fas fa-circle-notch fa-spin"></i></span><span class="rank-rung-text"><b>Loading the ladder&hellip;</b></span></li>';
+    fetchJson("/api/xp?limit=1").then(function (d) { renderXpPanel(d || null); });
+  }
+  window.openXpPanel = openXpPanel;
+
+  /* Close on backdrop click and Escape (the data-close buttons are handled by account.js). */
+  (function wireRankModalDismiss() {
+    var overlay = document.getElementById("xpPanelModal");
+    if (!overlay) return;
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) setModalOpen("xpPanelModal", false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && overlay.classList.contains("open")) setModalOpen("xpPanelModal", false);
+    });
+  })();
+
+  /* ---------- live updates: head poll + self presence ---------- */
+  var headTimer = null, headKnown = null;
+
+  function headPollUid() {
+    try { return isSelfView() ? (localStorage.getItem("wantedUserId") || "") : profileKey(); } catch (e) { return ""; }
+  }
+  function stopHeadPoll() { if (headTimer) { clearInterval(headTimer); headTimer = null; } }
+  function startHeadPoll() {
+    stopHeadPoll();
+    var uid = headPollUid();
+    if (!uid) return;
+    headTimer = setInterval(pollHead, 5000);
+  }
+  function renderNowPlaying(np) {
+    var block = document.getElementById("pv2Now");
+    if (!block) return;
+    var title = document.getElementById("pv2NowTitle");
+    var art = document.getElementById("pv2NowArt");
+    if (!np || !np.title) { block.classList.add("hidden"); return; }
+    block.classList.remove("hidden");
+    if (title) title.textContent = np.title;
+    if (art) art.src = np.artwork || "AlbumArt/999.jpg";
+  }
+  function applyHead(d) {
+    var changed = false;
+    var prev = headKnown;
+    headKnown = { name: d.name, bio: d.bio, avatar: d.avatar, bannerChoice: d.bannerChoice, favSong: d.favSong };
+    if (prev && prev.name === d.name && prev.bio === d.bio && prev.avatar === d.avatar && prev.bannerChoice === d.bannerChoice && prev.favSong === d.favSong) {
+      renderNowPlaying(d.nowPlaying);
+      return;
+    }
+    changed = true;
+    var n = document.getElementById("pv2HeroName"); if (n && d.name) n.textContent = d.name;
+    var b = document.getElementById("pv2HeroBio");
+    if (b) {
+      if (d.bio) { b.textContent = d.bio; b.classList.remove("hidden"); }
+      else { b.textContent = ""; b.classList.add("hidden"); }
+    }
+    var av = document.getElementById("pv2HeroAvatar");
+    if (av && prev && prev.avatar !== d.avatar) {
+      if (d.avatar) av.outerHTML = '<img class="pv2-avatar" id="pv2HeroAvatar" src="' + esc2(d.avatar) + '" alt="" decoding="async" onerror="this.onerror=null;this.style.display=\'none\'">';
+      else av.outerHTML = '<div class="pv2-avatar-fallback" id="pv2HeroAvatar" aria-hidden="true">' + esc2(initials(d.name)) + '</div>';
+    }
+    var banner = document.getElementById("pv2HeroArt");
+    if (banner && prev && prev.bannerChoice !== d.bannerChoice) {
+      banner.src = d.bannerChoice === "classic" ? "AlbumArt/999.jpg" : (window.__pv2TopEraArt || "AlbumArt/999.jpg");
+    }
+    if (prev && prev.favSong !== d.favSong) {
+      var chip = document.getElementById("pv2FavChip");
+      if (chip) chip.outerHTML = favChipHTML(d.favSong);
+    }
+    if (changed) {
+      /* The edit modal tracks _profile itself, but keep the cache fresh for it. */
+      try { window.__pv2HeadCache = headKnown; } catch (e) {}
+    }
+    renderNowPlaying(d.nowPlaying);
+  }
+  function pollHead() {
+    var uid = headPollUid();
+    if (!uid) return;
+    fetchJson("/api/profile?user=" + encodeURIComponent(uid) + "&head=1").then(function (d) {
+      if (!d || d.ok === false) return;
+      if (d.hidden) return;
+      applyHead(d);
+    });
+  }
+
+  /* While signed in and playing, tell the vault what's on (one row, 5-min TTL). */
+  var lastPresenceTrack = null;
+  function publishPresence() {
+    try {
+      if (!isSelfView()) return;
+      var uid = headPollUid();
+      if (!uid) return;
+      if (typeof isPlaying === "undefined" || !isPlaying) return;
+      var idx = (typeof currentTrackIndex === "number") ? currentTrackIndex : -1;
+      var src = (typeof trackList !== "undefined" && trackList) ? trackList : [];
+      var t = idx >= 0 ? src[idx] : null;
+      if (!t || !t.title) return;
+      if (t.title === lastPresenceTrack) return;
+      lastPresenceTrack = t.title;
+      var artwork = "AlbumArt/999.jpg";
+      if (t.cover) artwork = String(t.cover);
+      else { var cr = coverForId(t.title); if (cr) artwork = cr; }
+      fetch("/api/activity", {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "listening", trackId: String(t.title).slice(0, 140), title: String(t.title).slice(0, 160), artist: String(t.artist || "Juice WRLD").slice(0, 120), artwork: artwork.slice(0, 300) })
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  /* The Edit panel (or anything else) can push a live hero update. */
+  window.__pv2ApplyLive = function (partial) {
+    partial = partial || {};
+    if (partial.name != null) { var n = document.getElementById("pv2HeroName"); if (n) n.textContent = String(partial.name); }
+    if (partial.bio != null) {
+      var b = document.getElementById("pv2HeroBio");
+      if (b) {
+        if (partial.bio) { b.textContent = String(partial.bio); b.classList.remove("hidden"); }
+        else { b.textContent = ""; b.classList.add("hidden"); }
+      }
+    }
+    if (partial.favSong != null) {
+      var chip = document.getElementById("pv2FavChip");
+      if (chip) chip.outerHTML = favChipHTML(String(partial.favSong));
+    }
+    if (partial.avatar != null) {
+      var av = document.getElementById("pv2HeroAvatar");
+      if (av) {
+        if (partial.avatar) av.outerHTML = '<img class="pv2-avatar" id="pv2HeroAvatar" src="' + esc2(String(partial.avatar)) + '" alt="" decoding="async" onerror="this.onerror=null;this.style.display=\'none\'">';
+        else av.outerHTML = '<div class="pv2-avatar-fallback" id="pv2HeroAvatar" aria-hidden="true">' + esc2(initials(String(partial.name || "999"))) + '</div>';
+      }
+    }
+  };
+
+  /* Kick off live bits once the page has rendered. */
+  function afterMount() {
+    startHeadPoll();
+    publishPresence();
+    setInterval(publishPresence, 20000);
+  }
+
   /* Take the profile page over completely. */
   window.renderProfilePageBody = renderFullProfile;
   window.profileSectionShown = function () { renderFullProfile(); };
   window.__THW_PROFILE_V2 = true;
+
+  /* Stacking fix: #editProfileModal and #xpPanelModal ship inside <main>,
+     which carries position:relative + z-index:1 and therefore forms a stacking
+     context that traps the modals below the fixed nav (z-50). Re-parenting
+     them to <body> lets their own z-index:420 beat the nav everywhere. */
+  try {
+    ["editProfileModal", "xpPanelModal"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && el.parentElement !== document.body) document.body.appendChild(el);
+    });
+  } catch (e) {}
 
   /* If the profile page is already active when this script loads (deep link), render now. */
   try {

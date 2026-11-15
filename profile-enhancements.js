@@ -1131,6 +1131,12 @@
 
   /* ----------------------------------------------------------------- boot */
   function boot() {
+    /* The rebuilt profile page (window.__THW_PROFILE_V2) is fully owned by
+       profile.js - every legacy injector below targets the old layout and
+       would double-mount the board, observer and header dress-up on top of
+       the new one. */
+    if (window.__THW_PROFILE_V2) return;
+
     installEditorButton();
 
     /* account.js re-renders the profile body, so mount again after each render. */
