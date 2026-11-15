@@ -109,12 +109,14 @@
 .pv2-xp-link:hover{text-decoration:underline}
 @media (max-width:560px){.pv2-levelrow{gap:12px}.pv2-level-badge{width:72px;height:72px}.pv2-level-badge b{font-size:28px}}
 
-/* ---------- milestones ---------- */
-.pv2-milestones{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.pv2-ms{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:10px;border:1px solid var(--pv-border-soft);background:rgba(255,255,255,.04);font-size:11px;font-weight:700;color:var(--pv-mute)}
-.pv2-ms i{color:rgba(244,242,255,.35);font-size:12px}
-.pv2-ms.unlocked{border-color:rgba(252,211,77,.4);background:rgba(252,211,77,.09);color:#ffeaa3}
-.pv2-ms.unlocked i{color:var(--pv-gold)}
+/* ---------- achievements grid ---------- */
+.pv2-ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:12px;margin-top:14px}
+.pv2-ach{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;border-radius:14px;border:1px solid var(--pv-border-soft);background:rgba(255,255,255,.03);text-align:center;transition:border-color .18s,background .18s}
+.pv2-ach i{font-size:22px;width:46px;height:46px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--pv-border-soft);color:rgba(244,242,255,.3);background:rgba(255,255,255,.03)}
+.pv2-ach small{font-size:9.5px;line-height:1.25;color:rgba(244,242,255,.55);font-weight:600;max-width:88px}
+.pv2-ach.unlocked i{color:#0b0b1a;background:linear-gradient(135deg,#fcd34d,#f59e0b);border-color:rgba(252,211,77,.5);box-shadow:0 0 18px rgba(252,211,77,.3)}
+.pv2-ach.unlocked small{color:#ffeaa3}
+.pv2-ach.unlocked{border-color:rgba(252,211,77,.35);background:rgba(252,211,77,.06)}
 
 /* ---------- top songs ---------- */
 .pv2-top-list{display:flex;flex-direction:column;gap:6px}

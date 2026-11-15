@@ -289,14 +289,14 @@
       '<p class="pv2-hours-note">Plays by hour of the day' + (note ? ' &middot; <b>' + esc2(note) + '</b>' : "") + '</p>';
   }
   function milestonesHTML(stats) {
-    var unlocked = MILESTONES.filter(function (m) { return m.test(stats); });
-    var html = '<div class="pv2-milestones">';
+    var unlockedCount = MILESTONES.filter(function (m) { return m.test(stats); }).length;
+    var html = '<div class="pv2-ach-grid">';
     MILESTONES.forEach(function (m) {
       var on = m.test(stats);
-      html += '<span class="pv2-ms' + (on ? ' unlocked' : '') + '"><i class="fas ' + m.icon + '"></i>' + esc2(m.label) + '</span>';
+      html += '<span class="pv2-ach' + (on ? ' unlocked' : ' locked') + '" title="' + esc2(m.label) + '"><i class="fas ' + m.icon + '"></i><small>' + esc2(m.label) + '</small></span>';
     });
     html += '</div>';
-    html += '<p class="pv2-card-note" style="margin-top:10px">' + unlocked.length + ' of ' + MILESTONES.length + ' milestones unlocked</p>';
+    html += '<p class="pv2-card-note" style="margin-top:10px">' + unlockedCount + ' of ' + MILESTONES.length + ' unlocked</p>';
     return html;
   }
   function collageHTML(favorites) {
@@ -389,8 +389,8 @@
     html += '</div>';
     html += '</div></div>'; /* hero inner / hero */
 
-    /* Level + milestones card */
-    html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-bolt"></i>Fan level</h2><span class="pv2-card-note">' + fmtNum(xpTotal) + ' XP all time</span></div>';
+    /* Fan level + achievements card */
+    html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-bolt"></i>Fan level &amp; achievements</h2><span class="pv2-card-note">' + fmtNum(xpTotal) + ' XP all time</span></div>';
     html += '<div class="pv2-levelrow"><div class="pv2-level-badge"><b>' + esc2(String(level)) + '</b><span>Level</span></div>';
     html += '<div class="pv2-level-meta"><div class="pv2-level-top"><span class="pv2-level-fan">Fan</span><span class="pv2-level-xp">' + fmtNum(curXp) + ' / ' + fmtNum(nextXp) + ' XP</span></div>';
     html += '<div class="pv2-level-bar"><span class="pv2-level-fill" id="pv2LevelFill" style="width:' + Math.round(Math.min(1, Math.max(0, prog)) * 100) + '%"></span></div>';
