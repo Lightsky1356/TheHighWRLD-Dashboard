@@ -299,7 +299,14 @@
     var handle = el("deck-handle");
     if (bar) {
       if (away) bar.classList.add("deck-away");
-      else bar.classList.remove("deck-away");
+      else {
+        bar.classList.remove("deck-away");
+        /* The script's own showDeckPlayer() is shadowed by this file and its
+           .hidden (Tailwind's, sliding the bar to display:none via
+           #deck-player.hidden) is otherwise never removed: the Deck would
+           stay invisible forever after leaving the WRLD Player. */
+        bar.classList.remove("hidden");
+      }
     }
     if (handle) handle.hidden = !away;
     if (document.body) document.body.classList.toggle("deck-hidden", away);
@@ -497,11 +504,22 @@
 
   /* Whether a track is actually loaded. On a cold phone, no track means the
      phone is showing a dead bar at the bottom - so the Deck waits for a
-     song instead of idling there. */
+     song instead of idling there.
+
+     A deliberate play action (selecting a new song) acts as a signal the
+     reader wants the Deck visible - if they had hidden it, route it back
+     into view once. Inside every other situation the reader's own saved
+     preference wins: pressing D puts the Deck away and it stays away until
+     they bring it back or pick a new song. */
+  var lastTrackForDeckHint = -1;
   function syncNoTrack() {
     var has = false;
     try { has = typeof currentTrackIndex === "number" && currentTrackIndex >= 0; } catch (e) {}
     if (document.body) document.body.classList.toggle("deck-no-track", !has);
+    if (has && window.currentTrackIndex !== lastTrackForDeckHint && !pageIsPlayer() && document.body.classList.contains("deck-hidden")) {
+      lastTrackForDeckHint = window.currentTrackIndex;
+      setAway(false, true);
+    }
   }
 
   function boot() {

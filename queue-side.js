@@ -27,6 +27,12 @@
   var el = null;
   var syncIv = null;
   var dragQi = -1;
+  var lastDropRow = null;
+
+  function notify(text) {
+    try { if (typeof showToastSimple === "function") { showToastSimple(text, { type: "info" }); return; } } catch (e) {}
+    try { if (typeof toast === "function") toast(text, "info", 2200); } catch (e) {}
+  }
 
   function isDesktop() {
     try { return window.matchMedia("(min-width:768px)").matches; } catch (e) { return true; }
@@ -55,6 +61,18 @@
     return null;
   }
   function trackAt(qi) { try { return (typeof trackList !== "undefined") ? trackList[qi] || null : null; } catch (e) { return null; } }
+  /* The rows carry queue positions, not track indices — resolve a position
+     through trackQueue first, or the toast names whatever happens to sit at
+     the same index of the flat track list. */
+  function queuedTrackAt(pos) {
+    try {
+      if (typeof trackQueue === "undefined" || !trackQueue) return null;
+      if (pos < 0 || pos >= trackQueue.length) return null;
+      var idx = trackQueue[pos];
+      if (idx == null || idx < 0) return null;
+      return trackAt(idx);
+    } catch (e) { return null; }
+  }
   function queueSlice() { try { if (typeof trackQueue !== "undefined" && trackQueue) return trackQueue.slice(); } catch (e) {} return []; }
 
   var ERA_RE = /\((GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|SOUNDCLOUD)\)/i;
@@ -90,7 +108,7 @@
     var st = document.createElement("style");
     st.id = "queue-side-style";
     st.textContent =
-      "#queue-side{position:fixed;top:0;right:0;bottom:0;z-index:10400;width:min(380px,94vw);display:flex;flex-direction:column;background:#14100e;border-left:1px solid rgba(255,255,255,.07);box-shadow:-24px 0 70px rgba(0,0,0,.55);color:#fff;font-family:inherit;transform:translateX(103%);transition:transform .3s cubic-bezier(.25,.8,.3,1)}" +
+      "#queue-side{position:fixed;top:0;right:0;bottom:0;z-index:10400;width:min(380px,94vw);display:flex;flex-direction:column;background-image:linear-gradient(157deg, rgba(31,27,49,.97) 0%, rgba(16,14,30,.98) 42%, rgba(24,20,39,.97) 100%);background-color:#151225;border-left:1px solid rgba(255,255,255,.17);box-shadow:-24px 0 70px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.13), inset 0 0 60px rgba(120,110,255,.05);color:#fff;font-family:inherit;transform:translateX(103%);transition:transform .3s cubic-bezier(.25,.8,.3,1)}" +
       "#queue-side.is-open{transform:translateX(0)}" +
 
       /* the header */
@@ -132,7 +150,7 @@
 
       /* the list */
       ".qs-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:6px 8px}" +
-      ".qs-row{display:flex;align-items:center;gap:8px;padding:7px 6px;border-radius:13px;border:1px solid transparent;cursor:pointer;position:relative}" +
+      ".qs-row{display:flex;align-items:center;gap:8px;padding:7px 6px;border-radius:13px;border:1px solid transparent;cursor:pointer;position:relative;content-visibility:auto;contain-intrinsic-size:auto 60px}" +
       ".qs-row:hover{background:rgba(255,255,255,.05)}" +
       ".qs-row.is-dragging{opacity:.35}" +
       ".qs-row.drop-above{border-top-color:#e879f9}" +
@@ -382,6 +400,7 @@
       var row = grip.closest(".qs-row");
       if (!row) return;
       dragQi = Number(row.getAttribute("data-qi"));
+      lastDropRow = null;
       row.classList.add("is-dragging");
       try {
         e.dataTransfer.effectAllowed = "move";
@@ -394,37 +413,43 @@
       if (dragQi < 0 || !row) return;
       e.preventDefault();
       try { e.dataTransfer.dropEffect = "move"; } catch (err) {}
+      /* Only restyle when the target row or its above/below half changed —
+         touching all 285 rows on every mousemove is what makes dragging stutter. */
       var rect = row.getBoundingClientRect();
       var below = (e.clientY - rect.top) > rect.height / 2;
-      qa(pane, ".qs-row").forEach(function (r) { r.classList.remove("drop-above", "drop-below"); });
-      row.classList.add(below ? "drop-below" : "drop-above");
+      var cls = below ? "drop-below" : "drop-above";
+      if (lastDropRow === row && row.classList.contains(cls)) return;
+      if (lastDropRow && lastDropRow !== row) lastDropRow.classList.remove("drop-above", "drop-below");
+      row.classList.remove("drop-above", "drop-below");
+      row.classList.add(cls);
+      lastDropRow = row;
     });
     pane.addEventListener("drop", function (e) {
       var row = e.target.closest ? e.target.closest(".qs-row") : null;
       if (dragQi < 0 || !row) return;
       e.preventDefault();
       var from = dragQi;
-      var toQi = Number(row.getAttribute("data-qi"));
+      var targetQi = Number(row.getAttribute("data-qi"));
+      if (from === targetQi) { dragQi = -1; return; }
       var rect = row.getBoundingClientRect();
       var below = (e.clientY - rect.top) > rect.height / 2;
-      var qList = queueSlice();
-      var fromIdx = from;
-      if (fromIdx < 0 || fromIdx >= qList.length) return;
-      var item = qList.splice(fromIdx, 1)[0];
-      var insertAt = below ? toQi + 1 : toQi;
-      if (toQi > fromIdx) insertAt -= 1;
-      insertAt = Math.max(0, Math.min(qList.length, insertAt));
-      qList.splice(insertAt, 0, item);
-      /* rewrite the queue through the public ops so persistence follows */
-      try {
-        for (var i = trackQueue.length - 1; i >= 0; i--) removeFromQueue(i);
-        qList.forEach(function (idx) { addToQueue(idx); });
-      } catch (err) {}
+      var moved = queuedTrackAt(from);
+      var movedTitle = (moved && moved.title) ? moved.title : "track";
+      var neighbour = queuedTrackAt(targetQi);
+      var neighbourTitle = (neighbour && neighbour.title) ? neighbour.title : "track";
+      /* Compute the absolute insert position. If we are dragging an
+         earlier row to before a later row, subtract one after removing
+         the original - one splice total, one commit, no rebuilds. */
+      var insertAt = below ? targetQi + 1 : targetQi;
+      if (targetQi > from) insertAt -= 1;
+      try { if (window.moveQueueItemTo) window.moveQueueItemTo(from, insertAt); } catch (err) {}
       lastSignature = "";
       render();
+      notify("Moved " + movedTitle + " " + (below ? "below" : "above") + " " + neighbourTitle);
     });
     pane.addEventListener("dragend", function () {
       dragQi = -1;
+      lastDropRow = null;
       qa(pane, ".qs-row").forEach(function (r) { r.classList.remove("is-dragging", "drop-above", "drop-below"); });
     });
   }

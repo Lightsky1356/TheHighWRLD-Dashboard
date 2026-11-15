@@ -250,6 +250,8 @@
     if (av) {
       var name = u.name || u.email || "9";
       av.textContent = name.trim().charAt(0).toUpperCase();var mbni = $("mbnAvatarInner"); if (mbni) mbni.textContent = name.trim().charAt(0).toUpperCase();
+      var ami = $("acctAvatarInnerMenu"); if (ami) ami.textContent = name.trim().charAt(0).toUpperCase();
+      var asi = $("thwSheetAvatarInner"); if (asi) asi.textContent = name.trim().charAt(0).toUpperCase();
     }
     if (typeof window.setNotifBell === "function") window.setNotifBell(true);
   }
@@ -282,6 +284,8 @@
     if (ppOut2) ppOut2.style.display = "none";
     var av = $("navAvatarInner");
     if (av) av.textContent = "9";var mbo = $("mbnAvatarInner"); if (mbo) mbo.innerHTML = '<i class="fas fa-user"></i>';
+    var ami2 = $("acctAvatarInnerMenu"); if (ami2) ami2.innerHTML = '<i class="fas fa-user"></i>';
+    var asi2 = $("thwSheetAvatarInner"); if (asi2) asi2.innerHTML = '<i class="fas fa-user"></i>';
     // Owner entry points are only ever for a signed-in owner session. Hide them
     // on sign-out so a stale owner flag left on the device cannot expose the
     // dashboard to a signed-out visitor.
@@ -385,7 +389,17 @@
 
   /* ---------- Entry ---------- */
   window.showAuthPage = function (view) {
-    if (view !== "register") view = "login";
+    if (view === "register") {
+      if (typeof window.switchAppPage === "function") window.switchAppPage("login");
+      setErr($("authError"), "");
+      setErr($("authErrorReg"), "");
+      loadCaptchaScript();   /* start the lazy captcha load as soon as the form opens */
+      renderCaptcha("hcaptcha-login");
+      renderCaptcha("hcaptcha-register");
+      if (typeof window.__showLoginTab === "function") window.__showLoginTab("register");
+      return;
+    }
+    view = "login";
     if (typeof window.switchAppPage === "function") window.switchAppPage(view);
     setErr($("authError"), "");
     setErr($("authErrorReg"), "");

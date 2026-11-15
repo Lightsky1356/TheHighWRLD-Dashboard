@@ -14,9 +14,35 @@
   var _cachedLang = "en";
   try { _cachedLang = localStorage.getItem("wantedLang") || "en"; } catch (e) {}
   var _themeTarget = document.documentElement;
+  function _hexRgba(hex, alpha) {
+    var m = String(hex || "").trim().match(/^#([0-9a-fA-F]{6})$/);
+    if (!m) return String(hex || "#2563eb");
+    var n = parseInt(m[1], 16);
+    return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + alpha + ")";
+  }
   try {
     var _earlyTheme = localStorage.getItem("wantedTheme");
     if (_earlyTheme) { _themeTarget.setAttribute("data-theme", _earlyTheme); }
+    var _earlyAppearance = {};
+    try { _earlyAppearance = JSON.parse(localStorage.getItem("wrldPlayerSettings") || "{}"); } catch (e) { _earlyAppearance = {}; }
+    /* A pick-custom theme's two colours live in this browser, so they
+       paint at boot. Clear them for every other slug: the stylesheet
+       wins from then on. */
+    if (_earlyAppearance.oledBlack) _themeTarget.setAttribute("data-oled", "1");
+    if (_earlyAppearance.movingColors === false) _themeTarget.setAttribute("data-motion", "still");
+    var _earlyAccentMap = { violet: "#b7a3ff", rose: "#f893bc", red: "#fd736f", amber: "#fcb452", mint: "#6ce5b5", sky: "#71c9fa" };
+    var _earlyAccent = _earlyAppearance.accent && (_earlyAppearance.accent === "custom" ? _earlyAppearance.customAccent : _earlyAccentMap[_earlyAppearance.accent]);
+    if (_earlyAccent) try { _themeTarget.style.setProperty("--accent", _earlyAccent); } catch (e) {}
+    if ((_earlyTheme || "default") === "pick-custom") {
+      var _ct = String(_earlyAppearance.customTop || "#2563eb").toLowerCase();
+      var _cc = String(_earlyAppearance.customCorner || "#0093ac").toLowerCase();
+      _themeTarget.style.setProperty("--th-accent", _ct);
+      _themeTarget.style.setProperty("--th-accent2", _cc);
+      _themeTarget.style.setProperty("--th-bg",
+        "radial-gradient(1000px 700px at 85% -10%, " + _hexRgba(_ct, .30) + ", transparent 60%)," +
+        "radial-gradient(900px 650px at -10% 20%, " + _hexRgba(_cc, .26) + ", transparent 55%)," +
+        "linear-gradient(180deg,#07080f 0%,#0a0b13 100%)");
+    }
   } catch (e) {}
   var _profile = { name: "999_" + uidSuffix, bio: "", status: "Online", avatar: "", banner: "" };
 
@@ -296,6 +322,7 @@
        with the sections buried inside it. */
     html += '<div class="cmp-head" data-pnl="profile">';
     html += '<div class="cmp-sec-title cmp-head-title"><span><i class="fas fa-id-card"></i> ' + esc(_tt("cmpPanelProfile", "Profile")) + '</span></div>';
+    if (p.banner) html += '<div class="pv-banner-wrap"><img decoding="async" src="' + esc(p.banner) + '" alt="" loading="lazy" onerror="this.style.display=&#39;none&#39;"></div>';
     html += '<div class="cmp-top"><span class="cmp-avatar-wrap"><span class="cmp-avatar-ring"><span class="cmp-avatar">' + cmpAvatarHtml(p.avatar, p.name) + '</span></span><span class="cmp-online" style="background:' + dotC + ';box-shadow:0 0 10px ' + dotC + '"></span></span>';
     html += '<div class="cmp-id"><div class="cmp-name-row"><h2 class="cmp-name">' + esc(p.name || "999_" + uidSuffix) + '</h2>' + cmpOwnerHtml(!!(_data && _data.isOwner)) + cmpVerifiedHtml(!!d.linked) + '</div>';
     html += '<div class="cmp-handle">@' + esc(String(uname).toLowerCase()) + '</div>';
@@ -1383,18 +1410,33 @@ function compactProfileViewHtml(d) {
   function bindSettingsPanels() {
     var nav = document.querySelector(".set-nav");
     if (!nav) return;
-    nav.querySelectorAll("[data-set-panel]").forEach(function (btn) {
+    var items = Array.prototype.slice.call(nav.querySelectorAll("[data-set-tab]"));
+    function setActive(id) {
+      items.forEach(function (b) {
+        var on = b.getAttribute("data-set-tab") === id;
+        b.classList.toggle("active", on);
+        if (on) b.setAttribute("aria-current", "true");
+        else b.removeAttribute("aria-current");
+      });
+    }
+    items.forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var target = document.getElementById(btn.getAttribute("data-set-panel"));
+        var target = document.getElementById(btn.getAttribute("data-set-tab") || "");
         if (!target) return;
-        document.querySelectorAll(".set-panel").forEach(function (p) { p.classList.remove("active"); p.style.display = "none"; });
-        target.classList.add("active");
-        target.style.display = "";
-        document.querySelectorAll(".set-nav .set-nav-item").forEach(function (b) {
-          b.classList.toggle("active", b === btn);
-        });
+        if (target.offsetParent === null && !target.getClientRects().length) return; /* hidden for guests */
+        setActive(target.id);
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
+    var sections = items.map(function (b) { return document.getElementById(b.getAttribute("data-set-tab") || ""); }).filter(Boolean);
+    if (sections.length && typeof IntersectionObserver === "function") {
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        });
+      }, { rootMargin: "-25% 0px -65% 0px", threshold: 0 });
+      sections.forEach(function (s) { obs.observe(s); });
+    }
     nav.querySelectorAll("[data-set-jump]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var t = btn.getAttribute("data-set-jump");
@@ -1924,6 +1966,7 @@ function compactProfileViewHtml(d) {
 
         applyTheme(v);
         syncTheme(v);
+        try { if (window.thwAppearanceThemeApplied) window.thwAppearanceThemeApplied(v); } catch (e) {}
 
         /* Signed in: this is your account's theme and it lives on the server.
            Only a guest (no account) changes the device theme. */
@@ -3281,6 +3324,252 @@ window.profileSectionShown = function () {
     if (document.visibilityState === "visible" && _visible) loadAccount();
   });
 
+  /* ---------- Appearance: era tiles, accent, black bg, moving colours ---------- */
+  function hexOk(s) { return /^#[0-9a-fA-F]{6}$/.test(String(s || "").trim()); }
+  function settingsGet(k, d) { try { var v = window.wrldPlayerSettings && window.wrldPlayerSettings.get(k); return v === undefined ? d : v; } catch (e) { return d; } }
+  function settingsSet(k, v) { try { window.wrldPlayerSettings && window.wrldPlayerSettings.set(k, v); } catch (e) {} }
+  var ACCENT_HEX = { violet: "#b7a3ff", rose: "#f893bc", red: "#fd736f", amber: "#fcb452", mint: "#6ce5b5", sky: "#71c9fa" };
+
+  function applyAccentChoice(showToast) {
+    var choice = settingsGet("accent", "violet");
+    var hex = choice === "custom" ? String(settingsGet("customAccent", "#b7a3ff")).toLowerCase() : (ACCENT_HEX[choice] || ACCENT_HEX.violet);
+    try { document.documentElement.style.setProperty("--accent", hex); } catch (e) {}
+    var row = document.getElementById("customAccentRow");
+    if (row) row.hidden = choice !== "custom";
+    var sw = document.getElementById("accentSwatch");
+    if (sw) sw.style.backgroundColor = hex;
+    var hx = document.getElementById("accentHex");
+    if (hx && document.activeElement !== hx) hx.value = hex.toUpperCase();
+    var cp = document.getElementById("accentPick");
+    if (cp) cp.value = hex;
+    document.querySelectorAll('input[name="appearanceAccent"]').forEach(function (r) {
+      r.checked = r.value === choice;
+    });
+  }
+
+  function applyCustomColours() {
+    var topInput = document.getElementById("pickTop");
+    var cornerInput = document.getElementById("pickCorner");
+    var t = String((topInput && topInput.value) || settingsGet("customTop", "#2563eb")).toLowerCase();
+    var c = String((cornerInput && cornerInput.value) || settingsGet("customCorner", "#0093ac")).toLowerCase();
+    if (!hexOk(t)) t = "#2563eb";
+    if (!hexOk(c)) c = "#0093ac";
+    settingsSet("customTop", t);
+    settingsSet("customCorner", c);
+    var swT = document.getElementById("pickTopSwatch"); if (swT) swT.style.backgroundColor = t;
+    var swC = document.getElementById("pickCornerSwatch"); if (swC) swC.style.backgroundColor = c;
+    var hxT = document.getElementById("pickTopHex"); if (hxT && document.activeElement !== hxT) hxT.value = t.toUpperCase();
+    var hxC = document.getElementById("pickCornerHex"); if (hxC && document.activeElement !== hxC) hxC.value = c.toUpperCase();
+    if (topInput) topInput.value = t;
+    if (cornerInput) cornerInput.value = c;
+    if ((document.documentElement.getAttribute("data-theme") || "default") === "pick-custom") {
+      var H = document.documentElement;
+      H.style.setProperty("--th-accent", t);
+      H.style.setProperty("--th-accent2", c);
+      H.style.setProperty("--th-bg",
+        "radial-gradient(1000px 700px at 85% -10%, " + _hexRgba(t, .30) + ", transparent 60%)," +
+        "radial-gradient(900px 650px at -10% 20%, " + _hexRgba(c, .26) + ", transparent 55%)," +
+        "linear-gradient(180deg,#07080f 0%,#0a0b13 100%)");
+    }
+  }
+
+  /* Keep the pick-it-your-own colours paired: editing them selects the
+     Custom tile, and the Custom tile reopens them. */
+  function switchToCustomTheme() {
+    var cur = document.documentElement.getAttribute("data-theme") || "";
+    if (cur === "pick-custom") { applyCustomColours(); return; }
+    applyAppearanceThemeValue("pick-custom");
+  }
+
+  function applyAppearanceThemeValue(v) {
+    var sel = document.getElementById("setTheme");
+    var prev = document.documentElement.getAttribute("data-theme") || "default";
+    document.documentElement.style.removeProperty("--th-bg");
+    document.documentElement.style.removeProperty("--th-accent");
+    document.documentElement.style.removeProperty("--th-accent2");
+    var wanted = v === "auto" ? "default" : v;
+    if (sel) {
+      /* a stale temp option from a previous custom pick is dropped first */
+      Array.prototype.slice.call(sel.querySelectorAll("option[data-temp]")).forEach(function (o) { o.remove(); });
+      var exists = sel.querySelector('option[value="' + wanted + '"]');
+      if (!exists) {
+        var o = document.createElement("option");
+        o.value = wanted; o.textContent = "Custom theme"; o.dataset.temp = "1";
+        sel.appendChild(o);
+      }
+      sel.value = wanted;
+      sel.dispatchEvent(new Event("change"));
+    } else {
+      document.documentElement.setAttribute("data-theme", wanted);
+      document.body.setAttribute("data-theme", wanted);
+      if (window.thwAppearanceThemeApplied) window.thwAppearanceThemeApplied(wanted);
+    }
+    if (wanted === "pick-custom") setTimeout(applyCustomColours, 0);
+    return prev;
+  }
+
+  /* Select is the source of truth for saving; tiles and the select mirror. */
+  window.thwAppearanceThemeApplied = function (v) {
+    if (v !== "pick-custom") {
+      document.documentElement.style.removeProperty("--th-bg");
+      document.documentElement.style.removeProperty("--th-accent");
+      document.documentElement.style.removeProperty("--th-accent2");
+    }
+    document.querySelectorAll('input[name="appearanceTheme"]').forEach(function (r) {
+      r.checked = (r.value === v) || (v === "default" && r.value === "auto");
+    });
+  };
+
+  function bindAppearanceSettings() {
+    var tiles = document.querySelectorAll('input[name="appearanceTheme"]');
+    Array.prototype.forEach.call(tiles, function (radio) {
+      radio.addEventListener("change", function () { applyAppearanceThemeValue(this.value); });
+    });
+
+    document.querySelectorAll('input[name="appearanceAccent"]').forEach(function (r) {
+      r.addEventListener("change", function () {
+        settingsSet("accent", this.value);
+        applyAccentChoice(true);
+      });
+    });
+    var accentPick = document.getElementById("accentPick");
+    if (accentPick) accentPick.addEventListener("input", function () {
+      settingsSet("customAccent", String(this.value).toLowerCase());
+      var hex = document.getElementById("accentHex");
+      if (hex) hex.value = String(this.value).toUpperCase();
+      applyAccentChoice(false);
+    });
+    var accentHex = document.getElementById("accentHex");
+    if (accentHex) accentHex.addEventListener("input", function () {
+      var v = String(this.value || "").trim();
+      if (!hexOk(v)) return;
+      settingsSet("customAccent", v.toLowerCase());
+      applyAccentChoice(false);
+    });
+
+    var topColor = document.getElementById("pickTop");
+    if (topColor) topColor.addEventListener("input", function () { settingsSet("customTop", String(this.value).toLowerCase()); switchToCustomTheme(); });
+    var cornerColor = document.getElementById("pickCorner");
+    if (cornerColor) cornerColor.addEventListener("input", function () { settingsSet("customCorner", String(this.value).toLowerCase()); switchToCustomTheme(); });
+    var topHex = document.getElementById("pickTopHex");
+    if (topHex) topHex.addEventListener("input", function () {
+      var v = String(this.value || "").trim();
+      if (!hexOk(v)) return;
+      settingsSet("customTop", v.toLowerCase());
+      var p = document.getElementById("pickTop"); if (p) p.value = v.toLowerCase();
+      switchToCustomTheme();
+    });
+    var cornerHex = document.getElementById("pickCornerHex");
+    if (cornerHex) cornerHex.addEventListener("input", function () {
+      var v = String(this.value || "").trim();
+      if (!hexOk(v)) return;
+      settingsSet("customCorner", v.toLowerCase());
+      var p = document.getElementById("pickCorner"); if (p) p.value = v.toLowerCase();
+      switchToCustomTheme();
+    });
+
+    var black = document.getElementById("appearanceBlack");
+    if (black) {
+      black.checked = !!settingsGet("oledBlack", false);
+      black.addEventListener("change", function () {
+        settingsSet("oledBlack", this.checked);
+        if (this.checked) document.documentElement.setAttribute("data-oled", "1");
+        else document.documentElement.removeAttribute("data-oled");
+      });
+    }
+    var motion = document.getElementById("appearanceMotion");
+    if (motion) {
+      motion.checked = settingsGet("movingColors", true) !== false;
+      motion.addEventListener("change", function () {
+        settingsSet("movingColors", this.checked);
+        if (this.checked) document.documentElement.removeAttribute("data-motion");
+        else document.documentElement.setAttribute("data-motion", "still");
+        /* theme-drift.js checks the flag at frame time; force the drift to
+           pick it up on the next frame instead of after a repaint. */
+        try { window.dispatchEvent(new Event("thw:appearance-changed")); } catch (e) {}
+      });
+    }
+
+    var covers = document.querySelectorAll('input[name="appearanceCovers"]');
+    Array.prototype.forEach.call(covers, function (r) {
+      r.checked = (r.value === settingsGet("coversPref", "song"));
+      r.addEventListener("change", function () {
+        if (this.checked) settingsSet("coversPref", this.value);
+      });
+    });
+
+    var qMode = document.getElementById("playQueueMode");
+    if (qMode) {
+      qMode.value = settingsGet("replaceQueue", false) === true ? "replace" : "keep";
+      qMode.addEventListener("change", function () {
+        settingsSet("replaceQueue", this.value === "replace");
+        toast(this.value === "replace" ? "Picking a song clears the queue" : "Your queue stays when you pick a song", "info", 2200);
+      });
+    }
+
+    /* reflect stored prefs into the tile/accent UI */
+    var cur = document.documentElement.getAttribute("data-theme") || "default";
+    window.thwAppearanceThemeApplied(cur);
+    applyAccentChoice(false);
+    applyCustomColours();
+    var coversNow = settingsGet("coversPref", "song");
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="appearanceCovers"]'), function (r) { r.checked = (r.value === coversNow); });
+
+    var cards = document.getElementById("suggestionCardsToggle");
+    if (cards) {
+      cards.checked = settingsGet("suggestionCards", true) !== false;
+      cards.addEventListener("change", function () {
+        settingsSet("suggestionCards", this.checked);
+        if (!this.checked) removeSuggestionCard();
+        else armSuggestionCard();
+      });
+    }
+    armSuggestionCard();
+  }
+
+  /* ---------- Suggestion cards ---------- */
+  function suggestionCardsAllowed() {
+    try { return settingsGet("suggestionCards", true) !== false; } catch (e) { return true; }
+  }
+  function removeSuggestionCard() {
+    var card = document.getElementById("thwSuggestCard");
+    if (card && card.parentNode) card.parentNode.removeChild(card);
+  }
+  var _sugTimer = null;
+  function armSuggestionCard() {
+    if (_sugTimer) { clearTimeout(_sugTimer); _sugTimer = null; }
+    if (!suggestionCardsAllowed()) return;
+    var last = 0;
+    try { last = parseInt(localStorage.getItem("wrldSuggestCardAt") || "0", 10) || 0; } catch (e) {}
+    if (Date.now() - last < 3 * 24 * 60 * 60 * 1000) return; /* at most one every three days */
+    try { if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) return; } catch (e) {}
+    _sugTimer = setTimeout(showSuggestionCard, 45000);
+  }
+  function showSuggestionCard() {
+    if (!suggestionCardsAllowed()) return;
+    if (document.getElementById("thwSuggestCard")) return;
+    var card = document.createElement("div");
+    card.id = "thwSuggestCard";
+    card.className = "thw-suggest-card";
+    card.innerHTML =
+      '<span class="thw-suggest-copy"><b>' + esc("Put TheHighWRLD on your home screen") + '</b>' +
+      '<span>' + esc("The vault opens like an app, with no address bar in the way.") + '</span></span>' +
+      '<span class="thw-suggest-actions">' +
+        '<button type="button" class="thw-suggest-never">' + esc("Not now") + '</button>' +
+        '<button type="button" class="thw-suggest-yes">' + esc("Show me") + '</button>' +
+      '</span>';
+    card.querySelector(".thw-suggest-never").addEventListener("click", function () {
+      try { localStorage.setItem("wrldSuggestCardAt", String(Date.now())); } catch (e) {}
+      removeSuggestionCard();
+    });
+    card.querySelector(".thw-suggest-yes").addEventListener("click", function () {
+      removeSuggestionCard();
+      if (window.switchAppPage) window.switchAppPage("downloads");
+      try { localStorage.setItem("wrldSuggestCardAt", String(Date.now())); } catch (e) {}
+    });
+    document.body.appendChild(card);
+  }
+
   /* ---------- Init ---------- */
   bindModals();
   bindProfile();
@@ -3298,6 +3587,9 @@ window.profileSectionShown = function () {
   bindAccountActions();
   bindNotifications();
   bindListenTracking();
+  bindPlaybackSettings();
+  bindPrivacySettings();
+  bindAppearanceSettings();
 
   function bindCollapseTabs() {
     var sec = document.getElementById("analytics");
@@ -3462,7 +3754,12 @@ window.profileSectionShown = function () {
         var bootPage = NAV_URL_REV[ppath];
         /* An unrecognised path used to fall through and leave whatever the boot
            timer last showed on screen. It resolves to home instead, so this hook is
-           the single thing that decides what a cold load shows. */
+           the single thing that decides what a cold load shows. /era/<slug> routes
+           into the era page with its own open handler. */
+        var mEraRoute = ppath.match(/^\/era\/([^\/]+)\/?$/i);
+        if (mEraRoute && window.openEraPage) {
+          try { window.openEraPage(decodeURIComponent(mEraRoute[1])); return; } catch (e) {}
+        }
         if (window.switchAppPage) window.switchAppPage(bootPage || "home");
       }
     }
@@ -3482,7 +3779,7 @@ window.profileSectionShown = function () {
    meant two sources of truth for the same job. _navPillFor already resolves both
    to their real nav buttons (page-nav-about, page-nav-partner), so nothing else
    needed changing to highlight them. */
-var NAV_URL = { home: "/", community: "/community", developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register", era: "/era", leaderboard: "/leaderboard" };
+var NAV_URL = { home: "/", community: "/community", developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register", era: "/era", leaderboard: "/leaderboard", stats: "/stats", updates: "/updates", tracker: "/tracker" };
   var NAV_URL_REV = {};
   Object.keys(NAV_URL).forEach(function (k) { NAV_URL_REV[NAV_URL[k]] = k; });
   /* The router, for a link that has to be a link but must not reload the
@@ -3535,10 +3832,27 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
        returning null for a button that was never there. */
     if (page === "gallery") return "page-nav-gallery";
     if (page === "credits") return "page-nav-credits";
-    if (page === "downloads" || page === "failed" || page === "login" || page === "register") return "";
+    if (page === "downloads" || page === "failed" || page === "login" || page === "register" || page === "tracker" || page === "developers") return "";
     if (page === "tos" || page === "pp" || page === "dmca" || page === "copyright") return "page-nav-home";
     return "page-nav-" + page;
   }
+  /* Detail breadcrumb for second-level screens (e.g. Era detail) */
+  window.__thwSetCrumbDetail = function (detail, parentText, parentHref) {
+    try {
+      var root = document.getElementById("bc-root");
+      var sep = document.getElementById("bc-sep-detail");
+      var cur = document.getElementById("bc-detail");
+      if (!detail) {
+        if (root) { root.classList.remove("bc-root-current"); }
+        if (sep) sep.style.display = "none";
+        if (cur) cur.style.display = "none";
+        return;
+      }
+      if (root) { root.textContent = parentText || "Era Pages"; root.href = parentHref || "/era"; root.classList.remove("bc-root-current"); root.style.display = "inline"; }
+      if (sep) sep.style.display = "inline";
+      if (cur) { cur.textContent = String(detail).slice(0, 80); cur.style.display = "inline"; }
+    } catch (_) {}
+  };
   function _moveNavBubble(el) {
     var r = document.getElementById("nav-pill");
     var s = document.getElementById("nav-bubble");
@@ -3560,20 +3874,89 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
       ab.classList.toggle("settings-active", page === "account");
     }
     var pillId = _navPillFor(page);
-    if (pillId === "") { _moveNavBubble(null); return; }
-    var pill = document.getElementById(pillId);
-    if (pill) pill.classList.add("active");
-    _moveNavBubble(pill);
+    if (pillId === "") {
+      /* No nav pill exists for this page - it lives in the More menu instead.
+         Only hide the pill bubble, but keep the rest of the state (nav button,
+         breadcrumb, render) in sync; the tail of this function must still run. */
+      _moveNavBubble(null);
+    } else {
+      var pill = document.getElementById(pillId);
+      if (pill) pill.classList.add("active");
+      _moveNavBubble(pill);
+    }
+
+    /* Breadcrumb — Home > Page on every non-home page */
+    var bc = document.getElementById("app-breadcrumb");
+    if (bc) {
+      if (page === "stats" && typeof window.renderStatsPage === "function") { try { window.renderStatsPage(); } catch (e) {} }
+    if (page === "updates" && typeof window.renderUpdatesPage === "function") { try { window.renderUpdatesPage(); } catch (e) {} }
+    if (page === "tracker" && typeof window.renderTrackerPage === "function") { try { window.renderTrackerPage(); } catch (e) {} }
+    var labels = { player: "WRLD Player", hub: "The Vault", era: "Era Pages", leaderboard: "Leaderboard", stats: "Stats", updates: "Updates", tracker: "The Tracker", developers: "Public API", community: "Community Board", wanted: "Wanted Vault", suggestions: "Suggestions", "community-themes": "Community Themes", downloads: "Downloads", failed: "Failed Projects", credits: "Covers", gallery: "Gallery", roadmap: "Roadmap", about: "About the project", partner: "Partnership", tos: "Terms of Service", pp: "Privacy Policy", dmca: "Copyright & DMCA", copyright: "Copyright", settings: "Account Settings", profile: "Profile", account: "Account Settings", "account-gate": "Sign In", register: "Register", login: "Sign In", song: "Track", owner: "Owner Dashboard" };
+      var label = labels[page];
+      var bcRoot = bc.querySelector("#bc-root");
+      var bcSepDetail = bc.querySelector("#bc-sep-detail");
+      var bcDetail = bc.querySelector("#bc-detail");
+      if (label) {
+        if (bcRoot) {
+          var navURL = (typeof NAV_URL !== "undefined" && NAV_URL[page]) || "/";
+          bcRoot.textContent = label;
+          bcRoot.href = navURL;
+          bcRoot.style.display = "inline";
+        }
+        if (bcSepDetail) bcSepDetail.style.display = "none";
+        if (bcDetail) bcDetail.style.display = "none";
+        bc.style.display = "flex";
+        bc.classList.add("visible");
+        if (document.body) document.body.classList.add("bc-visible");
+      } else {
+        bc.classList.remove("visible");
+        if (document.body) document.body.classList.remove("bc-visible");
+        if (page === "home") bc.style.display = "none";
+      }
+    }
   }
+  /* Signed out: the sidebar keeps Appearance / Playback / Notifications
+     only, and the same is true of the page itself. data-signed-in marks
+     everything that belongs to an account - sidebar entries, whole
+     sections, the preference rows - and one loop hides them. The guest
+     banner explains what still works and why. */
+  function applyGuestSettingsView() {
+    var signedIn = false;
+    try { signedIn = !!localStorage.getItem("wantedAuthUser"); } catch (e) {}
+    var banner = document.getElementById("acGuestBanner");
+    if (banner) {
+      if (signedIn) banner.setAttribute("hidden", "");
+      else banner.removeAttribute("hidden");
+    }
+    var els = document.querySelectorAll("[data-signed-in]");
+    for (var i = 0; i < els.length; i++) els[i].style.display = signedIn ? "" : "none";
+    /* Guests have no Profile panel to anchor the active nav entry to. */
+    if (!signedIn) {
+      var nav = document.querySelector(".set-nav");
+      if (nav) {
+        nav.querySelectorAll(".set-nav-item").forEach(function (b) {
+          b.classList.toggle("active", b.getAttribute("data-set-tab") === "appearance");
+        });
+      }
+    }
+  }
+
   function wrapSwitchAppPage() {
     var base = window.switchAppPage;
     if (typeof base !== "function") return;
     window.switchAppPage = function (page) {
+      var wasRegister = (page === "register");
+      if (page === "settings") page = "account";
+      if (page === "register") page = "login";
+      if (page === "account") { try { applyGuestSettingsView(); } catch (e) {} }
       base(page);
       _applyNavState(page);
       var url = NAV_URL[page];
       if (url && (location.pathname || "").replace(/\/+$/, "") !== url) {
         try { history.pushState({ page: page }, "", url); } catch (e) {}
+      }
+      if (wasRegister) {
+        try { if (typeof window.__showLoginTab === "function") window.__showLoginTab("register"); } catch (e) {}
       }
     };
   }
@@ -3585,6 +3968,72 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
     var page = NAV_URL_REV[p];
     if (page && window.switchAppPage) window.switchAppPage(page);
   });
+
+  function bindPlaybackSettings() {
+    /* Single-key shortcuts — mirror of the deck shortcut and the settings gear menu. */
+    var pbKb = document.getElementById("pbKeyboardShortcutsToggle");
+    if (pbKb) {
+      try { pbKb.checked = window.wrldPlayerSettings && window.wrldPlayerSettings.get("keyboardShortcuts") !== false; } catch (e) {}
+      pbKb.addEventListener("change", function () {
+        try { window.wrldPlayerSettings && window.wrldPlayerSettings.set("keyboardShortcuts", this.checked); } catch (e) {}
+        try { if (typeof window.showToast === "function") window.showToast(this.checked ? "Keyboard shortcuts on" : "Keyboard shortcuts off", "success", 1800); } catch (e) {}
+      });
+    }
+    /* Autoplay similar songs — when the queue is empty and shuffle is off,
+       stay inside the current era instead of marching through the vault. */
+    var pbAuto = document.getElementById("pbAutoplayToggle");
+    if (pbAuto) {
+      try { pbAuto.checked = !!(window.wrldPlayerSettings && window.wrldPlayerSettings.get("autoplaySimilar")); } catch (e) {}
+      pbAuto.addEventListener("change", function () {
+        try { window.wrldPlayerSettings && window.wrldPlayerSettings.set("autoplaySimilar", this.checked); } catch (e) {}
+      });
+    }
+  }
+
+  function bindPrivacySettings() {
+    var pub = document.getElementById("privPublicToggle");
+    var listen = document.getElementById("privListeningToggle");
+    var save = document.getElementById("privacySaveBtn");
+    var result = document.getElementById("privacyResult");
+    if (!pub && !listen) return;
+    /* GET once at boot to mirror /api/privacy; signed-out paths 401 quietly. */
+    fetch("/api/privacy", { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.privacy) return;
+        var p = d.privacy;
+        var pubOn = Number(p.show_stats) !== 0 || Number(p.show_playlists) !== 0 || Number(p.show_favorites) !== 0;
+        if (pub) pub.checked = pubOn;
+        if (listen) listen.checked = Number(p.show_activity) !== 0;
+      })
+      .catch(function () {});
+    if (save) {
+      save.addEventListener("click", function () {
+        var pubOn = !!(pub && pub.checked);
+        var listenOn = !!(listen && listen.checked);
+        var payload = {
+          show_stats: pubOn ? 1 : 0,
+          show_playlists: pubOn ? 1 : 0,
+          show_favorites: pubOn ? 1 : 0,
+          show_activity: listenOn ? 1 : 0
+        };
+        fetch("/api/privacy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (result) { result.textContent = d && d.ok ? "Saved" : "Couldn't save"; result.style.opacity = "1"; }
+            if (/(ok)/.test(String(d && d.ok))) { try { if (window.showToast) window.showToast("Privacy saved", "success", 1800); } catch (e) {} }
+          })
+          .catch(function () {
+            if (result) { result.textContent = "Couldn't save"; }
+          });
+      });
+    }
+  }
   window.closeAcctMenu = function () {
     var w = document.querySelector(".nav-account-wrap");
     if (w) w.classList.remove("open");
@@ -3592,6 +4041,46 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
   window.openLegal = function (page) {
     if (page === "tos" || page === "pp" || page === "dmca" || page === "copyright") { if (window.switchAppPage) window.switchAppPage(page); }
   };
+})();
+
+/* Account dropdown + avatar sheet — fill the plays/minutes stats from the
+   reader's own local play counts, and mirror the live online count into the
+   sheet. Nothing leaves the device. */
+(function () {
+  "use strict";
+  function fillStats() {
+    try {
+      var counts = {};
+      try { counts = JSON.parse(localStorage.getItem("jw_play_counts") || "{}") || {}; } catch (e2) {}
+      var total = 0, secs = 0;
+      for (var k in counts) {
+        if (!Object.prototype.hasOwnProperty.call(counts, k)) continue;
+        var idx = Number(k), n = Number(counts[k]) || 0;
+        if (!isFinite(idx) || !isFinite(n)) continue;
+        total += n;
+        try { if (typeof trackList !== "undefined" && trackList && trackList[idx]) secs += (Number(trackList[idx].duration) || 0) * n; } catch (e) {}
+      }
+      var mins = Math.floor(secs / 60);
+      ["acctMenuPlays", "thwSheetPlays"].forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = String(total); });
+      ["acctMenuMinutes", "thwSheetMinutes"].forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = String(mins); });
+    } catch (e) {}
+  }
+  function mirrorOnline() {
+    try {
+      var nav = document.getElementById("presence-count");
+      var sheet = document.getElementById("thwSheetOnline");
+      if (nav && sheet) sheet.textContent = nav.textContent.trim() || "0";
+    } catch (e) {}
+  }
+  function boot() {
+    fillStats();
+    mirrorOnline();
+    var nav = document.getElementById("presence-count");
+    if (nav && window.MutationObserver) {
+      try { new MutationObserver(mirrorOnline).observe(nav, { childList: true, characterData: true, subtree: true }); } catch (e) {}
+    }
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
 })();
 
 (function () {

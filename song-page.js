@@ -309,7 +309,8 @@
 
     var cover = el("div", "song-cover");
     var img = document.createElement("img");
-    img.src = bigCover((track && track.cover) || "Juice-WRLD.png");
+    var baseCover = window.wrldCoverFor ? window.wrldCoverFor(track) : ((track && track.cover) || "Juice-WRLD.png");
+    img.src = String(baseCover).indexOf("AlbumArt/") === 0 ? baseCover : bigCover(baseCover);
     img.alt = "";
     img.decoding = "async";
     img.addEventListener("error", function () { this.onerror = null; this.src = "Juice-WRLD.png"; });

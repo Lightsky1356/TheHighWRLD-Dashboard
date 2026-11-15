@@ -376,6 +376,18 @@
     return true;
   }
 
+  /* Insert one entry at an absolute position (0..length). Used by the
+     drag handler so a single reorder means one splice + one commit,
+     never N round trips. */
+  function moveQueueItemTo(from, insertAt) {
+    if (from < 0 || from >= trackQueue.length) return false;
+    insertAt = Math.max(0, Math.min(trackQueue.length, insertAt));
+    var item = trackQueue.splice(from, 1)[0];
+    trackQueue.splice(insertAt, 0, item);
+    commit();
+    return true;
+  }
+
   /* Pull one entry to the front without playing it. */
   function playNextAt(pos) {
     if (pos < 0 || pos >= trackQueue.length) return false;
@@ -733,6 +745,7 @@
   window.updateQueueBadge = updateQueueBadge;
   window.toggleQueuePanel = toggleQueuePanel;
   window.moveQueueItem = moveInQueue;
+  window.moveQueueItemTo = moveQueueItemTo;
   window.playNextInQueue = playNextAt;
   window.renderQueue = renderAll;
   window.queueBulkStart = bulkStart;

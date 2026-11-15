@@ -322,7 +322,7 @@ const expectations = [
     { path: "/downloads", want: "page-section-downloads", note: "downloads" },
     { path: "/failed", want: "page-section-failed", note: "failed projects" },
     { path: "/login", want: "page-section-login", note: "login" },
-    { path: "/register", want: "page-section-register", note: "register" },
+    { path: "/register", want: "page-section-login", note: "register redirects to the sign-in card with the Create account tab selected" },
     { path: "/nosuchroute", want: "page-section-home", note: "unknown path falls back home" },
   ];
 

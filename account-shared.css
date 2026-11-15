@@ -63,7 +63,7 @@ body[data-accent="amber"] .hero-stat-value{background:linear-gradient(135deg,#f5
 .pl-track-row .mini-btn{flex-shrink:0}
 .pl-track-row .mini-btn[data-pltrackfav]{color:#f472b6}
 .pl-track-row .mini-btn[data-pltrackfav]:hover{background:rgba(244,114,182,.15);color:#f9a8d4;border-color:rgba(244,114,182,.5)}
-.page-tab-btn.active,.nav-home .page-tab-btn.active,.nav-player .page-tab-btn.active,.nav-hub .page-tab-btn.active,.nav-wanted .page-tab-btn.active,.nav-suggestions .page-tab-btn.active{background:linear-gradient(90deg,rgba(34,211,238,.2),rgba(59,130,246,.2));color:#22d3ee;border:1px solid rgba(34,211,238,.3);box-shadow:0 0 24px rgba(34,211,238,.14),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn.active,.nav-home .page-tab-btn.active,.nav-player .page-tab-btn.active,.nav-hub .page-tab-btn.active,.nav-wanted .page-tab-btn.active,.nav-suggestions .page-tab-btn.active{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
 .page-tab-btn{color:rgba(148,163,184,1)}
 .page-tab-btn.page-tab-ico{padding:10px 0;width:38px;display:inline-flex;align-items:center;justify-content:center}
 .page-tab-btn.page-tab-ico>i{margin-right:0;font-size:.85rem;line-height:20px}
@@ -103,3 +103,56 @@ body[data-accent="amber"] .hero-stat-value{background:linear-gradient(135deg,#f5
 #discordBioModal .m-head h3 i{color:#5865f2;font-size:1.05em}
 @keyframes owner-live-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.72)}}
 @media (max-width:768px){.playlist-item .track-duration{display:inline-block !important;width:30px !important;font-size:8px !important;text-align:right;flex-shrink:0}}
+
+/* ---------------------------------------------------------------------------
+   Per-tab accents. The nav carries nav-<page> on the <nav> element, and the
+   tab buttons carry page-nav-<id>, so both the bubble (desktop) and the tab
+   chip can be tinted to the page's own colour. Mobile mirrors this on the
+   bottom bar via data-page. Readable on the dark hero: every accent is ≥
+   4.5:1 against the near-black backdrop. */
+
+/* desktop: bubble tint per active page (nav gets nav-<page>) */
+nav.nav-home #nav-bubble{background:linear-gradient(160deg,rgba(34,211,238,.42),rgba(34,211,238,.12));border-color:rgba(34,211,238,.4)}
+nav.nav-player #nav-bubble{background:linear-gradient(160deg,rgba(168,85,247,.42),rgba(168,85,247,.12));border-color:rgba(168,85,247,.4)}
+nav.nav-hub #nav-bubble{background:linear-gradient(160deg,rgba(236,72,153,.42),rgba(236,72,153,.12));border-color:rgba(236,72,153,.4)}
+nav.nav-era #nav-bubble{background:linear-gradient(160deg,rgba(251,113,133,.42),rgba(251,113,133,.12));border-color:rgba(251,113,133,.4)}
+nav.nav-leaderboard #nav-bubble{background:linear-gradient(160deg,rgba(250,204,21,.42),rgba(250,204,21,.12));border-color:rgba(250,204,21,.4)}
+nav.nav-gallery #nav-bubble{background:linear-gradient(160deg,rgba(232,121,249,.42),rgba(232,121,249,.12));border-color:rgba(232,121,249,.4)}
+nav.nav-credits #nav-bubble{background:linear-gradient(160deg,rgba(45,212,191,.42),rgba(45,212,191,.12));border-color:rgba(45,212,191,.4)}
+nav.nav-developers #nav-bubble{background:linear-gradient(160deg,rgba(74,222,128,.42),rgba(74,222,128,.12));border-color:rgba(74,222,128,.4)}
+nav.nav-roadmap #nav-bubble{background:linear-gradient(160deg,rgba(96,165,250,.42),rgba(96,165,250,.12));border-color:rgba(96,165,250,.4)}
+nav.nav-about #nav-bubble{background:linear-gradient(160deg,rgba(203,213,225,.38),rgba(203,213,225,.1));border-color:rgba(203,213,225,.38)}
+nav.nav-partner #nav-bubble{background:linear-gradient(160deg,rgba(251,146,60,.42),rgba(251,146,60,.12));border-color:rgba(251,146,60,.4)}
+nav.nav-wanted #nav-bubble,nav.nav-suggestions #nav-bubble{background:linear-gradient(160deg,rgba(212,165,116,.42),rgba(212,165,116,.12));border-color:rgba(212,165,116,.4)}
+
+/* desktop: tab chips */
+.page-tab-btn#page-nav-home.active{background:rgba(34,211,238,.13);color:#22d3ee;border-color:rgba(34,211,238,.35);box-shadow:0 0 24px rgba(34,211,238,.1),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn#page-nav-player.active{background:rgba(168,85,247,.13);color:#a855f7;border-color:rgba(168,85,247,.35);box-shadow:0 0 24px rgba(168,85,247,.1),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn#page-nav-hub.active{background:rgba(236,72,153,.13);color:#ec4899;border-color:rgba(236,72,153,.35);box-shadow:0 0 24px rgba(236,72,153,.1),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn#page-nav-era.active{background:rgba(251,113,133,.13);color:#fb7185;border-color:rgba(251,113,133,.35);box-shadow:0 0 24px rgba(251,113,133,.1),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn#page-nav-leaderboard.active{background:rgba(250,204,21,.13);color:#facc15;border-color:rgba(250,204,21,.35);box-shadow:0 0 24px rgba(250,204,21,.1),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn#page-nav-gallery.active{background:rgba(232,121,249,.13);color:#e879f9;border-color:rgba(232,121,249,.35);box-shadow:0 0 24px rgba(232,121,249,.1),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn#page-nav-credits.active{background:rgba(45,212,191,.13);color:#2dd4bf;border-color:rgba(45,212,191,.35);box-shadow:0 0 24px rgba(45,212,191,.1),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn#page-nav-developers.active{background:rgba(74,222,128,.13);color:#4ade80;border-color:rgba(74,222,128,.35);box-shadow:0 0 24px rgba(74,222,128,.1),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn#page-nav-roadmap.active{background:rgba(96,165,250,.13);color:#60a5fa;border-color:rgba(96,165,250,.35);box-shadow:0 0 24px rgba(96,165,250,.1),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn#page-nav-about.active{background:rgba(203,213,225,.12);color:#cbd5e1;border-color:rgba(203,213,225,.32);box-shadow:0 0 24px rgba(203,213,225,.08),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn#page-nav-partner.active{background:rgba(251,146,60,.13);color:#fb923c;border-color:rgba(251,146,60,.35);box-shadow:0 0 24px rgba(251,146,60,.1),inset 0 1px 0 rgba(255,255,255,.16)}
+.page-tab-btn#page-nav-wanted.active{background:rgba(212,165,116,.13);color:#d4a574;border-color:rgba(212,165,116,.35);box-shadow:0 0 24px rgba(212,165,116,.1),inset 0 1px 0 rgba(255,255,255,.16)}
+/* icons */
+.page-tab-btn#page-nav-era.active i,.page-tab-btn#page-nav-leaderboard.active i,.page-tab-btn#page-nav-gallery.active i{filter:drop-shadow(0 0 8px currentColor)}
+
+/* mobile bottom bar: per-page tint on the active item */
+.mbn-item[data-page="home"].active{color:#22d3ee;background:rgba(34,211,238,.12)}
+.mbn-item[data-page="home"].active i{color:#22d3ee;text-shadow:0 0 14px rgba(34,211,238,.5)}
+.mbn-item[data-page="player"].active{color:#a855f7;background:rgba(168,85,247,.12)}
+.mbn-item[data-page="player"].active i{color:#a855f7;text-shadow:0 0 14px rgba(168,85,247,.5)}
+.mbn-item[data-page="hub"].active{color:#ec4899;background:rgba(236,72,153,.12)}
+.mbn-item[data-page="hub"].active i{color:#ec4899;text-shadow:0 0 14px rgba(236,72,153,.5)}
+.mbn-item[data-page="community"].active{color:#fbbf24;background:rgba(251,191,36,.12)}
+.mbn-item[data-page="community"].active i{color:#fbbf24;text-shadow:0 0 14px rgba(251,191,36,.5)}
+.mbn-item[data-page="profile"].active{color:#60a5fa;background:rgba(96,165,250,.12)}
+.mbn-item[data-page="profile"].active .mbn-avatar{box-shadow:0 0 0 2px rgba(96,165,250,.8),0 0 14px rgba(96,165,250,.35)}
+
+/* Icon glyphs and labels stay white on every active tab — only the chip,
+   border and bubble carry the accent. */
+.page-tab-btn.active,.page-tab-btn.active i,.page-tab-btn.active span,.mbn-item.active,.mbn-item.active i,.mbn-item.active span,.mbn-item.active .mbn-avatar{color:#fff !important}

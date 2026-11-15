@@ -157,6 +157,7 @@
     var first = order[0];
     if (window.selectTrackFromList) window.selectTrackFromList(first);
     if (window.showDeckPlayer) window.showDeckPlayer();
+    setTimeout(function () { try { if (window.showDeckPlayer) window.showDeckPlayer(); } catch (e) {} }, 700);
     if (typeof addToQueue === "function") {
       for (var k = 1; k < order.length && k <= 14; k++) addToQueue(order[k]);
     }
@@ -191,6 +192,7 @@
 
   function openEra(pane, def) {
     sectionTitle(def.name + " - TheHighWRLD Dashboard");
+    try { if (window.__thwSetCrumbDetail) window.__thwSetCrumbDetail(def.name, "Era Pages", "/era"); } catch (e) {}
 
     var counts = eraCounts(def.code);
     var years = eraYears(def.code);
@@ -211,7 +213,6 @@
 
     pane.innerHTML =
       '<div class="era-page">' +
-        '<div class="era-toolbar"><button class="era-back" id="era-back" type="button"><i class="fas fa-arrow-left" aria-hidden="true"></i><span>The Vault</span></button></div>' +
         '<header class="era-hero">' +
           '<div class="era-hero-artwrap"><img class="era-hero-art" id="era-hero-art" src="' + esc(heroArt(def)) + '" alt="" decoding="async" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'"></div>' +
           '<div class="era-hero-body">' +
@@ -248,10 +249,6 @@
         '</section>' +
       '</div>';
 
-    document.getElementById("era-back").addEventListener("click", function () {
-      if (window.switchAppPage) window.switchAppPage("hub");
-      if (window.__thwGoTo) window.__thwGoTo("/vault");
-    });
     document.getElementById("era-play").addEventListener("click", function () { playEra(def, false); });
     document.getElementById("era-shuffle").addEventListener("click", function () { playEra(def, true); });
     document.getElementById("era-in-vault").addEventListener("click", function () {
@@ -286,6 +283,7 @@
       row.addEventListener("click", function () {
         if (window.selectTrackFromList) window.selectTrackFromList(i);
         if (window.showDeckPlayer) window.showDeckPlayer();
+        setTimeout(function () { try { if (window.showDeckPlayer) window.showDeckPlayer(); } catch (e) {} }, 700);
       });
       listEl.appendChild(row);
     });
@@ -322,6 +320,7 @@
         play.addEventListener("click", function () {
           if (window.selectTrackFromList) window.selectTrackFromList(c.idx);
           if (window.showDeckPlayer) window.showDeckPlayer();
+          setTimeout(function () { try { if (window.showDeckPlayer) window.showDeckPlayer(); } catch (e) {} }, 700);
         });
         li.appendChild(play);
         most.appendChild(li);
@@ -353,15 +352,11 @@
 
     pane.innerHTML =
       '<div class="era-page">' +
-        '<div class="era-toolbar"><button class="era-back" id="era-back" type="button"><i class="fas fa-arrow-left" aria-hidden="true"></i><span>The Vault</span></button></div>' +
         '<header class="era-chooser-hero"><h1>Every era, one page</h1><p>The chapters the vault is filed under — each with its own page, its numbers, and the most played in it.</p></header>' +
         '<div class="era-chooser-grid">' + html + '</div>' +
       '</div>';
 
-    document.getElementById("era-back").addEventListener("click", function () {
-      if (window.switchAppPage) window.switchAppPage("hub");
-      if (window.__thwGoTo) window.__thwGoTo("/vault");
-    });
+    try { if (window.__thwSetCrumbDetail) window.__thwSetCrumbDetail(undefined); } catch (e) {}
     pane.addEventListener("click", function (e) {
       var card = e.target.closest ? e.target.closest("[data-era-open]") : null;
       if (card) window.openEraPage(card.getAttribute("data-era-open"));
@@ -380,15 +375,18 @@
 
   window.openEraPage = function (code) {
     var def = eraDef(code);
-    pushRoute(def ? def.slug : "");
     var pane = document.getElementById("page-section-era");
     if (!pane) return;
     /* Switch into the section without re-calling the switch's own listener
-       (it does nothing beyond flipping classes here anyway). */
+       (it does nothing beyond flipping classes here anyway). The route is
+       pushed AFTER the switch: the switch is what forces the section's route
+       to /era, and pushing the slug afterwards leaves the address bar
+       agreeing with what is on screen. */
     if (window.switchAppPage) {
       var eraSection = document.getElementById("page-section-era");
       if (eraSection && !eraSection.classList.contains("active")) window.switchAppPage("era");
     }
+    pushRoute(def ? def.slug : "");
     if (!def) { renderChoose(pane); return; }
     openEra(pane, def);
   };
@@ -405,6 +403,20 @@
     window.__eraSwitchWrapped = true;
     var orig = window.switchAppPage;
     window.switchAppPage = function (page) {
+      /* Route BEFORE the base switch runs. Every other wrapper reads the path
+         while it flips the classes, and renderRoute() parses the pathname to
+         pick the sub-view. On /era/<slug> that parse says "show the detail
+         again", so a click on anything labelled Era Pages flipped the URL to
+         /era only AFTER the render had already drawn the detail - and the
+         first click looked dead until a second click re-read /era. */
+      if (page === "era") {
+        try {
+          var want = "/era";
+          if (String(location.pathname || "").replace(/\/+$/, "") !== want && history.pushState) {
+            history.pushState({ era: "" }, "", want);
+          }
+        } catch (e) {}
+      }
       var out = orig.apply(this, arguments);
       if (page === "era") {
         /* Fill here: the pane exists in static HTML and may hold last

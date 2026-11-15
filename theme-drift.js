@@ -27,8 +27,13 @@
   if (!blobs.length) return;
 
   function motionOk() {
-    try { return !window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
-    catch (e) { return true; }
+    try {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+      /* Moving colours off in Settings > Appearance: the circles still paint,
+         but they never drift. */
+      if (window.wrldPlayerSettings && window.wrldPlayerSettings.get("movingColors") === false) return false;
+      return true;
+    } catch (e) { return true; }
   }
   if (!motionOk()) return;
 

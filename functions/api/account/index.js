@@ -25,6 +25,11 @@ const KNOWN_THEMES = [
   "gold", "galaxy", "lava", "toxic", "rose", "oled", "ultraviolet", "pharaoh",
   "dragon", "mint", "tangerine", "grape", "pumpkin", "silver", "midnight",
   "newyear", "valentines", "stpatricks", "easter", "july4", "halloween", "thanksgiving", "christmas",
+  // Era-colour picks from Settings > Appearance. Device-level palettes that
+  // need to round-trip through the account so they follow a member around.
+  "era-jute", "era-aff", "era-hih", "era-jw999", "era-bdm", "era-nd",
+  "era-gbgr", "era-wod", "era-drfl", "era-out", "era-post",
+  "pick-999", "pick-ocean", "pick-ember", "pick-forest", "pick-dusk", "plain", "pick-custom",
 ];
 
 /* ---------- Community Themes: the color-slot builder ----------

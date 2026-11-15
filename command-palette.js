@@ -82,6 +82,9 @@
     add("fa-house", "Lobby", "home");
     add("fa-compact-disc", "WRLD Player", "player");
     add("fa-server", "The Vault", "hub");
+    add("fa-chart-pie", "Stats", "stats");
+    add("fa-book-open", "Updates", "updates");
+    add("fa-record-vinyl", "Era Pages", "era");
     add("fa-vote-yea", "Wanted Vault", "wanted");
     add("fa-users", "Community Board", "community");
     add("fa-lightbulb", "Suggestions", "suggestions");

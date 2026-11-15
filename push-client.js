@@ -100,7 +100,11 @@
         .then(function (r) { return r.json(); })
         .then(function (d) { return d && d.ok ? d : null; });
     };
-    return (bootTake ? bootTake("push", ask) : ask()).then(function (d) {
+    /* The bootstrap can hang (no server bindings, or a server that swallows the
+       request). The panel must still paint: after three seconds the panel
+       treats the state as unavailable and renders the honest device row. */
+    var giveUp = new Promise(function (resolve) { setTimeout(function () { resolve(null); }, 3000); });
+    return Promise.race([bootTake ? bootTake("push", ask) : ask(), giveUp]).then(function (d) {
       /* The attempt is remembered whatever the answer is.
        *
        * It used to be remembered only when the answer was good, and the
@@ -595,17 +599,20 @@
 
     host.innerHTML = "";
 
-    currentSubscription().then(function (sub) {
+    currentSubscription().catch(function () { return null; }).then(function (sub) {
       if (!document.getElementById("thw-push-section")) return;
       // state.devices is what makes a mismatch detectable. Fetch it first if it has
       // not been loaded, otherwise an empty list on first paint would look like a
       // mismatch and fire a spurious POST.
-      if (!state.loaded) {
+      /* Ask once, and paint whether or not the server could answer.
+         A server without bindings is not a dead panel: the plain row
+         (Enable / Turn off by this device's own permission, plus the
+         permission word itself) is accurate without server state. */
+      if (!state.loaded && !state.tried) {
         /* Ask once. If the state could not be had, it is not going to turn
            up by asking again - and asking again is what turned this into a
            request every few milliseconds, for as long as the panel was
            open, on every visitor's machine. */
-        if (state.tried) { state.resyncing = false; return; }
         loadState().then(function () {
           state.resyncing = false;
           return render();
@@ -716,14 +723,19 @@
     });
   }
 
-  /* Mount inside the existing settings card, directly under the notifications
-     switch. Guarded so re-entering the settings view cannot duplicate it. */
+  /* Mount the panel - either into the account settings page's own host,
+     or into the social settings card under its notifications switch. */
   function mount() {
     if (state.mounted) return;
+    var ownHost = document.getElementById("thw-push-section");
+    if (ownHost) {
+      state.mounted = true;
+      loadState().catch(render).then(render);
+      window.setTimeout(render, 3500);
+      return;
+    }
     var card = document.getElementById("thw-social-settings");
     if (!card) return;
-    if (document.getElementById("thw-push-section")) { state.mounted = true; return; }
-
     var section = el("div");
     section.id = "thw-push-section";
     var heading = el("h4", "thw-social-settings-group", "Notifications on this device");
@@ -743,6 +755,14 @@
     var tries = 0;
     (function poll() {
       if (document.getElementById("thw-social-settings")) { mount(); return; }
+      var host = document.getElementById("thw-push-section");
+      if (host && !state.mounted) {
+        /* The account settings page has its own host for the panel - the
+           same one switch, wording and delivery indicator. */
+        mount();
+        return;
+      }
+      if (host) return;
       if (++tries > 200) return;
       window.setTimeout(poll, 250);
     })();

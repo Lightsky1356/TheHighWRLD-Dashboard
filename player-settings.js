@@ -1,10 +1,30 @@
 (function(){
   var defaults = {
     keyboardShortcuts: true,
-    /* The cover gradients. On by default - they are how the site has
-       always looked - and turned off they take the gradients off every
-       cover and leave the colour. */
-    coverGradients: true
+    coverGradients: true,
+    /* Autoplay similar songs — when the queue is empty and shuffle is off,
+       stay inside the era of the song that just ended instead of walking
+       through the vault in order. On by default. */
+    autoplaySimilar: true,
+    /* When you press play: whether picking a new song clears the queue.
+       Off (Keep queue) is the site's historic behaviour. */
+    replaceQueue: false,
+    /* Song covers: 'song' shows each track's own art, 'era' shows the era's
+       cover where the vault has one. */
+    coversPref: 'song',
+    /* Suggestion cards: the cards that offer the site to your home screen.
+       Off means never. */
+    suggestionCards: true,
+    /* Moving colours: the drifting cover-colour circles behind the page. */
+    movingColors: true,
+    /* Pure black behind the page, for OLED screens. */
+    oledBlack: false,
+    /* Member-picked accent (violet default), or 'custom' with customAccent. */
+    accent: 'violet',
+    customAccent: '#b7a3ff',
+    /* Custom theme's two colours. */
+    customTop: '#2563eb',
+    customCorner: '#0093ac'
   };
   var storageKey = 'wrldPlayerSettings';
   var settings = {};

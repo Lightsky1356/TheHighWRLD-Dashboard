@@ -53,7 +53,6 @@
 
   function updateBadge() {
     setCount('presence-count', 'site-online-badge', state.online, ' person online now', ' people online now');
-    setCount('guest-count', 'site-guest-badge', state.guests, ' guest browsing now', ' guests browsing now');
   }
 
   function applyCounts(data) {
@@ -61,6 +60,9 @@
     if (typeof data.online === 'number') state.online = data.online;
     if (typeof data.guests === 'number') state.guests = data.guests;
     updateBadge();
+    /* The pill shows real numbers from /api/online — flagged honest when the
+       source answered, dimmed when the last poll failed. */
+    try { var b = badgeEl(); if (b) b.setAttribute('data-fresh', '1'); } catch (_) {}
   }
 
   /* Best-effort display name for the heartbeat. Signed-in members have one;
@@ -117,11 +119,11 @@
     try {
       const res = await fetch('/api/online');
       inFlight = false;
-      if (!res.ok) { pollFailures++; return; }
+      if (!res.ok) { pollFailures++; try { var b = badgeEl(); if (b) b.setAttribute('data-fresh', '0'); } catch (_) {} return; }
       const data = await res.json();
       pollFailures = 0;
       applyCounts(data);
-    } catch (_) { inFlight = false; pollFailures++; }
+    } catch (_) { inFlight = false; pollFailures++; try { var b2 = badgeEl(); if (b2) b2.setAttribute('data-fresh', '0'); } catch (_) {} }
   }
 
   function wsSend(obj) {
@@ -235,8 +237,6 @@
 
     const badge = badgeEl();
     if (badge && !badge.hasAttribute('aria-live')) badge.setAttribute('aria-live', 'polite');
-    const guestBadge = document.getElementById('site-guest-badge');
-    if (guestBadge && !guestBadge.hasAttribute('aria-live')) guestBadge.setAttribute('aria-live', 'polite');
 
     heartbeat();
     poll();
@@ -297,24 +297,23 @@
   function renderPanel(data) {
     var list = document.getElementById('online-now-list');
     var count = document.getElementById('online-now-count');
-    var guests = document.getElementById('online-now-guests');
-    var guestCount = document.getElementById('online-now-guest-count');
     if (count) count.textContent = String((data && data.total) || 0);
-    if (guests) guests.hidden = !(data && data.guests);
-    if (guestCount) guestCount.textContent = String((data && data.guests) || 0);
     if (!list) return;
     var members = (data && data.members) || [];
+    members = members.slice().sort(function (a, b) {
+      return (Number(b.level || 1) - Number(a.level || 1)) || (Number(b.xp || 0) - Number(a.xp || 0));
+    });
     if (!members.length) {
-      list.innerHTML = '<p class="online-now-empty">No signed-in members here right now.</p>';
+      list.innerHTML = '<p class="online-now-empty">Nobody signed in right now — the site is quiet.</p>';
       return;
     }
     list.innerHTML = members.map(function (m) {
       var avatar = m.avatar
         ? '<img decoding="async" loading="lazy" src="' + escapeHtml(m.avatar) + '" alt="" onerror="this.onerror=null;this.src=\'\'">'
         : '<i class="fas fa-user" aria-hidden="true"></i>';
-      return '<div class="online-now-row">' +
+      return '<div class="online-now-row" role="listitem">' +
         '<span class="online-now-avatar">' + avatar + '</span>' +
-        '<span class="online-now-name">' + escapeHtml(m.name) + '</span>' +
+        '<span class="online-now-meta"><span class="online-now-name">' + escapeHtml(m.name) + '</span></span>' +
         '<span class="online-now-level">Lv ' + (m.level || 1) + '</span>' +
       '</div>';
     }).join('');
@@ -353,5 +352,10 @@
   });
   var closeBtn = closeEl();
   if (closeBtn) closeBtn.addEventListener('click', function () { setPopOpen(false); });
+  var lb = document.getElementById('online-now-leaderboard');
+  if (lb) lb.addEventListener('click', function () {
+    setPopOpen(false);
+    try { if (typeof window.switchAppPage === 'function') window.switchAppPage('leaderboard'); } catch (_) {}
+  });
 
 })();
