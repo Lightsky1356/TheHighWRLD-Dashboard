@@ -455,15 +455,15 @@
 
   /* ---------- Rank / How XP works panel ---------- */
   var LADDER = [
-    { t: "Newcomer", l: 1 },
-    { t: "Listener", l: 3 },
-    { t: "Fan", l: 7 },
-    { t: "Day One", l: 14 },
-    { t: "Lucid Dreamer", l: 24 },
-    { t: "Righteous", l: 60 },
-    { t: "Legend", l: 150 },
-    { t: "999", l: 400 },
-    { t: "Forever", l: 999 }
+    { t: "Newcomer", l: 1, dot: "#8b8b93" },
+    { t: "Listener", l: 3, dot: "#f59e0b" },
+    { t: "Fan", l: 7, dot: "#f4f4f6" },
+    { t: "Day One", l: 14, dot: "#fcd34d" },
+    { t: "Lucid Dreamer", l: 24, dot: "#2dd4bf" },
+    { t: "Righteous", l: 60, dot: "#60a5fa" },
+    { t: "Legend", l: 150, dot: "#22d3ee" },
+    { t: "999", l: 400, dot: "#fb7185" },
+    { t: "Forever", l: 999, dot: "#f43f5e" }
   ];
   function xpForLevel(n) { return 50 * (n - 1) * (n - 1); }
   function rankTitle(level) {
@@ -484,10 +484,10 @@
     var progressHost = document.getElementById("rankProgress");
     var ladderHost = document.getElementById("rankLadder");
 
-    /* Progress strip */
+    /* Progress block */
     if (progressHost) {
       if (!me) {
-        progressHost.innerHTML = '<p class="rank-progress-signin">Sign in and every play moves you up the ladder. <a href="#" id="rankSignInLink">Sign in</a></p>';
+        progressHost.innerHTML = '<p class="rank-signin">Sign in and every play moves you up the ladder. <a href="#" id="rankSignInLink">Sign in</a></p>';
         var link = document.getElementById("rankSignInLink");
         if (link) link.addEventListener("click", function (e) {
           e.preventDefault();
@@ -501,32 +501,28 @@
         var into = Math.max(0, total - lvlBase), span = Math.max(1, nextBase - lvlBase);
         var pct = Math.round(Math.min(1, into / span) * 100);
         var title = rankTitle(level);
-        var nextTitle = "Max rank";
-        for (var li = 0; li < LADDER.length; li++) { if (LADDER[li].l > level) { nextTitle = LADDER[li].t; break; } }
+        var titleDot = (function () { for (var i = LADDER.length - 1; i >= 0; i--) { if (level >= LADDER[i].l) return LADDER[i].dot; } return LADDER[0].dot; })();
+        var nextRung = null;
+        for (var li = 0; li < LADDER.length; li++) { if (LADDER[li].l > level) { nextRung = LADDER[li]; break; } }
         progressHost.innerHTML =
-          '<div class="rank-progress-badge"><b>' + esc2(String(level)) + '</b><span>Level</span></div>' +
-          '<div class="rank-progress-meta">' +
-            '<div class="rank-progress-top"><span class="rank-progress-title"><em>' + esc2(title) + '</em> in the vault</span>' +
-            '<span class="rank-progress-xp"><b>' + fmtInt(total) + ' XP</b> all time' + (me.week_xp ? ' &middot; <b>' + fmtInt(me.week_xp) + ' XP</b> this week' : '') + '</span></div>' +
-            '<div class="rank-progress-bar"><div class="rank-progress-fill" style="width:' + pct + '%"></div></div>' +
-            '<p class="rank-progress-next">' + (level >= LADDER[LADDER.length - 1].l ? 'You reached the top of the ladder.' : fmtInt(nextBase - total) + ' XP to <b>' + esc2(nextTitle) + '</b> (level ' + (level + 1) + ')') + '</p>' +
-          '</div>';
+          '<span class="rank-pill"><i style="background:' + esc2(titleDot) + '"></i>' + esc2(title) + ' · Level ' + esc2(String(level)) + '</span>' +
+          '<div class="rank-bigrow"><div class="rank-bigxp"><b>' + fmtInt(total) + '</b><span>XP in all</span></div>' +
+          '<span class="rank-nextlevel">' + (nextRung ? fmtInt(nextBase - total) + ' XP to level ' + (level + 1) : 'Max level') + '</span></div>' +
+          '<div class="rank-bar"><div class="rank-bar-fill" style="width:' + pct + '%"></div></div>' +
+          (nextRung
+            ? '<p class="rank-nextrank"><span class="rank-nextrank-dot" style="background:' + esc2(nextRung.dot) + '"></span>Next rank: <b>' + esc2(nextRung.t) + '</b> at Level ' + nextRung.l + ' · ' + fmtInt(nextBase - total) + ' XP away</p>'
+            : '<p class="rank-nextrank"><span class="rank-nextrank-dot" style="background:#f43f5e"></span>Top of the ladder - <b>Forever</b></p>') +
+          '<p class="rank-week">This week: <b>' + fmtInt(me.week_xp || 0) + ' XP</b> in the vault</p>';
       }
     }
 
-    /* The ladder */
+    /* The ladder (two columns, lowest first) */
     if (ladderHost) {
       var myLevel = me ? (Number(me.level) || 1) : 0;
       ladderHost.innerHTML = LADDER.map(function (rung, i) {
         var done = myLevel >= rung.l;
         var isCurrent = myLevel > 0 && done && (i === LADDER.length - 1 || myLevel < LADDER[i + 1].l);
-        var cls = "rank-rung" + (isCurrent ? " current" : (done ? " done" : ""));
-        return '<li class="' + cls + '">' +
-          '<span class="rank-rung-medal"><i class="fas ' + (isCurrent ? "fa-crown" : (done ? "fa-check" : "fa-lock")) + '"></i></span>' +
-          '<span class="rank-rung-text"><b>' + esc2(rung.t) + '</b><span>Level ' + rung.l + '</span></span>' +
-          '<span class="rank-rung-xp">' + fmtInt(xpForLevel(rung.l)) + '<br>XP</span>' +
-          (done ? '<span class="rank-rung-check"><i class="fas fa-check-circle"></i></span>' : '') +
-        '</li>';
+        return '<li class="rank-rung' + (isCurrent ? ' current' : '') + '"><span class="rank-dot" style="background:' + esc2(rung.dot) + '"></span><span class="rank-rung-name">' + esc2(rung.t) + (isCurrent ? '' : '') + '</span>' + (isCurrent ? '<span class="rank-rung-tag">Your rank</span>' : '') + '<span class="rank-rung-lvl">Level ' + rung.l + '</span></li>';
       }).join("");
     }
   }
