@@ -207,7 +207,17 @@ async function gatherMetrics(db, uid) {
     era_complete_any: 0,
     release_day: 0,
     before_release: 0,
-    games_*: 0,
+    games_nts: 0,
+    games_sfs: 0,
+    games_os: 0,
+    games_daily: 0,
+    games_tft: 0,
+    games_crossword: 0,
+    games_predicted: 0,
+    games_nl: 0,
+    games_consecutive: 0,
+    games_uua: 0,
+    games_hth_wins: 0,
   };
 }
 
