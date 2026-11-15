@@ -262,7 +262,7 @@ a.pv2-song:hover{background:rgba(255,255,255,.06);border-color:var(--pv-border-s
 .editpf-fav-current span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .editpf-fav-clear{border:0;background:transparent;color:inherit;cursor:pointer;padding:2px;opacity:.7}
 .editpf-fav-clear:hover{opacity:1}
-.hidden{display:none !important}
+/* Scoped: never fight the site-wide .hidden/.md:flex pattern (nav pill). */\n.pv2-favsong.hidden,.pv2-bio.hidden,.pv2-now.hidden,.editpf-fav.hidden,.editpf-fav-current.hidden,.editpf-fav-results[hidden]{display:none !important}
 
 /* public toggles (inside the form) */
 .editpf-toggles{display:flex;flex-direction:column;gap:0}
