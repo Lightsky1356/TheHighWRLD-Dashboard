@@ -65,6 +65,8 @@
   function paintDplComposer(ov) {
     if (!ov) return;
     var can = signedInDpl();
+    var compose = q(ov, ".dpl-compose");
+    if (compose) compose.style.display = can ? "" : "none";
     var m = dplMoment();
     var wholeSong = dplMomentMode === "song";
     var input = q(ov, "[data-dpl='comment-input']");
@@ -422,9 +424,10 @@
       "@media (max-height:780px){" +
         ".dpl-left{justify-content:flex-start;padding-top:0;justify-content:flex-start}" +
         ".dpl-cover{width:min(52vw,250px,32vh);margin-top:0}" +
-        ".dpl-title{margin-top:8px;font-size:clamp(17px,2.2vw,22px)}" +
-        ".dpl-album{margin-top:2px}" +
-        ".dpl-artist{margin-top:2px;font-size:14px}" +
+        ".dpl-titlerow{margin-top:8px}" +
+        ".dpl-meta{margin-top:2px}" +
+        ".dpl-meta-tag{font-size:11px}" +
+        ".dpl-meta-artists{font-size:11px}" +
         ".dpl-chips{margin-top:8px}" +
         ".dpl-chip-year,.dpl-chip{padding-top:3px;padding-bottom:3px}" +
         ".dpl-prog{margin-top:10px}" +
@@ -474,6 +477,21 @@
       ".dpl-fullqueue{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:#fff;font-family:inherit;font-size:13px;font-weight:700;border-radius:12px;padding:12px;cursor:pointer}" +
       ".dpl-fullqueue:hover{background:rgba(255,255,255,.08)}" +
       ".dpl-compose{margin-top:18px}" +
+      ".dpl-signin{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:46px 24px}" +
+      ".dpl-signin-ic{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;font-size:22px;color:rgba(255,255,255,.35)}" +
+      ".dpl-signin-t{font-size:15.5px;font-weight:800;color:#fff;letter-spacing:-.01em}" +
+      ".dpl-signin-s{font-size:11.5px;line-height:1.65;color:rgba(255,255,255,.5);max-width:290px}" +
+      ".dpl-signin-btn{margin-top:4px;display:inline-flex;align-items:center;gap:9px;background:#fff;color:#161016;border:none;border-radius:999px;padding:11px 22px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;text-decoration:none}" +
+      ".dpl-signin-btn:hover{background:#e8edf4}" +
+      ".dpl-nocomments{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:46px 20px}" +
+      ".dpl-nocomments i{font-size:30px;color:rgba(255,255,255,.28)}" +
+      ".dpl-nocomments b{font-size:15px;color:#fff}" +
+      ".dpl-nocomments span{font-size:11px;color:rgba(255,255,255,.45);max-width:250px;line-height:1.6}" +
+      ".dpl-row-grip{background:none;border:none;color:rgba(255,255,255,.38);width:30px;min-width:30px;height:52px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;font-size:12px}" +
+      ".dpl-row-grip:active{cursor:grabbing}" +
+      ".dpl-row.is-dragging{opacity:.55;background:rgba(255,255,255,.07)}" +
+      ".dpl-row.drop-above{box-shadow:inset 0 2px 0 #38bdf8}" +
+      ".dpl-row.drop-below{box-shadow:inset 0 -2px 0 #38bdf8}" +
       ".dpl-upnext-hrow{display:flex;align-items:baseline;justify-content:space-between;padding:2px 2px 10px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px}" +
       ".dpl-upnext-h{font-size:13px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.02em}" +
       ".dpl-upnext-count{color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;margin-left:6px}" +
@@ -720,6 +738,11 @@
         if (a === "more") { if (window.togglePlayerContextMenu) window.togglePlayerContextMenu(act); return; }
         if (a === "fav") { toggleFav(); return; }
         if (a === "addqueue") { var ci = currentIndex(); if (ci >= 0 && typeof addToQueue === "function") { addToQueue(ci); toast("Added to the queue", "success"); } return; }
+        if (a === "comments-signin") {
+          close();
+          if (typeof window.switchAppPage === "function") window.switchAppPage("login");
+          return;
+        }
         if (a === "np-fav") { toggleFav(); refreshQueue(ov); return; }
         if (a === "autoplay-row") {
           if (lastAutoplayPick >= 0) { try { if (window.selectTrackFromList) window.selectTrackFromList(lastAutoplayPick); } catch (err) {} }
@@ -794,6 +817,8 @@
       } catch (err) {}
       setTimeout(function () { sync(true); }, 120);
     });
+
+    bindDplQueueDrag(ov);
 
     /* the volume slider */
     /* the moment labels follow the song */
@@ -1019,16 +1044,40 @@
     var box = q(ov, "[data-dpl='comments-thread']");
     var title = currentTitle();
     if (!box) return;
+    if (!signedInDpl()) {
+      /* Signed out: a designed call to action instead of a dead list. */
+      box.innerHTML =
+        '<div class="dpl-signin">' +
+          '<div class="dpl-signin-ic"><i class="far fa-comment-dots" aria-hidden="true"></i></div>' +
+          '<p class="dpl-signin-t">Sign in to join the conversation</p>' +
+          '<p class="dpl-signin-s">Every comment on the vault is from a signed-in member. Sign in to read along and add your own at any moment of the song.</p>' +
+          '<button type="button" class="dpl-signin-btn" data-dpl="comments-signin"><i class="fas fa-right-to-bracket" aria-hidden="true"></i>Sign in to comment</button>' +
+        '</div>';
+      paintDplComposer(ov);
+      return;
+    }
     if (!window.SongComments || typeof window.SongComments.renderThreadInto !== "function") {
       box.innerHTML = '<p class="dpl-row-empty">The comments could not be loaded.</p>';
       return;
     }
     window.SongComments.renderThreadInto(box, title);
     paintDplComposer(ov);
+    /* Signed in but nobody has said anything yet: a designed empty state. */
+    setTimeout(function () {
+      try {
+        if (!/No comments yet/i.test(box.textContent || "")) return;
+        if (box.querySelector(".dpl-nocomments")) return;
+        box.innerHTML =
+          '<div class="dpl-nocomments">' +
+            '<i class="far fa-comment-dots" aria-hidden="true"></i>' +
+            '<b>No comments yet</b>' +
+            '<span>Be the first — drop a comment at the exact moment that hits, like a real one.</span>' +
+          '</div>';
+      } catch (e) {}
+    }, 350);
     var cnt = document.getElementById("song-comments-count");
     var badge = q(ov, "[data-dpl='comments-count']");
     if (badge && cnt) badge.textContent = cnt.textContent || "0";
-    /* the sign-in note lives in the composer, only for signed-out readers */
   }
 
   /* The version marker — v1, v2.1, whatever the vault says it is. Only the
@@ -1136,6 +1185,77 @@
     } catch (e) {}
   }
 
+  /* ---- drag to reorder Up next rows — grip only, pointer events ---- */
+  var dplDragActive = false;
+  function bindDplQueueDrag(ov) {
+    var list = ov.querySelector("[data-dpl='queue-list']");
+    if (!list || list._thwDplDragWired) return;
+    list._thwDplDragWired = true;
+    var drag = null; /* {row, from, overRow, below} */
+
+    function clearMarks() {
+      qa(ov, ".dpl-row").forEach(function (r) { r.classList.remove("is-dragging", "drop-above", "drop-below"); });
+    }
+    function rowFromPoint(x, y) {
+      try {
+        var el = document.elementFromPoint(x, y);
+        var row = el && el.closest ? el.closest(".dpl-row") : null;
+        if (row && list.contains(row)) return row;
+      } catch (e) {}
+      return null;
+    }
+    list.addEventListener("pointerdown", function (e) {
+      var grip = e.target.closest ? e.target.closest(".dpl-row-grip") : null;
+      if (!grip) return;
+      var row = grip.closest(".dpl-row");
+      if (!row) return;
+      e.preventDefault();
+      try { grip.setPointerCapture(e.pointerId); } catch (err) {}
+      var qi = Number(row.getAttribute("data-qi"));
+      if (!isFinite(qi)) return;
+      drag = { row: row, from: qi, overRow: null, below: false };
+      dplDragActive = true;
+      row.classList.add("is-dragging");
+    }, { passive: false });
+    list.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      if (e.cancelable) e.preventDefault();
+      var row = rowFromPoint(e.clientX, e.clientY);
+      qa(ov, ".dpl-row").forEach(function (r) { r.classList.remove("drop-above", "drop-below"); });
+      drag.overRow = null;
+      if (row && row !== drag.row) {
+        var rect = row.getBoundingClientRect();
+        var below = (e.clientY - rect.top) > rect.height / 2;
+        row.classList.add(below ? "drop-below" : "drop-above");
+        drag.overRow = row;
+        drag.below = below;
+      }
+    }, { passive: false });
+    function endDrag() {
+      if (!drag) return;
+      var from = drag.from, targetRow = drag.overRow, below = drag.below;
+      drag = null;
+      dplDragActive = false;
+      clearMarks();
+      var to = -1;
+      if (targetRow) {
+        var ti = Number(targetRow.getAttribute("data-qi")) || 0;
+        to = below ? ti + 1 : ti;
+        if (ti > from) to -= 1;
+      }
+      if (to >= 0 && typeof window.moveQueueItemTo === "function") {
+        try { window.moveQueueItemTo(from, to); } catch (err2) {}
+        refreshQueue(ov);
+      }
+    }
+    list.addEventListener("pointerup", endDrag);
+    list.addEventListener("pointercancel", function () {
+      drag = null;
+      dplDragActive = false;
+      clearMarks();
+    });
+  }
+
   var lastAutoplayPick = -1;
   var DPL_ERA_RE = /\((GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|SOUNDCLOUD)\)/i;
   function dplEraCode(t) {
@@ -1175,6 +1295,7 @@
   }
 
   function refreshQueue(ov) {
+    if (dplDragActive) return; /* don't rebuild rows mid-drag */
     var t = currentTrack();
     /* the pinned now-playing card */
     var npCov = q(ov, "[data-dpl='np-cover']");
@@ -1245,7 +1366,9 @@
         try { t = (typeof trackList !== "undefined" ? trackList[idx] : null); } catch (e) {}
         var row = document.createElement("div");
         row.className = "dpl-row";
+        row.setAttribute("data-qi", String(qi));
         row.innerHTML =
+          '<button type="button" class="dpl-row-grip" tabindex="-1" aria-label="Drag to reorder"><i class="fas fa-grip-vertical" aria-hidden="true"></i></button>' +
           '<img decoding="async" class="dpl-row-cover" loading="lazy" src="' + esc(coverThumb(t && t.cover, "64")) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
           '<div class="dpl-row-meta"><p class="dpl-row-title">' + esc((t && t.title) || ("Track " + (idx + 1))) + '</p>' +
             '<p class="dpl-row-sub">' + esc(String((t && t.artist) || "Juice WRLD")) + '</p></div>' +
@@ -1286,11 +1409,18 @@
     qa(ov, "[data-dpl='title']").forEach(function (el) { el.textContent = currentTitle(); });
     qa(ov, "[data-dpl='artist']").forEach(function (el) { el.textContent = currentArtist(); });
     qa(ov, "[data-dpl='album']").forEach(function (el) {
-      var album = "";
-      try { if (typeof getTrackAlbum === "function" && t) album = getTrackAlbum(t) || ""; } catch (e) {}
-      if (!album && t) album = eraName(t);
-      el.textContent = album || "";
-      el.style.display = album ? "" : "none";
+      var label = "";
+      try {
+        /* the tag's trailing parenthesis is this version's name ("Session edit",
+           "Sessions") — the honest bit of metadata the vault carries */
+        var m2 = String((t && t.title) || "").match(/\(([^)]*)\)\s*$/);
+        var v = m2 ? String(m2[1] || "").trim() : "";
+        label = v;
+        if (!label && typeof getTrackAlbum === "function" && t) label = String(getTrackAlbum(t) || "");
+        if (!label && t) label = eraName(t);
+      } catch (e) {}
+      el.textContent = label;
+      el.style.display = label ? "" : "none";
     });
     qa(ov, "[data-dpl='cover']").forEach(function (img) {
       var src = t && t.cover ? String(t.cover) : "Juice-WRLD.png";

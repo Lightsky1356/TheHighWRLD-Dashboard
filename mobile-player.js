@@ -2030,7 +2030,7 @@
         } else if (action === "view-comments") {
           toggleView(ov, "comments");
         } else if (action === "view-queue") {
-          switchView(ov, "queue");
+          toggleView(ov, "queue");
         } else if (action === "view-playlists") {
           togglePlaylistsPage(ov);
         } else if (action === "close-playlists") {
