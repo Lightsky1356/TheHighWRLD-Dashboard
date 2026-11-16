@@ -326,7 +326,7 @@
       ".mp2-context{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.42);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}" +
       ".mp2-context b{color:rgba(255,255,255,.92);font-weight:800}" +
       /* the search pill, inside the queue view */
-      ".mp2-search{position:relative;width:100%;height:40px;margin:0 0 12px}" +
+      ".mp2-search{position:relative;width:100%;height:40px;margin:12px 0 12px}" +
       ".mp2-search-input{display:block;width:100%;height:100%;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 40px 0 38px;transition:border-color .2s ease,background .2s ease;line-height:40px}" +
       ".mp2-search-input::placeholder{color:rgba(255,255,255,.55)}" +
       ".mp2-search-input:focus{border-color:rgba(34,211,238,.6);background:rgba(255,255,255,.17)}" +
