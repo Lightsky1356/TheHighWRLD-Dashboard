@@ -17,6 +17,7 @@ import { banRejection } from "../../_lib/bans.js";
 import { moderateContent } from "../../_lib/automod.js";
 import { rateLimit } from "../../_lib/rate-limit.js";
 import { awardXp } from "../../_lib/xp.js";
+import { createNotification } from "../../_lib/notifications.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -210,6 +211,26 @@ export async function onRequest(context) {
       ).bind(track, parentId || null, who.uid, name, avatar, text, atSeconds, atLabel).run();
       const id = ins && ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0;
       try { await awardXp(db, who.uid, parentId ? 10 : 15); } catch (_) {}
+
+      /* Someone replied to this comment - the Comment Replies bubble decides
+         who hears about it. The track title rides in the message so the bell
+         click can open the right song page. */
+      if (parentId) {
+        try {
+          const parent = await db.prepare(
+            "SELECT author_uid FROM song_comments WHERE id = ?"
+          ).bind(parentId).first();
+          if (parent && parent.author_uid && parent.author_uid !== who.uid) {
+            await createNotification(db, env, parent.author_uid, {
+              type: "comment_reply",
+              actorUid: who.uid,
+              actorName: name,
+              message: '"' + String(track).slice(0, 60) + '" — ' + name + " replied to your comment",
+              replyId: id,
+            }, context);
+          }
+        } catch (_) {}
+      }
 
       /* The rules engine sees the text, so a comment is held the same way a
          post is. It never blocks: a held comment is flagged for a person. */

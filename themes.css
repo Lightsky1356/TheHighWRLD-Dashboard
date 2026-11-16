@@ -408,16 +408,7 @@ html[data-theme=christmas]{
    (modal-overlay / modal / m-head) come from there - so only their own rows
    and the info button are styled here, next to the themes they describe. */
 
-.thw-theme-info{
-  display:inline-flex;align-items:center;gap:6px;
-  margin-top:6px;padding:5px 10px;
-  border-radius:999px;border:1px solid var(--ac-border,rgba(255,255,255,.1));
-  background:rgba(255,255,255,.05);color:var(--ac-muted,#a295c9);
-  font-size:10px;font-weight:700;letter-spacing:.04em;cursor:pointer;
-  transition:background .18s var(--ac-ease,cubic-bezier(.16,1,.3,1)),color .18s,border-color .18s;
-}
-.thw-theme-info:hover{background:rgba(255,255,255,.1);color:var(--ac-text,#f2edff);border-color:var(--ac-border2,rgba(255,255,255,.2))}
-.thw-theme-info i{font-size:11px}
+
 
 .thw-modal-hint{
   font-size:11.5px;line-height:1.55;color:var(--ac-muted,#a295c9);
@@ -552,46 +543,25 @@ html[data-theme=christmas]{
 /* ============================================================================
    The Seasonal themes block in Account Settings
 
-/* ============================================================================
-   The Seasonal themes block in Account Settings
-   ---------------------------------------------------------------------------
-   The same seven rows the seasonal ⓘ modal lists, inline under the Appearance
-   grid, with a fold button of its own. The modal stays as the "read what
-   Halloween IS" door; this block is the "just wear it" door. */
+/* The seasonal tiles in the Appearance grid are ordinary theme tiles, and
+   an out-of-season one is shut: visible (so a member can see it exists),
+   but not wearable until its season is on. The wear path checks the
+   input's disabled state too, so the affordance is really gone. */
+.thw-tile.is-shut{opacity:.55;cursor:not-allowed}
+.thw-tile.is-shut:hover{background:rgba(255,255,255,.035)}
+.thw-tile.is-shut input{cursor:not-allowed}
 
-.seasonal-block{
-  margin-top:14px;
-  padding:14px 16px 16px;
-  border-radius:16px;
-  background:rgba(255,255,255,.03);
-  border:1px solid var(--ac-border,rgba(255,255,255,.1));
-}
-.seasonal-block-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.seasonal-block-title{
-  display:inline-flex;align-items:center;gap:8px;
-  font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--ac-text,#f2edff);
-}
-.seasonal-block-title i{color:var(--ac-muted,#a295c9)}
-.seasonal-block-sub{
-  margin:6px 0 12px;
-  font-size:11px;line-height:1.55;color:var(--ac-muted,#a295c9);
-}
-.seasonal-fold{
-  flex:none;display:inline-flex;align-items:center;justify-content:center;
-  width:28px;height:28px;border-radius:999px;
+/* The ⓘ under the seasonal tiles - the read-what-Halloween-IS door. */
+.thw-theme-info{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:10px;padding:6px 12px;border-radius:999px;
   border:1px solid var(--ac-border,rgba(255,255,255,.1));
   background:rgba(255,255,255,.05);color:var(--ac-muted,#a295c9);
-  cursor:pointer;font-size:11px;
-  transition:background .18s,color .18s,border-color .18s,transform .18s var(--ac-ease,cubic-bezier(.16,1,.3,1));
+  font:inherit;font-size:11px;font-weight:700;letter-spacing:.03em;cursor:pointer;
+  transition:background .18s,color .18s,border-color .18s;
 }
-.seasonal-fold:hover{background:rgba(255,255,255,.1);color:var(--ac-text,#f2edff);border-color:var(--ac-border2,rgba(255,255,255,.22))}
-/* Folded: the list disappears, the chip points the way back down. */
-.seasonal-block.folded .seasonal-fold i{transform:rotate(-90deg)}
-.seasonal-block.folded #seasonal-themes-block{display:none}
-.seasonal-block.folded{padding-bottom:14px}
-/* The block list is shorter than the modal's - it sits inside a page, not a
-   dialog that owns the screen. */
-#seasonal-themes-block{max-height:min(46vh,360px)}
+.thw-theme-info:hover{background:rgba(255,255,255,.1);color:var(--ac-text,#f2edff);border-color:var(--ac-border2,rgba(255,255,255,.22))}
+.thw-theme-info i{font-size:11px}
 
 /* ============================================================================
    The gradients every theme must have
@@ -663,6 +633,9 @@ html:where([data-theme]){
 }
 @keyframes thw-drift-c{
   0%{transform:scale(.9);opacity:.55}
+  50%{transform:scale(1.14);opacity:1}
+  100%{transform:scale(.93);opacity:.68}
+}
 @keyframes thw-drift-d{
   0%{transform:scale(1.05);opacity:.5}
   50%{transform:scale(.86);opacity:.95}
@@ -677,9 +650,6 @@ html:where([data-theme]){
   0%{transform:scale(1.12);opacity:.58}
   50%{transform:scale(.84);opacity:.9}
   100%{transform:scale(1.04);opacity:.7}
-}
-  50%{transform:scale(1.14);opacity:1}
-  100%{transform:scale(.93);opacity:.68}
 }
 @media (prefers-reduced-motion:reduce){
   .th-blob{animation:none!important}
@@ -731,30 +701,33 @@ html[data-theme="era-drfl"]{--ac-bg0:#1a0603;--ac-bg1:#240b04;--th-bg:radial-gra
 html[data-theme="era-out"]{--ac-bg0:#0b0c1c;--ac-bg1:#101230;--th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(118,127,234,.28),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(0,143,193,.24),transparent 55%),linear-gradient(180deg,#0b0c1c,#101230 40%,#080a16 100%);--th-accent:#767fea;--th-accent2:#008fc1;--th-glow:rgba(118,127,234,.16);--th-glow2:rgba(0,143,193,.14)}
 html[data-theme="era-post"]{--ac-bg0:#100a1c;--ac-bg1:#170f26;--th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(143,128,196,.28),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(166,124,0,.26),transparent 55%),linear-gradient(180deg,#100a1c,#170f26 40%,#0d0816 100%);--th-accent:#8f80c4;--th-accent2:#a67c00;--th-glow:rgba(143,128,196,.16);--th-glow2:rgba(166,124,0,.14)}
 
-/* Two-colour picks of your own, plus the five named presets. The custom
-   pair is written inline on <html> (--th-accent/--th-accent2/--th-bg)
-   by the appearance picker. */
-html[data-theme="pick-999"]{--ac-bg0:#120a24;--ac-bg1:#190d30;--th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(219,39,119,.28),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(122,70,224,.28),transparent 55%),linear-gradient(180deg,#120a24,#190d30 40%,#0e081c 100%);--th-accent:#7a46e0;--th-accent2:#db2777;--th-glow:rgba(122,70,224,.17);--th-glow2:rgba(219,39,119,.14)}
-html[data-theme="pick-ocean"]{--ac-bg0:#050f1f;--ac-bg1:#071930;--th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(0,147,172,.28),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(37,99,235,.28),transparent 55%),linear-gradient(180deg,#050f1f,#071930 40%,#040b16 100%);--th-accent:#2563eb;--th-accent2:#0093ac;--th-glow:rgba(37,99,235,.17);--th-glow2:rgba(0,147,172,.14)}
-html[data-theme="pick-ember"]{--ac-bg0:#1a0603;--ac-bg1:#221005;--th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(180,115,0,.30),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(220,38,38,.26),transparent 55%),linear-gradient(180deg,#1a0603,#221005 40%,#150402 100%);--th-accent:#dc2626;--th-accent2:#b47300;--th-glow:rgba(220,38,38,.17);--th-glow2:rgba(180,115,0,.15)}
-html[data-theme="pick-forest"]{--ac-bg0:#03150c;--ac-bg1:#062012;--th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(0,138,127,.28),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(71,158,91,.24),transparent 55%),linear-gradient(180deg,#03150c,#062012 40%,#02100a 100%);--th-accent:#479e5b;--th-accent2:#008a7f;--th-glow:rgba(71,158,91,.16);--th-glow2:rgba(0,138,127,.14)}
-html[data-theme="pick-dusk"]{--ac-bg0:#190703;--ac-bg1:#241009;--th-bg:radial-gradient(1000px 700px at 85% -10%,rgba(122,70,224,.28),transparent 60%),radial-gradient(900px 650px at -10% 20%,rgba(232,86,6,.28),transparent 55%),linear-gradient(180deg,#190703,#241009 40%,#140502 100%);--th-accent:#e85606;--th-accent2:#7a46e0;--th-glow:rgba(232,86,6,.17);--th-glow2:rgba(122,70,224,.14)}
-
-/* Plain - the dark background, no colour. */
-html[data-theme="plain"] .th-blob{opacity:0!important;animation:none!important}
-html[data-theme="plain"]{--th-bg:linear-gradient(180deg,#07080f 0%,#0a0b13 100%)}
-
-/* Pure black behind the page, for OLED screens. A layer on top of
-   whatever theme is on, not a theme of its own. */
-html[data-oled="1"] body{background:#000!important}
-html[data-oled="1"] .th-blob{opacity:.1!important}
-html[data-oled="1"] .app-deco,
-html[data-oled="1"] #th-aura{opacity:.35}
-
 /* Moving colours off - the circles hold still. */
 html[data-motion="still"] .th-blob{animation:none!important}
 
-/* The member-picked accent. The settings page and anything reading
-   var(--accent) follow it; the vault's own gold stays the identity. */
+/* ---- Moving cover-accent gradients ----------------------------------
+   The sheets and the WRLD Deck paint a gradient built from the current
+   cover's two accent hues. When Moving colours is on, that gradient
+   itself pans - slowly, like the page circles behind it. Off, it holds. */
+.thw-moving-gradient{
+  animation:thw-gradient-pan 17s ease-in-out infinite alternate;
+  background-size:170% 170%,170% 170%,160% 160%,100% 100%;
+}
+.deck-cover-wash.thw-moving-gradient{
+  background-size:170% 170%,160% 160%;
+}
+@keyframes thw-gradient-pan{
+  0%{background-position:0% 0%,100% 100%,0% 20%,0 0}
+  50%{background-position:55% 45%,45% 55%,80% 35%,0 0}
+  100%{background-position:100% 90%,0% 10%,100% 55%,0 0}
+}
+html[data-motion="still"] .thw-moving-gradient{animation:none!important}
+@media (prefers-reduced-motion:reduce){.thw-moving-gradient{animation:none!important}}
+
+/* The deck's own wash - a soft cover-tinted glow behind the bar. */
+.deck-cover-wash{position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;opacity:0;transition:opacity .5s ease}
+.deck-cover-wash.on{opacity:1}
+#deck-player .deck-inner{position:relative;z-index:1}
+
+/* A constant, not a setting - the accent picker is gone; the account surfaces
+   read this one value. */
 html{--accent:#b7a3ff;--accent-hover:#d0c2ff;--accent-ink:#171029}
-@media (prefers-reduced-motion:reduce){html[data-theme="plain"] .th-blob{animation:none!important}}

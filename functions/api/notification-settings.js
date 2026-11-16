@@ -41,6 +41,9 @@ const COLUMNS = [
   "in_site",
   "push",
   "message_previews",
+  "announcements",
+  "suggestions",
+  "comment_replies",
 ];
 
 export async function onRequest(context) {

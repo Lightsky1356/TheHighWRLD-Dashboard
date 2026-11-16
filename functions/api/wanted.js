@@ -2,7 +2,7 @@ import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
 import { banRejection } from "../_lib/bans.js";
 import { moderateContent } from "../_lib/automod.js";
 import { evaluateSurfaceRules, recordRuleFlags } from "../_lib/submissionRules.js";
-import { notificationsEnabled } from "../_lib/notifications.js";
+import { createNotification } from "../_lib/notifications.js";
 
 const OWNER_DISCORD_ID_DEFAULT = "1016529053659967629";
 
@@ -291,48 +291,20 @@ export async function onRequestPost(context) {
             "SELECT site_uid FROM discord_links WHERE discord_id = ?"
           ).bind(parentAuthorId).first();
           if (target && target.site_uid && target.site_uid !== user) {
-            /* This writes the LEGACY notifications row, not
-               community_notifications, so it used to bypass
-               user_privacy.notifications_enabled entirely - the exact bug the
-               shared helper exists to prevent. A user who turned notifications
-               off still got every Wanted Vault reply.
-
-               The legacy row is kept deliberately rather than migrated: it
-               carries track_id, which community_notifications has no column for
-               and which the client needs to navigate to the right track.
-
-               Self-notifications are already excluded above by target.site_uid !==
-               user. */
-            if (await notificationsEnabled(db, target.site_uid)) {
-              const msgText = link.display_name + " replied to your comment on " + String(track).slice(0, 80);
-              const n = await db.prepare(
-                "INSERT INTO notifications (uid, type, message, track_id, reply_id, actor) VALUES (?, 'reply', ?, ?, ?, ?)"
-              ).bind(
-                target.site_uid,
-                msgText,
-                String(track).slice(0, 80),
-                replyId,
-                link.display_name
-              ).run();
-              await hubBroadcast(env, {
-                type: "notification:created",
-                // private routes the event to the recipient's own hub connection
-                // only. Without it the broadcast carried no recipient scoping.
-                private: true,
-                recipientUid: target.site_uid,
-                notification: {
-                  // No `id` here. It is a legacy notifications row id, and the
-                  // client treats notification.id as a community_notifications
-                  // id - so echoing it here made mark-as-read target the wrong
-                  // row. The client refetches on this event, so it is not needed.
-                  type: "reply",
-                  message: msgText,
-                  track_id: String(track).slice(0, 80),
-                  reply_id: replyId,
-                  actor: link.display_name,
-                },
-              });
-            }
+            /* Through the shared helper like everything else: previews off
+               strips the text, the Wanted Vault replies bubble decides
+               delivery, and the push is dispatched from inside it. The
+               track_id column carries what the bell needs to open the
+               right card. Self-notifications are excluded by the helper. */
+            const msgText = link.display_name + " replied to your comment on " + String(track).slice(0, 80);
+            await createNotification(db, env, target.site_uid, {
+              type: "wanted_reply",
+              actorUid: user,
+              actorName: link.display_name,
+              message: msgText,
+              trackId: String(track).slice(0, 80),
+              replyId,
+            });
           }
         }
         break;
@@ -387,17 +359,19 @@ export async function onRequestPost(context) {
                 const alreadyVoted = await db.prepare(
                   "SELECT value FROM reply_votes WHERE site_uid = ? AND reply_id = ? AND value = ?"
                 ).bind(user, rid, v).first();
-                if (!alreadyVoted && await notificationsEnabled(db, tgt.site_uid)) {
+                if (!alreadyVoted) {
+                  /* Same path as the reply above: previews off strips the
+                     text, the votes toggle decides delivery, the push rides
+                     along inside the helper. */
                   const label = v === 1 ? "upvoted" : "downvoted";
-                  await db.prepare(
-                    "INSERT INTO notifications (uid, type, message, track_id, reply_id, actor) VALUES (?, 'vote', ?, ?, ?, ?)"
-                  ).bind(
-                    tgt.site_uid,
-                    (link.display_name || "Someone") + " " + label + " your comment on " + String(rr.track_id).slice(0, 80),
-                    String(rr.track_id).slice(0, 80),
-                    rid,
-                    link.display_name || ""
-                  ).run();
+                  await createNotification(db, env, tgt.site_uid, {
+                    type: "vote",
+                    actorUid: user,
+                    actorName: link.display_name || "Someone",
+                    message: (link.display_name || "Someone") + " " + label + " your comment on " + String(rr.track_id).slice(0, 80),
+                    trackId: String(rr.track_id).slice(0, 80),
+                    replyId: rid,
+                  });
                 }
               }
             }

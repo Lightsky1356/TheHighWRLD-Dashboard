@@ -121,8 +121,9 @@
       if (b) b.click();
     });
     add("fa-palette", "Change the theme", "how the site looks", function () {
-      var b = document.getElementById("setTheme");
-      if (b) { b.focus(); b.scrollIntoView({ block: "center" }); }
+      if (window.switchAppPage) window.switchAppPage("account");
+      var nav = document.querySelector('.set-nav-item[data-set-tab="appearance"]');
+      if (nav) nav.click();
     });
     add("fa-right-to-bracket", "Sign in or out", "", function () {
       var b = document.getElementById("navPillAuthBtn") || document.getElementById("nav-account-btn");

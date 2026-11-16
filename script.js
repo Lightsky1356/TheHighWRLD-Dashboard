@@ -511,6 +511,15 @@ window.MATURE_COVERS = [
      a cache-busted "X.png?v=3" are all the same picture - so the reveal set is
      keyed on the bare filename rather than the whole src, otherwise the same
      cover would read as revealed in one part of the UI and blurred in another. */
+  /* The stem of a cover filename with every image extension stripped - the
+     shared rule for "is this the same picture", used by both the flag list and
+     the reveal set, so a reveal made on the full-size art also unblurs its
+     thumbnail and back. */
+  function stemOf(url) {
+    var k = coverKey(url);
+    while (/\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(k)) k = k.replace(/\.(png|jpe?g|webp|gif|bmp|avif)$/i, "");
+    return k;
+  }
   function coverKey(src) {
     var s = String(src || "").split("?")[0].split("#")[0];
     var cut = s.lastIndexOf("/");
@@ -526,7 +535,7 @@ window.MATURE_COVERS = [
       if (raw) {
         var list = JSON.parse(raw);
         if (Object.prototype.toString.call(list) === "[object Array]") {
-          for (var i = 0; i < list.length; i++) { var k = coverKey(list[i]); if (k) _revealed[k] = true; }
+          for (var i = 0; i < list.length; i++) { var k = stemOf(list[i]); if (k) _revealed[k] = true; }
         }
       }
     } catch (e) { /* private mode or corrupt value: start from everything blurred */ }
@@ -536,11 +545,11 @@ window.MATURE_COVERS = [
     /* A guest must not inherit a reveal the same browser recorded while signed
        in, so this reads false even when the cover is in the reveal set. */
     if (isGuest()) return false;
-    return !!revealedSet()[coverKey(src)];
+    return !!revealedSet()[stemOf(src)];
   }
   function setRevealed(src, on) {
     if (isGuest()) return false;
-    var k = coverKey(src);
+    var k = stemOf(src);
     if (!k) return false;
     if (on) revealedSet()[k] = true; else delete revealedSet()[k];
     try { localStorage.setItem(REVEALED_KEY, JSON.stringify(Object.keys(revealedSet()))); } catch (e) {}
@@ -549,12 +558,16 @@ window.MATURE_COVERS = [
   function isFlaggedUrl(url) {
     var list = window.MATURE_COVERS || [];
     if (!url || !list.length) return false;
-    var key = coverKey(url).replace(/\.[a-z0-9]+$/, "");
+    /* stemOf strips every trailing image extension, not just one: the
+       thumbnails are named "Covers/thumbs/64/Fenty.png.webp", and a
+       single-extension strip left "fenty.png", which never matched the list
+       entry "fenty" - so the 64px thumbnails slipped past the blur while the
+       full-size art did not. */
+    var key = stemOf(url);
     if (!key) return false;
     for (var i = 0; i < list.length; i++) {
       if (!list[i]) continue;
-      var stem = coverKey(list[i]).replace(/\.[a-z0-9]+$/, "");
-      if (stem && stem === key) return true;
+      if (stemOf(list[i]) === key) return true;
     }
     return false;
   }
@@ -799,12 +812,12 @@ window.MATURE_COVERS = [
            the lightbox both show it - and revealing one while the other stays
            blurred reads as the setting not having taken. Match them up by
            filename. Cheap: only on an explicit click, and only listed covers. */
-        var key = coverKey(el.getAttribute("src"));
+        var key = stemOf(el.getAttribute("src"));
         if (key) {
           var shown = document.querySelectorAll("img.cov-mature");
           for (var m = 0; m < shown.length; m++) {
             if (shown[m] === el) continue;
-            if (coverKey(shown[m].getAttribute("src")) !== key) continue;
+            if (stemOf(shown[m].getAttribute("src")) !== key) continue;
             shown[m].classList.toggle("revealed", on);
             syncBadge(shown[m], !on);
           }

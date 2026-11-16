@@ -29,7 +29,6 @@ const KNOWN_THEMES = [
   // need to round-trip through the account so they follow a member around.
   "era-jute", "era-aff", "era-hih", "era-jw999", "era-bdm", "era-nd",
   "era-gbgr", "era-wod", "era-drfl", "era-out", "era-post",
-  "pick-999", "pick-ocean", "pick-ember", "pick-forest", "pick-dusk", "plain", "pick-custom",
 ];
 
 /* ---------- Community Themes: the color-slot builder ----------

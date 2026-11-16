@@ -277,6 +277,10 @@
       "radial-gradient(100% 60% at 78% 15%, " + toAlpha(c2, 0.38) + " 0%, transparent 55%)," +
       "radial-gradient(80% 55% at 10% 15%, " + toAlpha(c2, 0.28) + " 0%, transparent 55%)," +
       "linear-gradient(180deg,#17120f 0%,#100d0b 55%,#0b0908 100%)";
+    try {
+      var on = !window.movingColors || window.movingColors();
+      bg.classList.toggle("thw-moving-gradient", !!on);
+    } catch (e) {}
   }
 
   /* ---- chips: the same ones the mobile sheet shows ---- */
@@ -1440,7 +1444,8 @@
       el.style.display = label ? "" : "none";
     });
     qa(ov, "[data-dpl='cover']").forEach(function (img) {
-      var src = t && t.cover ? String(t.cover) : "Juice-WRLD.png";
+      var src = "Juice-WRLD.png";
+      try { if (t && window.wrldCoverFor) src = window.wrldCoverFor(t); else if (t && t.cover) src = String(t.cover); } catch (e) { if (t && t.cover) src = String(t.cover); }
       if (img.getAttribute("src") !== src) img.src = src;
     });
 
@@ -1568,6 +1573,14 @@
 
   window.openDesktopPlayer = open;
   window.closeDesktopPlayer = close;
+  /* Moving colours live: flip the bg animation the moment the toggle does,
+     without waiting for a track change. */
+  try {
+    window.addEventListener("thw:appearance-changed", function () {
+      var ov = document.getElementById(OV);
+      if (ov) { lastBg = null; paintBackground(ov); }
+    });
+  } catch (e) {}
   /* The context menu's "My playlists" opens the sheet straight onto it. */
   window.openDesktopPlaylists = function () {
     open();

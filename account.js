@@ -25,24 +25,7 @@
     if (_earlyTheme) { _themeTarget.setAttribute("data-theme", _earlyTheme); }
     var _earlyAppearance = {};
     try { _earlyAppearance = JSON.parse(localStorage.getItem("wrldPlayerSettings") || "{}"); } catch (e) { _earlyAppearance = {}; }
-    /* A pick-custom theme's two colours live in this browser, so they
-       paint at boot. Clear them for every other slug: the stylesheet
-       wins from then on. */
-    if (_earlyAppearance.oledBlack) _themeTarget.setAttribute("data-oled", "1");
     if (_earlyAppearance.movingColors === false) _themeTarget.setAttribute("data-motion", "still");
-    var _earlyAccentMap = { violet: "#b7a3ff", rose: "#f893bc", red: "#fd736f", amber: "#fcb452", mint: "#6ce5b5", sky: "#71c9fa" };
-    var _earlyAccent = _earlyAppearance.accent && (_earlyAppearance.accent === "custom" ? _earlyAppearance.customAccent : _earlyAccentMap[_earlyAppearance.accent]);
-    if (_earlyAccent) try { _themeTarget.style.setProperty("--accent", _earlyAccent); } catch (e) {}
-    if ((_earlyTheme || "default") === "pick-custom") {
-      var _ct = String(_earlyAppearance.customTop || "#2563eb").toLowerCase();
-      var _cc = String(_earlyAppearance.customCorner || "#0093ac").toLowerCase();
-      _themeTarget.style.setProperty("--th-accent", _ct);
-      _themeTarget.style.setProperty("--th-accent2", _cc);
-      _themeTarget.style.setProperty("--th-bg",
-        "radial-gradient(1000px 700px at 85% -10%, " + _hexRgba(_ct, .30) + ", transparent 60%)," +
-        "radial-gradient(900px 650px at -10% 20%, " + _hexRgba(_cc, .26) + ", transparent 55%)," +
-        "linear-gradient(180deg,#07080f 0%,#0a0b13 100%)");
-    }
   } catch (e) {}
   var _profile = { name: "999_" + uidSuffix, bio: "", status: "Online", avatar: "", banner: "" };
 
@@ -672,6 +655,13 @@ function compactProfileViewHtml(d) {
       return;
     }
     if (n.type === "suggestion") { if (window.switchAppPage) switchAppPage("suggestions"); return; }
+    if (n.type === "comment_reply") {
+      /* The track title rides in the message as '"<title>" — <name> replied…'. */
+      var m = String(n.message || "").match(/^"([^"]{1,160})"/);
+      if (m && window.openSongPage) { try { window.openSongPage(m[1]); return; } catch (e) {} }
+      if (window.switchAppPage) switchAppPage("song");
+      return;
+    }
     if (n.type === "wanted") { if (window.switchAppPage) switchAppPage("wanted"); return; }
     if (n.type === "announcement") return;
     if (n.type === "moderation") return;
@@ -734,7 +724,7 @@ function compactProfileViewHtml(d) {
       window.__commNotifsLoading = false;
       var boot = d && d.notifications ? d.notifications : (Array.isArray(d) ? d : []);
       window.__commNotifs = (boot || []).map(function (n) {
-        return { id: "c" + n.id, type: n.type || "reply", message: n.message, actor: n.actor, ts: n.ts, post_id: n.post_id, reply_id: n.reply_id, read: !!n.read, comm: true };
+        return { id: "c" + n.id, type: n.type || "reply", message: n.message, actor: n.actor, ts: n.ts, post_id: n.post_id, reply_id: n.reply_id, track_id: n.track_id || "", read: !!n.read, comm: true };
       });
       var annBoot = window.THWBootstrap && window.THWBootstrap.from("announcements");
       if (annBoot) window.__annNotifs = annBoot;
@@ -911,7 +901,7 @@ function compactProfileViewHtml(d) {
       return;
     }
     list.innerHTML = rows.slice(0, 40).map(function (n) {
-      var ico = n.type === "reply" ? "fa-comment" : n.type === "mention" ? "fa-at" : n.type === "playlist" ? "fa-list-music" : n.type === "drop" ? "fa-ticket" : n.type === "suggestion" ? "fa-lightbulb" : n.type === "wanted" ? "fa-fire" : n.type === "announcement" ? "fa-bullhorn" : n.type === "appeal" ? "fa-scale-balanced" : n.type === "warning" ? "fa-triangle-exclamation" : n.type === "ban" ? "fa-ban" : n.type === "follow" ? "fa-user-plus" : n.type === "moderation" ? "fa-shield-halved" : n.type === "leak" ? "fa-fire" : n.type === "vote" ? "fa-vote-yea" : "fa-bell";
+      var ico = n.type === "reply" || n.type === "comment_reply" ? "fa-comment" : n.type === "mention" ? "fa-at" : n.type === "playlist" ? "fa-list-music" : n.type === "drop" ? "fa-ticket" : n.type === "suggestion" ? "fa-lightbulb" : n.type === "wanted" ? "fa-fire" : n.type === "announcement" ? "fa-bullhorn" : n.type === "appeal" ? "fa-scale-balanced" : n.type === "warning" ? "fa-triangle-exclamation" : n.type === "ban" ? "fa-ban" : n.type === "follow" ? "fa-user-plus" : n.type === "moderation" ? "fa-shield-halved" : n.type === "leak" ? "fa-fire" : n.type === "vote" ? "fa-vote-yea" : "fa-bell";
       return '<button type="button" class="nav-notif-item' + (n.read ? " read" : " unread") + '" data-nid="' + n.id + '" data-ntype="' + esc(n.type || "") + '" data-actor="' + esc(n.actor_uid || "") + '" data-track="' + esc(n.track_id || "") + '" data-rid="' + (n.reply_id || "") + '" data-post="' + (n.post_id || "") + '"><span class="nni-ico"><i class="fas ' + ico + '"></i></span><span class="nni-main"><span class="nni-txt">' + esc(n.message) + '</span><span class="nni-time">' + esc(relTime(n.ts)) + (n.actor ? " &middot; " + esc(n.actor) : "") + '</span></span>' + (n.read ? "" : '<span class="unread-dot"></span>') +
       /* Close control, inside the row so it travels with it when the list
          re-renders. A span with role=button rather than a nested <button>: the
@@ -1458,7 +1448,6 @@ function compactProfileViewHtml(d) {
    * defaults rather than somebody else's stored answer. */
   var NOTIF_PREF_FIELDS = [
     ["replies", "notifPrefReplies"],
-    ["wanted_replies", "notifPrefWantedReplies"],
     ["mentions", "notifPrefMentions"],
     ["upvotes", "notifPrefUpvotes"],
     ["direct_messages", "notifPrefDirectMessages"],
@@ -1467,6 +1456,12 @@ function compactProfileViewHtml(d) {
     ["push", "notifPrefPush"],
     ["message_previews", "notifPrefPreviews"],
   ];
+  /* The four bubble blocks are the same server record, one tap target each -
+     announcements, Wanted Vault replies, suggestion updates and comment
+     replies. There is no element to read at save time, so they are excluded
+     from the Save Changes handler entirely and saved the moment they are
+     tapped. */
+  var NOTIF_BUBBLE_FIELDS = ["announcements", "wanted_replies", "suggestions", "comment_replies"];
 
   function bindNotificationPrefs() {
     var saveBtn = document.getElementById("notifPrefsSaveBtn");
@@ -1539,6 +1534,66 @@ function compactProfileViewHtml(d) {
           setResult(msg, false);
           toast(msg, "error");
         });
+    });
+  }
+
+  /* The four bubble blocks under "Notify me from". Same server record as the
+     switches, one tap target each: the tap writes the one key it owns, and a
+     refusal puts the bubble back. Optimistic, like a chat app toggle. */
+  function bindNotifBubbles() {
+    var bubbles = document.querySelectorAll(".thw-bubble[data-bubble-pref]");
+    if (!bubbles.length) return;
+
+    function paint(prefs) {
+      if (!prefs) return;
+      bubbles.forEach(function (b) {
+        var key = b.getAttribute("data-bubble-pref");
+        var on = prefs[key] !== 0;
+        b.classList.toggle("is-off", !on);
+        b.setAttribute("aria-checked", on ? "true" : "false");
+        var st = b.querySelector(".thw-bubble-state");
+        if (st) st.textContent = on ? "On" : "Off";
+      });
+    }
+    var take = window.THWBootstrap && window.THWBootstrap.take;
+    var ask = function () {
+      return fetch("/api/notification-settings", { cache: "no-store" })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (d) { return d && d.ok ? d : null; });
+    };
+    (take ? take("notificationSettings", ask) : ask()).then(function (d) {
+      if (d && d.prefs) paint(d.prefs);
+    });
+
+    bubbles.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var key = b.getAttribute("data-bubble-pref");
+        if (!key) return;
+        var nowOn = b.getAttribute("aria-checked") !== "true";
+        var st = b.querySelector(".thw-bubble-state");
+        /* optimistic flip */
+        b.setAttribute("aria-checked", nowOn ? "true" : "false");
+        b.classList.toggle("is-off", !nowOn);
+        if (st) st.textContent = nowOn ? "On" : "Off";
+        var body = {};
+        body[key] = nowOn ? 1 : 0;
+        fetch("/api/notification-settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prefs: body }),
+        })
+          .then(function (r) { return r.json().catch(function () { return null; }); })
+          .then(function (d) {
+            if (d && d.ok && d.prefs) { paint(d.prefs); return; }
+            throw new Error("not_saved");
+          })
+          .catch(function () {
+            b.setAttribute("aria-checked", !nowOn ? "true" : "false");
+            b.classList.toggle("is-off", nowOn);
+            if (st) st.textContent = !nowOn ? "On" : "Off";
+            toast(_tt("notifPrefsFailed", "Couldn't save notification preferences"), "error");
+          });
+      });
     });
   }
 
@@ -1661,7 +1716,12 @@ function compactProfileViewHtml(d) {
        names itself in the toast after it - the OFFER is gated by SEASONAL
        below, never the recognition. */
     ["newyear", "New Year"], ["valentines", "Valentine's Day"], ["stpatricks", "St. Patrick's Day"],
-    ["easter", "Easter"], ["july4", "Fourth of July"], ["halloween", "Halloween"], ["thanksgiving", "Thanksgiving"], ["christmas", "Christmas"]
+    ["easter", "Easter"], ["july4", "Fourth of July"], ["halloween", "Halloween"], ["thanksgiving", "Thanksgiving"], ["christmas", "Christmas"],
+    /* The era themes, named the way their era names itself. */
+    ["era-jute", "JUICED UP THE EP"], ["era-aff", "affliction"], ["era-hih", "Heartbroken In Hollywood 9 9 9"],
+    ["era-jw999", "JuiceWRLD 9 9 9"], ["era-bdm", "BINGEDRINKINGMUSIC"], ["era-nd", "NOTHING'S DIFFERENT </3"],
+    ["era-gbgr", "Goodbye & Good Riddance"], ["era-wod", "WRLD ON DRUGS"], ["era-drfl", "Death Race For Love"],
+    ["era-out", "Outsiders"], ["era-post", "Posthumous"]
   ];
   /* ---------- Seasonal themes ----------
      *
@@ -1735,26 +1795,25 @@ function compactProfileViewHtml(d) {
     return false;
   }
 
-  /* Both pickers carry their options as static markup (they are data-filled,
-     so fillSelect never rebuilds them) - this is the only thing that shows or
-     hides a seasonal one. A theme that is out of season but currently CHOSEN
-     stays listed, so the select can still show what is on and offer a way
-     back to it; it just cannot be picked anywhere it is not already. */
+  /* The Appearance picker renders the seasonal themes as tiles next to the
+     built-ins. The gate lives entirely in the picker: a tile outside its
+     season is shut (unwearable) until its month comes round, and a season
+     the member is already wearing stays pickable all year - a theme chosen
+     in October keeps Halloween on in July, nothing changes silently when
+     the month does. */
   function syncSeasonalThemes(current, now) {
     current = current || document.documentElement.getAttribute("data-theme") || "";
-    var sels = [document.getElementById("setTheme")];
-    for (var s = 0; s < sels.length; s++) {
-      var sel = sels[s];
-      if (!sel) continue;
-      var opts = sel.querySelectorAll("option[data-seasonal]");
-      for (var o = 0; o < opts.length; o++) {
-        var id = opts[o].getAttribute("data-seasonal");
-        var entry = null;
-        for (var e = 0; e < SEASONAL.length; e++) if (SEASONAL[e].id === id) entry = SEASONAL[e];
-        var open = !!entry && (current === id || seasonalOpen(entry, now));
-        opts[o].hidden = !open;
-        opts[o].disabled = !open;
-      }
+    var tiles = document.querySelectorAll("#seasonalThemesPick [data-seasonal-tile]");
+    for (var i = 0; i < tiles.length; i++) {
+      var label = tiles[i];
+      var id = label.getAttribute("data-seasonal-tile");
+      var input = label.querySelector("input[type=radio]");
+      var entry = null;
+      for (var e = 0; e < SEASONAL.length; e++) if (SEASONAL[e].id === id) { entry = SEASONAL[e]; break; }
+      var open = !!entry && (current === id || seasonalOpen(entry, now));
+      if (input) input.disabled = !open;
+      label.classList.toggle("is-shut", !open);
+      label.title = open ? themeName(id) : (themeName(id) + " - out of season right now");
     }
   }
 
@@ -1786,8 +1845,27 @@ function compactProfileViewHtml(d) {
     if (D && D[_lang] && D[_lang][key]) return D[_lang][key];
     return fb;
   }
+  /* The slug ("deep-violet" style value) is what gets stored; the name
+     ("Deep Violet") is what a person recognises. An unknown slug falls back
+     to itself rather than to nothing, so a theme added without updating
+     THEMES still reports which one it picked. */
+  function themeName(slug) {
+    for (var i = 0; i < THEMES.length; i++) if (THEMES[i][0] === slug) return THEMES[i][1];
+    try { if (window.thwThemeNames && window.thwThemeNames[slug]) return window.thwThemeNames[slug]; } catch (e) {}
+    return String(slug || "");
+  }
+  /* Every language has its own template with {name} carried through, so this
+     is one lookup. The literal is a fallback for a language added later
+     without the key - English rather than nothing, which is what the previous
+     two-branch version did by appending the name to the old static
+     "Theme applied" string. */
+  function themeChangedMsg(name) {
+    return _tt("toastThemeChanged", 'Changed theme to "{name}"').replace(/\{name\}/g, name);
+  }
   function applyI18n() {
-    var t = (window.SiteChromeI18N && window.SiteChromeI18N[_lang]) || I18N[_lang] || I18N.en;
+    /* English fills the gaps: a language missing a key shows English rather
+       than the literal word "undefined". */
+    var t = Object.assign({}, I18N.en, I18N[_lang] || {}, (window.SiteChromeI18N && window.SiteChromeI18N[_lang]) || {});
     var map = { t1: "stats", t2: "activity", t3: "notifications", t4: "favorites", t6: "analytics", t7: "downloads", t8: "settings", t9: "security", t10: "danger", t11: "playlists", t12: "owner-panel" };
     Object.keys(map).forEach(function (k) {
       var el = document.getElementById(map[k]);
@@ -1802,8 +1880,6 @@ function compactProfileViewHtml(d) {
   }
   function applyThemeLang() {
     var theme = _data && _data.theme ? _data.theme : (_cachedTheme || "default");
-    var th = document.getElementById("setTheme");
-    if (th) th.value = theme;
     var lg = document.getElementById("setLang");
     if (lg) lg.value = _lang;
     applyTheme(theme);
@@ -1839,8 +1915,6 @@ function compactProfileViewHtml(d) {
     applyMode(mode);
     syncMode(mode);
     try { document.documentElement.lang = lang; } catch (e) {}
-    var th = document.getElementById("setTheme");
-    if (th) th.value = theme;
     var lg = document.getElementById("setLang");
     if (lg) lg.value = lang;
     applyI18n();
@@ -1899,107 +1973,16 @@ function compactProfileViewHtml(d) {
       sel.dataset.filled = "1";
       list.forEach(function (x) { var o = document.createElement("option"); o.value = x[0]; o.textContent = x[1]; sel.appendChild(o); });
     }
-    var th = document.getElementById("setTheme");
     var lg = document.getElementById("setLang");
-    fillSelect(th, THEMES);
     fillSelect(lg, LANGS);
     /* First pass over the static markup: everything out of season is shut
        until an applied theme says otherwise a moment later. */
     syncSeasonalThemes();
-    function syncTheme(v) { if (th) th.value = v; }
     function syncLang(v) { if (lg) lg.value = v; }
 
-    /* The slug ("deep-violet" style value) is what gets stored; the name
-       ("Deep Violet") is what a person recognises. An unknown slug falls back
-       to itself rather than to nothing, so a theme added without updating
-       THEMES still reports which one it picked. Member themes in the pickers
-       carry their real name on their option, so the toast reads the name the
-       author gave - not "u-my-cool-theme". */
-    function themeName(slug) {
-      for (var i = 0; i < THEMES.length; i++) if (THEMES[i][0] === slug) return THEMES[i][1];
-      try {
-        var opt = document.querySelector('#setTheme option[value="' + slug + '"]');
-        if (opt && opt.textContent) return opt.textContent;
-      } catch (e) {}
-      return String(slug || "");
-    }
-
-    /* Every language has its own template with {name} carried through, so this
-       is one lookup. The literal is a fallback for a language added later
-       without the key - English rather than nothing, which is what the previous
-       two-branch version did by appending the name to the old static
-       "Theme applied" string. That key has since been removed from all 27
-       blocks, and was left out of this comment's wording on purpose so that
-       grepping for it comes back empty. */
-    function themeChangedMsg(name) {
-      return _tt("toastThemeChanged", 'Changed theme to "{name}"').replace(/\{name\}/g, name);
-    }
-
-    function bindThemeSel(sel) {
-      if (!sel) return;
-      sel.addEventListener("change", function () {
-        var v = sel.value;
-        /* Every theme switch - the picker, a seasonal row, a Community
-           gallery row - funnels through here (Wear sets the select and
-           fires change), so this is where "what the member was wearing
-           before" is put away. thwPrevTheme hands it out for the Community
-           Themes page's go-back chip. */
-        var wasWearing = document.documentElement.getAttribute("data-theme") || "";
-        if (wasWearing && wasWearing !== v) {
-          try { localStorage.setItem("thwPrevTheme", wasWearing); } catch (_) {}
-        }
-        /* The Community Themes page listens for this and re-renders its
-           wear-back chip at once, instead of waiting for the next gallery
-           refresh. */
-        document.dispatchEvent(new CustomEvent("thw-theme-change", {
-          detail: { from: wasWearing, to: v },
-        }));
-        /* Member themes load their generated sheet before or with the paint. */
-        ensureMemberThemeCss(v);
-        /* Captured before applyTheme, so a failed save has something to go back
-           to. */
-        var prev = _themeTarget.getAttribute("data-theme") || "default";
-        var name = themeName(v);
-        var failMsg = _tt("toastThemeFailed", "Couldn't save theme");
-
-        applyTheme(v);
-        syncTheme(v);
-        try { if (window.thwAppearanceThemeApplied) window.thwAppearanceThemeApplied(v); } catch (e) {}
-
-        /* Signed in: this is your account's theme and it lives on the server.
-           Only a guest (no account) changes the device theme. */
-        if (isSignedInNow()) {
-          /* The theme is already on screen because it is local CSS, but for an
-             account it is not real until the server has it. So the confirmation
-             waits for the save rather than claiming success up front, and a
-             failed save puts the old theme back - otherwise the page and the
-             account disagree and the change silently vanishes on next load.
-
-             api() does not reject on HTTP errors; it hands back the parsed
-             body, so success is read off the payload rather than from a
-             rejection. */
-          api({ action: "saveTheme", theme: v }).then(function (d) {
-            if (d && d.ok) { loadAccountNow(); toast(themeChangedMsg(name), "success"); return; }
-            applyTheme(prev); syncTheme(prev);
-            toast(failMsg, "error");
-          }).catch(function () {
-            applyTheme(prev); syncTheme(prev);
-            toast(failMsg, "error");
-          });
-          return;
-        }
-
-        try {
-          localStorage.setItem("wantedTheme", v);
-          toast(themeChangedMsg(name), "success");
-        } catch (e) {
-          /* Private mode, storage disabled, quota - the theme is on screen but
-             will not survive a reload, so say so and put it back. */
-          applyTheme(prev); syncTheme(prev);
-          toast(failMsg, "error");
-        }
-      });
-    }
+    /* Picking is done by the appearance tiles - the handler lives in
+       applyAppearanceThemeValue(), which owns saving, toasts and the
+       go-back snapshot, exactly as the select's change handler used to. */
     function bindLangSel(sel) {
       if (!sel) return;
       sel.addEventListener("change", function () {
@@ -2164,28 +2147,30 @@ function compactProfileViewHtml(d) {
       return cell;
     }
 
-    /* Two hosts show the same seasonal list: the modal opened by the ⓘ
-       button and the block under the Appearance grid. One fill keeps them
-       identical. */
+    /* The ⓘ under the seasonal tiles opens the story panel: what each one
+       IS, its window this year and whether it is on right now - because a
+       member cannot pick a season that is not on, and for most of the year
+       cannot see that Halloween exists at all. */
     function fillSeasonalInfo() {
-      var hosts = document.querySelectorAll("#seasonal-themes-list, #seasonal-themes-block");
-      for (var h = 0; h < hosts.length; h++) {
-        hosts[h].textContent = "";
-        for (var i = 0; i < SEASONAL.length; i++) {
-          var entry = SEASONAL[i];
-          hosts[h].appendChild(themeRow(entry.id, {
-            about: entry.about,
-            when: seasonWindow(entry),
-            status: seasonStatus(entry),
-            open: seasonalOpen(entry),
-            history: entry.history,
-          }));
-        }
+      var host = document.getElementById("seasonal-themes-list");
+      if (!host) return;
+      host.textContent = "";
+      for (var i = 0; i < SEASONAL.length; i++) {
+        var entry = SEASONAL[i];
+        host.appendChild(themeRow(entry.id, {
+          about: entry.about,
+          when: seasonWindow(entry),
+          status: seasonStatus(entry),
+          open: seasonalOpen(entry),
+          history: entry.history,
+        }));
       }
     }
-    document.querySelectorAll(".thw-theme-info").forEach(function (btn) {
+    (function () {
+      var btn = document.getElementById("seasonalThemesInfo");
+      if (!btn) return;
       btn.addEventListener("click", function () { fillSeasonalInfo(); openModal("seasonalThemesModal"); });
-    });
+    })();
 
     /* The panel behind a row's ⓘ: the holiday's picture, when its season
        runs, a word on its look and the fuller story. A season that is on
@@ -2243,33 +2228,8 @@ function compactProfileViewHtml(d) {
       openModal("seasonalHistoryModal");
     }
 
-    /* The Account Settings block folds so the grid stays at the top when a
-       member is not browsing seasons. The choice is remembered. */
-    var SEASONAL_BLOCK_KEY = "thwSeasonalBlock";
-    function applySeasonalFold() {
-      var blk = document.getElementById("seasonalBlock");
-      var btn = document.getElementById("seasonalFold");
-      if (!blk || !btn) return;
-      var folded = "";
-      try { folded = localStorage.getItem(SEASONAL_BLOCK_KEY) || ""; } catch (_) {}
-      var isFolded = folded === "folded";
-      blk.classList.toggle("folded", isFolded);
-      btn.setAttribute("aria-expanded", isFolded ? "false" : "true");
-    }
-    (function () {
-      var btn = document.getElementById("seasonalFold");
-      var blk = document.getElementById("seasonalBlock");
-      if (!btn || !blk) return;
-      applySeasonalFold();
-      fillSeasonalInfo();
-      btn.addEventListener("click", function () {
-        var folded = "";
-        try { folded = localStorage.getItem(SEASONAL_BLOCK_KEY) || ""; } catch (_) {}
-        folded = folded === "folded" ? "open" : "folded";
-        try { localStorage.setItem(SEASONAL_BLOCK_KEY, folded); } catch (_) {}
-        applySeasonalFold();
-      });
-    })();
+    /* Pre-fill the modal once, so the ⓘ opens onto a ready list. */
+    fillSeasonalInfo();
 
     /* A switch to turn the decals off - snow is charming until it is not.
        effects.js owns the layer; this only remembers the choice and tells it
@@ -2292,18 +2252,20 @@ function compactProfileViewHtml(d) {
       });
     })();
 
-    /* Wearing a theme from a panel or page IS picking it in the select: the
-       option is set and its change event fired, so saving, toasting and
-       syncing stay in the one handler that already does all three. */
+    /* Wearing a theme from a panel IS picking its tile: check the input and
+       fire change, so saving, toasting and syncing stay in the one handler
+       that does all three - applyAppearanceThemeValue(). */
     function wearFromList(id) {
-      var sel = document.getElementById("setTheme");
-      if (!sel) return;
-      var opt = sel.querySelector('option[value="' + id + '"]');
-      /* Out of season or unknown to the picker: not wearable, whatever built
-         the list. */
-      if (!opt || opt.disabled) return;
-      sel.value = id;
-      sel.dispatchEvent(new Event("change"));
+      var tile = document.querySelector('input[name="appearanceTheme"][value="' + id + '"]');
+      if (tile) {
+        if (tile.disabled) return;
+        tile.checked = true;
+        tile.dispatchEvent(new Event("change"));
+      } else {
+        /* A member (u-slug) theme has no tile: wear it the same way Auto
+           wears - apply, save, toast and remember - through the same path. */
+        applyAppearanceThemeValue(id);
+      }
       closeModal("seasonalThemesModal");
       /* Wearing from the holiday's own panel closes that panel too. */
       closeModal("seasonalHistoryModal");
@@ -2316,10 +2278,8 @@ function compactProfileViewHtml(d) {
       try { return localStorage.getItem("thwPrevTheme") || ""; } catch (_) { return ""; }
     };
 
-    bindThemeSel(th);
     bindModeSel(document.getElementById("setMode"));
     bindLangSel(lg);
-    syncTheme(_data && _data.theme ? _data.theme : (_cachedTheme || "default"));
     syncLang(_lang);
   }
 
@@ -3001,7 +2961,7 @@ function compactProfileViewHtml(d) {
         persistProfile();
         if (window.__pv2ApplyLive) window.__pv2ApplyLive({ avatar: "" });
         fillDrpPreview();
-        toast("Picture removed", "info");
+        toast(_tt("toastPictureRemoved", "Picture removed"), "info");
       });
 
       /* Privacy switches */
@@ -3010,8 +2970,8 @@ function compactProfileViewHtml(d) {
         var next = !pp.classList.contains("on");
         _setSwitch(pp, next);
         postPrivacy({ show_profile: next ? 1 : 0 }).then(function (d) {
-          if (!d || d.ok === false) { _setSwitch(pp, !next); toast("Could not save that", "error"); return; }
-          toast(next ? "Your profile is public" : "Your profile is private", "success");
+          if (!d || d.ok === false) { _setSwitch(pp, !next); toast(_tt("toastSaveFailed", "Could not save that"), "error"); return; }
+          toast(_tt(next ? "toastProfilePublic" : "toastProfilePrivate", next ? "Your profile is public" : "Your profile is private"), "success");
         });
       });
       var pl = document.getElementById("mShowListening");
@@ -3019,8 +2979,8 @@ function compactProfileViewHtml(d) {
         var next = !pl.classList.contains("on");
         _setSwitch(pl, next);
         postPrivacy({ show_activity: next ? 1 : 0 }).then(function (d) {
-          if (!d || d.ok === false) { _setSwitch(pl, !next); toast("Could not save that", "error"); return; }
-          toast(next ? "Listening activity visible" : "Listening activity hidden", "success");
+          if (!d || d.ok === false) { _setSwitch(pl, !next); toast(_tt("toastSaveFailed", "Could not save that"), "error"); return; }
+          toast(_tt(next ? "toastListeningVisible" : "toastListeningHidden", next ? "Listening activity visible" : "Listening activity hidden"), "success");
         });
       });
 
@@ -3040,16 +3000,16 @@ function compactProfileViewHtml(d) {
       if (linkSave && linkUrl) {
         linkSave.addEventListener("click", function () {
           var value = linkUrl.value.trim();
-          if (!value) { toast("Type a link first", "info"); return; }
+          if (!value) { toast(_tt("toastTypeLinkFirst", "Type a link first"), "info"); return; }
           var platform = _detectPlatform(value);
           fetch("/api/profile", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update_social", platform: platform, value: value }) })
             .then(function (r) { return r.json(); })
             .then(function (d) {
-              if (!d || !d.ok) { toast((d && d.error) || "Could not save link", "error"); return; }
+              if (!d || !d.ok) { toast((d && d.error) || _tt("toastSaveFailed", "Could not save that"), "error"); return; }
               linkUrl.value = "";
               renderEditSocials();
-              toast("Link saved", "success");
-            }).catch(function () { toast("Could not save link", "error"); });
+              toast(_tt("toastLinkSaved", "Link saved"), "success");
+            }).catch(function () { toast(_tt("toastSaveFailed", "Could not save that"), "error"); });
         });
       }
       var list = document.getElementById("mLinkList");
@@ -3063,7 +3023,7 @@ function compactProfileViewHtml(d) {
       });
 
       /* Profile theme dropdown */
-      var EDIT_THEMES = [["default", "Default"], ["violet", "Violet"], ["embers", "Embers"], ["obsidian", "Obsidian"], ["aurora", "Aurora"], ["ocean", "Ocean"], ["forest", "Forest"], ["sakura", "Sakura"], ["royal", "Royal"], ["neon", "Neon"], ["blood", "Blood"], ["storm", "Storm"], ["sunset", "Sunset"], ["ice", "Ice"], ["matrix", "Matrix"], ["gold", "Gold"], ["midnight", "Midnight"], ["pick-999", "999 (signature)"], ["pick-ocean", "Ocean (signature)"], ["pick-ember", "Ember (signature)"], ["pick-forest", "Forest (signature)"], ["pick-dusk", "Dusk (signature)"], ["oled", "OLED black"], ["ultraviolet", "Ultraviolet"]];
+      var EDIT_THEMES = THEMES;
       var themeSel = document.getElementById("mThemeSelect");
       if (themeSel && !themeSel.dataset.built) {
         themeSel.dataset.built = "1";
@@ -3076,8 +3036,9 @@ function compactProfileViewHtml(d) {
           try { localStorage.setItem("wantedTheme", v); } catch (e) {}
           try { applyTheme(v); } catch (e) {}
           try { ensureMemberThemeCss(v); } catch (e) {}
+          try { if (window.thwAppearanceThemeApplied) window.thwAppearanceThemeApplied(v); } catch (e) {}
           api({ action: "saveTheme", theme: v });
-          toast("Theme set to " + v, "success");
+          toast(_tt("toastThemeChanged", 'Changed theme to "{name}"').replace(/\{name\}/g, themeName(v)), "success");
         });
       }
 
@@ -3170,12 +3131,12 @@ function compactProfileViewHtml(d) {
       if (bannerFile) bannerFile.addEventListener("change", function () {
         var file = bannerFile.files && bannerFile.files[0];
         if (!file) return;
-        if (!/^image\//.test(file.type)) { toast("That's not an image", "error"); return; }
-        if (file.size > 6 * 1024 * 1024) { toast("Image is too large - keep it under 6 MB", "error"); return; }
+        if (!/^image\//.test(file.type)) { toast(_tt("toastImageNotImage", "That's not an image"), "error"); return; }
+        if (file.size > 6 * 1024 * 1024) { toast(_tt("toastImageTooLarge", "Image is too large - keep it under 6 MB"), "error"); return; }
         fileToDataURL(file, 1600, 500, function (url) {
           if (url.length > 285000) {
             fileToDataURL(file, 1100, 340, function (smaller) {
-              if (smaller.length > 285000) { toast("That image is too heavy even after downscaling - try a smaller one", "error"); return; }
+              if (smaller.length > 285000) { toast(_tt("toastImageTooHeavy", "That image is too heavy even after downscaling - try a smaller one"), "error"); return; }
               _applyBannerDataUrl(smaller);
             });
             return;
@@ -3639,99 +3600,77 @@ window.profileSectionShown = function () {
   function hexOk(s) { return /^#[0-9a-fA-F]{6}$/.test(String(s || "").trim()); }
   function settingsGet(k, d) { try { var v = window.wrldPlayerSettings && window.wrldPlayerSettings.get(k); return v === undefined ? d : v; } catch (e) { return d; } }
   function settingsSet(k, v) { try { window.wrldPlayerSettings && window.wrldPlayerSettings.set(k, v); } catch (e) {} }
-  var ACCENT_HEX = { violet: "#b7a3ff", rose: "#f893bc", red: "#fd736f", amber: "#fcb452", mint: "#6ce5b5", sky: "#71c9fa" };
 
-  function applyAccentChoice(showToast) {
-    var choice = settingsGet("accent", "violet");
-    var hex = choice === "custom" ? String(settingsGet("customAccent", "#b7a3ff")).toLowerCase() : (ACCENT_HEX[choice] || ACCENT_HEX.violet);
-    try { document.documentElement.style.setProperty("--accent", hex); } catch (e) {}
-    var row = document.getElementById("customAccentRow");
-    if (row) row.hidden = choice !== "custom";
-    var sw = document.getElementById("accentSwatch");
-    if (sw) sw.style.backgroundColor = hex;
-    var hx = document.getElementById("accentHex");
-    if (hx && document.activeElement !== hx) hx.value = hex.toUpperCase();
-    var cp = document.getElementById("accentPick");
-    if (cp) cp.value = hex;
-    document.querySelectorAll('input[name="appearanceAccent"]').forEach(function (r) {
-      r.checked = r.value === choice;
-    });
-  }
-
-  function applyCustomColours() {
-    var topInput = document.getElementById("pickTop");
-    var cornerInput = document.getElementById("pickCorner");
-    var t = String((topInput && topInput.value) || settingsGet("customTop", "#2563eb")).toLowerCase();
-    var c = String((cornerInput && cornerInput.value) || settingsGet("customCorner", "#0093ac")).toLowerCase();
-    if (!hexOk(t)) t = "#2563eb";
-    if (!hexOk(c)) c = "#0093ac";
-    settingsSet("customTop", t);
-    settingsSet("customCorner", c);
-    var swT = document.getElementById("pickTopSwatch"); if (swT) swT.style.backgroundColor = t;
-    var swC = document.getElementById("pickCornerSwatch"); if (swC) swC.style.backgroundColor = c;
-    var hxT = document.getElementById("pickTopHex"); if (hxT && document.activeElement !== hxT) hxT.value = t.toUpperCase();
-    var hxC = document.getElementById("pickCornerHex"); if (hxC && document.activeElement !== hxC) hxC.value = c.toUpperCase();
-    if (topInput) topInput.value = t;
-    if (cornerInput) cornerInput.value = c;
-    if ((document.documentElement.getAttribute("data-theme") || "default") === "pick-custom") {
-      var H = document.documentElement;
-      H.style.setProperty("--th-accent", t);
-      H.style.setProperty("--th-accent2", c);
-      H.style.setProperty("--th-bg",
-        "radial-gradient(1000px 700px at 85% -10%, " + _hexRgba(t, .30) + ", transparent 60%)," +
-        "radial-gradient(900px 650px at -10% 20%, " + _hexRgba(c, .26) + ", transparent 55%)," +
-        "linear-gradient(180deg,#07080f 0%,#0a0b13 100%)");
-    }
-  }
-
-  /* Keep the pick-it-your-own colours paired: editing them selects the
-     Custom tile, and the Custom tile reopens them. */
-  function switchToCustomTheme() {
-    var cur = document.documentElement.getAttribute("data-theme") || "";
-    if (cur === "pick-custom") { applyCustomColours(); return; }
-    applyAppearanceThemeValue("pick-custom");
-  }
 
   function applyAppearanceThemeValue(v) {
-    var sel = document.getElementById("setTheme");
-    var prev = document.documentElement.getAttribute("data-theme") || "default";
+    var wanted = v === "auto" ? "default" : v;
+    var wasWearing = document.documentElement.getAttribute("data-theme") || "";
+    if (wasWearing && wasWearing !== wanted) {
+      /* One path for picking: the tile, a seasonal tile, the go-back chip.
+         thwPrevTheme hands out what the member was wearing before. */
+      try { localStorage.setItem("thwPrevTheme", wasWearing); } catch (_) {}
+    }
+    document.dispatchEvent(new CustomEvent("thw-theme-change", {
+      detail: { from: wasWearing, to: wanted },
+    }));
+    /* Member themes load their generated sheet before or with the paint. */
+    ensureMemberThemeCss(wanted);
     document.documentElement.style.removeProperty("--th-bg");
     document.documentElement.style.removeProperty("--th-accent");
     document.documentElement.style.removeProperty("--th-accent2");
-    var wanted = v === "auto" ? "default" : v;
-    if (sel) {
-      /* a stale temp option from a previous custom pick is dropped first */
-      Array.prototype.slice.call(sel.querySelectorAll("option[data-temp]")).forEach(function (o) { o.remove(); });
-      var exists = sel.querySelector('option[value="' + wanted + '"]');
-      if (!exists) {
-        var o = document.createElement("option");
-        o.value = wanted; o.textContent = "Custom theme"; o.dataset.temp = "1";
-        sel.appendChild(o);
-      }
-      sel.value = wanted;
-      sel.dispatchEvent(new Event("change"));
-    } else {
-      document.documentElement.setAttribute("data-theme", wanted);
-      document.body.setAttribute("data-theme", wanted);
-      if (window.thwAppearanceThemeApplied) window.thwAppearanceThemeApplied(wanted);
+    var prev = _themeTarget.getAttribute("data-theme") || "default";
+    var name = themeName(wanted);
+    var failMsg = _tt("toastThemeFailed", "Couldn't save theme");
+
+    applyTheme(wanted);
+    try { if (window.thwAppearanceThemeApplied) window.thwAppearanceThemeApplied(wanted); } catch (e) {}
+    syncSeasonalThemes(wanted);
+
+    /* Signed in: this is your account's theme and it lives on the server.
+       Only a guest (no account) changes the device theme. */
+    if (isSignedInNow()) {
+      /* The theme is already on screen because it is local CSS, but for an
+         account it is not real until the server has it. So the confirmation
+         waits for the save rather than claiming success up front, and a
+         failed save puts the old theme back - otherwise the page and the
+         account disagree and the change silently vanishes on next load. */
+      api({ action: "saveTheme", theme: wanted }).then(function (d) {
+        if (d && d.ok) { loadAccountNow(); toast(themeChangedMsg(name), "success"); return; }
+        applyTheme(prev); syncSeasonalThemes(prev);
+        try { if (window.thwAppearanceThemeApplied) window.thwAppearanceThemeApplied(prev); } catch (e) {}
+        toast(failMsg, "error");
+      }).catch(function () {
+        applyTheme(prev); syncSeasonalThemes(prev);
+        try { if (window.thwAppearanceThemeApplied) window.thwAppearanceThemeApplied(prev); } catch (e) {}
+        toast(failMsg, "error");
+      });
+      return prev;
     }
-    if (wanted === "pick-custom") setTimeout(applyCustomColours, 0);
+
+    try {
+      localStorage.setItem("wantedTheme", wanted);
+      toast(themeChangedMsg(name), "success");
+    } catch (e) {
+      /* Private mode, storage disabled, quota - the theme is on screen but
+         will not survive a reload, so say so and put it back. */
+      applyTheme(prev); syncSeasonalThemes(prev);
+      try { if (window.thwAppearanceThemeApplied) window.thwAppearanceThemeApplied(prev); } catch (e) {}
+      toast(failMsg, "error");
+    }
     return prev;
   }
 
-  /* Select is the source of truth for saving; tiles and the select mirror. */
+  /* Tiles are the source of truth; this mirrors the worn theme onto them. */
   window.thwAppearanceThemeApplied = function (v) {
-    if (v !== "pick-custom") {
-      document.documentElement.style.removeProperty("--th-bg");
-      document.documentElement.style.removeProperty("--th-accent");
-      document.documentElement.style.removeProperty("--th-accent2");
-    }
+    document.documentElement.style.removeProperty("--th-bg");
+    document.documentElement.style.removeProperty("--th-accent");
+    document.documentElement.style.removeProperty("--th-accent2");
     /* The playing song only drives the page under Auto ("default"). */
     try { if (window.thwPaintAmbientSync) window.thwPaintAmbientSync(v); } catch (e) {}
-    /* Tiles express: Auto / Plain / era / pick-* / custom. A built-in theme
-       wearing the page (aurora and friends) reads as Auto - it is the page's
-       own colours, which is what the Auto definition says. */
-    var picks = "auto plain era-jute era-aff era-hih era-jw999 era-bdm era-nd era-gbgr era-wod era-drfl era-out era-post pick-999 pick-ocean pick-ember pick-forest pick-dusk pick-custom".split(" ");
+    /* Tiles express: Auto / era / seasonal / the 32 built-ins. A built-in
+       theme wearing the page (aurora and friends) reads as Auto - it is the
+       page's own colours, which is what the Auto definition says. */
+    var picks = "auto era-jute era-aff era-hih era-jw999 era-bdm era-nd era-gbgr era-wod era-drfl era-out era-post default violet embers obsidian aurora sakura ocean royal neon blood storm forest sunset ice candy matrix cyber gold galaxy lava toxic rose oled ultraviolet pharaoh dragon mint tangerine grape pumpkin silver midnight newyear valentines stpatricks easter july4 halloween thanksgiving christmas".split(" ");
     document.querySelectorAll('input[name="appearanceTheme"]').forEach(function (r) {
       r.checked = (r.value === v) || (v === "default" && r.value === "auto") || (picks.indexOf(v) === -1 && r.value === "auto");
     });
@@ -3743,57 +3682,6 @@ window.profileSectionShown = function () {
       radio.addEventListener("change", function () { applyAppearanceThemeValue(this.value); });
     });
 
-    document.querySelectorAll('input[name="appearanceAccent"]').forEach(function (r) {
-      r.addEventListener("change", function () {
-        settingsSet("accent", this.value);
-        applyAccentChoice(true);
-      });
-    });
-    var accentPick = document.getElementById("accentPick");
-    if (accentPick) accentPick.addEventListener("input", function () {
-      settingsSet("customAccent", String(this.value).toLowerCase());
-      var hex = document.getElementById("accentHex");
-      if (hex) hex.value = String(this.value).toUpperCase();
-      applyAccentChoice(false);
-    });
-    var accentHex = document.getElementById("accentHex");
-    if (accentHex) accentHex.addEventListener("input", function () {
-      var v = String(this.value || "").trim();
-      if (!hexOk(v)) return;
-      settingsSet("customAccent", v.toLowerCase());
-      applyAccentChoice(false);
-    });
-
-    var topColor = document.getElementById("pickTop");
-    if (topColor) topColor.addEventListener("input", function () { settingsSet("customTop", String(this.value).toLowerCase()); switchToCustomTheme(); });
-    var cornerColor = document.getElementById("pickCorner");
-    if (cornerColor) cornerColor.addEventListener("input", function () { settingsSet("customCorner", String(this.value).toLowerCase()); switchToCustomTheme(); });
-    var topHex = document.getElementById("pickTopHex");
-    if (topHex) topHex.addEventListener("input", function () {
-      var v = String(this.value || "").trim();
-      if (!hexOk(v)) return;
-      settingsSet("customTop", v.toLowerCase());
-      var p = document.getElementById("pickTop"); if (p) p.value = v.toLowerCase();
-      switchToCustomTheme();
-    });
-    var cornerHex = document.getElementById("pickCornerHex");
-    if (cornerHex) cornerHex.addEventListener("input", function () {
-      var v = String(this.value || "").trim();
-      if (!hexOk(v)) return;
-      settingsSet("customCorner", v.toLowerCase());
-      var p = document.getElementById("pickCorner"); if (p) p.value = v.toLowerCase();
-      switchToCustomTheme();
-    });
-
-    var black = document.getElementById("appearanceBlack");
-    if (black) {
-      black.checked = !!settingsGet("oledBlack", false);
-      black.addEventListener("change", function () {
-        settingsSet("oledBlack", this.checked);
-        if (this.checked) document.documentElement.setAttribute("data-oled", "1");
-        else document.documentElement.removeAttribute("data-oled");
-      });
-    }
     var motion = document.getElementById("appearanceMotion");
     if (motion) {
       motion.checked = settingsGet("movingColors", true) !== false;
@@ -3811,7 +3699,10 @@ window.profileSectionShown = function () {
     Array.prototype.forEach.call(covers, function (r) {
       r.checked = (r.value === settingsGet("coversPref", "song"));
       r.addEventListener("change", function () {
-        if (this.checked) settingsSet("coversPref", this.value);
+        if (this.checked) {
+          settingsSet("coversPref", this.value);
+          try { window.dispatchEvent(new Event("thw:appearance-changed")); } catch (e) {}
+        }
       });
     });
 
@@ -3820,15 +3711,13 @@ window.profileSectionShown = function () {
       qMode.value = settingsGet("replaceQueue", false) === true ? "replace" : "keep";
       qMode.addEventListener("change", function () {
         settingsSet("replaceQueue", this.value === "replace");
-        toast(this.value === "replace" ? "Picking a song clears the queue" : "Your queue stays when you pick a song", "info", 2200);
+        toast(this.value === "replace" ? _tt("toastQueueCleared", "Picking a song clears the queue") : _tt("toastQueueKept", "Your queue stays when you pick a song"), "info", 2200);
       });
     }
 
-    /* reflect stored prefs into the tile/accent UI */
+    /* reflect stored prefs into the tile UI */
     var cur = document.documentElement.getAttribute("data-theme") || "default";
     window.thwAppearanceThemeApplied(cur);
-    applyAccentChoice(false);
-    applyCustomColours();
     var coversNow = settingsGet("coversPref", "song");
     Array.prototype.forEach.call(document.querySelectorAll('input[name="appearanceCovers"]'), function (r) { r.checked = (r.value === coversNow); });
 
@@ -3901,6 +3790,7 @@ window.profileSectionShown = function () {
   bindThemeLang();
   bindSettingsPanels();
   bindNotificationPrefs();
+  bindNotifBubbles();
   bindAccountActions();
   bindNotifications();
   bindListenTracking();
@@ -4267,6 +4157,8 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
     }
     var els = document.querySelectorAll("[data-signed-in]");
     for (var i = 0; i < els.length; i++) els[i].style.display = signedIn ? "" : "none";
+    var guestNote = document.getElementById("notifGuestBlock");
+    if (guestNote) guestNote.style.display = signedIn ? "none" : "";
     /* Guests have no Profile panel to anchor the active nav entry to. */
     if (!signedIn) {
       var nav = document.querySelector(".set-nav");
@@ -4313,7 +4205,7 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
       try { pbKb.checked = window.wrldPlayerSettings && window.wrldPlayerSettings.get("keyboardShortcuts") !== false; } catch (e) {}
       pbKb.addEventListener("change", function () {
         try { window.wrldPlayerSettings && window.wrldPlayerSettings.set("keyboardShortcuts", this.checked); } catch (e) {}
-        try { if (typeof window.showToast === "function") window.showToast(this.checked ? "Keyboard shortcuts on" : "Keyboard shortcuts off", "success", 1800); } catch (e) {}
+        try { if (typeof window.showToast === "function") window.showToast(this.checked ? _tt("toastShortcutsOn", "Keyboard shortcuts on") : _tt("toastShortcutsOff", "Keyboard shortcuts are off - enable them in Player Settings"), "success", 1800); } catch (e) {}
       });
     }
     /* Autoplay similar songs — when the queue is empty and shuffle is off,
@@ -4323,6 +4215,35 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
       try { pbAuto.checked = !!(window.wrldPlayerSettings && window.wrldPlayerSettings.get("autoplaySimilar")); } catch (e) {}
       pbAuto.addEventListener("change", function () {
         try { window.wrldPlayerSettings && window.wrldPlayerSettings.set("autoplaySimilar", this.checked); } catch (e) {}
+      });
+    }
+    /* Resume where you left off — the player-settings.js module owns the
+       save/restore; here it is just the switch. */
+    var pbResume = document.getElementById("pbResumeToggle");
+    if (pbResume) {
+      try { pbResume.checked = !!(window.wrldPlayerSettings && window.wrldPlayerSettings.get("resumeLast")); } catch (e) {}
+      pbResume.addEventListener("change", function () {
+        try { window.wrldPlayerSettings && window.wrldPlayerSettings.set("resumeLast", this.checked); } catch (e) {}
+        if (window.THWResume && window.THWResume.setEnabled) window.THWResume.setEnabled(this.checked);
+      });
+    }
+    /* Pause the audio when the tab is hidden. */
+    var pbPauseHidden = document.getElementById("pbPauseHiddenToggle");
+    if (pbPauseHidden) {
+      try { pbPauseHidden.checked = !!(window.wrldPlayerSettings && window.wrldPlayerSettings.get("pauseOnHidden")); } catch (e) {}
+      pbPauseHidden.addEventListener("change", function () {
+        try { window.wrldPlayerSettings && window.wrldPlayerSettings.set("pauseOnHidden", this.checked); } catch (e) {}
+        if (window.THWResume && window.THWResume.setPauseOnHidden) window.THWResume.setPauseOnHidden(this.checked);
+      });
+    }
+    /* Playback speed — persisted, and applied at once. */
+    var pbSpeed = document.getElementById("pbSpeedSelect");
+    if (pbSpeed) {
+      try { pbSpeed.value = String((window.wrldPlayerSettings && window.wrldPlayerSettings.get("playbackRate")) || "1"); } catch (e) {}
+      pbSpeed.addEventListener("change", function () {
+        try { window.wrldPlayerSettings && window.wrldPlayerSettings.set("playbackRate", this.value); } catch (e) {}
+        if (window.THWResume && window.THWResume.setRate) window.THWResume.setRate(Number(this.value) || 1);
+        try { if (typeof window.showToast === "function") window.showToast("Playback speed " + this.value + "x", "info", 1500); } catch (e) {}
       });
     }
   }

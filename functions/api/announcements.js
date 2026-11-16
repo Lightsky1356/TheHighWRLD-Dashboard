@@ -1,6 +1,8 @@
 // Site announcements. GET is public (latest 5). POST is owner-gated via
 // OWNER_PASSCODE (same secret as /api/stats?code= and drops).
 
+import { createNotification } from "../_lib/notifications.js";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -12,6 +14,32 @@ function json(data, status = 200) {
     status,
     headers: { "Content-Type": "application/json", ...CORS },
   });
+}
+
+/* When an announcement goes out, every member who leaves announcements on
+   gets one notification - the Announcements bubble in Settings > Notifications
+   is exactly this switch, and createNotification gates on it. Owner-driven and
+   rare, so the fan-out runs in the background and fails open per member; one
+   broken row never blocks the rest. Capped so a growing member list cannot
+   turn an announcement into a push storm - past the cap the banner still
+   reaches everyone. */
+const ANNOUNCEMENT_FANOUT_CAP = 500;
+async function fanoutAnnouncements(env, context, title, message) {
+  const db = env.wanted_vault;
+  try {
+    const members = await db.prepare("SELECT uid FROM users").all();
+    const rows = (members && (members.results || members)) || [];
+    for (const row of rows.slice(0, ANNOUNCEMENT_FANOUT_CAP)) {
+      try {
+        await createNotification(db, env, row.uid, {
+          type: "announcement",
+          actorUid: "",
+          actorName: "TheHighWRLD Dashboard",
+          message: (title ? title + " — " : "") + message,
+        }, context);
+      } catch (_) {}
+    }
+  } catch (_) {}
 }
 
 export async function onRequestOptions() {
@@ -82,6 +110,11 @@ export async function onRequestPost(context) {
     const ins = await context.env.wanted_vault.prepare(
       "INSERT INTO announcements (title, message) VALUES (?, ?)"
     ).bind(title, message).run();
+    /* The bell bump and, for those with push on, the buzz - both gated by the
+       Announcements bubble. Backgrounded; the POST stays fast. */
+    if (typeof context.waitUntil === "function") {
+      context.waitUntil(fanoutAnnouncements(context.env, context, title, message));
+    }
     return json({ ok: true, id: ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0 });
   } catch (err) {
     return json({ ok: false, error: String((err && err.message) || err) }, 500);
@@ -142,6 +175,11 @@ export async function onRequestPut(context) {
 
     const changed = res && res.meta && typeof res.meta.changes === "number" ? res.meta.changes : 0;
     if (!changed) return json({ ok: false, error: "not found" }, 404);
+    /* "Notify again" is an explicit owner choice, so it fans out the same way a
+       fresh announcement does; a quiet edit stays quiet. */
+    if (notify && typeof context.waitUntil === "function") {
+      context.waitUntil(fanoutAnnouncements(context.env, context, title, message));
+    }
     return json({ ok: true, id, notified: notify });
   } catch (err) {
     return json({ ok: false, error: String((err && err.message) || err) }, 500);

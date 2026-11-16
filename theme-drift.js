@@ -30,12 +30,14 @@
     try {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
       /* Moving colours off in Settings > Appearance: the circles still paint,
-         but they never drift. */
+         but they never drift. The early boot code sets data-motion=still on
+         <html> so the choice survives a reload, and this frame-time check
+         picks up a live flip without one. */
+      if (document.documentElement.getAttribute("data-motion") === "still") return false;
       if (window.wrldPlayerSettings && window.wrldPlayerSettings.get("movingColors") === false) return false;
       return true;
     } catch (e) { return true; }
   }
-  if (!motionOk()) return;
 
   /* The pulse takes a circle to 1.2 of its size, and two circles must not
      touch even at their biggest, so that is the size they are treated as.
@@ -102,14 +104,7 @@
     }
   }
 
-  /* The room a circle has to move in. */
-  function bounds(s) {
-    var minX = s.r;
-    var maxX = Math.max(minX, window.innerWidth - s.r);
-    var minY = s.r;
-    var maxY = Math.max(minY, window.innerHeight - s.r);
-    return { minX: minX, maxX: maxX, minY: minY, maxY: maxY };
-  }
+
 
   /* PERFORMANCE: the drift stops while the page is busy.
    *
@@ -132,6 +127,7 @@
 
   function frame(now) {
     if (!running) return;
+    if (!motionOk()) { running = false; return; }
     var dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
     last = now;
 
@@ -160,11 +156,15 @@
       s.x += s.vx * dt;
       s.y += s.vy * dt;
 
-      var b = bounds(s);
-      if (s.x < b.minX) { s.x = b.minX; s.vx = Math.abs(s.vx); }
-      if (s.x > b.maxX) { s.x = b.maxX; s.vx = -Math.abs(s.vx); }
-      if (s.y < b.minY) { s.y = b.minY; s.vy = Math.abs(s.vy); }
-      if (s.y > b.maxY) { s.y = b.maxY; s.vy = -Math.abs(s.vy); }
+      /* Wrap at the screen edges: a circle that drifts past one edge
+         re-enters from the opposite one. The circle spends a moment fully
+         beyond the edge, so it looks like it slipped out rather than
+         blinked - and because its size clears the edge fully, there is no
+         pop of a half-visible circle. */
+      if (s.x < -s.size) s.x = window.innerWidth + s.size;
+      else if (s.x > window.innerWidth + s.size) s.x = -s.size;
+      if (s.y < -s.size) s.y = window.innerHeight + s.size;
+      else if (s.y > window.innerHeight + s.size) s.y = -s.size;
     }
 
     /* Keep them apart. A few rounds, because moving one can push it into
@@ -199,14 +199,14 @@
           C.vy += uy * push * 4;
         }
       }
-      /* And back inside the screen, after the pushes. */
+      /* Separation can shove a circle past an edge; the same wrap rule
+         applies to a shove as to a drift. */
       for (var e = 0; e < state.length; e++) {
         var S = state[e];
-        var bb = bounds(S);
-        if (S.x < bb.minX) { S.x = bb.minX; S.vx = Math.abs(S.vx); }
-        if (S.x > bb.maxX) { S.x = bb.maxX; S.vx = -Math.abs(S.vx); }
-        if (S.y < bb.minY) { S.y = bb.minY; S.vy = Math.abs(S.vy); }
-        if (S.y > bb.maxY) { S.y = bb.maxY; S.vy = -Math.abs(S.vy); }
+        if (S.x < -S.size) S.x = window.innerWidth + S.size;
+        else if (S.x > window.innerWidth + S.size) S.x = -S.size;
+        if (S.y < -S.size) S.y = window.innerHeight + S.size;
+        else if (S.y > window.innerHeight + S.size) S.y = -S.size;
       }
     }
 
@@ -222,18 +222,24 @@
   }
 
   function start() {
-    if (running || paused()) return;
+    if (running || paused() || !motionOk()) return;
     running = true;
     last = 0;
     requestAnimationFrame(frame);
   }
 
-  /* The class changes when the page starts and stops being busy, and
-     on its own it is enough to start and stop the loop. */
+  /* The theme toggle drives start/stop too - so a flip reaches the circles
+     within the next frame instead of waiting for a reload. */
   if (window.MutationObserver) {
     new MutationObserver(function () {
-      if (paused()) stop(); else start();
-    }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+      if (paused() || !motionOk()) stop(); else start();
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-motion"] });
+  }
+
+  if (window.addEventListener) {
+    window.addEventListener("thw:appearance-changed", function () {
+      if (paused() || !motionOk()) stop(); else start();
+    });
   }
 
   function stop() {
@@ -242,6 +248,26 @@
 
   placeAll();
   start();
+
+  /* The deck pager title changes on every track; under Auto the page
+     should repaint the ambient right then. The account picker already
+     repaints on manual theme changes, this covers the player. */
+  if (window.MutationObserver && window.thwPaintAmbientSync) {
+    var deckTitle = document.getElementById("deck-title");
+    var lastTitle = deckTitle ? deckTitle.textContent : "";
+    if (deckTitle) {
+      var lastTheme = document.documentElement.getAttribute("data-theme") || "default";
+      new MutationObserver(function () {
+        var curTitle = deckTitle.textContent;
+        var curTheme = document.documentElement.getAttribute("data-theme") || "default";
+        if (curTitle === lastTitle && curTheme === lastTheme) return;
+        lastTitle = curTitle; lastTheme = curTheme;
+        if (curTheme === "default") {
+          try { window.thwPaintAmbientSync("default"); } catch (e) {}
+        }
+      }).observe(deckTitle, { childList: true, subtree: true, characterData: true });
+    }
+  }
 
   /* The window changed size: the room they have to move in has changed. */
   var resizeTimer = 0;

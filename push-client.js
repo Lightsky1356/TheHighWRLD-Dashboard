@@ -22,6 +22,17 @@
   var API = "/api/push";
   var state = { mounted: false, publicKey: "", devices: [], loaded: false, tried: false };
 
+  /* Localised strings with English fallback - same contract as account.js. */
+  function _ptT(key, fb) {
+    try {
+      var lang = "en";
+      try { lang = localStorage.getItem("wantedLang") || "en"; } catch (e) {}
+      var D = window.SiteChromeI18N && window.SiteChromeI18N[lang];
+      if (D && D[key]) return D[key];
+    } catch (e) {}
+    return fb;
+  }
+
   function $(sel, root) { return (root || document).querySelector(sel); }
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -190,7 +201,7 @@
     /* iOS gate: without Home Screen installation there is no pushManager to use. */
     if (isIOS() && !isStandalone()) { render(); return; }
     if (!state.publicKey) {
-      toast("Push is not configured on the server yet.", "error");
+      toast(_ptT("toastPushNotConfigured", "Push is not configured on the server yet."), "error");
       return;
     }
 
@@ -198,8 +209,8 @@
     Notification.requestPermission().then(function (perm) {
       if (perm !== "granted") {
         toast(perm === "denied"
-          ? "Notifications are blocked for this site. Re-enable them in your browser settings."
-          : "Notification permission was not granted.", "error");
+          ? _ptT("toastPushBlocked", "Notifications are BLOCKED for TheHighWRLD Dashboard. Re-enable them in your device Settings.")
+          : _ptT("toastPushDenied", "Notification permission was not granted."), "error");
         render();
         return;
       }
@@ -219,10 +230,10 @@
           if (!sub) throw new Error("no_subscription");
           return sendSubscription(sub);
         })
-        .then(function () { toast("Push notifications enabled for this device.", "success"); })
-        .catch(function (err) { toast("Could not enable push: " + ((err && err.message) || "unknown error"), "error"); });
+        .then(function () { toast(_ptT("toastPushEnabled", "Push notifications enabled for this device."), "success"); })
+        .catch(function (err) { toast(_ptT("toastPushEnableFailed", "Could not enable push") + ": " + ((err && err.message) || "unknown error"), "error"); });
     }).catch(function () {
-      toast("Could not enable push: " + ((err && err.message) || "unknown error"), "error");
+      toast(_ptT("toastPushEnableFailed", "Could not enable push"), "error");
     }).then(function () {
       loadState().then(render).catch(render);
     });
@@ -243,10 +254,10 @@
           // Only tell the server to drop it if the browser actually had one.
           return endpoint ? removeSubscription(endpoint) : null;
         }).then(function () {
-          toast(wasSubscribed ? "Push notifications turned off for this device." : "This device was already off.", "success");
+          toast(wasSubscribed ? _ptT("toastPushOff", "Push notifications turned off for this device.") : _ptT("toastPushAlreadyOff", "This device was already off."), "success");
         });
       })
-      .catch(function (err) { toast("Could not turn off: " + ((err && err.message) || "unknown error"), "error"); })
+      .catch(function (err) { toast(_ptT("toastPushOffFailed", "Could not turn off") + ": " + ((err && err.message) || "unknown error"), "error"); })
       .then(function () { loadState().then(render).catch(render); });
   }
 
@@ -254,7 +265,7 @@
 
   function statusLine(sub) {
     if (!supportsPush()) {
-      return { tone: "warn", text: "This browser does not support Web Push notifications." };
+      return { tone: "warn", text: "This device does not support Web Push notifications." };
     }
     if (isIOS() && !isStandalone()) {
       return {
@@ -263,7 +274,7 @@
       };
     }
     if (Notification.permission === "denied") {
-      return { tone: "warn", text: "Notifications are blocked for this site. Re-enable them in your browser or device settings." };
+      return { tone: "warn", text: "Notifications are BLOCKED for TheHighWRLD Dashboard. Re-enable them in your device Settings." };
     }
     if (sub) {
       return { tone: "ok", text: "This device will receive notifications when TheHighWRLD is closed." };
@@ -415,52 +426,6 @@
       return null;
     }
     return t.kind === "push" ? t : null;
-  }
-
-  /* The last few events, so "did any of the three pushes I sent get through?"
-     can be answered on the phone rather than from a server log.
-
-     It renders whenever there is a trace at all, including a trace written by
-     an older worker that kept only one entry. An empty box would be
-     indistinguishable from "the list is not there", and those two mean very
-     different things: one is a stale worker, the other is a bug. */
-  function historyList(t) {
-    if (!t) return null;
-    var box = el("div", "thw-push-history");
-    var h = (t.history && t.history.length) ? t.history : [];
-    var v = t.version || (h.length && h[h.length - 1].version) || "unknown";
-    box.appendChild(el("p", "thw-push-history-title",
-      "Recent events on this device (worker " + v + ")"));
-    if (!h.length) {
-      box.appendChild(el("p", "thw-push-history-row",
-        "This worker records only the last event, so there is no history. Last event: " +
-        (t.kind || "unknown") + " at " + new Date(t.at || Date.now()).toLocaleTimeString() +
-        ". Close and reopen the app to update the worker."));
-      return box;
-    }
-    /* Twelve, not six. A test series sends an encrypted push and a payload-less
-     * one per tick, so six entries covered three ticks - the list ran out
-     * before the series did, and the events being looked for were the ones
-     * dropped. The worker keeps twelve; the list now shows all of them. */
-    var rows = h.slice().reverse().slice(0, 12);
-    for (var i = 0; i < rows.length; i++) {
-      var e = rows[i];
-      var when = new Date(e.at || Date.now()).toLocaleTimeString();
-      var what;
-      if (e.kind === "push") {
-        what = e.error
-          ? "push arrived, could not be shown - " + e.error
-          : (e.bare
-            ? "push arrived with NO payload (the service reached the worker with no ciphertext)"
-            : "push arrived and was shown");
-      } else if (e.kind === "ready") {
-        what = "worker activated";
-      } else {
-        what = String(e.kind || "event");
-      }
-      box.appendChild(el("p", "thw-push-history-row", when + " - " + what));
-    }
-    return box;
   }
 
   function setLive(dot, text, tone, msg) {
@@ -621,6 +586,12 @@
       }
       resyncUnknownSubscription(sub);
       var info = statusLine(sub);
+      var pill = document.getElementById("thwPushPill");
+      if (pill) {
+        var enabled = !!sub;
+        pill.textContent = enabled ? "Notifications Enabled" : "Notifications Disabled";
+        pill.className = "thw-push-pill " + (enabled ? "thw-push-pill--on" : "thw-push-pill--off");
+      }
       var canEnable = supportsPush() && Notification.permission !== "denied" && !(isIOS() && !isStandalone());
 
       var wrap = el("div", "thw-push");
@@ -639,8 +610,6 @@
 
       readPushTrace().then(function (t) {
         paintLive(dot, liveText, t, !!sub);
-        var hist = historyList(t);
-        if (hist) wrap.appendChild(hist);
       });
 
       var row = el("div", "thw-push-actions");
@@ -696,9 +665,9 @@
             // subscription the server has no record of.
             return currentSubscription().then(function (sub) { return sub ? sub.unsubscribe() : null; });
           }).then(function () {
-            toast("All devices removed.", "success");
+            toast(_ptT("toastDevicesRemoved", "All devices removed."), "success");
             loadState().then(render).catch(render);
-          }).catch(function () { toast("Could not remove devices.", "error"); });
+          }).catch(function () { toast(_ptT("toastDevicesRemoveFailed", "Could not remove devices."), "error"); });
         });
         wrap.appendChild(clear);
       }
@@ -716,6 +685,11 @@
         }).catch(function () {});
       }
       var w = el("div", "thw-push");
+      var pill = document.getElementById("thwPushPill");
+      if (pill) {
+        pill.textContent = "Notifications Disabled";
+        pill.className = "thw-push-pill thw-push-pill--off";
+      }
       w.appendChild(el("p", "thw-push-status thw-push-status--warn", timedOut
         ? "Still downloading the offline app. This will update on its own in a moment."
         : "Could not read the push subscription for this device. Notifications may still work; recheck after reopening the app."));

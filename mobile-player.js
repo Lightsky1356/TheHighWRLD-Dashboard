@@ -132,9 +132,15 @@
     return "Juice-WRLD.png";
   }
 
-  function coverOf() { return customCoverFor(currentTitle()) || originalCoverOf(); }
+  function coverOf() {
+    try { if (window.wrldCoverFor) return window.wrldCoverFor(currentTrack()); } catch (e) {}
+    return customCoverFor(currentTitle()) || originalCoverOf();
+  }
   function coverOfTrack(t) {
-    if (t && t.cover) return customCoverFor(t.title) || String(t.cover);
+    if (t && t.cover) {
+      try { if (window.wrldCoverFor) return window.wrldCoverFor(t); } catch (e) {}
+      return customCoverFor(t.title) || String(t.cover);
+    }
     return coverOf();
   }
 
@@ -589,6 +595,10 @@
       "radial-gradient(105% 55% at 88% 26%, " + toAlpha(c2, 0.42) + " 0%, transparent 55%)," +
       "radial-gradient(85% 55% at 6% 52%, " + toAlpha(c2, 0.3) + " 0%, transparent 58%)," +
       "linear-gradient(180deg,#1a1512 0%,#110d0b 58%,#0c0908 100%)";
+    try {
+      var on = !window.movingColors || window.movingColors();
+      bg.classList.toggle("thw-moving-gradient", !!on);
+    } catch (e) {}
   }
 
   /* ------------------------------------------------------------------ */
@@ -1774,6 +1784,13 @@
   /* ------------------------------------------------------------------ */
   /* open / close                                                       */
   /* ------------------------------------------------------------------ */
+  try {
+    window.addEventListener("thw:appearance-changed", function () {
+      var ov = document.getElementById(OV);
+      if (ov) { lastBgCover = null; paintBackground(ov); }
+    });
+  } catch (e) {}
+
   function open() {
     if (document.getElementById(OV)) return;
     css();

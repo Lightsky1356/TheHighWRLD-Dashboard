@@ -365,6 +365,12 @@
     var canRemove = v.isOwner || theme.owned;
     var row = el("article", "ct-theme-row");
     row.setAttribute("data-theme-ct", theme.slug);
+    /* The toast reads the author's name, not the slug - the wear path
+       falls back to this map when the theme is not one of ours. */
+    try {
+      window.thwThemeNames = window.thwThemeNames || {};
+      if (theme.slug && theme.name) window.thwThemeNames[theme.slug] = theme.name;
+    } catch (e) {}
 
     var top = el("div", "ct-row-top");
     var flag = el("span", "ct-row-flag");
@@ -445,9 +451,7 @@
       return null;
     }
     var name = prev;
-    var sel = document.getElementById("setTheme");
-    var opt = sel && sel.querySelector('option[value="' + prev + '"]');
-    if (opt) name = opt.textContent || prev;
+    try { if (window.thwThemeNames && window.thwThemeNames[prev]) name = window.thwThemeNames[prev]; } catch (e) {}
     var chip = el("button", "ct-btn ct-btn-back",
       '<i class="fas fa-rotate-left"></i> Back to what you were wearing: <b>' + esc(name) + "</b>");
     chip.type = "button";

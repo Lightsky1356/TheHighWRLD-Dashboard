@@ -1,5 +1,5 @@
 /* ============================================================================
-   COVER PREFERENCE - "Song covers" / "Era art" in Settings > Appearance
+   COVER PREFERENCE - "Song covers" / "Era covers" in Settings > Appearance
    ---------------------------------------------------------------------------
    'song'  Every track wears its own cover. This is the vault's historic look.
    'era'   Every track wears its era's cover, where the vault holds one
@@ -40,10 +40,82 @@
     } catch (e) { return "song"; }
   }
 
+  window.movingColors = function () {
+    try { return !(window.wrldPlayerSettings && window.wrldPlayerSettings.get("movingColors") === false); } catch (e) { return true; }
+  };
+
   window.wrldCoverFor = function (track) {
     var own = (track && track.cover) || "Juice-WRLD.png";
     if (pref() !== "era") return own;
     var era = eraOf(track);
     return (era && ERA_ART[era]) ? ERA_ART[era] : own;
   };
+
+  function toAlpha(color, a) {
+    var c = String(color || "").trim();
+    var m = c.match(/^hsl\(([^)]+)\)$/i);
+    if (m) return "hsla(" + m[1] + "," + a + ")";
+    m = c.match(/^rgb\(([^)]+)\)$/i);
+    if (m) return "rgba(" + m[1] + "," + a + ")";
+    return c;
+  }
+
+  /* The gradient wash behind the WRLD Deck - the deck's own slice of
+     Moving colours. Painted from the same two accent hues as the full
+     sheets, and animated by the same class the sheets use. */
+  function paintDeckWash() {
+    try {
+      var wash = document.getElementById('deck-cover-wash');
+      if (!wash) return;
+      var cur = null;
+      try {
+        if (typeof currentTrackIndex === 'number' && typeof trackList !== 'undefined' && trackList && trackList[currentTrackIndex]) {
+          cur = trackList[currentTrackIndex];
+        }
+      } catch (_) {}
+      var on = !!window.movingColors() && !!cur && !!cur.cover;
+      var cls = "thw-moving-gradient";
+      if (!on) { wash.classList.remove("on"); wash.classList.remove(cls); wash.style.background = "none"; return; }
+      var gradient = null;
+      try { if (typeof getCoverGradientValue === "function") gradient = getCoverGradientValue(cur.cover); } catch (_) {}
+      var cols = gradient ? (String(gradient).match(/hsl\([^)]+\)|rgb\([^)]+\)|#[0-9a-fA-F]{3,8}/g) || []) : [];
+      var c1 = cols[0] || "hsl(266,60%,58%)";
+      var c2 = cols[1] || "hsl(20,72%,30%)";
+      wash.style.background =
+        "radial-gradient(70% 130% at 8% 50%, " + toAlpha(c1, 0.5) + " 0%, transparent 62%)," +
+        "radial-gradient(60% 130% at 92% 50%, " + toAlpha(c2, 0.4) + " 0%, transparent 58%)";
+      wash.classList.add("on");
+      wash.classList.add(cls);
+    } catch (_) {}
+  }
+
+  /* The deck cover is painted by the player directly, outside this module,
+     so it never visits wrldCoverFor. Keep it honest: watch the img and
+     swap to era art when the reader wants era covers, back to song art
+     when they don't. */
+  function paintDeckCover() {
+    try {
+      var deck = document.getElementById('deck-cover');
+      if (!deck) return;
+      var cur = null;
+      try {
+        if (typeof currentTrackIndex === 'number' && typeof trackList !== 'undefined' && trackList && trackList[currentTrackIndex]) {
+          cur = trackList[currentTrackIndex];
+        }
+      } catch (_) {}
+      var want = window.wrldCoverFor(cur);
+      if (want && deck.getAttribute('src') !== want) deck.setAttribute('src', want);
+      paintDeckWash();
+    } catch (_) {}
+  }
+  if (typeof MutationObserver === 'function') {
+    try {
+      var deck = document.getElementById('deck-cover');
+      if (deck) {
+        var mo = new MutationObserver(function () { paintDeckCover(); });
+        mo.observe(deck, { attributes: true, attributeFilter: ['src'] });
+      }
+      window.addEventListener('thw:appearance-changed', paintDeckCover);
+    } catch (_) {}
+  }
 })();

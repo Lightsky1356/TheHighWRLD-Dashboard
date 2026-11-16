@@ -74,6 +74,7 @@ const PUSH_SUMMARY = {
   playlist: { title: "Playlist activity", body: "Someone interacted with your playlist." },
   drop: { title: "Drop alert", body: "A drop you follow is happening." },
   suggestion: { title: "Suggestion", body: "There is an update on your suggestion." },
+  comment_reply: { title: "Comment reply", body: "Someone replied to your comment." },
   wanted: { title: "Wanted Vault", body: "Someone replied to your nomination." },
   announcement: { title: "Announcement", body: "There is a new announcement." },
   moderation: { title: "Moderation notice", body: "There is a moderation notice for your account." },
@@ -81,7 +82,7 @@ const PUSH_SUMMARY = {
   ban: { title: "Account action", body: "There is an update on your account status." },
   appeal: { title: "Appeal update", body: "There is an update on your appeal." },
 };
-const PUSH_DEFAULT = { title: "TheHighWRLD", body: "You have a new notification." };
+const PUSH_DEFAULT = { title: "TheHighWRLD Dashboard", body: "You have a new notification." };
 
 /* Where the notification should open when tapped.
  *
@@ -97,11 +98,16 @@ function pushTargetFor(type) {
     case "upvote":
     case "vote":
     case "reply_vote":
-    case "wanted":
-    case "wanted_reply":
       return "community";
     case "suggestion":
       return "suggestions";
+    case "comment_reply":
+      return "song";
+    case "announcement":
+      return "home";
+    case "wanted":
+    case "wanted_reply":
+      return "wanted";
     case "drop":
       return "hub";
     case "playlist":
@@ -305,10 +311,12 @@ export async function notificationsEnabled(db, uid) {
 
 /* Which preference category each notification type belongs to.
    Types absent from this map are not user-configurable and are always delivered
-   (subject to the master switch): follow, playlist, drop, suggestion, wanted,
-   moderation, warning, ban, appeal. Moderation notices stay non-optional on
-   purpose - someone who has been banned should never be able to tune that away
-   by accident. */
+   (subject to the master switch): follow, playlist, drop, wanted, moderation,
+   warning, ban, appeal. Moderation notices stay non-optional on purpose -
+   someone who has been banned should never be able to tune that away by
+   accident. Announcements, suggestion updates and comment replies are
+   user-configurable because they are the three a fan may reasonably want off,
+   and they map onto the bubble blocks in Settings > Notifications. */
 const TYPE_CATEGORY = {
   reply: "replies",
   wanted_reply: "wanted_replies",
@@ -319,6 +327,9 @@ const TYPE_CATEGORY = {
   dm_message: "direct_messages",
   friend_request: "friend_requests",
   friend_accepted: "friend_requests",
+  announcement: "announcements",
+  suggestion: "suggestions",
+  comment_reply: "comment_replies",
 };
 
 /* Types covered by the partial unique index in migration 0037. Only these are
@@ -342,6 +353,9 @@ export async function notificationPrefs(db, uid) {
     in_site: 1,
     push: 1,
     message_previews: 1,
+    announcements: 1,
+    suggestions: 1,
+    comment_replies: 1,
   };
   if (!uid) return defaults;
   try {
@@ -403,6 +417,7 @@ export async function createNotification(db, env, recipientUid, options, ctx) {
   const previewMessage = previewOff ? genericMessage(type) : String(opts.message || "");
   const postId = opts.postId == null ? null : opts.postId;
   const replyId = opts.replyId == null ? null : opts.replyId;
+  const trackId = String(opts.trackId || "").slice(0, 80);
   const actorUid = String(opts.actorUid || "");
   /* Self-notification is never right. Several call sites already guard for it;
      doing it here too means a future call site cannot forget. */
@@ -414,8 +429,8 @@ export async function createNotification(db, env, recipientUid, options, ctx) {
     const inserted = await db
       .prepare(
         "INSERT " + (idempotent ? "OR IGNORE " : "") + "INTO community_notifications " +
-          "(recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?)"
+          "(recipient_uid, type, actor_uid, actor_name, message, post_id, reply_id, track_id) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
       )
       .bind(
         recipientUid,
@@ -424,7 +439,8 @@ export async function createNotification(db, env, recipientUid, options, ctx) {
         String(opts.actorName || "Member"),
         previewMessage,
         postId,
-        replyId
+        replyId,
+        trackId
       )
       .run();
 
@@ -449,6 +465,7 @@ export async function createNotification(db, env, recipientUid, options, ctx) {
         message: previewMessage,
         post_id: postId,
         reply_id: replyId,
+        track_id: trackId || undefined,
         actor: String(opts.actorName || "Member"),
         actor_uid: actorUid,
       },

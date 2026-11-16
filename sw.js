@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v395';;;;;;;;;;;;;;;;;
+const VERSION = 'thw-v397';;;;;;;;;;;;;;;;;
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -39,12 +39,12 @@ const PRECACHE = [
   './tracks.js?v=thw-v18',
   './browser-id3-writer.js?v=thw-v3',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v88',
+  './account.js?v=thw-v90',
   './stats-page.js?v=thw-v1',
   './effects.js?v=thw-v2',
-  './theme-drift.js?v=thw-v7',
-  './i18n.js?v=9',
-  './script.js?v=thw-v104',
+  './theme-drift.js?v=thw-v9',
+  './i18n.js?v=10',
+  './script.js?v=thw-v105',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v16',
@@ -60,7 +60,7 @@ const PRECACHE = [
 
   './context-menu.js?v=thw-v3',
   './leaderboard.js?v=thw-v2',
-  './desktop-player.js?v=thw-v17',
+  './desktop-player.js?v=thw-v19',
   './queue-side.js?v=thw-v4',
   './comment-markers.js?v=thw-v1',
   './vault-pull.js?v=thw-v1',
@@ -70,13 +70,13 @@ const PRECACHE = [
   './tracker.js?v=thw-v3',
   './song-page.js?v=thw-v4',
   './all.min.css?v=thw-v2',
-  './account.css?v=thw-v21',
+  './account.css?v=thw-v22',
   './account-shared.css?v=thw-v5',
-  './player-settings.css?v=thw-v165',
+  './player-settings.css?v=thw-v166',
   './style.css?v=thw-v53',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
-  './themes.css?v=thw-v21',
+  './themes.css?v=thw-v23',
   './css2.css?v=thw-v2',
   './about.css?v=thw-v4',
   './fonts/0-Sora-300.woff2',
@@ -126,10 +126,10 @@ const PRECACHE = [
   /* --- page scripts --- */
   './user-relations.js?v=thw-v2',
   './user-menu.js?v=thw-v6',
-  './player-settings.js?v=thw-v16',
+  './player-settings.js?v=thw-v18',
   './profile.js?v=thw-v15',
   './profile.css?v=thw-v12',
-  './cover-pref.js?v=thw-v1',
+  './cover-pref.js?v=thw-v3',
   './assets/settings-era/JUTE.webp',
   './assets/settings-era/AFF.webp',
   './assets/settings-era/HIH.webp',
@@ -182,7 +182,7 @@ const PRECACHE = [
   './holiday-art/thanksgiving.jpg',
   './holiday-art/christmas.jpg',
   './presets.js?v=thw-v3',
-  './mobile-player.js?v=thw-v33',
+  './mobile-player.js?v=thw-v35',
   './follows.js?v=thw-v3',
   './privacy.js?v=thw-v4',
   './playlists-ui.js?v=thw-v7',
@@ -190,7 +190,7 @@ const PRECACHE = [
   './legal-info.js?v=thw-v6',
   './grammar-check.js?v=thw-v2',
   './social-panel.js?v=thw-v50',
-  './push-client.js?v=thw-v29',
+  './push-client.js?v=thw-v30',
   './simple-toast.js?v=thw-v5',
   './catalogue-watch.js?v=thw-v1',
   './cover-preview.js?v=thw-v7',
@@ -495,7 +495,7 @@ function trimRuntimeCache(cache) {
    a device that never subscribes simply never fires these events.
    ========================================================================== */
 
-const PUSH_TITLE = 'TheHighWRLD';
+const PUSH_TITLE = 'TheHighWRLD Dashboard';
 
 /* Only these app routes may be opened from a notification. A push payload is
    server-generated, but the browser can be tricked into relaying one, so the
@@ -507,7 +507,9 @@ const PUSH_ROUTES = new Set([
   // about a community reply opens the community page; one about a ban opens
   // settings. Without these, safeTarget dropped the target and every community
   // notification just focused the app wherever it happened to be.
-  'community', 'suggestions', 'hub', 'profile', 'account', 'home'
+  'community', 'suggestions', 'hub', 'profile', 'account', 'home',
+  // Comment replies open the song page the comment was left on.
+  'song', 'wanted'
 ]);
 
 function safeTarget(raw) {

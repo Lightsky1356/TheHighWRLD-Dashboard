@@ -30,7 +30,7 @@ export async function onRequestGet(context) {
     if (!user) return json({ ok: false, error: "not signed in" }, 401);
 
     const rows = await db.prepare(
-      "SELECT id, type, actor_uid, actor_name, message, post_id, reply_id, read, created_at " +
+      "SELECT id, type, actor_uid, actor_name, message, post_id, reply_id, track_id, read, created_at " +
       "FROM community_notifications WHERE recipient_uid = ? ORDER BY id DESC LIMIT 40"
     ).bind(user.uid).all();
 
@@ -49,6 +49,7 @@ export async function onRequestGet(context) {
         message: n.message || "",
         post_id: n.post_id || null,
         reply_id: n.reply_id || null,
+        track_id: n.track_id || "",
         read: !!n.read,
         ts: n.created_at || "",
       })),

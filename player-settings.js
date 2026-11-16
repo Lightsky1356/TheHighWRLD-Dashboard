@@ -12,13 +12,17 @@
     /* Song covers: 'song' shows each track's own art, 'era' shows the era's
        cover where the vault has one. */
     coversPref: 'song',
+    /* Resume where you left off - reopen the site on the same song, same second. */
+    resumeLast: true,
+    /* Pause the audio when the tab is hidden. */
+    pauseOnHidden: false,
+    /* Playback speed as a string ('0.5','0.75','1','1.25','1.5','2'). */
+    playbackRate: '1',
     /* Suggestion cards: the cards that offer the site to your home screen.
        Off means never. */
     suggestionCards: true,
     /* Moving colours: the drifting cover-colour circles behind the page. */
     movingColors: true,
-    /* Pure black behind the page, for OLED screens. */
-    oledBlack: false,
     /* Member-picked accent (violet default), or 'custom' with customAccent. */
     accent: 'violet',
     customAccent: '#b7a3ff',
@@ -59,6 +63,95 @@
   function set(k, v){ settings[k] = v; try { localStorage.setItem(storageKey, JSON.stringify(settings)); } catch(e){} }
 
   var isElectron = !!(window.highwrld);
+
+  /* Localised strings with English fallback - same contract as account.js's _tt. */
+  function _ptT(key, fb) {
+    try {
+      var lang = 'en';
+      try { lang = localStorage.getItem('wantedLang') || 'en'; } catch (e) {}
+      var D = window.SiteChromeI18N && window.SiteChromeI18N[lang];
+      if (D && D[key]) return D[key];
+    } catch (e) {}
+    return fb;
+  }
+
+  /* ---------- Playback: resume, pause-on-hidden, speed -------------------
+     resumeLast     - the vault reopens on the song and the second you left it
+     pauseOnHidden  - switching the tab away pauses the audio
+     playbackRate   - the persisted speed, applied to the media element
+     All three are plain player-session behaviour; none of them touches the
+     account. THWResume is the small live handle account.js talks to when a
+     switch flips, exactly like the moving colours dispatch. */
+  var RESUME_KEY = 'thw.resume.v1';
+  function audioEl(){ return document.querySelector('audio'); }
+  function resumeEnabled(){ return get('resumeLast') !== false; }
+  var lastResumeSave = 0;
+  function saveResume(){
+    if(!resumeEnabled()) return;
+    var a = audioEl();
+    if(!a || !isFinite(a.currentTime)) return;
+    var idx = -1;
+    try { if (typeof currentTrackIndex === 'number') idx = currentTrackIndex; } catch(e){}
+    if(idx < 0 || a.currentTime < 1) return;
+    try { localStorage.setItem(RESUME_KEY, JSON.stringify({ i: idx, s: Math.floor(a.currentTime), at: Date.now() })); } catch(e){}
+  }
+  function clearResume(){ try { localStorage.removeItem(RESUME_KEY); } catch(e){} }
+  function applyResume(){
+    var raw = null;
+    try { raw = localStorage.getItem(RESUME_KEY); } catch(e){}
+    if(!raw) return;
+    var d = null;
+    try { d = JSON.parse(raw); } catch(e){}
+    if(!d || typeof d.i !== 'number' || !d.i && d.i !== 0) return;
+    /* a position from more than a day ago is not "where you left off" */
+    if(!d.at || Date.now() - Number(d.at) > 86400000) { clearResume(); return; }
+    var idx = d.i, secs = Math.max(0, Math.floor(Number(d.s) || 0));
+    var tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      var ready = false;
+      try { ready = typeof trackList !== 'undefined' && trackList && trackList.length > idx && typeof window.selectTrackFromList === 'function'; } catch(e){}
+      if(ready){
+        clearInterval(iv);
+        try { window.selectTrackFromList(idx); } catch(e){}
+        var a = audioEl();
+        if(a){
+          var seek = function(){
+            try {
+              var dur = isFinite(a.duration) ? a.duration : secs;
+              a.currentTime = Math.min(secs, dur || secs);
+            } catch(e){}
+          };
+          if(isFinite(a.duration) && a.duration > 0) seek();
+          else a.addEventListener('loadedmetadata', seek, { once: true });
+        }
+      } else if(tries > 100){
+        clearInterval(iv);
+      }
+    }, 100);
+  }
+  window.THWResume = {
+    setEnabled: function(on){ if(!on) clearResume(); },
+    setPauseOnHidden: function(){ /* the listener reads the live setting */ },
+    setRate: function(r){ var a = audioEl(); if(a){ try { a.playbackRate = Number(r) || 1; } catch(e){} } }
+  };
+  (function bindResume(){
+    var a = audioEl();
+    if(!a){ setTimeout(bindResume, 1500); return; }
+    a.addEventListener('timeupdate', function(){
+      var now = Date.now();
+      if(now - lastResumeSave < 5000) return;
+      lastResumeSave = now;
+      saveResume();
+    });
+    a.addEventListener('pause', saveResume);
+    window.addEventListener('pagehide', saveResume);
+    document.addEventListener('visibilitychange', function(){
+      if(document.hidden && get('pauseOnHidden')){ try { a.pause(); } catch(e){} }
+    });
+    try { a.playbackRate = Number(get('playbackRate')) || 1; } catch(e){}
+    applyResume();
+  })();
 
   window.wrldPlayerSettings = { get: get, set: set };
 
@@ -247,7 +340,7 @@
           if(drpSaidNotAnswering){
             drpSaidNotAnswering = false;
             if(typeof showToastSimple === 'function'){
-              showToastSimple('Discord is answering again - your status is showing.', { type: 'success' });
+              showToastSimple(_ptT('toastDrpBackOnline', 'Discord is answering again - your status is showing.'), { type: 'success' });
             }
           }
           return;
@@ -256,7 +349,7 @@
         drpSaidNotAnswering = true;
         var why = (st && st.error) ? String(st.error) : 'Discord is not answering';
         if(typeof showToastSimple === 'function'){
-          showToastSimple('Discord Rich Presence is not working - ' + why + '. Open the Discord desktop app and it will connect.', { type: 'error' });
+          showToastSimple(_ptT('toastDrpNotWorking', 'Discord Rich Presence is not working - {why}. Open the Discord desktop app and it will connect.').replace(/\{why\}/g, why), { type: 'error' });
         }
       }
       window.highwrld.onDrpEvent(function(payload){
@@ -359,7 +452,7 @@
     lastShortcutToast = now;
     try {
       if(typeof showToastSimple === 'function'){
-        showToastSimple('Keyboard shortcuts are off - enable them in Player Settings', { type: 'info' });
+        showToastSimple(_ptT('toastShortcutsOff', 'Keyboard shortcuts are off - enable them in Player Settings'), { type: 'info' });
       }
     } catch(e){ /* a missing toast must not break the key handler */ }
   };
@@ -432,8 +525,8 @@
       try {
         if(typeof showToastSimple === 'function'){
           showToastSimple(this.checked
-            ? 'Cover gradients on - titles and panels take their colour from the cover'
-            : 'Cover gradients off - covers keep their colour, text and panels go white and black',
+            ? _ptT('toastCoverGradOn', 'Cover gradients on - titles and panels take their colour from the cover')
+            : _ptT('toastCoverGradOff', 'Cover gradients off - covers keep their colour, text and panels go white and black'),
             { type: 'info' });
         }
       } catch(e){}
