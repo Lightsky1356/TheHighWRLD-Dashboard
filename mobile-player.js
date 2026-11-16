@@ -371,7 +371,9 @@
       ".mp2-hero{display:flex;flex-direction:column;flex:1;min-height:0;width:100%;justify-content:center}" +
       ".mp2-cover{align-self:center;width:min(58%,300px,32vh);aspect-ratio:1/1;object-fit:cover;border-radius:18px;background:#1c1530;box-shadow:0 26px 60px rgba(0,0,0,.55),0 0 0 .5px rgba(255,255,255,.08) inset;margin-bottom:12px;flex-shrink:0}" +
       ".mp2-title{margin:0;font-size:clamp(30px,8.6vw,42px);line-height:1.02;font-weight:900;letter-spacing:-.03em;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-      ".mp2-artist{margin:6px 0 0;font-size:14px;font-weight:600;color:rgba(255,255,255,.55);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mp2-artist{margin:2px 0 0;font-size:14px;font-weight:600;color:rgba(255,255,255,.55);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}" +
+      ".mp2-album{margin:14px 0 0;display:flex;align-items:center;gap:8px;min-width:0;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}" +
+      ".mp2-album i{font-size:11px;color:rgba(255,255,255,.3);flex-shrink:0}" +
       ".mp2-pill{margin-top:12px;align-self:flex-start;display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);border-radius:999px;padding:9px 16px;font-size:12.5px;font-weight:700;color:rgba(255,255,255,.88);cursor:pointer;font-family:inherit}" +
       ".mp2-pill small{font-weight:600;color:rgba(255,255,255,.45);font-size:11px}" +
       ".mp2-pill i{font-size:10px;opacity:.65}" +
@@ -1470,6 +1472,22 @@
       if (ctxEl.textContent !== ctx) ctxEl.textContent = ctx;
     }
 
+    /* album line under the title — the vault's own tag; CSS cuts it with an ellipsis */
+    qa(ov, "[data-mp='album']").forEach(function (el) {
+      var albumText = "";
+      try {
+        if (typeof getTrackAlbum === "function" && t) albumText = String(getTrackAlbum(t) || "");
+        else if (currentTrack()) albumText = String((currentTrack() || {}).tag || "");
+      } catch (e) {}
+      var want = albumText ? albumText : "";
+      var prev = el.getAttribute("data-cur") || "";
+      if (prev !== want) {
+        el.setAttribute("data-cur", want);
+        el.innerHTML = want ? '<i class="fas fa-compact-disc" aria-hidden="true"></i><span>' + esc(want) + '</span>' : '';
+        el.style.display = want ? "" : "none";
+      }
+    });
+
     /* hero */
     qa(ov, "[data-mp='title']").forEach(function (el) { if (el.textContent !== t) el.textContent = t; });
     qa(ov, "[data-mp='artist']").forEach(function (el) { if (el.textContent !== a) el.textContent = a; });
@@ -1795,6 +1813,7 @@
           '<div class="mp2-hero">' +
             '<img decoding="async" class="mp2-cover" data-mp="cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
             '<h2 class="mp2-title" data-mp="title">' + esc(t) + '</h2>' +
+            '<p class="mp2-album" data-mp="album"></p>' +
             '<p class="mp2-artist" data-mp="artist">' + esc(a) + '</p>' +
             '<button type="button" class="mp2-pill" data-mp="pill" title="Open the song page — every version lives there"><span data-mp="tag">Session edit</span><small data-mp="tag-count"></small><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
             '<div class="mp2-chiprow">' +

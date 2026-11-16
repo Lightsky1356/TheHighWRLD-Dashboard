@@ -356,7 +356,9 @@
       ".dpl-titlerow .dpl-act{width:44px;height:44px;min-width:44px;border-radius:12px;flex-shrink:0;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07)}" +
       ".dpl-titlerow .dpl-act:hover{background:rgba(255,255,255,.12);color:#fff}" +
       ".dpl-title{margin:0;font-size:clamp(22px,2vw,30px);line-height:1.12;font-weight:900;letter-spacing:-.02em;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}" +
-      ".dpl-meta{display:flex;align-items:baseline;gap:12px;margin:10px 0 0;min-width:0}" +
+      ".dpl-meta{display:flex;align-items:baseline;gap:12px;margin:8px 0 0;min-width:0}" +
+      ".dpl-albumline{display:flex;align-items:center;gap:8px;margin:10px 0 0;min-width:0;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".dpl-albumline i{font-size:11px;color:rgba(255,255,255,.32);flex-shrink:0}" +
       ".dpl-meta-tag{display:inline-flex;align-items:center;gap:7px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#f9a8d4}" +
       ".dpl-meta-tag i{font-size:11px;color:#f472b6}" +
       ".dpl-meta-artists{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}" +
@@ -608,6 +610,7 @@
             '<button type="button" class="dpl-act" data-dpl="addqueue" aria-label="Add to the queue"><i class="fas fa-list-ul" aria-hidden="true"></i></button>' +
             '<button type="button" class="dpl-act" data-dpl="songpage" aria-label="Open the song page"><i class="fas fa-expand" aria-hidden="true"></i></button>' +
           '</div>' +
+          '<p class="dpl-albumline" data-dpl="albumline"></p>' +
           '<p class="dpl-meta"><span class="dpl-meta-tag"><i class="fas fa-asterisk" aria-hidden="true"></i><span data-dpl="album">Session edit</span></span><span class="dpl-meta-artists" data-dpl="artist">' + esc(artist) + '</span></p>' +
           '<div class="dpl-chips">' +
             '<button type="button" class="dpl-chip dpl-versions" data-dpl="versions" title="Every version of this song"><i class="fas fa-code-branch" aria-hidden="true"></i>Main version<small data-dpl="versions-n"></small><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
@@ -1408,6 +1411,20 @@
 
     qa(ov, "[data-dpl='title']").forEach(function (el) { el.textContent = currentTitle(); });
     qa(ov, "[data-dpl='artist']").forEach(function (el) { el.textContent = currentArtist(); });
+    qa(ov, "[data-dpl='albumline']").forEach(function (el) {
+      var albumText = "";
+      try {
+        if (typeof getTrackAlbum === "function" && t) albumText = String(getTrackAlbum(t) || "");
+        else if (t) albumText = String(t.tag || "");
+      } catch (e) {}
+      var prev = el.getAttribute("data-cur") || "";
+      if (prev !== albumText) {
+        el.setAttribute("data-cur", albumText);
+        el.innerHTML = albumText ? '<i class="fas fa-compact-disc" aria-hidden="true"></i><span>' + esc(albumText) + '</span>' : '';
+        el.style.display = albumText ? "" : "none";
+      }
+    });
+
     qa(ov, "[data-dpl='album']").forEach(function (el) {
       var label = "";
       try {
