@@ -1476,8 +1476,8 @@
     qa(ov, "[data-mp='album']").forEach(function (el) {
       var albumText = "";
       try {
-        if (typeof getTrackAlbum === "function" && t) albumText = String(getTrackAlbum(t) || "");
-        else if (currentTrack()) albumText = String((currentTrack() || {}).tag || "");
+        var tr = currentTrack();
+        if (tr) albumText = String(getTrackAlbum(tr) || "");
       } catch (e) {}
       var want = albumText ? albumText : "";
       var prev = el.getAttribute("data-cur") || "";
