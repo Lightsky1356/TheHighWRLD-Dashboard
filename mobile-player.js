@@ -1463,7 +1463,7 @@
     });
 
     /* where the listener is playing from — Lobby, Tracker, The Vault… */
-    var ctxEl = q(ov, "[data-mp='ctx']");
+    var ctxEl = q(ov, "[data-mp='ctx-label']");
     if (ctxEl) {
       var ctx = "Lobby";
       try { if (window.__thwPlayContext) ctx = String(window.__thwPlayContext); } catch (e) {}
@@ -1785,7 +1785,7 @@
 
       '<header class="mp2-top">' +
         '<button type="button" class="mp2-x" data-mp-close aria-label="Close the player"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
-        '<span class="mp2-context">Playing from <b data-mp="ctx">Lobby</b></span>' +
+        '<span class="mp2-context">Playing from <b data-mp="ctx-label">Lobby</b></span>' +
         '<button type="button" class="mp2-more" data-mp-more aria-label="More options"><i class="fas fa-ellipsis" aria-hidden="true"></i></button>' +
       '</header>' +
 
@@ -2262,8 +2262,6 @@
         if (pl && !pl.hidden) { closePlaylistPicker(ov); return; }
         var ctx = ov.querySelector("[data-mp='ctx']");
         if (ctx && !ctx.hidden) { closeCtx(ov); return; }
-        var qp = ov.querySelector("[data-mp='queuepage']");
-        if (qp && !qp.hidden) { closeQueuePage(ov); return; }
         close();
       }
     });
