@@ -277,6 +277,13 @@
     } catch (e) { return 1; }
   }
 
+  function versionPillLabel(t) {
+    if (!t) return { label: "Main version", count: 1 };
+    var m = String(t.title || "").match(/\(([^)]*)\)\s*$/);
+    var base = m ? String(m[1] || "").trim() : "";
+    return { label: base || "Main version", count: versionCount(t) };
+  }
+
   function signedIn() {
     try { if (typeof window.__thwAuthSignedIn === "boolean") return window.__thwAuthSignedIn; } catch (e) {}
     var wrap = document.getElementById("nav-account-wrap") || document.getElementById("mbn-account-wrap");
@@ -357,6 +364,30 @@
       ".mp2-eq span:nth-child(4){animation-delay:.34s}" +
       "@keyframes mp2eq{0%,100%{height:22%}50%{height:100%}}" +
 
+      /* ===== the now-playing hero ===== */
+      ".mp2-view[data-view='now']{align-items:stretch}" +
+      "@media (max-height:640px){.mp2-view[data-view='now']{overflow-y:auto;-webkit-overflow-scrolling:touch}}" +
+      ".mp2-hero{display:flex;flex-direction:column;flex:1;min-height:0;width:100%;justify-content:center}" +
+      ".mp2-cover{align-self:center;width:min(58%,300px,32vh);aspect-ratio:1/1;object-fit:cover;border-radius:18px;background:#1c1530;box-shadow:0 26px 60px rgba(0,0,0,.55),0 0 0 .5px rgba(255,255,255,.08) inset;margin-bottom:12px;flex-shrink:0}" +
+      ".mp2-title{margin:0;font-size:clamp(30px,8.6vw,42px);line-height:1.02;font-weight:900;letter-spacing:-.03em;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mp2-artist{margin:6px 0 0;font-size:14px;font-weight:600;color:rgba(255,255,255,.55);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mp2-pill{margin-top:12px;align-self:flex-start;display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);border-radius:999px;padding:9px 16px;font-size:12.5px;font-weight:700;color:rgba(255,255,255,.88);cursor:pointer;font-family:inherit}" +
+      ".mp2-pill small{font-weight:600;color:rgba(255,255,255,.45);font-size:11px}" +
+      ".mp2-pill i{font-size:10px;opacity:.65}" +
+      ".mp2-chiprow{display:flex;align-items:center;gap:8px;margin-top:14px;width:100%}" +
+      ".mp2-chip{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.02em;border-radius:8px;padding:5px 11px}" +
+      ".mp2-chip i{font-size:10px}" +
+      ".chip-cat-leaks{background:rgba(248,113,113,.16);color:#fca5a5;border:1px solid rgba(248,113,113,.3)}" +
+      ".chip-cat-sessions{background:rgba(34,211,238,.13);color:#67e8f9;border:1px solid rgba(34,211,238,.3)}" +
+      ".chip-cat-halloween{background:rgba(192,132,252,.15);color:#d8b4fe;border:1px solid rgba(192,132,252,.3)}" +
+      ".chip-era{background:rgba(255,255,255,.07);color:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.1)}" +
+      ".chip-snippet{background:transparent;color:#67e8f9;border:1px solid rgba(34,211,238,.4)}" +
+      ".mp2-chip-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}" +
+      ".mp2-chipact{background:none;border:none;color:rgba(255,255,255,.72);width:44px;height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;border-radius:12px}" +
+      ".mp2-chipact:active{transform:scale(.9);background:rgba(255,255,255,.07)}" +
+      ".mp2-chipact.is-on{color:#fb7185}" +
+      /* the mini row is for the queue & comments views; the hero carries the song itself */
+      ".mp2.view-now .mp2-mini{display:none}" +
       /* ===== the queue, as an inline view ===== */
       ".mp2-view[data-view='queue']{align-items:stretch}" +
       /* ===== the playlists page ===== */
@@ -1371,10 +1402,11 @@
   /* ------------------------------------------------------------------ */
   /* the views                                                          */
   /* ------------------------------------------------------------------ */
-  var currentView = "queue";
+  var currentView = "now";
 
   function switchView(ov, name) {
     currentView = name;
+    ov.classList.toggle("view-now", name === "now");
     qa(ov, ".mp2-view").forEach(function (v) {
       v.classList.toggle("is-active", v.getAttribute("data-view") === name);
     });
@@ -1385,11 +1417,11 @@
       b.setAttribute("aria-pressed", on ? "true" : "false");
     });
     if (name === "comments") { paintComposeState(ov); loadComments(ov); }
-    else paintQueuePage(ov, true);
+    else if (name === "queue") paintQueuePage(ov, true);
   }
 
   function toggleView(ov, name) {
-    switchView(ov, currentView === name ? (name === "comments" ? "queue" : "comments") : name);
+    switchView(ov, currentView === name ? "now" : name);
   }
 
   /* ------------------------------------------------------------------ */
@@ -1428,6 +1460,47 @@
       try { if (window.__thwPlayContext) ctx = String(window.__thwPlayContext); } catch (e) {}
       if (ctxEl.textContent !== ctx) ctxEl.textContent = ctx;
     }
+
+    /* hero */
+    qa(ov, "[data-mp='title']").forEach(function (el) { if (el.textContent !== t) el.textContent = t; });
+    qa(ov, "[data-mp='artist']").forEach(function (el) { if (el.textContent !== a) el.textContent = a; });
+    qa(ov, "[data-mp='cover']").forEach(function (img) {
+      if (img.getAttribute("src") !== cover) img.setAttribute("src", cover);
+    });
+    var track = currentTrack();
+    var pill = q(ov, "[data-mp='pill']");
+    if (pill) {
+      var lbl = versionPillLabel(track);
+      var tagEl = pill.querySelector("[data-mp='tag']");
+      if (tagEl && tagEl.textContent !== lbl.label) tagEl.textContent = lbl.label;
+      var cntEl = pill.querySelector("[data-mp='tag-count']");
+      var countTxt = lbl.count > 1 ? lbl.count + " versions" : "1 version";
+      if (cntEl && cntEl.textContent !== countTxt) cntEl.textContent = countTxt;
+      pill.style.display = track ? "" : "none";
+    }
+    var chipCat = q(ov, "[data-mp='chip-cat']");
+    if (chipCat && track) {
+      var cat = String(track.category || "");
+      var cmap = { leaks: ["Leaked", "chip-cat-leaks", "fa-fire"], sessions: ["Sessions", "chip-cat-sessions", "fa-compact-disc"], halloween: ["Halloween", "chip-cat-halloween", "fa-compact-disc"] };
+      var cm = cmap[cat];
+      chipCat.innerHTML = cm ? '<i class="fas ' + cm[2] + '" aria-hidden="true"></i>' + esc(cm[0]) : "";
+      chipCat.className = "mp2-chip" + (cm ? " " + cm[1] : "");
+      chipCat.style.display = cm ? "" : "none";
+    } else if (chipCat) chipCat.style.display = "none";
+    var chipEra = q(ov, "[data-mp='chip-era']");
+    if (chipEra) {
+      var code = eraCodeOf(track);
+      chipEra.innerHTML = '<i class="fas fa-compact-disc" aria-hidden="true"></i>' + esc(code);
+      chipEra.style.display = code && code !== "Other" ? "" : "none";
+    }
+    var chipSnip = q(ov, "[data-mp='chip-snippet']");
+    if (chipSnip) chipSnip.style.display = /snippet/i.test(String((track && track.tag) || "")) ? "" : "none";
+    var favH = favOn();
+    qa(ov, "[data-mp='favhero']").forEach(function (el) {
+      el.classList.toggle("is-on", favH);
+      el.innerHTML = '<i class="' + (favH ? "fas" : "far") + ' fa-heart" aria-hidden="true"></i>';
+      el.setAttribute("aria-pressed", favH ? "true" : "false");
+    });
 
     var favMini = favOn(ct);
     qa(ov, "[data-mp='fav3']").forEach(function (el) {
@@ -1679,7 +1752,7 @@
     css();
     lastSync = { pct: -1, curTxt: null, durTxt: null, playing: null, title: null };
     lastBgCover = null;
-    currentView = "queue";
+    currentView = "now";
     playlistsOpen = false;
     plState = { list: null, current: null };
     commentsTarget = null;
@@ -1692,6 +1765,7 @@
     ov.setAttribute("role", "dialog");
     ov.setAttribute("aria-modal", "true");
     ov.setAttribute("aria-label", "Now playing");
+    ov.classList.add("view-now");
 
     var t = currentTitle(), a = currentArtist(), cover = coverOf();
 
@@ -1708,7 +1782,26 @@
 
       '<div class="mp2-body">' +
 
-        '<section class="mp2-view is-active" data-view="queue">' +
+        '<section class="mp2-view is-active" data-view="now">' +
+          '<div class="mp2-hero">' +
+            '<img decoding="async" class="mp2-cover" data-mp="cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+            '<h2 class="mp2-title" data-mp="title">' + esc(t) + '</h2>' +
+            '<p class="mp2-artist" data-mp="artist">' + esc(a) + '</p>' +
+            '<button type="button" class="mp2-pill" data-mp="pill" title="Open the song page — every version lives there"><span data-mp="tag">Session edit</span><small data-mp="tag-count"></small><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
+            '<div class="mp2-chiprow">' +
+              '<span class="mp2-chip chip-cat-sessions" data-mp="chip-cat"></span>' +
+              '<span class="mp2-chip chip-era" data-mp="chip-era"></span>' +
+              '<span class="mp2-chip chip-snippet" data-mp="chip-snippet" style="display:none">Snippet</span>' +
+              '<div class="mp2-chip-actions">' +
+                '<button type="button" class="mp2-chipact" data-mp="favhero" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
+                '<button type="button" class="mp2-chipact" data-mp="addqueuehero" aria-label="Add to the queue"><i class="fas fa-list-ul" aria-hidden="true"></i></button>' +
+                '<button type="button" class="mp2-chipact" data-mp="opensong" aria-label="Open the song page"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</section>' +
+
+        '<section class="mp2-view" data-view="queue">' +
           '<div class="mp2-qp-body">' +
             '<div class="mp2-search">' +
               '<i class="fas fa-magnifying-glass mp2-search-ic" aria-hidden="true"></i>' +
@@ -1776,7 +1869,7 @@
 
       '<nav class="mp2-bottom">' +
         '<button type="button" class="mp2-vbtn" data-mp="view-comments" aria-label="Comments" aria-pressed="false"><i class="far fa-comment" aria-hidden="true"></i></button>' +
-        '<button type="button" class="mp2-vbtn on" data-mp="view-queue" aria-label="Queue" aria-pressed="true"><i class="fas fa-bars-staggered" aria-hidden="true"></i></button>' +
+        '<button type="button" class="mp2-vbtn" data-mp="view-queue" aria-label="Queue" aria-pressed="false"><i class="fas fa-bars-staggered" aria-hidden="true"></i></button>' +
       '</nav>' +
 
       /* ===== the playlists page ===== */
@@ -1926,6 +2019,14 @@
           shareSong(currentTitle());
         } else if (action === "vault-pull") {
           if (window.vaultPull) window.vaultPull();
+        } else if (action === "favhero") {
+          toggleFav();
+        } else if (action === "addqueuehero") {
+          var ci2 = currentIndex();
+          if (ci2 >= 0 && typeof addToQueue === "function") { addToQueue(ci2); toast("Added to the queue", "success"); }
+        } else if (action === "opensong") {
+          var tt3 = currentTitle();
+          if (window.openSongPage) { window.openSongPage(tt3); close(); }
         } else if (action === "view-comments") {
           toggleView(ov, "comments");
         } else if (action === "view-queue") {
