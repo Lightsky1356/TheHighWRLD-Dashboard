@@ -3667,21 +3667,27 @@ html.foot-in-view #scrollTopBtn{
   #deck-player .deck-artist{font-size:10px;line-height:1.2}
   #deck-player .deck-fav{width:30px;height:30px;font-size:11px;flex:0 0 30px}
 
-  /* The transport: shuffle, previous, play, next, repeat. */
-  #deck-player .deck-centre{display:flex;align-items:center;gap:2px;flex:0 0 auto}
+  /* The transport: shuffle, previous, play, next, repeat, then the progress
+     row wrapped onto its own full-width line below the song row. */
+  #deck-player .deck-row{flex-wrap:wrap}
+  #deck-player .deck-centre{display:contents}
+  #deck-player .deck-controls{display:flex;align-items:center;gap:2px;flex:0 0 auto}
   #deck-player .deck-btn{width:29px;height:29px;font-size:11px;border-radius:9px}
   #deck-player #deck-shuffle-btn,
   #deck-player #deck-repeat-btn,
   #deck-player #deck-prev{display:flex}
   #deck-player #deck-play{width:36px;height:36px;font-size:13px}
+  #deck-player .deck-actions{margin-left:auto}
 
   /* The progress line, inside the bar — current time, live fill, real duration. */
   #deck-player .deck-bar-row{
+    order:6;
+    flex:1 1 100%;
     display:flex;
     align-items:center;
     gap:8px;
-    width:100%;
-    padding:0 12px 8px;
+    width:auto;
+    padding:2px 2px 6px;
     height:auto;
   }
   #deck-player .deck-clock{display:block;font-size:8.5px;min-width:25px;color:rgba(255,255,255,.45);font-variant-numeric:tabular-nums}
