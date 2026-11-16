@@ -358,7 +358,7 @@
       ".dpl-meta-tag{display:inline-flex;align-items:center;gap:7px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#f9a8d4}" +
       ".dpl-meta-tag i{font-size:11px;color:#f472b6}" +
       ".dpl-meta-artists{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}" +
-      /* the search pill in the top bar */ +
+      /* the search pill in the top bar */
       ".dpl-searchwrap{position:relative;width:100%;height:38px;z-index:6}" +
       ".dpl-search-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.42);font-size:12px;pointer-events:none}" +
       ".dpl-search-input{display:block;width:100%;height:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 36px 0 36px;transition:border-color .2s ease,background .2s ease;line-height:38px}" +
@@ -410,7 +410,7 @@
       ".dpl-transport{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:18px}" +
       ".dpl-tbtn{background:none;border:none;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:17px;cursor:pointer}" +
       ".dpl-tbtn:hover{color:#fff;background:rgba(255,255,255,.06)}" +
-      ".dpl-tbtn.on{color:#e879f9}" +
+      ".dpl-tbtn.on{color:#38bdf8}" +
       ".dpl-play{width:74px;height:74px;border-radius:50%;background:#fff;color:#161016;border:none;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer}" +
       ".dpl-play:active{transform:scale(.93)}" +
 
@@ -418,7 +418,7 @@
       ".dpl-ov.is-collapsed .dpl-left{overflow:hidden}" +
       ".dpl-ov.is-collapsed .dpl-cover{width:min(48%,460px)}" +
       "@media (max-height:900px){.dpl-ov.is-collapsed .dpl-cover{width:min(44%,420px)}}" +
-      /* short windows: the whole column, cover and all, fits without cutting anything off */ +
+      /* short windows: the whole column, cover and all, fits without cutting anything off */
       "@media (max-height:780px){" +
         ".dpl-left{justify-content:flex-start;padding-top:0;justify-content:flex-start}" +
         ".dpl-cover{width:min(52vw,250px,32vh);margin-top:0}" +
