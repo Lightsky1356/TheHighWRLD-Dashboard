@@ -320,8 +320,9 @@
 
       /* top bar */
       ".mp2-top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:max(14px,env(safe-area-inset-top)) 18px 6px;min-height:52px}" +
-      ".mp2-x,.mp2-more{background:none;border:none;color:rgba(255,255,255,.72);width:44px;height:44px;min-width:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px}" +
-      ".mp2-x:active,.mp2-more:active{background:rgba(255,255,255,.09)}" +
+      ".mp2-x,.mp2-more{background:none;border:none;color:rgba(255,255,255,.85);width:46px;height:46px;min-width:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:19px}" +
+      ".mp2-more{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08)}" +
+      ".mp2-x:active,.mp2-more:active{background:rgba(255,255,255,.14)}" +
       ".mp2-context{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.42);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}" +
       ".mp2-context b{color:rgba(255,255,255,.92);font-weight:800}" +
       /* the search pill, inside the queue view */
@@ -460,22 +461,26 @@
       ".mp2-qempty small{display:block;font-size:10.5px;color:rgba(255,255,255,.3);margin-top:4px}" +
 
       /* ===== the context menu ===== */
-      ".mp2-ctx-scrim{position:absolute;inset:0;z-index:8;background:rgba(0,0,0,.5)}" +
+      ".mp2-ctx-scrim{position:absolute;inset:0;z-index:8;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}" +
       ".mp2-ctx-scrim[hidden]{display:none}" +
-      ".mp2-ctx{position:absolute;left:0;right:0;bottom:0;z-index:9;background:#1f1a17;border-radius:18px 18px 0 0;padding:8px 10px max(16px,env(safe-area-inset-bottom));max-height:78vh;overflow-y:auto;overscroll-behavior:contain;box-shadow:0 -10px 48px rgba(0,0,0,.6)}" +
+      ".mp2-ctx{position:absolute;left:0;right:0;bottom:0;z-index:9;background:#101015;border:1px solid rgba(255,255,255,.09);border-bottom:none;border-radius:22px 22px 0 0;padding:8px 12px max(16px,env(safe-area-inset-bottom));max-height:82vh;overflow-y:auto;overscroll-behavior:contain;box-shadow:0 -18px 60px rgba(0,0,0,.7)}" +
       ".mp2-ctx[hidden]{display:none}" +
-      ".mp2-ctx-grab{width:44px;height:4px;border-radius:99px;background:rgba(255,255,255,.25);margin:2px auto 10px}" +
-      ".mp2-ctx-title{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.01em;padding:2px 12px 10px;border-bottom:1px solid rgba(255,255,255,.08);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-      ".mp2-ctx-item{display:flex;align-items:center;gap:15px;width:100%;text-align:left;background:none;border:none;color:rgba(255,255,255,.92);font-size:14.5px;font-weight:600;font-family:inherit;padding:11px 12px;border-radius:12px;cursor:pointer;position:relative}" +
-      ".mp2-ctx-item:active{background:rgba(255,255,255,.09)}" +
-      ".mp2-ctx-item > i{width:22px;text-align:center;color:rgba(255,255,255,.65);font-size:16.5px}" +
+      ".mp2-ctx-grab{width:46px;height:4px;border-radius:99px;background:rgba(255,255,255,.28);margin:2px auto 12px}" +
+      ".mp2-ctx-title{font-size:19px;font-weight:800;color:#fff;letter-spacing:-.02em;padding:0 10px 12px;border-bottom:1px solid rgba(255,255,255,.09);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mp2-ctx-item{display:flex;align-items:center;gap:16px;width:100%;text-align:left;background:none;border:none;color:rgba(255,255,255,.93);font-size:14px;font-weight:600;font-family:inherit;padding:12px 14px;border-radius:14px;cursor:pointer;position:relative}" +
+      ".mp2-ctx-item:active{background:rgba(255,255,255,.1)}" +
+      ".mp2-ctx-item > i{width:26px;text-align:center;color:rgba(255,255,255,.72);font-size:17.5px;flex-shrink:0}" +
       ".mp2-ctx-item.is-on > i{color:#fb7185}" +
+      ".mp2-ctx-item--emph{background:rgba(255,255,255,.07)}" +
+      ".mp2-ctx-item--emph:active{background:rgba(255,255,255,.11)}" +
+      ".mp2-ctx-check{color:#a78bfa !important}" +
       ".mp2-ctx-chev{position:absolute;right:14px;color:rgba(255,255,255,.4);font-size:12px}" +
-      ".mp2-ctx-sub{display:block;font-size:11px;font-weight:400;color:rgba(255,255,255,.45);margin-top:1px}" +
-      ".mp2-ctx-era{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);margin:4px 0}" +
+      ".mp2-ctx-sub{display:block;font-size:11px;font-weight:400;color:rgba(255,255,255,.45);margin-top:2px}" +
+      ".mp2-ctx-era{background:none;border:none;margin:0}" +
       ".mp2-ctx-era > span{display:block}" +
-      ".mp2-ctx-era b{display:block;font-size:15px;font-weight:700;color:#fff}" +
-      ".mp2-ctx-div{height:1px;background:rgba(255,255,255,.1);margin:6px 8px}" +
+      ".mp2-ctx-era b{display:block;font-size:14px;font-weight:600;color:#fff}" +
+      ".mp2-ctx-div{height:1px;background:rgba(255,255,255,.1);margin:6px 10px}" +
+      ".mp2-ctx-brand{display:block;width:max-content;margin:12px auto 2px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.75);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border-radius:999px;padding:8px 22px}" +
 
       /* ===== the playlist picker ===== */
       ".mp2-pl{position:absolute;left:0;right:0;bottom:0;z-index:10;background:#1f1a17;border-radius:18px 18px 0 0;padding:8px 10px max(14px,env(safe-area-inset-bottom));max-height:70vh;display:flex;flex-direction:column;box-shadow:0 -10px 48px rgba(0,0,0,.65)}" +
@@ -1199,6 +1204,14 @@
     like.classList.toggle("is-on", f);
     like.innerHTML = '<i class="' + (f ? "fas" : "far") + ' fa-heart" aria-hidden="true"></i><span>' + (f ? "Liked" : "Like") + "</span>";
 
+    /* Comments count for the check row — reads the same badge the deck shows */
+    try {
+      var badge = document.getElementById("song-comments-count");
+      var n = badge ? parseInt(String(badge.textContent || "0").replace(/[^0-9]/g, ""), 10) : 0;
+      var cntEl = q(ov, "[data-mp='ctx-comments-count']");
+      if (cntEl) cntEl.textContent = n > 0 ? n + " on this song" : "No comments yet";
+    } catch (e) {}
+
     menu.hidden = false;
     scrim.hidden = false;
   }
@@ -1323,12 +1336,8 @@
     }
 
     if (action === "close") {
-      /* stop the music, then hide the player */
-      var au = audioEl();
-      if (au && !au.paused) {
-        var mp = document.getElementById("deck-play");
-        if (mp) mp.click(); else if (typeof window.shadowPause === "function") window.shadowPause();
-      }
+      /* Hide the player — and nothing else. The music keeps playing; the
+         deck or the bottom bar is still there to bring it back up. */
       closeCtx(ov);
       close();
       return;
@@ -1920,15 +1929,16 @@
         '<button type="button" class="mp2-ctx-item" data-ctx="versions"><i class="fas fa-code-branch" aria-hidden="true"></i><span>Other versions</span></button>' +
         '<button type="button" class="mp2-ctx-item mp2-ctx-era" data-ctx="era"><i class="fas fa-layer-group" aria-hidden="true"></i><span><b>Go to era</b><span class="mp2-ctx-sub" data-mp="ctx-era-sub">Other</span></span></button>' +
         '<div class="mp2-ctx-div"></div>' +
-        '<button type="button" class="mp2-ctx-item" data-ctx="edit"><i class="fas fa-pen-to-square" aria-hidden="true"></i><span>Edit this song<span class="mp2-ctx-sub">Fix credits, dates or details</span></span></button>' +
+        '<button type="button" class="mp2-ctx-item mp2-ctx-item--emph" data-ctx="edit"><i class="fas fa-pen-to-square" aria-hidden="true"></i><span>Edit this song<span class="mp2-ctx-sub">Fix credits, dates or details</span></span></button>' +
         '<div class="mp2-ctx-div"></div>' +
-        '<button type="button" class="mp2-ctx-item" data-ctx="info"><i class="fas fa-circle-info" aria-hidden="true"></i><span>Info</span></button>' +
+        '<button type="button" class="mp2-ctx-item" data-ctx="info"><i class="fas fa-user-group" aria-hidden="true"></i><span>Credits</span></button>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="openqueue"><i class="fas fa-list-ul" aria-hidden="true"></i><span>Open queue</span></button>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="eq"><i class="fas fa-sliders" aria-hidden="true"></i><span>Equalizer and reverb</span></button>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="settings"><i class="fas fa-gear" aria-hidden="true"></i><span>Playback settings</span></button>' +
-        '<button type="button" class="mp2-ctx-item" data-ctx="comments"><i class="far fa-comment" aria-hidden="true"></i><span>Show comments</span></button>' +
+        '<button type="button" class="mp2-ctx-item mp2-ctx-item--emph" data-ctx="comments"><i class="fas fa-check mp2-ctx-check" aria-hidden="true"></i><span>Show comments<span class="mp2-ctx-sub" data-mp="ctx-comments-count">No comments yet</span></span></button>' +
         '<div class="mp2-ctx-div"></div>' +
-        '<button type="button" class="mp2-ctx-item" data-ctx="close"><i class="fas fa-xmark" aria-hidden="true"></i><span>Close player<span class="mp2-ctx-sub">Stops playback and hides the player</span></span></button>' +
+        '<button type="button" class="mp2-ctx-item" data-ctx="close"><i class="fas fa-xmark" aria-hidden="true"></i><span>Close player<span class="mp2-ctx-sub">Hides the player — the music keeps playing</span></span></button>' +
+        '<span class="mp2-ctx-brand" aria-hidden="true">TheHighWRLD</span>' +
       '</div>' +
 
       /* ===== the playlist picker ===== */

@@ -3650,45 +3650,59 @@ html.foot-in-view #scrollTopBtn{
   #deck-player.hidden{transform:translateY(160%) scale(.97)}
   #deck-player .deck-inner{padding:0;display:block}
 
-  /* One line: the song, and the transport beside it. */
+  /* Two rows on a phone: the song + transport, then the progress line
+     with the current time and the real duration. */
   #deck-player .deck-row{
     display:flex;
     align-items:center;
-    gap:8px;
-    padding:8px 10px;
+    gap:7px;
+    padding:9px 10px 3px;
   }
   #deck-player .deck-song{display:flex;align-items:center;gap:9px;min-width:0;flex:1 1 auto}
   #deck-player .deck-cover-wrap{width:42px;height:42px;flex:0 0 42px}
   #deck-player .deck-cover{width:42px;height:42px;border-radius:11px}
   #deck-player .deck-info{flex:1 1 auto;min-width:0;padding:0;display:flex;flex-direction:column;gap:1px}
-  #deck-player .deck-title{font-size:12.5px;line-height:1.25}
-  #deck-player .deck-tag{display:none}
+  #deck-player .deck-title{font-size:12.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #deck-player .deck-tag{display:block;font-size:8px;line-height:1.2;color:rgba(255,255,255,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   #deck-player .deck-artist{font-size:10px;line-height:1.2}
   #deck-player .deck-fav{width:30px;height:30px;font-size:11px;flex:0 0 30px}
 
-  /* The transport: play and next. */
+  /* The transport: shuffle, previous, play, next, repeat. */
   #deck-player .deck-centre{display:flex;align-items:center;gap:2px;flex:0 0 auto}
+  #deck-player .deck-btn{width:29px;height:29px;font-size:11px;border-radius:9px}
   #deck-player #deck-shuffle-btn,
   #deck-player #deck-repeat-btn,
-  #deck-player #deck-prev{display:none}
-  #deck-player .deck-btn{width:32px;height:32px;font-size:12px}
-  #deck-player #deck-play{width:38px;height:38px;font-size:13px}
+  #deck-player #deck-prev{display:flex}
+  #deck-player #deck-play{width:36px;height:36px;font-size:13px}
 
-  /* The progress, along the top edge of the bar. */
+  /* The progress line, inside the bar — current time, live fill, real duration. */
   #deck-player .deck-bar-row{
-    position:absolute;
-    left:0;right:0;top:0;
-    display:block;
-    width:auto;
-    height:2px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    padding:0 12px 8px;
+    height:auto;
   }
-  #deck-player .deck-clock{display:none}
+  #deck-player .deck-clock{display:block;font-size:8.5px;min-width:25px;color:rgba(255,255,255,.45);font-variant-numeric:tabular-nums}
+  #deck-player #deck-current-time{text-align:left}
+  #deck-player #deck-duration-time{text-align:right}
   #deck-player .deck-progress{
     position:static;
-    height:2px;
+    flex:1;
+    height:3px;
+    width:auto;
+    border-radius:99px;
+    background:rgba(255,255,255,.15);
+    overflow:hidden;
+  }
+  #deck-player .deck-progress-bar{
     width:100%;
-    border-radius:0;
-    background:rgba(255,255,255,.14);
+    height:100%;
+    transform-origin:left center;
+    border-radius:99px;
+    background:#38bdf8;
+    display:block;
   }
 
   /* The rest of the actions live in the full-screen player. The one that
