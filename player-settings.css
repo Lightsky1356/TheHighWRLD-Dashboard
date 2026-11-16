@@ -3650,33 +3650,34 @@ html.foot-in-view #scrollTopBtn{
   #deck-player.hidden{transform:translateY(160%) scale(.97)}
   #deck-player .deck-inner{padding:0;display:block}
 
-  /* Two rows on a phone: the song + transport, then the progress line
-     with the current time and the real duration. */
+  /* Two rows on a phone, kept as tight as we can. */
   #deck-player .deck-row{
     display:flex;
     align-items:center;
-    gap:7px;
-    padding:9px 10px 3px;
+    gap:6px;
+    padding:6px 10px 2px;
   }
-  #deck-player .deck-song{display:flex;align-items:center;gap:9px;min-width:0;flex:1 1 auto}
-  #deck-player .deck-cover-wrap{width:42px;height:42px;flex:0 0 42px}
-  #deck-player .deck-cover{width:42px;height:42px;border-radius:11px}
-  #deck-player .deck-info{flex:1 1 auto;min-width:0;padding:0;display:flex;flex-direction:column;gap:1px}
-  #deck-player .deck-title{font-size:12.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #deck-player .deck-tag{display:block;font-size:8px;line-height:1.2;color:rgba(255,255,255,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-  #deck-player .deck-artist{font-size:10px;line-height:1.2}
-  #deck-player .deck-fav{width:30px;height:30px;font-size:11px;flex:0 0 30px}
+  #deck-player .deck-song{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
+  #deck-player .deck-cover-wrap{width:34px;height:34px;flex:0 0 34px}
+  #deck-player .deck-cover{width:34px;height:34px;border-radius:9px}
+  #deck-player .deck-info{flex:1 1 auto;min-width:0;padding:0;display:flex;flex-direction:column;gap:0}
+  #deck-player .deck-title{font-size:11px;line-height:1.18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #deck-player .deck-tag{display:block;font-size:7px;line-height:1.1;color:rgba(255,255,255,.38);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  #deck-player .deck-artist{font-size:9px;line-height:1.15}
+  #deck-player .deck-fav{width:26px;height:26px;font-size:9.5px;flex:0 0 26px}
 
   /* The transport: shuffle, previous, play, next, repeat, then the progress
-     row wrapped onto its own full-width line below the song row. */
+     row wrapped onto its own tight full-width line. */
   #deck-player .deck-row{flex-wrap:wrap}
   #deck-player .deck-centre{display:contents}
-  #deck-player .deck-controls{display:flex;align-items:center;gap:2px;flex:0 0 auto}
-  #deck-player .deck-btn{width:29px;height:29px;font-size:11px;border-radius:9px}
+  #deck-player .deck-controls{display:flex;align-items:center;gap:1px;flex:0 0 auto}
+  #deck-player .deck-btn{width:24px;height:24px;font-size:10px;border-radius:7px}
   #deck-player #deck-shuffle-btn,
   #deck-player #deck-repeat-btn,
   #deck-player #deck-prev{display:flex}
-  #deck-player #deck-play{width:36px;height:36px;font-size:13px}
+  #deck-player #deck-shuffle-btn i,
+  #deck-player #deck-repeat-btn i{font-size:8px}
+  #deck-player #deck-play{width:32px;height:32px;font-size:12px}
   #deck-player .deck-actions{margin-left:auto}
 
   /* The progress line, inside the bar — current time, live fill, real duration. */
@@ -3685,18 +3686,18 @@ html.foot-in-view #scrollTopBtn{
     flex:1 1 100%;
     display:flex;
     align-items:center;
-    gap:8px;
+    gap:7px;
     width:auto;
-    padding:2px 2px 6px;
+    padding:1px 2px 4px;
     height:auto;
   }
-  #deck-player .deck-clock{display:block;font-size:8.5px;min-width:25px;color:rgba(255,255,255,.45);font-variant-numeric:tabular-nums}
+  #deck-player .deck-clock{display:block;font-size:7.5px;min-width:23px;color:rgba(255,255,255,.42);font-variant-numeric:tabular-nums}
   #deck-player #deck-current-time{text-align:left}
   #deck-player #deck-duration-time{text-align:right}
   #deck-player .deck-progress{
     position:static;
     flex:1;
-    height:3px;
+    height:2px;
     width:auto;
     border-radius:99px;
     background:rgba(255,255,255,.15);
@@ -3714,13 +3715,13 @@ html.foot-in-view #scrollTopBtn{
   /* The rest of the actions live in the full-screen player. The one that
      stays is the chevron: it is the only way to put the bar away, and the
      handle that brings it back sits under the navigation. */
-  #deck-player .deck-actions{display:flex;gap:2px;flex:0 0 auto}
+  #deck-player .deck-actions{display:flex;gap:2px;flex:0 0 auto;align-items:center}
+  #deck-player #deck-toggle{width:24px;height:24px;font-size:10px}
   #deck-player #song-comments-btn,
   #deck-player #deck-queue-btn,
   #deck-player .deck-volume,
   #deck-player #deck-keys-btn,
   #deck-player #deck-settings-btn{display:none}
-  #deck-player #deck-toggle{width:30px;height:30px;font-size:11px}
 
   /* While the bar is up, the floating chrome moves above it. The bar is the
      width of the screen, so anything left in the bottom band would sit on
@@ -3757,7 +3758,7 @@ html.foot-in-view #scrollTopBtn{
 
   /* The page keeps room for the bar, and for the navigation under it. */
   body:has(#deck-player:not(.hidden)){
-    padding-bottom:calc(var(--mbn-h,54px) + 92px) !important;
+    padding-bottom:calc(var(--mbn-h,54px) + 64px) !important;
   }
   /* With the bar put away, the navigation still needs its room. */
   body.deck-hidden{
