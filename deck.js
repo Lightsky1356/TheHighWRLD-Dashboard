@@ -74,6 +74,17 @@
   }
 
   /* ---- the version line under the title ---- */
+  var ERA_RE = /\((GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|SOUNDCLOUD)\)/i;
+  var VER_RE = /\((Sessions|Leaks|Halloween|999)\)/i;
+  function shortTag(tag) {
+    if (!tag) return "";
+    var era = tag.match(ERA_RE);
+    var ver = tag.match(VER_RE);
+    var eraCode = era ? era[1].toUpperCase() : "";
+    var verLabel = ver ? ver[1] : "";
+    if (verLabel && eraCode) return verLabel + " · " + eraCode;
+    return verLabel || eraCode || tag;
+  }
   function paintTag() {
     var tag = el("deck-tag");
     if (!tag) return;
@@ -87,7 +98,7 @@
         }
       }
     } catch (e) {}
-    tag.textContent = text || "";
+    tag.textContent = shortTag(text);
     tag.style.display = text ? "" : "none";
   }
 
