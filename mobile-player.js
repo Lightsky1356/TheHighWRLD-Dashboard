@@ -34,7 +34,6 @@
 
   var OV = "mplayer-ov";
   var syncIv = null;
-  var queueOpen = false;
   var momentMode = "moment"; /* "moment" | "song" — the comments composer's pin */
 
   function esc(s) {
@@ -316,7 +315,8 @@
       ".mp2-top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:max(14px,env(safe-area-inset-top)) 18px 6px;min-height:52px}" +
       ".mp2-x,.mp2-more{background:none;border:none;color:rgba(255,255,255,.72);width:44px;height:44px;min-width:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px}" +
       ".mp2-x:active,.mp2-more:active{background:rgba(255,255,255,.09)}" +
-      ".mp2-context{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);font-weight:700}" +
+      ".mp2-context{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.42);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}" +
+      ".mp2-context b{color:rgba(255,255,255,.92);font-weight:800}" +
       /* the search pill, dead centre, the same shape juicewrld.io carries */
       /* the search pill, inside the queue page */ +
       ".mp2-search{position:relative;width:100%;height:40px;margin:0 0 12px}" +
@@ -349,45 +349,17 @@
       ".mp2-view{display:none;flex:1;min-height:0;width:100%;flex-direction:column;align-items:center;overflow:hidden;overscroll-behavior:contain}" +
       ".mp2-view.is-active{display:flex}" +
 
-      /* now */
-      ".mp2-cover{width:min(100%,340px,42vh);aspect-ratio:1/1;object-fit:cover;border-radius:16px;background:#1c1530;box-shadow:0 26px 60px rgba(0,0,0,.55),0 0 0 .5px rgba(255,255,255,.08) inset;margin-top:6px;flex-shrink:0}" +
-      /* tiny screens keep a scroll hatch rather than clipping the actions */
-      "@media (max-height:560px){.mp2-view[data-view='now']{overflow-y:auto;-webkit-overflow-scrolling:touch}.mp2-cover{width:min(100%,260px,34vh);margin-top:2px}.mp2-title{margin-top:8px !important;font-size:18px !important}}" +
-      ".mp2-title{margin:16px 0 0;font-size:clamp(20px,5.6vw,24px);line-height:1.16;font-weight:800;letter-spacing:-.01em;text-align:center;max-width:100%}" +
-      ".mp2-artist{margin:5px 0 0;font-size:15px;color:rgba(255,255,255,.6);text-align:center}" +
-      ".mp2-altnames{margin:5px 0 0;font-size:10px;color:rgba(255,255,255,.38);text-align:center;max-width:90%;line-height:1.55}" +
-      ".mp2-pill{margin-top:14px;display:inline-flex;align-items:center;gap:9px;max-width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:8px 15px;font-size:12px;font-weight:600;color:rgba(255,255,255,.85);cursor:pointer}" +
-      ".mp2-pill i{font-size:10px;opacity:.75}" +
-      ".mp2-pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}" +
-      ".mp2-chiprow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:center}" +
-      ".mp2-chip{font-size:10.5px;font-weight:700;letter-spacing:.02em;border-radius:8px;padding:4px 10px}" +
-      ".chip-cat-leaks{background:rgba(251,191,36,.13);color:#fcd34d;border:1px solid rgba(251,191,36,.28)}" +
-      ".chip-cat-sessions{background:rgba(34,211,238,.12);color:#67e8f9;border:1px solid rgba(34,211,238,.25)}" +
-      ".chip-cat-halloween{background:rgba(192,132,252,.13);color:#d8b4fe;border:1px solid rgba(192,132,252,.3)}" +
-      ".chip-year{background:rgba(255,255,255,.08);color:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.08)}" +
-
-      /* the action row: heart + add to queue on the left, share on the right */
-      ".mp2-actions{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:auto;padding:4px 2px 6px}" +
-      ".mp2-actions-left{display:flex;align-items:center;gap:14px}" +
-      ".mp2-actions-right{display:flex;align-items:center;gap:14px}" +
-      ".mp2-act{background:none;border:none;color:rgba(255,255,255,.78);width:44px;height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer}" +
-      ".mp2-act:active{transform:scale(.88)}" +
-      ".mp2-act.is-on{color:#fb7185}" +
-
-      /* the equalizer bars (queue page + now-playing card) */
+      /* the equalizer bars (now-playing card + queue rows) */
       ".mp2-eq{display:flex;align-items:flex-end;gap:2.5px;height:17px}" +
-      ".mp2-eq span{width:3px;border-radius:2px;background:#c084fc;height:35%;transform-origin:bottom}" +
+      ".mp2-eq span{width:3px;border-radius:2px;background:#38bdf8;height:35%;transform-origin:bottom}" +
       ".mp2-eq.is-playing span{animation:mp2eq .9s ease-in-out infinite}" +
       ".mp2-eq span:nth-child(2){animation-delay:.22s}" +
       ".mp2-eq span:nth-child(3){animation-delay:.1s}" +
       ".mp2-eq span:nth-child(4){animation-delay:.34s}" +
       "@keyframes mp2eq{0%,100%{height:22%}50%{height:100%}}" +
 
-      /* ===== the full-screen queue page ===== */
-      ".mp2-qp{position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;background:#12100f;border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.9,.25,1);box-shadow:0 -8px 40px rgba(0,0,0,.6)}" +
-      ".mp2-qp:not([hidden]){transform:translateY(0)}" +
-      ".mp2-qp[hidden]{display:none}" +
-      ".mp2-qp-top{display:flex;align-items:center;justify-content:space-between;padding:max(18px,env(safe-area-inset-top)) 20px 10px;border-bottom:1px solid rgba(255,255,255,.08)}" +
+      /* ===== the queue, as an inline view ===== */
+      ".mp2-view[data-view='queue']{align-items:stretch}" +
       /* ===== the playlists page ===== */
       ".mp2-plp{position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;background:#12100f;border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.9,.25,1);box-shadow:0 -8px 40px rgba(0,0,0,.6)}" +
       ".mp2-plp:not([hidden]){transform:translateY(0)}" +
@@ -416,20 +388,21 @@
       ".mp2-plp-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-family:inherit;font-size:12.5px;font-weight:800;border-radius:12px;padding:11px 10px;cursor:pointer}" +
       ".mp2-plp-btn.primary{background:#fff;color:#161016;border-color:#fff}" +
       ".mp2-plp-btn:active{transform:scale(.97)}" +
-      ".mp2-qp-title{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em;color:#fff}" +
+      ".mp2-qp-top{display:flex;align-items:center;justify-content:space-between;padding:max(18px,env(safe-area-inset-top)) 16px 10px;border-bottom:1px solid rgba(255,255,255,.08)}" +
+      ".mp2-qp-title{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em;color:#fff}" +
       ".mp2-qp-icons{display:flex;align-items:center;gap:2px}" +
       ".mp2-qp-icon{background:none;border:none;color:rgba(255,255,255,.85);width:42px;height:42px;min-width:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer}" +
       ".mp2-qp-icon:active{background:rgba(255,255,255,.08)}" +
       ".mp2-qp-icon.on{color:#7dd3fc}" +
       ".mp2-qp-icon.close{font-size:19px}" +
-      ".mp2-qp-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:14px 18px max(24px,env(safe-area-inset-bottom))}" +
+      ".mp2-qp-body{flex:1;min-height:0;width:100%;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 2px max(12px,env(safe-area-inset-bottom))}" +
       ".mp2-qp-h{margin:2px 2px 4px;font-size:13px;font-weight:600;color:rgba(255,255,255,.55)}" +
       ".mp2-qp-hrow{display:flex;align-items:baseline;justify-content:space-between;padding:0 2px;margin-top:16px}" +
       ".mp2-qp-hrow .mp2-qp-h{margin:0}" +
       ".mp2-qp-count{color:rgba(255,255,255,.35);margin-left:6px}" +
       ".mp2-qp-clear{background:none;border:none;color:#fff;font-size:13px;font-weight:700;padding:6px 8px;border-radius:8px;cursor:pointer}" +
       ".mp2-qp-clear:disabled{color:rgba(255,255,255,.25);cursor:default}" +
-      ".mp2-npcard{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:9px 11px;margin-bottom:2px}" +
+      ".mp2-npcard{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:9px 11px;margin:2px 0 4px}" +
       ".mp2-npcard-cover{width:52px;height:52px;border-radius:10px;object-fit:cover;background:#1c1530}" +
       ".mp2-npcard-meta{flex:1;min-width:0}" +
       ".mp2-npcard-title{font-size:14.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
@@ -438,7 +411,12 @@
       ".mp2-npcard-duration{font-size:12px;color:rgba(255,255,255,.55);font-variant-numeric:tabular-nums}" +
       ".mp2-npcard-fav{background:none;border:none;color:rgba(255,255,255,.78);width:38px;height:44px;min-width:38px;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer}" +
       ".mp2-npcard-fav.is-on{color:#fb7185}" +
+      ".mp2-qrow-grip{background:none;border:none;color:rgba(255,255,255,.4);width:30px;min-width:30px;height:46px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;font-size:13px}" +
+      ".mp2-qrow-grip:active{cursor:grabbing}" +
       ".mp2-qrow{display:flex;align-items:center;gap:11px;padding:7px 2px;border-radius:12px}" +
+      ".mp2-qrow.is-dragging{opacity:.55;background:rgba(255,255,255,.07)}" +
+      ".mp2-qrow.drop-above{box-shadow:inset 0 2px 0 #38bdf8}" +
+      ".mp2-qrow.drop-below{box-shadow:inset 0 -2px 0 #38bdf8}" +
       ".mp2-qrow:active{background:rgba(255,255,255,.06)}" +
       ".mp2-qrow-cover{width:46px;height:46px;border-radius:9px;object-fit:cover;background:#1c1530}" +
       ".mp2-qrow-meta{flex:1;min-width:0}" +
@@ -494,6 +472,16 @@
       ".mp2-comments-note{align-self:flex-start;margin:8px 2px 0;font-size:10.5px;color:rgba(255,255,255,.45);min-height:13px}" +
       ".mp2-comments{width:100%;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin-top:6px;padding:0 1px}" +
       ".mp2-comments .song-comments-empty{text-align:center;color:rgba(255,255,255,.42);font-size:13px;padding:30px 10px}" +
+      ".mp2-signin{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:10px;text-align:center;padding:28px 24px}" +
+      ".mp2-signin-ic{width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;font-size:24px;color:rgba(255,255,255,.35)}" +
+      ".mp2-signin-t{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.01em}" +
+      ".mp2-signin-s{font-size:12px;line-height:1.6;color:rgba(255,255,255,.5);max-width:250px}" +
+      ".mp2-signin-btn{margin-top:6px;display:inline-flex;align-items:center;gap:9px;background:#fff;color:#161016;border:none;border-radius:999px;padding:12px 26px;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;text-decoration:none}" +
+      ".mp2-signin-btn:active{transform:scale(.96)}" +
+      ".mp2-nocomments{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:38px 22px}" +
+      ".mp2-nocomments i{font-size:30px;color:rgba(255,255,255,.28)}" +
+      ".mp2-nocomments b{font-size:15px;color:#fff}" +
+      ".mp2-nocomments span{font-size:11px;color:rgba(255,255,255,.45);max-width:230px;line-height:1.6}" +
       ".mp2-mini{display:flex;align-items:center;gap:10px;width:100%;padding:8px 2px 6px;border-top:1px solid rgba(255,255,255,.08);margin-top:6px}" +
       ".mp2-mini-cover{width:48px;height:48px;border-radius:9px;object-fit:cover;background:#1c1530}" +
       ".mp2-mini-meta{flex:1;min-width:0}" +
@@ -505,9 +493,9 @@
       /* progress */
       ".mp2-scrub{position:relative;z-index:1;height:32px;margin:4px 22px 0;cursor:pointer;touch-action:none;display:flex;align-items:center}" +
       ".mp2-scrub-line{position:absolute;left:0;right:0;top:50%;height:4px;transform:translateY(-50%);border-radius:99px;background:rgba(255,255,255,.18)}" +
-      ".mp2-fill{position:absolute;left:0;top:50%;height:4px;transform:translateY(-50%);border-radius:99px;background:linear-gradient(90deg,#c084fc,#e879f9);width:0%}" +
+      ".mp2-fill{position:absolute;left:0;top:50%;height:4px;transform:translateY(-50%);border-radius:99px;background:#38bdf8;width:0%}" +
       ".mp2-knob{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.45);left:0%}" +
-      ".mp2-scrub:focus-visible{outline:2px solid #e879f9;outline-offset:3px;border-radius:8px}" +
+      ".mp2-scrub:focus-visible{outline:2px solid #38bdf8;outline-offset:3px;border-radius:8px}" +
       ".mp2-times{position:relative;z-index:1;display:flex;justify-content:space-between;padding:0 22px;font-size:10px;color:rgba(255,255,255,.5);font-variant-numeric:tabular-nums}" +
       ".mp2-markers{width:100%;margin-top:2px}" +
 
@@ -519,11 +507,12 @@
       ".mp2-play{width:64px;height:64px;min-width:64px;border-radius:50%;background:#fff;color:#120c07;font-size:21px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}" +
       ".mp2-play:active{transform:scale(.94)}" +
 
-      /* bottom bar */
-      ".mp2-bottom{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:6px 28px max(10px,env(safe-area-inset-bottom))}" +
-      ".mp2-vbtn{position:relative;background:none;border:none;color:rgba(255,255,255,.6);width:48px;height:46px;min-width:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px}" +
-      ".mp2-vbtn.on{color:#e879f9;background:rgba(232,121,249,.14)}" +
-      ".mp2-vbtn.on::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#e879f9}";
+      /* bottom bar — the two view tabs, pinned to the corners */
+      ".mp2-bottom{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:2px 14px max(12px,env(safe-area-inset-bottom))}" +
+      ".mp2-vbtn{position:relative;background:none;border:none;color:rgba(255,255,255,.55);width:56px;height:52px;min-width:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:19px}" +
+      ".mp2-vbtn:active{background:rgba(255,255,255,.08)}" +
+      ".mp2-vbtn.on{color:#fff;background:rgba(255,255,255,.13)}" +
+      ".mp2-vbtn.on::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:#38bdf8}";
     (document.head || document.documentElement).appendChild(st);
   }
 
@@ -574,13 +563,37 @@
     var title = commentTitle();
     if (!box) return;
     if (!title || title === "Nothing playing") {
-      box.innerHTML = '<p class="song-comments-empty">Play a song to see its comments.</p>';
+      box.innerHTML = '<div class="mp2-nocomments"><i class="fas fa-compact-disc" aria-hidden="true"></i><b>Nothing playing yet</b><span>Press play and the thread for that song opens here.</span></div>';
+      return;
+    }
+    if (!signedIn()) {
+      /* Signed out: no dead comments list, a real call to action instead. */
+      box.innerHTML =
+        '<div class="mp2-signin">' +
+          '<div class="mp2-signin-ic"><i class="far fa-comment-dots" aria-hidden="true"></i></div>' +
+          '<p class="mp2-signin-t">Sign in to join the conversation</p>' +
+          '<p class="mp2-signin-s">Every comment on the vault is from a signed-in member. Sign in to read along and add your own at any moment of the song.</p>' +
+          '<button type="button" class="mp2-signin-btn" data-mp="comments-signin"><i class="fas fa-right-to-bracket" aria-hidden="true"></i>Sign in to comment</button>' +
+        '</div>';
       return;
     }
     if (window.SongComments && typeof window.SongComments.renderThreadInto === "function") {
       window.SongComments.renderThreadInto(box, title);
+      /* If the thread came back empty, show a designed empty state instead of bare text. */
+      setTimeout(function () {
+        try {
+          if (!box.querySelector(".song-comment-row, .scc-row, [class*='comment'][class*='row']") && /No comments yet/i.test(box.textContent || "")) {
+            box.innerHTML =
+              '<div class="mp2-nocomments">' +
+                '<i class="far fa-comment-dots" aria-hidden="true"></i>' +
+                '<b>No comments yet</b>' +
+                '<span>Be the first — drop a comment at the exact moment that hits, like a real one.</span>' +
+              '</div>';
+          }
+        } catch (e) {}
+      }, 350);
     } else {
-      box.innerHTML = '<p class="song-comments-empty">The comments could not be loaded.</p>';
+      box.innerHTML = '<div class="mp2-nocomments"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i><b>Comments unavailable</b><span>The comments could not be loaded. Check your connection and try again.</span></div>';
     }
   }
 
@@ -622,9 +635,14 @@
   var lastPlaceholder = "", lastNote = "", lastAvatar = "", lastPostAt = "";
   function paintComposeState(ov) {
     var can = signedIn();
+    var compose = q(ov, ".mp2-compose");
+    var moment = q(ov, ".mp2-moment-row");
+    if (compose) compose.style.display = can ? "" : "none";
+    if (moment) moment.style.display = can ? "" : "none";
     var input = q(ov, "[data-mp='comment-input']");
     var send = q(ov, "[data-mp='comment-send']");
     var note = q(ov, "[data-mp='comments-note']");
+    if (note) note.style.display = can ? "" : "none";
     var au = audioEl();
     var at = (au && isFinite(au.currentTime)) ? Math.max(0, Math.round(au.currentTime)) : 0;
     var wholeSong = momentMode === "song";
@@ -729,9 +747,21 @@
     saveSessionHistory();
   }
 
+  var lastQueueSig = null;
   function paintQueuePage(ov, force) {
-    var page = q(ov, "[data-mp='queuepage']");
+    if (queueDragActive) return; /* don't rebuild the rows out from under a drag */
+    var page = q(ov, "[data-view='queue']");
     if (!page) return;
+    /* rebuild only when something actually changed — the 1s sync must not
+       re-create the rows under someone's finger */
+    var sig = "";
+    try {
+      if (typeof trackQueue !== "undefined" && trackQueue) sig += trackQueue.join(",");
+    } catch (e) {}
+    sig += "|" + currentTitle();
+    sig += "|" + sessionHistory.length;
+    if (!force && sig === lastQueueSig) return;
+    lastQueueSig = sig;
 
     var t = currentTrack();
     var idx = currentIndex();
@@ -783,8 +813,10 @@
             try { qt = (typeof trackList !== "undefined" && trackList) ? trackList[qIdx] : null; } catch (e) {}
             var row = document.createElement("div");
             row.className = "mp2-qrow";
+            row.setAttribute("data-qi", String(qi));
             var qcover = qt && qt.cover ? coverOfTrack(qt) : "Juice-WRLD.png";
             row.innerHTML =
+              '<button type="button" class="mp2-qrow-grip" data-mp="qp-grip-' + qi + '" tabindex="-1" aria-label="Drag to reorder"><i class="fas fa-grip-vertical" aria-hidden="true"></i></button>' +
               '<img decoding="async" class="mp2-qrow-cover" loading="lazy" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'" src="' + esc(coverThumb(qcover, "64")) + '">' +
               '<div class="mp2-qrow-meta" data-mp="qp-row-play">' +
                 '<p class="mp2-qrow-title">' + esc((qt && qt.title) || "Track " + (qIdx + 1)) + '</p>' +
@@ -860,26 +892,9 @@
     });
   }
 
-  function openQueuePage(ov) {
-    queueOpen = true;
-    var page = q(ov, "[data-mp='queuepage']");
-    if (page) page.hidden = false;
-    var vbtn = q(ov, "[data-mp='view-queue']");
-    if (vbtn) { vbtn.classList.add("on"); vbtn.setAttribute("aria-pressed", "true"); }
-    paintQueuePage(ov, true);
-  }
-
-  function closeQueuePage(ov) {
-    queueOpen = false;
-    var page = q(ov, "[data-mp='queuepage']");
-    if (page) page.hidden = true;
-    var vbtn = q(ov, "[data-mp='view-queue']");
-    if (vbtn) { vbtn.classList.remove("on"); vbtn.setAttribute("aria-pressed", "false"); }
-  }
-
-  function toggleQueuePage(ov) {
-    if (queueOpen) closeQueuePage(ov); else openQueuePage(ov);
-  }
+  /* The queue is an inline view (like comments), not an overlay page:
+     data-view="queue" shares the persistent mini row, scrubber, transport and
+     the corner tabs. */
 
   /* ------------------------------------------------------------------ */
   /* the playlists page                                                 */
@@ -1183,6 +1198,18 @@
 
     if (action === "addplaylist") { openPlaylistPicker(ov, t); return; }
 
+    if (action === "addqueue") {
+      /* menuTrack — the song the menu was opened from; null means the one playing */
+      var qi2 = menuTrack ? trackIndexOf(menuTrack) : currentIndex();
+      if (qi2 >= 0 && typeof addToQueue === "function") {
+        addToQueue(qi2);
+        toast("Added to the queue", "success");
+      }
+      closeCtx(ov);
+      if (currentView === "queue") paintQueuePage(ov, true);
+      return;
+    }
+
     if (action === "myplaylists") {
       closeCtx(ov);
       openPlaylistsPage(ov);
@@ -1202,7 +1229,6 @@
     if (action === "era") {
       var code = eraCodeOf(t);
       closeCtx(ov);
-      if (queueOpen) closeQueuePage(ov);
       close();
       if (typeof window.switchAppPage === "function") window.switchAppPage("hub");
       setTimeout(function () {
@@ -1262,7 +1288,6 @@
     if (action === "comments") {
       commentsTarget = t || null;
       closeCtx(ov);
-      if (queueOpen) closeQueuePage(ov);
       switchView(ov, "comments");
       return;
     }
@@ -1347,7 +1372,7 @@
   /* ------------------------------------------------------------------ */
   /* the views                                                          */
   /* ------------------------------------------------------------------ */
-  var currentView = "now";
+  var currentView = "queue";
 
   function switchView(ov, name) {
     currentView = name;
@@ -1361,10 +1386,11 @@
       b.setAttribute("aria-pressed", on ? "true" : "false");
     });
     if (name === "comments") { paintComposeState(ov); loadComments(ov); }
+    else paintQueuePage(ov, true);
   }
 
   function toggleView(ov, name) {
-    switchView(ov, currentView === name ? "now" : name);
+    switchView(ov, currentView === name ? (name === "comments" ? "queue" : "comments") : name);
   }
 
   /* ------------------------------------------------------------------ */
@@ -1386,73 +1412,24 @@
 
     paintBackground(ov);
 
-    qa(ov, "[data-mp='title'],[data-mp='title2']").forEach(function (el) {
-      var want = el.getAttribute("data-mp") === "title2" ? ctTitle : t;
-      if (el.textContent !== want) el.textContent = want;
+    qa(ov, "[data-mp='title2']").forEach(function (el) {
+      if (el.textContent !== ctTitle) el.textContent = ctTitle;
     });
-    qa(ov, "[data-mp='artist'],[data-mp='artist2']").forEach(function (el) {
-      var want = el.getAttribute("data-mp") === "artist2" ? ctArtist : a;
-      if (el.textContent !== want) el.textContent = want;
+    qa(ov, "[data-mp='artist2']").forEach(function (el) {
+      if (el.textContent !== ctArtist) el.textContent = ctArtist;
     });
-    /* alt names — one line under the artist, only when the vault has them */
-    var alts = altNames(currentTrack());
-    qa(ov, "[data-mp='altnames']").forEach(function (el) {
-      if (alts.length) {
-        el.hidden = false;
-        el.textContent = "Also known as  " + alts.join(" · ");
-      } else {
-        el.hidden = true;
-        el.textContent = "";
-      }
-    });
-    qa(ov, "[data-mp='cover'],[data-mp='mini-cover']").forEach(function (img) {
-      var want = img.getAttribute("data-mp") === "mini-cover" ? ctCover : cover;
-      if (img.getAttribute("src") !== want) img.setAttribute("src", want);
+    qa(ov, "[data-mp='mini-cover']").forEach(function (img) {
+      if (img.getAttribute("src") !== ctCover) img.setAttribute("src", ctCover);
     });
 
-    /* the version pill */
-    var pill = q(ov, "[data-mp='pill']");
-    var track = currentTrack();
-    var tag = track && track.tag ? String(track.tag) : "";
-    if (pill) {
-      if (!tag) { pill.style.display = "none"; }
-      else {
-        pill.style.display = "";
-        var span = pill.querySelector("[data-mp='tag']");
-        var versions = versionCount(track);
-        var text = tag.length > 40 ? tag.slice(0, 40) + "…" : tag;
-        var label = text + (versions > 1 ? " · " + versions + " versions" : "");
-        if (span && span.textContent !== label) span.textContent = label;
-      }
+    /* where the listener is playing from — Lobby, Tracker, The Vault… */
+    var ctxEl = q(ov, "[data-mp='ctx']");
+    if (ctxEl) {
+      var ctx = "Lobby";
+      try { if (window.__thwPlayContext) ctx = String(window.__thwPlayContext); } catch (e) {}
+      if (ctxEl.textContent !== ctx) ctxEl.textContent = ctx;
     }
 
-    /* chips */
-    var chipCat = q(ov, "[data-mp='chip-cat']");
-    if (chipCat && track) {
-      var cat = String(track.category || "");
-      var map = { leaks: ["Leaked", "chip-cat-leaks"], sessions: ["Sessions", "chip-cat-sessions"], halloween: ["Halloween", "chip-cat-halloween"] };
-      var m = map[cat];
-      var label = m ? m[0] : "";
-      chipCat.textContent = label;
-      chipCat.className = "mp2-chip" + (m ? " " + m[1] : " chip-year");
-      chipCat.style.display = label ? "" : "none";
-    } else if (chipCat) chipCat.style.display = "none";
-
-    var chipYear = q(ov, "[data-mp='chip-year']");
-    if (chipYear && track && track.year) {
-      chipYear.textContent = String(track.year);
-      chipYear.style.display = "";
-    } else if (chipYear) chipYear.style.display = "none";
-
-    /* hearts: the big view tracks the song that is playing; the mini row
-       tracks the song whose thread is on the screen */
-    var fav = favOn();
-    qa(ov, "[data-mp='fav']").forEach(function (el) {
-      el.classList.toggle("is-on", fav);
-      var icon = el.querySelector("i");
-      if (icon) icon.className = (fav ? "fas" : "far") + " fa-heart";
-      el.setAttribute("aria-pressed", fav ? "true" : "false");
-    });
     var favMini = favOn(ct);
     qa(ov, "[data-mp='fav3']").forEach(function (el) {
       el.classList.toggle("is-on", favMini);
@@ -1511,7 +1488,7 @@
       if (currentView === "comments") { paintComposeState(ov); loadComments(ov); }
       if (window.THWCommentMarkers) window.THWCommentMarkers.refresh(ov);
     }
-    if (queueOpen) paintQueuePage(ov, force);
+    if (currentView === "queue") paintQueuePage(ov, force);
     if (currentView === "comments") paintComposeState(ov);
   }
 
@@ -1587,6 +1564,77 @@
     });
   }
 
+  /* ---- drag to reorder the queue, touch first ---- */
+  var queueDragActive = false;
+  function bindQueueDrag(ov) {
+    var list = ov.querySelector("[data-mp='qp-list']");
+    if (!list || list._thwDragWired) return;
+    list._thwDragWired = true;
+    var drag = null; /* {row, from, overRow, below} */
+
+    function clearMarks() {
+      qa(ov, ".mp2-qrow").forEach(function (r) { r.classList.remove("is-dragging", "drop-above", "drop-below"); });
+    }
+    function rowFromPoint(x, y) {
+      try {
+        var el = document.elementFromPoint(x, y);
+        var row = el && el.closest ? el.closest(".mp2-qrow") : null;
+        if (row && list.contains(row)) return row;
+      } catch (e) {}
+      return null;
+    }
+    list.addEventListener("pointerdown", function (e) {
+      var grip = e.target.closest ? e.target.closest(".mp2-qrow-grip") : null;
+      if (!grip) return;
+      var row = grip.closest(".mp2-qrow");
+      if (!row) return;
+      e.preventDefault();
+      try { grip.setPointerCapture(e.pointerId); } catch (err) {}
+      var qi = Number(row.getAttribute("data-qi"));
+      if (!isFinite(qi)) return;
+      drag = { row: row, from: qi, overRow: null, below: false };
+      queueDragActive = true;
+      row.classList.add("is-dragging");
+    }, { passive: false });
+    list.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      if (e.cancelable) e.preventDefault();
+      var row = rowFromPoint(e.clientX, e.clientY);
+      qa(ov, ".mp2-qrow").forEach(function (r) { r.classList.remove("drop-above", "drop-below"); });
+      drag.overRow = null;
+      if (row && row !== drag.row) {
+        var rect = row.getBoundingClientRect();
+        var below = (e.clientY - rect.top) > rect.height / 2;
+        row.classList.add(below ? "drop-below" : "drop-above");
+        drag.overRow = row;
+        drag.below = below;
+      }
+    }, { passive: false });
+    function endDrag() {
+      if (!drag) return;
+      var from = drag.from, targetRow = drag.overRow, below = drag.below;
+      drag = null;
+      queueDragActive = false;
+      clearMarks();
+      var to = -1;
+      if (targetRow) {
+        var ti = Number(targetRow.getAttribute("data-qi")) || 0;
+        to = below ? ti + 1 : ti;
+        if (ti > from) to -= 1;
+      }
+      if (to >= 0 && typeof window.moveQueueItemTo === "function") {
+        try { window.moveQueueItemTo(from, to); } catch (err2) {}
+        paintQueuePage(ov, true);
+      }
+    }
+    list.addEventListener("pointerup", endDrag);
+    list.addEventListener("pointercancel", function () {
+      drag = null;
+      queueDragActive = false;
+      clearMarks();
+    });
+  }
+
   /* ---- swipe down to dismiss ---- */
   function bindSwipeDown(ov) {
     var startY = null, startT = 0, moved = false;
@@ -1632,8 +1680,7 @@
     css();
     lastSync = { pct: -1, curTxt: null, durTxt: null, playing: null, title: null };
     lastBgCover = null;
-    currentView = "now";
-    queueOpen = false;
+    currentView = "queue";
     playlistsOpen = false;
     plState = { list: null, current: null };
     commentsTarget = null;
@@ -1648,7 +1695,6 @@
     ov.setAttribute("aria-label", "Now playing");
 
     var t = currentTitle(), a = currentArtist(), cover = coverOf();
-    var versions = currentTrack() ? versionCount(currentTrack()) : 1;
 
     ov.innerHTML =
       '<div class="mp2-bg" aria-hidden="true"></div>' +
@@ -1657,28 +1703,36 @@
 
       '<header class="mp2-top">' +
         '<button type="button" class="mp2-x" data-mp-close aria-label="Close the player"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
-        '<span class="mp2-context">TheHighWRLD</span>' +
+        '<span class="mp2-context">Playing from <b data-mp="ctx">Lobby</b></span>' +
         '<button type="button" class="mp2-more" data-mp-more aria-label="More options"><i class="fas fa-ellipsis" aria-hidden="true"></i></button>' +
       '</header>' +
 
       '<div class="mp2-body">' +
 
-        '<section class="mp2-view is-active" data-view="now">' +
-          '<img decoding="async" class="mp2-cover" data-mp="cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
-          '<h2 class="mp2-title" data-mp="title">' + esc(t) + '</h2>' +
-          '<p class="mp2-artist" data-mp="artist">' + esc(a) + '</p>' +
-          '<p class="mp2-altnames" data-mp="altnames" hidden></p>' +
-          '<button type="button" class="mp2-pill" data-mp="pill" title="Open the song page"><i class="fas fa-key" aria-hidden="true"></i><span data-mp="tag"></span><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
-          '<div class="mp2-chiprow"><span class="mp2-chip chip-year" data-mp="chip-cat"></span><span class="mp2-chip chip-year" data-mp="chip-year"></span></div>' +
-          '<div class="mp2-actions">' +
-            '<div class="mp2-actions-left">' +
-              '<button type="button" class="mp2-act" data-mp="fav" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
-              '<button type="button" class="mp2-act" data-mp="addqueue" aria-label="Add to the queue"><i class="fas fa-plus" aria-hidden="true"></i></button>' +
+        '<section class="mp2-view is-active" data-view="queue">' +
+          '<div class="mp2-qp-body">' +
+            '<div class="mp2-search">' +
+              '<i class="fas fa-magnifying-glass mp2-search-ic" aria-hidden="true"></i>' +
+              '<input class="mp2-search-input" data-mp="search" type="text" placeholder="Search the vault…" aria-label="Search the vault" autocomplete="off" spellcheck="false">' +
+              '<button type="button" class="mp2-search-clear" data-mp-search-clear aria-label="Clear the search"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
+              '<div class="mp2-search-results" data-mp-search-results hidden></div>' +
             '</div>' +
-            '<div class="mp2-actions-right">' +
-              '<button type="button" class="mp2-act" data-mp="share" aria-label="Share this song"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></button>' +
-              '<button type="button" class="mp2-act" data-mp="vault-pull" aria-label="Vault pull — a random song"><i class="fas fa-dice" aria-hidden="true"></i></button>' +
+            '<p class="mp2-qp-h">Now playing</p>' +
+            '<div class="mp2-npcard">' +
+              '<img decoding="async" class="mp2-npcard-cover" data-mp="np-cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+              '<div class="mp2-npcard-meta"><p class="mp2-npcard-title" data-mp="np-title">' + esc(t) + '</p><p class="mp2-npcard-sub" data-mp="np-sub"></p></div>' +
+              '<div class="mp2-npcard-right">' +
+                '<span class="mp2-eq" data-mp="np-eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span>' +
+                '<span class="mp2-npcard-duration" data-mp="np-duration"></span>' +
+                '<button type="button" class="mp2-npcard-fav" data-mp="np-fav" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
+              '</div>' +
             '</div>' +
+            '<div class="mp2-qp-hrow"><p class="mp2-qp-h">Up next<span class="mp2-qp-count" data-mp="qp-count"></span></p>' +
+              '<button type="button" class="mp2-qp-clear" data-mp="qp-clear-queue">Clear</button></div>' +
+            '<div class="mp2-qp-list" data-mp="qp-list"></div>' +
+            '<div class="mp2-qp-hrow"><p class="mp2-qp-h">Played earlier</p>' +
+              '<button type="button" class="mp2-qp-clear" data-mp="qp-clear-history">Clear</button></div>' +
+            '<div class="mp2-qp-list" data-mp="qp-history"></div>' +
           '</div>' +
         '</section>' +
 
@@ -1697,13 +1751,14 @@
           '</div>' +
           '<p class="mp2-comments-note" data-mp="comments-note"></p>' +
           '<div class="mp2-comments" data-mp="comments"></div>' +
-          '<div class="mp2-mini">' +
-            '<img decoding="async" class="mp2-mini-cover" data-mp="mini-cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
-            '<div class="mp2-mini-meta"><p class="mp2-mini-title" data-mp="title2">' + esc(t) + '</p><p class="mp2-mini-artist" data-mp="artist2">' + esc(a) + '</p></div>' +
-            '<button type="button" class="mp2-mini-fav" data-mp="fav3" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
-          '</div>' +
         '</section>' +
 
+      '</div>' +
+
+      '<div class="mp2-mini">' +
+        '<img decoding="async" class="mp2-mini-cover" data-mp="mini-cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+        '<div class="mp2-mini-meta"><p class="mp2-mini-title" data-mp="title2">' + esc(t) + '</p><p class="mp2-mini-artist" data-mp="artist2">' + esc(a) + '</p></div>' +
+        '<button type="button" class="mp2-mini-fav" data-mp="fav3" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
       '</div>' +
 
       '<div class="mp2-scrub" data-mp="prog" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0:00 of 0:00">' +
@@ -1721,46 +1776,9 @@
       '</div>' +
 
       '<nav class="mp2-bottom">' +
-        '<button type="button" class="mp2-vbtn" data-mp="view-comments" aria-label="Comments" aria-pressed="false"><i class="fas fa-comment" aria-hidden="true"></i></button>' +
-        '<button type="button" class="mp2-vbtn" data-mp="view-playlists" aria-label="My playlists" aria-pressed="false"><i class="fas fa-compact-disc" aria-hidden="true"></i></button>' +
-        '<button type="button" class="mp2-vbtn" data-mp="view-queue" aria-label="Queue" aria-pressed="false"><i class="fas fa-list-ul" aria-hidden="true"></i></button>' +
+        '<button type="button" class="mp2-vbtn" data-mp="view-comments" aria-label="Comments" aria-pressed="false"><i class="far fa-comment" aria-hidden="true"></i></button>' +
+        '<button type="button" class="mp2-vbtn on" data-mp="view-queue" aria-label="Queue" aria-pressed="true"><i class="fas fa-bars-staggered" aria-hidden="true"></i></button>' +
       '</nav>' +
-
-      /* ===== the full-screen queue page ===== */
-      '<div class="mp2-qp" data-mp="queuepage" hidden role="dialog" aria-label="Queue">' +
-        '<header class="mp2-qp-top">' +
-          '<h1 class="mp2-qp-title">Queue</h1>' +
-          '<div class="mp2-qp-icons">' +
-            '<button type="button" class="mp2-qp-icon" data-mp="shuffle" aria-label="Shuffle" aria-pressed="false"><i class="fas fa-shuffle" aria-hidden="true"></i></button>' +
-            '<button type="button" class="mp2-qp-icon" data-mp="repeat" aria-label="Repeat" aria-pressed="false"><i class="fas fa-repeat" aria-hidden="true"></i></button>' +
-            '<button type="button" class="mp2-qp-icon close" data-mp="close-queue" aria-label="Close the queue"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
-          '</div>' +
-        '</header>' +
-        '<div class="mp2-qp-body">' +
-          '<div class="mp2-search">' +
-            '<i class="fas fa-magnifying-glass mp2-search-ic" aria-hidden="true"></i>' +
-            '<input class="mp2-search-input" data-mp="search" type="text" placeholder="Search the vault…" aria-label="Search the vault" autocomplete="off" spellcheck="false">' +
-            '<button type="button" class="mp2-search-clear" data-mp-search-clear aria-label="Clear the search"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
-            '<div class="mp2-search-results" data-mp-search-results hidden></div>' +
-          '</div>' +
-          '<p class="mp2-qp-h">Now playing</p>' +
-          '<div class="mp2-npcard">' +
-            '<img decoding="async" class="mp2-npcard-cover" data-mp="np-cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
-            '<div class="mp2-npcard-meta"><p class="mp2-npcard-title" data-mp="np-title">' + esc(t) + '</p><p class="mp2-npcard-sub" data-mp="np-sub"></p></div>' +
-            '<div class="mp2-npcard-right">' +
-              '<span class="mp2-eq" data-mp="np-eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span>' +
-              '<span class="mp2-npcard-duration" data-mp="np-duration"></span>' +
-              '<button type="button" class="mp2-npcard-fav" data-mp="np-fav" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
-            '</div>' +
-          '</div>' +
-          '<div class="mp2-qp-hrow"><p class="mp2-qp-h">Up next<span class="mp2-qp-count" data-mp="qp-count"></span></p>' +
-            '<button type="button" class="mp2-qp-clear" data-mp="qp-clear-queue">Clear</button></div>' +
-          '<div class="mp2-qp-list" data-mp="qp-list"></div>' +
-          '<div class="mp2-qp-hrow"><p class="mp2-qp-h">Played earlier</p>' +
-            '<button type="button" class="mp2-qp-clear" data-mp="qp-clear-history">Clear</button></div>' +
-          '<div class="mp2-qp-list" data-mp="qp-history"></div>' +
-        '</div>' +
-      '</div>' +
 
       /* ===== the playlists page ===== */
       '<div class="mp2-plp" data-mp="playlistpage" hidden role="dialog" aria-label="Your playlists">' +
@@ -1800,6 +1818,7 @@
         '<div class="mp2-ctx-grab" aria-hidden="true"></div>' +
         '<p class="mp2-ctx-title" data-mp="ctx-title">' + esc(t) + '</p>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="like"><i class="far fa-heart" aria-hidden="true"></i><span>Like</span></button>' +
+        '<button type="button" class="mp2-ctx-item" data-ctx="addqueue"><i class="fas fa-list-ul" aria-hidden="true"></i><span>Add to the queue</span></button>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="addplaylist"><i class="fas fa-plus" aria-hidden="true"></i><span>Add to playlist</span><i class="fas fa-chevron-right mp2-ctx-chev" aria-hidden="true"></i></button>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="myplaylists"><i class="fas fa-compact-disc" aria-hidden="true"></i><span>My playlists<span class="mp2-ctx-sub">Play or queue what you saved</span></span></button>' +
         '<button type="button" class="mp2-ctx-item" data-ctx="cover"><i class="fas fa-image" aria-hidden="true"></i><span>Change cover<span class="mp2-ctx-sub">Only you see it</span></span></button>' +
@@ -1911,9 +1930,7 @@
         } else if (action === "view-comments") {
           toggleView(ov, "comments");
         } else if (action === "view-queue") {
-          toggleQueuePage(ov);
-        } else if (action === "close-queue") {
-          closeQueuePage(ov);
+          switchView(ov, "queue");
         } else if (action === "view-playlists") {
           togglePlaylistsPage(ov);
         } else if (action === "close-playlists") {
@@ -1961,6 +1978,10 @@
         } else if (action === "moment-song") {
           momentMode = "song";
           paintComposeState(ov);
+        } else if (action === "comments-signin") {
+          close();
+          if (typeof window.switchAppPage === "function") window.switchAppPage("login");
+          return;
         }
       } catch (err) {}
       setTimeout(function () { sync(true); }, 120);
@@ -2028,6 +2049,7 @@
 
     bindScrubbing(ov);
     bindSwipeDown(ov);
+    bindQueueDrag(ov);
 
     document.body.appendChild(ov);
     stopSync();
@@ -2051,7 +2073,6 @@
     stopSync();
     menuTrack = null;
     commentsTarget = null;
-    queueOpen = false;
     try {
       var au = audioEl();
       if (au) {

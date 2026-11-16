@@ -397,7 +397,9 @@ a.thw-social-name:hover,a.thw-social-name:focus-visible{text-decoration:underlin
 .thw-social-switch:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:680px){
   #thw-social-panel{top:72px;left:8px;right:8px;bottom:calc(var(--mbn-h,55px) + env(safe-area-inset-bottom,0px) + 8px);width:auto;max-height:none;min-height:0;border-radius:17px}
-  #thw-social-fab{right:15px;bottom:calc(var(--mbn-h,55px) + env(safe-area-inset-bottom,0px) + 56px);width:45px;height:45px}
+  /* The FAB is gone on phones: the bottom-nav Messages button opens the same
+     panel, and the FAB only sat on top of the content. */
+  #thw-social-fab{display:none}
   .thw-social-convos{width:112px}
   .thw-social-settings-grid{grid-template-columns:1fr}
   .thw-social-head{padding:12px 13px 9px}

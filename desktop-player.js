@@ -348,11 +348,16 @@
       ".dpl-ov.is-collapsed .dpl-more-collapsed{display:flex}" +
 
       /* left */
-      ".dpl-left{display:flex;flex-direction:column;align-items:center;min-height:0;min-width:0;justify-content:center;overflow-y:auto;overscroll-behavior:contain;padding:10px 6px}" +
-      ".dpl-cover{width:min(56%,520px);aspect-ratio:1/1;object-fit:cover;border-radius:18px;background:#1c1530;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 .5px rgba(255,255,255,.06) inset}" +
-      ".dpl-title{margin:22px 0 0;font-size:clamp(24px,2.4vw,32px);line-height:1.1;font-weight:900;letter-spacing:-.02em;text-align:center;max-width:100%}" +
-      ".dpl-artist{margin:6px 0 0;font-size:19px;font-weight:700;color:rgba(255,255,255,.75);text-align:center}" +
-      ".dpl-album{margin:6px 0 0;font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.4);text-align:center}" +
+      ".dpl-left{display:flex;flex-direction:column;align-items:stretch;min-height:0;min-width:0;justify-content:center;overflow-y:auto;overscroll-behavior:contain;padding:14px 38px}" +
+      ".dpl-cover{align-self:center;width:min(46%,480px);aspect-ratio:1/1;object-fit:cover;border-radius:18px;background:#1c1530;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 .5px rgba(255,255,255,.06) inset}" +
+      ".dpl-titlerow{display:flex;align-items:center;gap:14px;width:100%;margin-top:20px}" +
+      ".dpl-titlerow .dpl-act{width:44px;height:44px;min-width:44px;border-radius:12px;flex-shrink:0;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07)}" +
+      ".dpl-titlerow .dpl-act:hover{background:rgba(255,255,255,.12);color:#fff}" +
+      ".dpl-title{margin:0;font-size:clamp(22px,2vw,30px);line-height:1.12;font-weight:900;letter-spacing:-.02em;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}" +
+      ".dpl-meta{display:flex;align-items:baseline;gap:12px;margin:10px 0 0;min-width:0}" +
+      ".dpl-meta-tag{display:inline-flex;align-items:center;gap:7px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#f9a8d4}" +
+      ".dpl-meta-tag i{font-size:11px;color:#f472b6}" +
+      ".dpl-meta-artists{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}" +
       /* the search pill in the top bar */ +
       ".dpl-searchwrap{position:relative;width:100%;height:38px;z-index:6}" +
       ".dpl-search-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.42);font-size:12px;pointer-events:none}" +
@@ -377,28 +382,32 @@
       ".dpl-srow-addall:hover{background:rgba(52,211,153,.2);color:#a7f3d0}" +
       ".dpl-srow-empty{padding:16px 14px;text-align:center;color:rgba(255,255,255,.4);font-size:12px}" +
 
-      ".dpl-actions{display:flex;align-items:center;gap:16px;margin-top:16px}" +
-      ".dpl-act{background:none;border:none;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.65);font-size:18px;cursor:pointer;border:1px solid rgba(255,255,255,.1)}" +
-      ".dpl-act:hover{background:rgba(255,255,255,.07);color:#fff}" +
-      ".dpl-act.is-on{color:#fb7185;border-color:rgba(251,113,133,.3)}" +
-      ".dpl-act.primary{width:52px;height:52px;background:rgba(255,255,255,.07)}" +
+      ".dpl-act{background:none;border:none;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.75);font-size:18px;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07)}" +
+      ".dpl-act:hover{background:rgba(255,255,255,.13);color:#fff}" +
+      ".dpl-act.is-on{color:#fb7185;border-color:rgba(251,113,133,.35);background:rgba(251,113,133,.09)}" +
+      ".dpl-act.primary{background:rgba(255,255,255,.07)}" +
 
-      ".dpl-chips{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center}" +
-      ".dpl-chip{font-size:10.5px;font-weight:700;letter-spacing:.03em;border-radius:8px;padding:4px 11px}" +
+      ".dpl-chips{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:flex-start}" +
+      ".dpl-chip{font-size:11px;font-weight:700;letter-spacing:.03em;border-radius:8px;padding:5px 12px}" +
+      ".dpl-versions{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.92);color:#161016;border:none;cursor:pointer;font-weight:800}" +
+      ".dpl-versions:hover{background:#fff}" +
+      ".dpl-versions small{font-weight:600;color:rgba(0,0,0,.55)}" +
+      ".dpl-versions i{font-size:9px;color:rgba(0,0,0,.5)}" +
+      ".chip-snippet{background:rgba(34,211,238,.13);color:#67e8f9;border:1px solid rgba(34,211,238,.3)}" +
       ".chip-leaked{background:rgba(251,191,36,.13);color:#fcd34d;border:1px solid rgba(251,191,36,.28)}" +
       ".chip-sessions{background:rgba(34,211,238,.12);color:#67e8f9;border:1px solid rgba(34,211,238,.25)}" +
       ".chip-halloween{background:rgba(192,132,252,.13);color:#d8b4fe;border:1px solid rgba(192,132,252,.3)}" +
-      ".chip-era{background:rgba(255,255,255,.07);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.09)}" +
+      ".chip-era{background:rgba(248,113,113,.13);color:#fca5a5;border:1px solid rgba(248,113,113,.26)}" +
       ".chip-year{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}" +
 
-      ".dpl-prog{display:flex;align-items:center;gap:12px;width:min(640px,100%);margin-top:22px}" +
+      ".dpl-prog{display:flex;align-items:center;gap:12px;width:100%;margin-top:22px}" +
       ".dpl-prog-bar{position:relative;flex:1;height:5px;border-radius:99px;background:rgba(255,255,255,.16);cursor:pointer;touch-action:none}" +
-      ".dpl-prog-fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,#c084fc,#e879f9);width:0%}" +
+      ".dpl-prog-fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:#38bdf8;width:0%}" +
       ".dpl-knob{position:absolute;top:50%;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);left:0%}" +
       ".dpl-times{font-size:10.5px;color:rgba(255,255,255,.45);font-variant-numeric:tabular-nums;min-width:34px;text-align:center}" +
 
-      ".dpl-markers{width:min(640px,100%);margin:0 auto}" +
-      ".dpl-transport{display:flex;align-items:center;gap:14px;margin-top:18px}" +
+      ".dpl-markers{width:100%;margin:0}" +
+      ".dpl-transport{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:18px}" +
       ".dpl-tbtn{background:none;border:none;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:17px;cursor:pointer}" +
       ".dpl-tbtn:hover{color:#fff;background:rgba(255,255,255,.06)}" +
       ".dpl-tbtn.on{color:#e879f9}" +
@@ -435,12 +444,36 @@
       ".dpl-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;padding-right:64px}" +
       ".dpl-tab{flex:1;background:none;border:none;color:rgba(255,255,255,.45);font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.01em;padding:16px 10px;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s ease,border-color .15s ease}" +
       ".dpl-tab:hover{color:#fff}" +
-      ".dpl-tab.is-active{color:#fff;border-bottom-color:#e879f9}" +
+      ".dpl-tab.is-active{color:#fff;border-bottom-color:#38bdf8}" +
       ".dpl-tab small{display:block;font-size:9px;font-weight:700;color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;letter-spacing:.05em;margin-top:2px}" +
       ".dpl-tabpane{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px 14px}" +
       ".dpl-tabpane[hidden]{display:none}" +
 
       /* up next */
+      ".dpl-npcard{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:10px 12px;margin-bottom:12px}" +
+      ".dpl-npcard-cover{width:52px;height:52px;border-radius:10px;object-fit:cover;background:#1c1530;flex-shrink:0}" +
+      ".dpl-npcard-meta{flex:1;min-width:0}" +
+      ".dpl-npcard-title{font-size:14.5px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".dpl-npcard-sub{font-size:10.5px;color:rgba(255,255,255,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}" +
+      ".dpl-npcard-right{display:flex;align-items:center;gap:8px;flex-shrink:0}" +
+      ".dpl-npcard-fav{background:none;border:none;color:rgba(255,255,255,.75);width:38px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border-radius:10px}" +
+      ".dpl-npcard-fav:hover{color:#fff;background:rgba(255,255,255,.07)}" +
+      ".dpl-npcard-fav.is-on{color:#fb7185}" +
+      ".dpl-eq{display:flex;align-items:flex-end;gap:2.5px;height:16px}" +
+      ".dpl-eq span{width:3px;border-radius:2px;background:#38bdf8;height:30%;transform-origin:bottom}" +
+      ".dpl-eq.is-playing span{animation:dpleq .9s ease-in-out infinite}" +
+      ".dpl-eq span:nth-child(2){animation-delay:.2s}" +
+      ".dpl-eq span:nth-child(3){animation-delay:.1s}" +
+      ".dpl-eq span:nth-child(4){animation-delay:.32s}" +
+      "@keyframes dpleq{0%,100%{height:22%}50%{height:100%}}" +
+      ".dpl-autoplay-h{display:flex;align-items:baseline;justify-content:space-between;padding:4px 2px 8px;margin-top:4px}" +
+      ".dpl-autoplay-label{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.01em}" +
+      ".dpl-autoplay-row{display:flex;align-items:center;gap:12px;padding:9px 8px;border-radius:14px;cursor:pointer}" +
+      ".dpl-autoplay-row:hover{background:rgba(255,255,255,.06)}" +
+      ".dpl-autoplay-row .dpl-row-sub{color:rgba(125,211,252,.75)}" +
+      ".dpl-fullqueue{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:#fff;font-family:inherit;font-size:13px;font-weight:700;border-radius:12px;padding:12px;cursor:pointer}" +
+      ".dpl-fullqueue:hover{background:rgba(255,255,255,.08)}" +
+      ".dpl-compose{margin-top:18px}" +
       ".dpl-upnext-hrow{display:flex;align-items:baseline;justify-content:space-between;padding:2px 2px 10px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px}" +
       ".dpl-upnext-h{font-size:13px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.02em}" +
       ".dpl-upnext-count{color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;margin-left:6px}" +
@@ -551,12 +584,18 @@
         /* -------- the left column -------- */
         '<section class="dpl-left">' +
           '<img decoding="async" class="dpl-cover" data-dpl="cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
-          '<h1 class="dpl-title" data-dpl="title">' + esc(title) + '</h1>' +
-          '<p class="dpl-album" data-dpl="album"></p>' +
-          '<p class="dpl-artist" data-dpl="artist">' + esc(artist) + '</p>' +
+          '<div class="dpl-titlerow">' +
+            '<h1 class="dpl-title" data-dpl="title">' + esc(title) + '</h1>' +
+            '<button type="button" class="dpl-act" data-dpl="fav" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
+            '<button type="button" class="dpl-act" data-dpl="addqueue" aria-label="Add to the queue"><i class="fas fa-list-ul" aria-hidden="true"></i></button>' +
+            '<button type="button" class="dpl-act" data-dpl="songpage" aria-label="Open the song page"><i class="fas fa-expand" aria-hidden="true"></i></button>' +
+          '</div>' +
+          '<p class="dpl-meta"><span class="dpl-meta-tag"><i class="fas fa-asterisk" aria-hidden="true"></i><span data-dpl="album">Session edit</span></span><span class="dpl-meta-artists" data-dpl="artist">' + esc(artist) + '</span></p>' +
           '<div class="dpl-chips">' +
+            '<button type="button" class="dpl-chip dpl-versions" data-dpl="versions" title="Every version of this song"><i class="fas fa-code-branch" aria-hidden="true"></i>Main version<small data-dpl="versions-n"></small><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
             '<span class="dpl-chip ' + chipClass + '" data-dpl="chip-cat">' + esc(catLabel(t) || "") + '</span>' +
             '<span class="dpl-chip chip-era" data-dpl="chip-era">' + esc(eraName(t)) + '</span>' +
+            '<span class="dpl-chip chip-snippet" data-dpl="chip-snippet" style="display:none">Snippet</span>' +
             '<span class="dpl-chip chip-year" data-dpl="chip-year" style="display:none"></span>' +
           '</div>' +
           '<div class="dpl-prog" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +
@@ -576,11 +615,19 @@
             '<button type="button" class="dpl-vol-ic" data-dpl="mute" aria-label="Mute"><i class="fas fa-volume-high" aria-hidden="true"></i></button>' +
             '<div class="dpl-vol" data-dpl="vol" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-label="Volume"><div class="dpl-vol-fill" data-dpl="vol-fill"></div></div>' +
           '</div>' +
-          '<div class="dpl-actions">' +
-            '<button type="button" class="dpl-act" data-dpl="fav" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
-            '<button type="button" class="dpl-act primary" data-dpl="addqueue" aria-label="Add to the queue"><i class="fas fa-plus" aria-hidden="true"></i></button>' +
-            '<button type="button" class="dpl-act" data-dpl="songpage" aria-label="Open the song page"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></button>' +
-            '<button type="button" class="dpl-act" data-dpl="vault-pull" aria-label="Vault pull — a random song" title="Vault pull — a random song from the vault"><i class="fas fa-dice" aria-hidden="true"></i></button>' +
+          '<div class="dpl-compose">' +
+            '<div class="scc-row">' +
+              '<span class="scc-avatar" data-dpl="avatar"><i class="fas fa-user" aria-hidden="true"></i></span>' +
+              '<input class="scc-input" data-dpl="comment-input" type="text" maxlength="2000" enterkeyhint="send" placeholder="Comment at 0:00" aria-label="Write a comment">' +
+              '<button type="button" class="scc-send" data-dpl="comment-send" aria-label="Send the comment"><i class="fas fa-arrow-right" aria-hidden="true"></i></button>' +
+            '</div>' +
+            '<div class="scc-moment-row">' +
+              '<div class="song-moment-toggle" role="group" aria-label="When this comment applies to">' +
+                '<button type="button" class="song-moment-btn is-on" data-dpl="moment-moment">This moment</button>' +
+                '<button type="button" class="song-moment-btn" data-dpl="moment-song">Whole song</button>' +
+              '</div>' +
+            '</div>' +
+            '<p class="song-comments-note" data-dpl="comments-note"></p>' +
           '</div>' +
         '</section>' +
 
@@ -591,7 +638,7 @@
           '<nav class="dpl-tabs" aria-label="Now playing panel">' +
             '<button type="button" class="dpl-tab" data-dpl="tab-queue">Up next<small data-dpl="upnext-count"></small></button>' +
             '<button type="button" class="dpl-tab is-active" data-dpl="tab-comments">Comments<small data-dpl="comments-count"></small></button>' +
-            '<button type="button" class="dpl-tab" data-dpl="tab-credits">Info</button>' +
+            '<button type="button" class="dpl-tab" data-dpl="tab-credits">Credits</button>' +
             '<button type="button" class="dpl-tab" data-dpl="tab-playlists">Playlists<small data-dpl="playlists-count"></small></button>' +
           '</nav>' +
           '<div class="dpl-tabpane" data-dpl="pane-queue" hidden>' +
@@ -601,25 +648,29 @@
               '<button type="button" class="dpl-search-clear" data-dpl="search-clear" aria-label="Clear the search"><i class="fas fa-xmark" aria-hidden="true"></i></button>' +
               '<div class="dpl-search-results" data-dpl="search-results" hidden></div>' +
             '</div>' +
+            '<div class="dpl-npcard">' +
+              '<img decoding="async" class="dpl-npcard-cover" data-dpl="np-cover" src="' + esc(cover) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+              '<div class="dpl-npcard-meta"><p class="dpl-npcard-title" data-dpl="np-title">' + esc(title) + '</p><p class="dpl-npcard-sub" data-dpl="np-sub"></p></div>' +
+              '<div class="dpl-npcard-right">' +
+                '<span class="dpl-eq" data-dpl="np-eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span>' +
+                '<button type="button" class="dpl-npcard-fav" data-dpl="np-fav" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
+              '</div>' +
+            '</div>' +
             '<div class="dpl-upnext-hrow"><span class="dpl-upnext-h">Up next<span class="dpl-upnext-count" data-dpl="queue-count"></span></span>' +
               '<button type="button" class="dpl-clear" data-dpl="clear-queue">Clear</button></div>' +
             '<div data-dpl="queue-list"></div>' +
+            '<div data-dpl="autoplay" hidden>' +
+              '<div class="dpl-autoplay-h"><span class="dpl-autoplay-label">Autoplay</span></div>' +
+              '<div class="dpl-autoplay-row" data-dpl="autoplay-row" role="button" tabindex="0" aria-label="Play the autoplay suggestion">' +
+                '<img decoding="async" class="dpl-row-cover" data-dpl="autoplay-cover" src="Juice-WRLD.png" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+                '<div class="dpl-row-meta"><p class="dpl-row-title" data-dpl="autoplay-title"></p>' +
+                  '<p class="dpl-row-sub" data-dpl="autoplay-sub">Because: same era</p></div>' +
+                '<span class="dpl-row-duration" data-dpl="autoplay-duration"></span>' +
+              '</div>' +
+            '</div>' +
+            '<button type="button" class="dpl-fullqueue" data-dpl="open-fullqueue">Open full queue</button>' +
           '</div>' +
           '<div class="dpl-tabpane" data-dpl="pane-comments">' +
-            '<div class="dpl-compose">' +
-              '<div class="scc-row">' +
-                '<span class="scc-avatar" data-dpl="avatar"><i class="fas fa-user" aria-hidden="true"></i></span>' +
-                '<input class="scc-input" data-dpl="comment-input" type="text" maxlength="2000" enterkeyhint="send" placeholder="Comment at 0:00" aria-label="Write a comment">' +
-                '<button type="button" class="scc-send" data-dpl="comment-send" aria-label="Send the comment"><i class="fas fa-arrow-right" aria-hidden="true"></i></button>' +
-              '</div>' +
-              '<div class="scc-moment-row">' +
-                '<div class="song-moment-toggle" role="group" aria-label="When this comment applies to">' +
-                  '<button type="button" class="song-moment-btn is-on" data-dpl="moment-moment">This moment</button>' +
-                  '<button type="button" class="song-moment-btn" data-dpl="moment-song">Whole song</button>' +
-                '</div>' +
-              '</div>' +
-              '<p class="song-comments-note" data-dpl="comments-note"></p>' +
-            '</div>' +
             '<div data-dpl="comments-thread"></div>' +
           '</div>' +
           '<div class="dpl-tabpane" data-dpl="pane-credits" hidden>' +
@@ -669,6 +720,18 @@
         if (a === "more") { if (window.togglePlayerContextMenu) window.togglePlayerContextMenu(act); return; }
         if (a === "fav") { toggleFav(); return; }
         if (a === "addqueue") { var ci = currentIndex(); if (ci >= 0 && typeof addToQueue === "function") { addToQueue(ci); toast("Added to the queue", "success"); } return; }
+        if (a === "np-fav") { toggleFav(); refreshQueue(ov); return; }
+        if (a === "autoplay-row") {
+          if (lastAutoplayPick >= 0) { try { if (window.selectTrackFromList) window.selectTrackFromList(lastAutoplayPick); } catch (err) {} }
+          return;
+        }
+        if (a === "open-fullqueue") {
+          close();
+          if (typeof window.toggleQueuePanel === "function" && window.matchMedia("(min-width: 1024px)").matches) { try { window.toggleQueuePanel(); } catch (err) {} }
+          else if (typeof window.switchAppPage === "function") window.switchAppPage("player");
+          return;
+        }
+        if (a === "versions") { var tt2 = currentTitle(); if (window.openSongPage) { window.openSongPage(tt2); close(); } return; }
         if (a === "songpage") { var tt = currentTitle(); if (window.openSongPage) { window.openSongPage(tt); close(); } return; }
         if (a === "play") { var mp = document.getElementById("deck-play"); if (mp) mp.click(); return; }
         if (a === "prev") { var pb = document.getElementById("prev-btn"); if (pb) pb.click(); else if (document.getElementById("deck-prev")) document.getElementById("deck-prev").click(); return; }
@@ -1073,7 +1136,91 @@
     } catch (e) {}
   }
 
+  var lastAutoplayPick = -1;
+  var DPL_ERA_RE = /\((GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|SOUNDCLOUD)\)/i;
+  function dplEraCode(t) {
+    var m = String((t && t.tag) || "").match(DPL_ERA_RE);
+    return m ? m[1].toUpperCase() : (t && t.category === "halloween" ? "POST" : "");
+  }
+  /* Same-base-title versions in the vault — feeds the "3 versions" pill. */
+  function dplVersionCount(t) {
+    try {
+      if (typeof trackList === "undefined" || !trackList) return 1;
+      var base = String((t && t.title) || "").split("(")[0].trim().toLowerCase();
+      if (!base) return 1;
+      var n = 0;
+      for (var i = 0; i < trackList.length; i++) {
+        if (String((trackList[i] || {}).title || "").split("(")[0].trim().toLowerCase() === base) n++;
+      }
+      return Math.max(1, n);
+    } catch (e) { return 1; }
+  }
+  /* The autoplay pick: the first same-era song in the vault that is not the
+     one playing. Deterministic — the same song every time for a given track,
+     which is what makes it predictable enough to be labelled "Because: same era". */
+  function dplAutoplayPick(t) {
+    try {
+      if (typeof trackList === "undefined" || !trackList) return -1;
+      var code = dplEraCode(t);
+      if (!code) return -1;
+      var curBase = String((t && t.title) || "").split("(")[0].trim().toLowerCase();
+      for (var i = 0; i < trackList.length; i++) {
+        if (dplEraCode(trackList[i]) !== code) continue;
+        var base = String((trackList[i] && trackList[i].title) || "").split("(")[0].trim().toLowerCase();
+        if (base === curBase) continue;
+        return i;
+      }
+    } catch (e) {}
+    return -1;
+  }
+
   function refreshQueue(ov) {
+    var t = currentTrack();
+    /* the pinned now-playing card */
+    var npCov = q(ov, "[data-dpl='np-cover']");
+    if (npCov) {
+      var npsrc = t && t.cover ? String(t.cover) : "Juice-WRLD.png";
+      if (npCov.getAttribute("src") !== npsrc) npCov.setAttribute("src", npsrc);
+    }
+    var npTitle = q(ov, "[data-dpl='np-title']");
+    if (npTitle) npTitle.textContent = currentTitle();
+    var npSub = q(ov, "[data-dpl='np-sub']");
+    if (npSub) npSub.textContent = t ? eraName(t) + (catLabel(t) ? " · " + catLabel(t) : "") : "";
+    var npEq = q(ov, "[data-dpl='np-eq']");
+    if (npEq) npEq.classList.toggle("is-playing", playing());
+    var npFav = q(ov, "[data-dpl='np-fav']");
+    if (npFav) {
+      var nf = false;
+      try { if (currentIndex() >= 0 && typeof isFavorite === "function") nf = !!isFavorite(currentIndex()); } catch (e) {}
+      npFav.classList.toggle("is-on", nf);
+      npFav.setAttribute("aria-pressed", nf ? "true" : "false");
+      npFav.innerHTML = '<i class="' + (nf ? "fas" : "far") + ' fa-heart" aria-hidden="true"></i>';
+    }
+
+    /* autoplay — a real same-era pick, hidden when it cannot be made or the
+       listener turned autoplay off in settings */
+    var apBox = q(ov, "[data-dpl='autoplay']");
+    if (apBox) {
+      var wantsAutoplay = true;
+      try { if (window.wrldPlayerSettings && window.wrldPlayerSettings.get("autoplaySimilar") === false) wantsAutoplay = false; } catch (e) {}
+      var pick = wantsAutoplay ? dplAutoplayPick(t) : -1;
+      if (pick >= 0) {
+        apBox.hidden = false;
+        var at = null;
+        try { at = (typeof trackList !== "undefined" && trackList) ? trackList[pick] : null; } catch (e) {}
+        var ac = q(ov, "[data-dpl='autoplay-cover']");
+        if (ac) { var asrc = at ? coverThumb(at.cover, "64") : "Juice-WRLD.png"; if (ac.getAttribute("src") !== asrc) ac.setAttribute("src", asrc); }
+        var ati = q(ov, "[data-dpl='autoplay-title']");
+        if (ati) ati.textContent = (at && at.title) || ("Track " + (pick + 1));
+        var adur = q(ov, "[data-dpl='autoplay-duration']");
+        if (adur) adur.textContent = fmt((at && Number(at.duration)) || 0);
+        lastAutoplayPick = pick;
+      } else {
+        apBox.hidden = true;
+        lastAutoplayPick = -1;
+      }
+    }
+
     var listEl = q(ov, "[data-dpl='queue-list']");
     var countEl = q(ov, "[data-dpl='queue-count']");
     var tabCountEl = q(ov, "[data-dpl='upnext-count']");
@@ -1159,6 +1306,13 @@
     }
     var eraChip = q(ov, "[data-dpl='chip-era']");
     if (eraChip) eraChip.textContent = eraName(t);
+    var versN = q(ov, "[data-dpl='versions-n']");
+    if (versN) {
+      var vc = dplVersionCount(t);
+      versN.textContent = vc > 1 ? " · " + vc + " versions" : "";
+    }
+    var snip = q(ov, "[data-dpl='chip-snippet']");
+    if (snip) snip.style.display = /snippet/i.test(String((t && t.tag) || "")) ? "" : "none";
     var yChip = q(ov, "[data-dpl='chip-year']");
     if (yChip && t && t.year) { yChip.textContent = String(t.year); yChip.style.display = ""; }
 
