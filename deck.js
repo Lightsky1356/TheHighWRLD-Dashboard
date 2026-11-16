@@ -512,11 +512,14 @@
      preference wins: pressing D puts the Deck away and it stays away until
      they bring it back or pick a new song. */
   var lastTrackForDeckHint = -1;
-  function syncNoTrack() {
+  function syncNoTrack(kicked) {
     var has = false;
     try { has = typeof currentTrackIndex === "number" && currentTrackIndex >= 0; } catch (e) {}
     if (document.body) document.body.classList.toggle("deck-no-track", !has);
-    if (has && window.currentTrackIndex !== lastTrackForDeckHint && !pageIsPlayer() && document.body.classList.contains("deck-hidden")) {
+    /* Only an actual play/load event brings a hidden Deck back into view on a
+       deliberate track selection - not the heartbeat. The heartbeat merely
+       keeps the away class honest; it must never undo a reader's hide. */
+    if (kicked && has && window.currentTrackIndex !== lastTrackForDeckHint && !pageIsPlayer() && document.body.classList.contains("deck-hidden")) {
       lastTrackForDeckHint = window.currentTrackIndex;
       setAway(false, true);
     }
@@ -552,13 +555,23 @@
         setAway(false, true);
       } catch (e) {}
     };
+
+    /* Hide the Deck behind an overlay (the mobile sheet, a dialog) without
+       touching the reader's own hidden preference; show it again on close,
+       falling back to whatever the reader had chosen. */
+    window.THWDeckOverlayHide = function (hide) {
+      try {
+        if (hide) setAway(true, true);
+        else setAway(remembered(), true);
+      } catch (e) {}
+    };
     /* The bar appears and goes with the player, so the Deck's own state
        is checked again now and then. */
-    syncNoTrack();
+    syncNoTrack(true);
     var audioEl = document.querySelector("audio");
     if (audioEl) {
-      audioEl.addEventListener("loadedmetadata", syncNoTrack);
-      audioEl.addEventListener("play", syncNoTrack);
+      audioEl.addEventListener("loadedmetadata", function () { syncNoTrack(true); });
+      audioEl.addEventListener("play", function () { syncNoTrack(true); });
     }
 
     setInterval(function () {
