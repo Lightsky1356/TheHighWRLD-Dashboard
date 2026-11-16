@@ -327,10 +327,10 @@
       ".mp2-context b{color:rgba(255,255,255,.92);font-weight:800}" +
       /* the search pill, inside the queue view */
       ".mp2-search{position:relative;width:100%;height:40px;margin:0 0 12px}" +
-      ".mp2-search-input{display:block;width:100%;height:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 40px 0 36px;transition:border-color .2s ease,background .2s ease;line-height:40px}" +
-      ".mp2-search-input::placeholder{color:rgba(255,255,255,.36)}" +
-      ".mp2-search-input:focus{border-color:rgba(34,211,238,.45);background:rgba(255,255,255,.11)}" +
-      ".mp2-search-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.42);font-size:12px;pointer-events:none}" +
+      ".mp2-search-input{display:block;width:100%;height:100%;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:999px;color:#fff;font-size:12.5px;font-family:inherit;outline:none;padding:0 40px 0 38px;transition:border-color .2s ease,background .2s ease;line-height:40px}" +
+      ".mp2-search-input::placeholder{color:rgba(255,255,255,.55)}" +
+      ".mp2-search-input:focus{border-color:rgba(34,211,238,.6);background:rgba(255,255,255,.17)}" +
+      ".mp2-search-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.65);font-size:12.5px;pointer-events:none}" +
       ".mp2-search-clear{position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.5);width:32px;height:32px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:13px;cursor:pointer}" +
       ".mp2-search-clear.is-shown{display:flex}" +
       ".mp2-search-results{background:#171310;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:6px;max-height:min(40vh,380px);overflow-y:auto;overscroll-behavior:contain;box-shadow:0 24px 60px rgba(0,0,0,.62);z-index:30}" +
