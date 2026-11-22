@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v523';
+const VERSION = 'thw-v527';
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -39,7 +39,7 @@ const PRECACHE = [
   './tracks.js?v=thw-v19',
   './browser-id3-writer.js?v=thw-v3',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v99',
+  './account.js?v=thw-v101',
   './stats-page.js?v=thw-v1',
   './effects.js?v=thw-v2',
   './theme-drift.js?v=thw-v9',
@@ -47,14 +47,12 @@ const PRECACHE = [
   './script.js?v=thw-v113',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
-  './auth.js?v=thw-v17',
+  './auth.js?v=thw-v18',
   './wanted-realtime.js?v=thw-v4',
-  './community-realtime.js?v=thw-v6',
   './presence.js?v=thw-v12',
   './api-side.js?v=thw-v1',
   './pwa.js?v=thw-v11',
   './electron-playback.js?v=thw-v1',
-  './community-realtime.css?v=thw-v2',
   './song-comments.js?v=thw-v10',
   './era-page.js?v=thw-v9',
 
@@ -66,14 +64,14 @@ const PRECACHE = [
   './comment-markers.js?v=thw-v1',
   './vault-pull.js?v=thw-v1',
   './deck.js?v=thw-v16',
-  './command-palette.js?v=thw-v3',
+  './command-palette.js?v=thw-v4',
   './updates-page.js?v=thw-v2',
   './tracker.js?v=thw-v3',
   './song-page.js?v=thw-v8',
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v24',
   './account-shared.css?v=thw-v6',
-  './player-settings.css?v=thw-v205',
+  './player-settings.css?v=thw-v206',
   './style.css?v=thw-v55',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
@@ -122,14 +120,15 @@ const PRECACHE = [
   './failed-projects.css?v=thw-v5',
   './legal-info.css?v=thw-v5',
   './simple-toast.css?v=thw-v4',
+  './ban-screen.css?v=thw-v1',
   './cover-preview.css?v=thw-v5',
 
   /* --- page scripts --- */
   './user-relations.js?v=thw-v2',
-  './user-menu.js?v=thw-v6',
+  './user-menu.js?v=thw-v7',
   './player-settings.js?v=thw-v21',
-  './profile.js?v=thw-v40',
-  './profile.css?v=thw-v23',
+  './profile.js?v=thw-v42',
+  './profile.css?v=thw-v24',
   './cover-pref.js?v=thw-v4',
   './assets/settings-era/JUTE.webp',
   './assets/settings-era/AFF.webp',
@@ -156,7 +155,7 @@ const PRECACHE = [
   './bans.js?v=thw-v3',
   './automod-ui.js?v=thw-v3',
   './report-status.js?v=thw-v2',
-  './ban-screen.js?v=thw-v2',
+  './ban-screen.js?v=thw-v4',
   './wrld-stats.js?v=thw-v10',
   './recent.js?v=thw-v11',
   './trackinfo.js?v=thw-v3',
@@ -191,7 +190,7 @@ const PRECACHE = [
   './legal-info.js?v=thw-v6',
   './grammar-check.js?v=thw-v2',
   './emoji-data.js?v=thw-v1',
-  './social-panel.js?v=thw-v67',
+  './social-panel.js?v=thw-v70',
   './push-client.js?v=thw-v31',
   './simple-toast.js?v=thw-v5',
   './catalogue-watch.js?v=thw-v2',

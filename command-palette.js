@@ -86,7 +86,6 @@
     add("fa-book-open", "Updates", "updates");
     add("fa-record-vinyl", "Era Pages", "era");
     add("fa-vote-yea", "Wanted Vault", "wanted");
-    add("fa-users", "Community Board", "community");
     add("fa-lightbulb", "Suggestions", "suggestions");
     add("fa-images", "Gallery", "gallery");
     add("fa-fire", "Trending", "trending", "what is being played");

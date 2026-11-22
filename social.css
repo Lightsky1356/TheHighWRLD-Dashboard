@@ -95,6 +95,7 @@
 /* Settings sits beside Rules in the header, so it shares that button exactly
    and only adds the pressed state. Same size, same border, same type - it
    should read as a sibling control, not as a new kind of thing. */
+.thw-social-settings-link[hidden],.thw-social-new-group[hidden]{display:none!important}
 .thw-social-settings-link{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid rgba(148,163,184,.2);border-radius:9px;background:rgba(255,255,255,.04);color:#94a3b8;font:600 10.5px/1 "Sora",system-ui,sans-serif;cursor:pointer;transition:background .15s ease,color .15s ease,border-color .15s ease}
 .thw-social-settings-link:hover{background:rgba(255,255,255,.1);color:#e2e8f0;border-color:rgba(148,163,184,.32)}
 .thw-social-settings-link:focus-visible{outline:2px solid #38bdf8;outline-offset:2px}

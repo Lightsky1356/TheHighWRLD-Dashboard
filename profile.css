@@ -107,6 +107,10 @@
 .pv2-card-title i{color:var(--pv-gold)}
 .pv2-card-note{margin:0;font-size:11px;color:var(--pv-faint)}
 .pv2-none{font-size:12.5px;color:var(--pv-faint);padding:18px 8px;text-align:center}
+.pv2-playlists{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.pv2-playlist{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid var(--pv-border-soft);background:rgba(255,255,255,.04)}
+.pv2-playlist-name{font-size:12px;font-weight:700;color:var(--pv-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv2-playlist-count{font-size:10px;color:var(--pv-mute);white-space:nowrap}
 
 /* ---------- level ---------- */
 .pv2-levelrow{display:flex;align-items:center;gap:16px}

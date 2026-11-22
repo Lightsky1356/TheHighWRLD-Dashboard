@@ -1825,6 +1825,8 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
    taller cards. Match the rules panel's 320px scroll box so the list fills its
    panel without stretching the whole feature grid. */
 #features-section .lobby-panel.card:has(#comps-list) > div.flex-grow{max-height:320px!important}
+#features-section .lobby-panel-rules{display:flex;flex-direction:column;min-height:0}
+#features-section .lobby-panel-rules > div.flex-grow{flex:1 1 auto;min-height:0;max-height:320px!important}
 
 /* ---------------------------------------------------------------------------
    THE FOOTER
@@ -2454,9 +2456,14 @@ footer .hub-panel{display:none}
    cannot be read.
    ========================================================================== */
 @media (min-width:768px){
-  body:has(#deck-player:not(.hidden):not(.deck-away)){
+  /* Only reserve room when the Deck is actually drawn. With no track loaded
+     body.deck-no-track hides it with display:none while it still carries none
+     of the away classes, so the old selector left a 120px gap under the
+     footer after toggling the Deck with D. */
+  body:not(.deck-no-track):has(#deck-player:not(.hidden):not(.deck-away)){
     padding-bottom:120px;
   }
+  body.deck-no-track{padding-bottom:0 !important}
   /* The bar is drawn over the page, so it must not be swallowed by the
      page's own overflow. */
   #deck-player{z-index:9999}

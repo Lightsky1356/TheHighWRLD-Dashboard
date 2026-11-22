@@ -444,6 +444,16 @@
       html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-rotate"></i>Recently played</h2></div><div class="pv2-recent" id="pv2Recent"><p class="pv2-none">Loading&hellip;</p></div></div>';
     }
 
+    /* Playlists — the API only sends public ones to other viewers, so this
+       card is honest for both your own page and somebody else's. */
+    var plists = Array.isArray(d.playlists) ? d.playlists : [];
+    html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-list-music"></i>Playlists</h2><span class="pv2-card-note">' + plists.length + ' saved</span></div>' +
+      (plists.length
+        ? '<div class="pv2-playlists">' + plists.map(function (p) {
+            return '<div class="pv2-playlist"><span class="pv2-playlist-name">' + esc2(p.name || "Untitled") + '</span><span class="pv2-playlist-count">' + (Number(p.count) || 0) + ' songs</span></div>';
+          }).join('') + '</div>'
+        : '<p class="pv2-none">No public playlists yet.</p>') + '</div>';
+
     /* Favourites — always present, even when empty, and refreshed live. */
     html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-heart"></i>Favourites</h2><span class="pv2-card-note" id="pv2FavCount">' + favs.length + ' saved</span></div><div id="pv2Fav">' + collageHTML(favs) + '</div></div>';
 
@@ -454,7 +464,10 @@
     var btn = document.getElementById("pv2CopyLink");
     if (!btn) return;
     btn.addEventListener("click", function () {
-      var url = window.location.origin + (isSelfView() ? "/profile" : ("/profile/" + encodeURIComponent(profileKey())));
+      var handle = profileKey() || (d && d.profile && d.profile.handle) || "";
+      var url = window.location.origin + (isSelfView()
+        ? "/Profile"
+        : (typeof window.profilePathFor === "function" ? window.profilePathFor(handle) : location.pathname));
       var done = function () {
         btn.innerHTML = '<i class="fas fa-check"></i>';
         setTimeout(function () { btn.innerHTML = '<i class="fas fa-link"></i>'; }, 1600);
@@ -633,15 +646,17 @@
     }
   } catch (e) {}
 
-  /* Profile addresses are always /Profile/<handle>. A uid or Discord id may
-     open a profile, but once the API has resolved it to a handle the address
-     bar is replaced with the canonical one - the old uid form is not kept. */
+  /* Profile addresses are always /@handle. The handle is the member's Discord
+     username, never a site uid; once the API resolves the key the address bar
+     is replaced with the handle form. */
   function canonicaliseProfileAddress(apiData) {
     try {
       var handle = (apiData && (apiData.handle || (apiData.profile && apiData.profile.username))) || "";
       handle = String(handle).trim().replace(/^@/, "");
       if (!handle) return;
-      var want = "/Profile/" + encodeURIComponent(handle);
+      var want = (typeof window.profilePathFor === "function")
+        ? window.profilePathFor(handle)
+        : "/@" + encodeURIComponent(handle);
       if (location.pathname !== want && history.replaceState) {
         history.replaceState({ profile: handle }, "", want);
       }

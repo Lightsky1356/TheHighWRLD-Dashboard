@@ -1,6 +1,6 @@
 /* ==========================================================================
    Online now — the members on the site, right now
-   GET /api/online/members → { ok, members: [{uid, name, avatar, level, xp}], guests }
+   GET /api/online/members → { ok, members: [{uid, handle, name, avatar, level, xp}], guests }
 
    The rows in online_visitors are a per-tab record with a 90-second TTL.
    Only signed-in members are listed by name — a guest is a count, not a
@@ -44,10 +44,10 @@ export async function onRequestGet(context) {
     const members = [];
     for (const uid of ids) {
       if (!/^[A-Za-z0-9_-]{4,64}$/.test(uid)) continue;
-      let name = "", avatar = "";
+      let name = "", avatar = "", handle = "";
       try {
         const u = await db.prepare("SELECT name, avatar FROM users WHERE uid = ?").bind(uid).first();
-        if (u) { name = u.name || ""; avatar = u.avatar || ""; }
+        if (u) { name = u.name || ""; avatar = u.avatar || ""; handle = u.name || ""; }
       } catch (_) {}
       try {
         const p = await db.prepare("SELECT name, avatar FROM user_profiles WHERE site_uid = ?").bind(uid).first();
@@ -63,7 +63,7 @@ export async function onRequestGet(context) {
         const x = await db.prepare("SELECT xp, level FROM xp WHERE user_id = ?").bind(uid).first();
         if (x) { xp = x.xp || 0; level = x.level || levelFor(xp); }
       } catch (_) { /* the xp table may not exist yet - level 1 for everyone */ }
-      members.push({ uid, name: String(name).slice(0, 64), avatar: String(avatar || "").slice(0, 512), level, xp });
+      members.push({ uid, handle: String(handle || name).slice(0, 64), name: String(name).slice(0, 64), avatar: String(avatar || "").slice(0, 512), level, xp });
     }
 
     /* Most level first, like the tracker. */

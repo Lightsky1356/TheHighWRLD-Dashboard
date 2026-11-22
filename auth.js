@@ -324,9 +324,13 @@
     var target = url + (url.indexOf("?") >= 0 ? "&" : "?") + "popup=1";
     var popup = null;
     try {
-      var left = Math.max(0, Math.round((window.screen.width - 520) / 2));
-      var top = Math.max(0, Math.round((window.screen.height - 760) / 2));
-      popup = window.open(target, "thw-oauth", "popup=yes,width=520,height=760,left=" + left + ",top=" + top);
+      /* A compact window keeps the login from taking over the screen while
+         music keeps playing underneath. The provider page scrolls inside it
+         if it needs more room. */
+      var w = 420, h = 600;
+      var left = Math.max(0, Math.round((window.screen.width - w) / 2));
+      var top = Math.max(0, Math.round((window.screen.height - h) / 2));
+      popup = window.open(target, "thw-oauth", "popup=yes,width=" + w + ",height=" + h + ",left=" + left + ",top=" + top);
     } catch (e) {
       popup = null;
     }

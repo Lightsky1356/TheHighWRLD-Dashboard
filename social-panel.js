@@ -186,7 +186,7 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v56";
+    css.href = "/social.css?v=thw-v57";
     document.head.appendChild(css);
 
     var root = el("div");
@@ -1215,6 +1215,7 @@
          composer's normal prompt. renderThread() may refine it for a blocked
          conversation once a thread is open. */
       setComposerPrompt("Write a message");
+      setSignedInControls(true);
       showStatus(data.presenceAvailable === false ? "Live status is temporarily unavailable." : "", "warn");
       renderFriends(data.friends || []);
       renderRequests(data.requests || []);
@@ -1270,8 +1271,17 @@
   /* A guest is the most common state this panel is in, so it gets a designed
      state rather than an error string over empty lists. Replaces every list in
      the panel and clears the freshness stamp, so nothing reads as stale data. */
+  /* These controls act on your own account, so they are only for members. */
+  function setSignedInControls(show) {
+    try {
+      var buttons = document.querySelectorAll('#thw-social-root .thw-social-new-group, #thw-social-root #thw-social-settings-link');
+      Array.prototype.forEach.call(buttons, function (b) { b.hidden = !show; });
+    } catch (e) {}
+  }
+
   function renderSignedOut() {
     setComposerPrompt("Sign in to write a message");
+    setSignedInControls(false);
     var friends = document.getElementById("thw-social-friends");
     var requests = document.getElementById("thw-social-requests");
     var convos = document.getElementById("thw-social-conversations");
@@ -1377,7 +1387,9 @@
          below, which opens the profile in place instead of loading the
          page over it. */
       var nameLink = el("a", "thw-social-name", friend.name);
-      nameLink.href = "/Profile/" + encodeURIComponent(friend.uid);
+      nameLink.href = (typeof window.profilePathFor === "function")
+        ? window.profilePathFor(friend.handle || friend.name)
+        : "/@" + encodeURIComponent(friend.handle || friend.name);
       nameLink.dataset.action = "view-profile";
       nameLink.dataset.uid = friend.uid;
       nameLink.title = "View profile";

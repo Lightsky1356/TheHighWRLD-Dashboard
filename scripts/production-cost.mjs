@@ -13,7 +13,7 @@ import path from "node:path";
 const BASE = "https://thehighwrlddashboard.pages.dev";
 const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
 const DEBUG_PORT = 9555;
-const PAGES = ["/", "/account", "/community", "/wanted", "/vault", "/roadmap"];
+const PAGES = ["/", "/account", "/wanted", "/vault", "/roadmap"];
 const SECONDS_PER_PAGE = 14;
 
 if (!fs.existsSync(EDGE)) { console.error("  Edge not found"); process.exit(2); }

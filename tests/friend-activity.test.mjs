@@ -201,7 +201,7 @@ function share(uid, listening, playlists, community) {
   await callAs(ME, "POST", "/api/activity", {
     type: "playlist",
     label: "Made a playlist",
-    link: "/Profile/alice0001",
+    link: "/@alice0001",
   });
   const all = await callAs(FRIEND, "GET", "/api/activity");
   check("every kind is in the feed", all.json?.items?.length === 3, str(all.json?.items?.length));

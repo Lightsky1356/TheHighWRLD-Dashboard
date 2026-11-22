@@ -323,16 +323,13 @@
   }
 
   function copyLink(uidv, handle) {
-    /* A profile is addressed by its handle, so that is what a copied link
-       carries. The handle is the member's Discord username, and the site uid
-       when they have not got one - so every member has an address that
-       resolves. The uid still works as an address - the API resolves it - but
-       it is not something a person can recognise in a browser bar, and it is
-       what the link used to carry. */
-    var who = String(handle || "").replace(/^@/, "");
-    var url = location.origin + (who
-      ? "/Profile/" + encodeURIComponent(who)
-      : "/Profile/" + encodeURIComponent(uidv));
+    /* A copied link carries the member's handle at /@handle. A site uid is
+       never put in a profile address - it is not something a person can
+       recognise or type. */
+    var who = String(handle || "").replace(/^@/, "") || String(uidv || "");
+    var url = location.origin + (typeof window.profilePathFor === "function"
+      ? window.profilePathFor(who)
+      : "/@" + encodeURIComponent(who));
     var done = function () { toast('Profile link copied', 'success'); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(done, function () { fallbackCopy(url, done); });

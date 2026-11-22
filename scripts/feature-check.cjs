@@ -879,10 +879,10 @@ async function main() {
     };
   })()`);
   check("the friend's name carries their profile address",
-    nameLink && String(nameLink.href) === "/Profile/gallinked1",
+    nameLink && String(nameLink.href) === "/@gallinked1",
     JSON.stringify(nameLink).slice(0, 160));
   check("clicking the name takes you to their profile",
-    nameLink && String(nameLink.path).indexOf("/Profile/") === 0 &&
+    nameLink && String(nameLink.path).indexOf("/@") === 0 &&
       nameLink.section === true && /Gallery Linked/.test(String(nameLink.name)),
     JSON.stringify(nameLink).slice(0, 200));
   check("the panel steps aside so the profile is not behind it",

@@ -18,7 +18,7 @@ import { spawn } from "child_process";
 const BASE = (process.argv[2] || "http://127.0.0.1:8787").replace(/\/$/, "");
 const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
 const DEBUG_PORT = 9444;
-const PAGES = ["/", "/account", "/community", "/wanted", "/vault"];
+const PAGES = ["/", "/account", "/wanted", "/vault"];
 const SECONDS_PER_PAGE = 12;
 
 if (!fs.existsSync(EDGE)) { console.error("  Edge not found"); process.exit(2); }

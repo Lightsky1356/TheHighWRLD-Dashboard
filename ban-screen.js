@@ -31,41 +31,9 @@
     } catch (e) { return ""; }
   }
 
-  function css() {
-    if (document.getElementById("ban-screen-style")) return;
-    var st = document.createElement("style");
-    st.id = "ban-screen-style";
-    st.textContent =
-      ".ban-screen-ov{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;background:rgba(4,2,12,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:20px;overflow-y:auto}" +
-      ".ban-screen-panel{width:min(430px,94vw);background:rgba(20,14,34,.85);border:1px solid rgba(244,63,94,.35);border-radius:20px;padding:30px 26px;text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.65)}" +
-      ".ban-screen-ico{width:58px;height:58px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fca5a5;background:rgba(244,63,94,.13);border:1px solid rgba(244,63,94,.4)}" +
-      ".ban-screen-panel h1{font-size:19px;font-weight:900;letter-spacing:.1em;color:#fff;margin:0 0 8px}" +
-      ".ban-screen-sub{font-size:12px;color:rgba(255,255,255,.6);line-height:1.6;margin:0 0 16px}" +
-      ".ban-screen-rows{text-align:left;margin-bottom:18px}" +
-      ".ban-screen-row{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:8px 2px;border-top:1px solid rgba(255,255,255,.07)}" +
-      ".ban-screen-k{color:rgba(255,255,255,.45);text-transform:uppercase;font-size:10px;letter-spacing:.09em;flex-shrink:0;padding-top:1px}" +
-      ".ban-screen-v{color:#fff;text-align:right;overflow-wrap:anywhere}" +
-      ".ban-screen-out{width:100%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;border-radius:11px;padding:11px;font-size:13px;font-weight:800;cursor:pointer}" +
-      ".ban-screen-out:hover{background:rgba(255,255,255,.14)}" +
-      ".ban-appeal{margin:2px 0 16px;text-align:left;border-top:1px solid rgba(255,255,255,.07);padding-top:14px}" +
-      ".ban-appeal h2{font-size:12px;font-weight:900;letter-spacing:.09em;color:#fff;margin:0 0 6px}" +
-      ".ban-appeal p{font-size:11px;color:rgba(255,255,255,.6);line-height:1.6;margin:0 0 8px}" +
-      ".ban-appeal textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#fff;font-size:12px;padding:9px 11px;min-height:74px;resize:vertical;outline:none;font-family:inherit}" +
-      ".ban-appeal textarea:focus{border-color:rgba(251,191,36,.5)}" +
-      ".ban-appeal-send{width:100%;margin-top:9px;border:1px solid rgba(251,191,36,.45);background:rgba(251,191,36,.12);color:#fbbf24;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer}" +
-      ".ban-appeal-send:hover:not(:disabled){background:rgba(251,191,36,.22)}" +
-      ".ban-appeal-send:disabled{opacity:.5;cursor:default}" +
-      ".ban-appeal-state{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);border-radius:11px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,.7);line-height:1.65}" +
-      ".ban-appeal-state b{color:#fff}" +
-      ".ban-appeal-state.ok{border-color:rgba(52,211,153,.45)}" +
-      ".ban-appeal-state.no{border-color:rgba(244,63,94,.4)}" +
-      ".ban-appeal-err{font-size:11px;color:#fca5a5;margin-top:7px;min-height:14px}";
-    (document.head || document.documentElement).appendChild(st);
-  }
 
   function show(ban) {
     if (document.getElementById(OV)) return;
-    css();
     var exp = ban.expires_at ? fmtDate(ban.expires_at) : "Permanent";
     var ov = document.createElement("div");
     ov.className = "ban-screen-ov";
@@ -131,10 +99,22 @@
       setTimeout(function () {
         var o = document.getElementById(OV);
         if (o) o.remove();
+        unlockScroll();
         try { window.location.reload(); } catch (err2) {}
       }, 600);
     });
     document.body.appendChild(ov);
+    try {
+      document.documentElement.classList.add("thw-ban-lock");
+      document.body.classList.add("thw-ban-lock");
+    } catch (e) {}
+  }
+
+  function unlockScroll() {
+    try {
+      document.documentElement.classList.remove("thw-ban-lock");
+      document.body.classList.remove("thw-ban-lock");
+    } catch (e) {}
   }
 
   function appealFormHTML() {
@@ -172,7 +152,7 @@
         }
         if (mine.status === "approved") {
           el.innerHTML = '<div class="ban-appeal-state ok"><b>Appeal Approved</b><br>Your ban has been lifted. Reloading normal access…</div>';
-          setTimeout(function () { try { window.location.reload(); } catch (e) {} }, 2500);
+          setTimeout(function () { unlockScroll(); try { window.location.reload(); } catch (e) {} }, 2500);
           return;
         }
         el.innerHTML = '<div class="ban-appeal-state no"><b>Appeal Denied</b>' +

@@ -884,17 +884,8 @@ if (dupes.length) {
     structureOk("the recently played list is only asked for when it is on screen");
   }
 
-  const comm = readFileSync(join(ROOT, "community-realtime.js"), "utf8");
-  if (!/function communityVisible\(\)/.test(comm)) {
-    structureFail("the community socket is opened whether or not the community is on screen");
-  } else if (!/if \(!communityVisible\(\)\) return;/.test(comm)) {
-    structureFail("the community socket connects without checking the page is open");
-  } else if (!/STATE\.heartbeat = setInterval\(\(\) => sendWs\(\{ type: 'heartbeat' \}\), (\d+)\)/.test(comm) ||
-             Number(/STATE\.heartbeat = setInterval\(\(\) => sendWs\(\{ type: 'heartbeat' \}\), (\d+)\)/.exec(comm)[1]) < 60000) {
-    structureFail("the community socket heartbeats more often than once a minute");
-  } else {
-    structureOk("the community socket follows the page, and heartbeats once a minute");
-  }
+  /* The Community Board and its socket client were retired. No page loads
+     them, so there is no socket to guard here any more. */
 
   const visit = readFileSync(join(ROOT, "functions/api/visit.js"), "utf8");
   if (!/linkedCache/.test(visit)) {
@@ -965,20 +956,20 @@ if (!/<base href="\/"\s*>/.test(html)) {
    * And every member has to be routable: the API's handle falls back to the
    * site uid for anybody who has no Discord username, so a member without one
    * is still reachable rather than having no address at all. */
-  if (!/PROFILE_PATH_ROOT\s*\+\s*"\/"\s*\+/.test(accountSrc)) {
-    structureFail("the profile address is not built from the handle");
+  if (!/PROFILE_HANDLE_PREFIX\s*\+\s*encodeURIComponent/.test(accountSrc)) {
+    structureFail("the profile address is not built as /@handle");
   } else {
-    structureOk("the profile address is built from the handle");
+    structureOk("the profile address is built as /@handle");
   }
   if (!/canonicaliseProfileUrl\(\s*d\.handle/.test(accountSrc)) {
     structureFail("the address is not canonicalised from the API's handle field");
   } else {
     structureOk("the address is canonicalised from the field the API returns");
   }
-  if (/\/Profile\/" \+ "@"|"\\\/@"/.test(accountSrc)) {
-    structureFail("the profile address still carries an @");
+  if (!/"\/@"/.test(accountSrc)) {
+    structureFail("the profile address has no /@ prefix");
   } else {
-    structureOk("the profile address carries no @");
+    structureOk("the profile address carries the /@ prefix");
   }
 
   const profileApi = readFileSync(join(ROOT, "functions/api/profile.js"), "utf8");

@@ -3282,24 +3282,15 @@ function compactProfileViewHtml(d) {
   }
   /* ---------- Profile addresses ----------
    *
-   * A profile is addressed by its handle: /Profile/lightsky1356.
-   *
-   * The handle is the member's Discord username, and the site uid when they have
-   * not got one - so every member has an address that resolves, rather than
-   * some of them being unroutable because a name field is empty.
-   *
-   * It used to be the site uid on its own, which nobody outside the database
-   * can recognise or type, and which changed the moment an account was
-   * replaced. A username is the handle the person already goes by, and it is
-   * what a shared link should carry.
-   *
-   * There is no "@" in the address. It is how Discord writes a handle, not how
-   * a path is spelled, and the API resolves the name either way - so a link
-   * with one still works, and a link without one is what gets shared.
+   * A member's profile lives at /@handle - for example /@lightsky1356.
+   * The handle is the member's Discord username/name. A site uid is never
+   * put in the address: nobody can recognise or type one, and it changes when
+   * an account is replaced. /Profile stays the way into your own profile.
    *
    * The address is written in one place and read in one place, because the
    * two drifting apart is how a shared link stops working. */
   var PROFILE_PATH_ROOT = "/Profile";
+  var PROFILE_HANDLE_PREFIX = "/@";
 
   /* The song pages: /song/<the-song>.
    *
@@ -3324,18 +3315,17 @@ function compactProfileViewHtml(d) {
   }
 
   function profilePathFor(handle) {
-    return PROFILE_PATH_ROOT + "/" + encodeURIComponent(String(handle || "").replace(/^@/, ""));
+    return PROFILE_HANDLE_PREFIX + encodeURIComponent(String(handle || "").replace(/^@/, ""));
   }
+  window.profilePathFor = profilePathFor;
 
   /* Read a profile address back. Returns null when the path is not a profile
-   * address, { self: true } for the bare /Profile, and { key: ... } for one
-   * that names somebody. The key may be a uid, a username or a display name -
-   * the API resolves all three - and may carry a leading "@". */
+   * address, { self: true } for /Profile, and { key: ... } for a /@handle. */
   function parseProfilePath(pathname) {
     var p = String(pathname || "").replace(/\/+$/, "");
     if (!p) return null;
     if (new RegExp("^" + PROFILE_PATH_ROOT + "$", "i").test(p)) return { self: true };
-    var m = new RegExp("^" + PROFILE_PATH_ROOT + "/(.+)$", "i").exec(p);
+    var m = new RegExp("^/@(.+)$", "i").exec(p);
     if (!m) return null;
     return { key: decodeURIComponent(m[1]) };
   }
@@ -3378,7 +3368,7 @@ function compactProfileViewHtml(d) {
       return;
     }
     _profilePage.self = false; _profilePage.key = target; _profilePage.byDiscord = !!byDiscord; _profilePage.data = null;
-    try { if (history.pushState) history.pushState({ profile: target }, "", PROFILE_PATH_ROOT + "/" + encodeURIComponent(target)); } catch (e) {}
+    try { if (history.pushState) history.pushState({ profile: target }, "", profilePathFor(target)); } catch (e) {}
     if (window.switchAppPage) switchAppPage("profile");
   };
 window.profileSectionShown = function () {
@@ -4049,7 +4039,7 @@ window.profileSectionShown = function () {
    meant two sources of truth for the same job. _navPillFor already resolves both
    to their real nav buttons (page-nav-about, page-nav-partner), so nothing else
    needed changing to highlight them. */
-var NAV_URL = { home: "/", community: "/community", developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register", era: "/era", leaderboard: "/leaderboard", stats: "/stats", updates: "/updates", tracker: "/tracker", messages: "/messages" };
+var NAV_URL = { home: "/",  developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register", era: "/era", leaderboard: "/leaderboard", stats: "/stats", updates: "/updates", tracker: "/tracker", messages: "/messages" };
   var NAV_URL_REV = {};
   Object.keys(NAV_URL).forEach(function (k) { NAV_URL_REV[NAV_URL[k]] = k; });
   /* The router, for a link that has to be a link but must not reload the
@@ -4161,7 +4151,7 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
       if (page === "stats" && typeof window.renderStatsPage === "function") { try { window.renderStatsPage(); } catch (e) {} }
     if (page === "updates" && typeof window.renderUpdatesPage === "function") { try { window.renderUpdatesPage(); } catch (e) {} }
     if (page === "tracker" && typeof window.renderTrackerPage === "function") { try { window.renderTrackerPage(); } catch (e) {} }
-    var labels = { player: "WRLD Player", hub: "The Vault", era: "Era Pages", leaderboard: "Leaderboard", stats: "Stats", updates: "Updates", tracker: "The Tracker", messages: "Messages", developers: "Public API", community: "Community Board", wanted: "Wanted Vault", suggestions: "Suggestions", "community-themes": "Community Themes", downloads: "Downloads", failed: "Failed Projects", credits: "Covers", gallery: "Gallery", roadmap: "Roadmap", about: "About the project", partner: "Partnership", tos: "Terms of Service", pp: "Privacy Policy", dmca: "Copyright & DMCA", copyright: "Copyright", settings: "Account Settings", profile: "Profile", account: "Account Settings", "account-gate": "Sign In", register: "Register", login: "Sign In", song: "Track", owner: "Owner Dashboard" };
+    var labels = { player: "WRLD Player", hub: "The Vault", era: "Era Pages", leaderboard: "Leaderboard", stats: "Stats", updates: "Updates", tracker: "The Tracker", messages: "Messages", developers: "Public API", wanted: "Wanted Vault", suggestions: "Suggestions", "community-themes": "Community Themes", downloads: "Downloads", failed: "Failed Projects", credits: "Covers", gallery: "Gallery", roadmap: "Roadmap", about: "About the project", partner: "Partnership", tos: "Terms of Service", pp: "Privacy Policy", dmca: "Copyright & DMCA", copyright: "Copyright", settings: "Account Settings", profile: "Profile", account: "Account Settings", "account-gate": "Sign In", register: "Register", login: "Sign In", song: "Track", owner: "Owner Dashboard" };
       var label = labels[page];
       var bcRoot = bc.querySelector("#bc-root");
       var bcSepDetail = bc.querySelector("#bc-sep-detail");

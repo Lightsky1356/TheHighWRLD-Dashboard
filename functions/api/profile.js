@@ -108,9 +108,9 @@ function formatTimeAgo(iso) {
 export async function onRequestGet(context) {
   try {
     const url = new URL(context.request.url);
-    /* A profile is addressed by its Discord username - /Profile/@lightsky1356 -
-       so a leading "@" is part of the address, not part of the name. It is
-       stripped here so the name can be looked up. */
+    /* A profile is addressed by its Discord username - /@lightsky1356 - so a
+       leading "@" is part of the address, not part of the name. It is stripped
+       here so the handle can be looked up. */
     const user = (url.searchParams.get("user") || "").replace(/^@/, "").slice(0, 40);
     const discord = (url.searchParams.get("discord") || "").slice(0, 40);
     const activityOnly = url.searchParams.get("activity") === "1";
@@ -206,7 +206,7 @@ export async function onRequestGet(context) {
     let prof = await db.prepare("SELECT * FROM user_profiles WHERE site_uid = ?").bind(uid).first();
     if (!prof) {
       /* The site's username IS the Discord username, and it is what a profile
-       * address carries: /Profile/@lightsky1356. It is looked up before the
+       * address carries: /@lightsky1356. It is looked up before the
        * display names below, because a display name can be changed by its
        * owner and can collide, while the username is the handle a person
        * actually gives out. */
