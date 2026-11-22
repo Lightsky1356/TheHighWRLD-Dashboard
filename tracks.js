@@ -2046,7 +2046,7 @@ const trackList=[
     year: "2019"
   },
   {
-    title: "That Sad Shit",
+    title: "That Sad Shit (Sessions)",
     tag: "That Sad Shit (Devil In Prada) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",

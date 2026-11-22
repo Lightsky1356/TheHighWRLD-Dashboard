@@ -35,7 +35,6 @@
 
   var lastHash = null;          /* hash of the file the page has on board now */
   var timer = null;
-  var alerted = false;          /* the toast is only ever shown once per load */
 
   function hashText(text) {
     /* djb2 - fast, small, good enough to notice a one-song change */
@@ -53,25 +52,6 @@
     try { localStorage.setItem(HASH_KEY, h); } catch (e) { /* private mode */ }
   }
 
-  function toastNewSongs() {
-    if (alerted) return;
-    alerted = true;
-    var toast = window.showToastSimple && window.showToastSimple(
-      "New songs hit the vault - refresh to play them",
-      { type: "info", sticky: true, duration: 99999999 }
-    );
-    if (!toast) return;
-    /* a real <button>, so the reload is reachable from the keyboard */
-    var btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "gtoast-close";
-    btn.style.cssText = "margin-left:auto;font-weight:700;color:#fcd34d;white-space:nowrap;";
-    btn.setAttribute("aria-label", "Reload the page");
-    btn.textContent = "Reload";
-    btn.addEventListener("click", function () { try { location.reload(); } catch (e) {} });
-    toast.appendChild(btn);
-  }
-
   function check() {
     /* fresh query each time: the SW's cache is keyed on the full URL, so a
        recycled one is reused while we want to know what the vault holds now */
@@ -87,8 +67,9 @@
           return;
         }
         if (h !== stored) {
-          storeHash(h);           /* remember it, so the toast only fires once */
-          toastNewSongs();        /* there is newer data than this page has */
+          storeHash(h);           /* keep the baseline current */
+          /* The "new songs - reload" toast was removed at the owner's request.
+             The hash is still tracked so a later change is still noticed. */
         }
       })
       .catch(function () { /* offline or transient - try again next poll */ });

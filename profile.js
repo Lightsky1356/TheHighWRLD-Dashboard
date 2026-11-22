@@ -518,8 +518,12 @@
   function fillFavourites() {
     var host = document.getElementById("pv2Fav");
     if (!host) return;
-    var favUrl = "/api/profile" + (ownUid ? "?user=" + encodeURIComponent(ownUid) : "");
-    fetchJson(favUrl).then(function (d) {
+    /* The session uid is resolved asynchronously; ownUid in loadData() is not
+       in scope here. sessionOwnUid() is the shared, cached way to get it. */
+    sessionOwnUid().then(function (uid) {
+      var favUrl = "/api/profile" + (uid ? "?user=" + encodeURIComponent(uid) : "");
+      return fetchJson(favUrl);
+    }).then(function (d) {
       if (!d || d.ok === false) return;
       var favs = Array.isArray(d.favorites) ? d.favorites : [];
       /* Favourites kept only on this device (before sign-in) still count. */

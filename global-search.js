@@ -135,9 +135,13 @@
       (document.head || document.documentElement).appendChild(st);
     }
 
-    /* Anchor inside #nav-pill, right after the Lobby button, so Search sits
-       with the other page controls. The older anchors (DRP pill, account
-       cluster, body-top) are kept for pages without the pill. */
+    /* Search sits beside the Sign In / account button in the auth cluster.
+       The older anchors (pill, DRP, account cluster, body-top) are kept for
+       pages that do not have the auth slot. */
+    var signIn = document.getElementById("navPillAuthBtn");
+    if (signIn && signIn.parentNode) {
+      signIn.parentNode.insertBefore(wrap, signIn);
+    } else {
     var pill = document.getElementById("nav-pill");
     var homeBtn = pill ? pill.querySelector("#page-nav-home") : null;
     if (homeBtn && homeBtn.parentNode) {
@@ -157,6 +161,7 @@
       top.innerHTML = wrap.innerHTML;
       wrap = top;
       body.insertBefore(wrap, body.firstChild);
+    }
     }
     }
 
