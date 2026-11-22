@@ -1818,10 +1818,9 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
    two to a row in a 240px column. */
 .comps-tabs .tab-btn{padding:3px 9px!important;font-size:9.5px!important;line-height:1.4;white-space:nowrap}
 /* The Comps list was capped at 170px, so the panel ended early next to the
-   taller cards. Let it use the full height of the stretched grid item and
-   scroll only when the list outgrows that space. */
-#features-section .lobby-panel.card:has(#comps-list){display:flex;flex-direction:column;min-height:0}
-#features-section .lobby-panel.card:has(#comps-list) > div.flex-grow{flex:1 1 auto;min-height:0;max-height:none!important}
+   taller cards. Match the rules panel's 320px scroll box so the list fills its
+   panel without stretching the whole feature grid. */
+#features-section .lobby-panel.card:has(#comps-list) > div.flex-grow{max-height:320px!important}
 
 /* ---------------------------------------------------------------------------
    THE FOOTER
