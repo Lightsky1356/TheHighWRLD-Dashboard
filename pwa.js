@@ -103,33 +103,36 @@
           if (window.__thwPwaRefreshDownloads) window.__thwPwaRefreshDownloads();
 
           /* Update handling. The worker calls skipWaiting() on install, so a new
-             version is waiting as soon as it is installed. Without an explicit
-             update the client stays on the old worker and the app can appear
-             stuck on an outdated build. reload() here re-runs the page through
-             the new worker; the guard stops an update loop if the page reloads
-             before the new worker has actually taken control. */
+             version can take control straight away. Reload once so the page runs
+             the new build - but never spin: a tab may reload at most once every
+             15 seconds. Without this time guard a worker that cannot finish
+             installing leaves a waiting worker on every load and reloads the
+             page forever. */
           var refreshing = false;
+          function swReload() {
+            if (refreshing) return;
+            refreshing = true;
+            var now = Date.now(), last = 0;
+            try { last = Number(sessionStorage.getItem("thw_sw_reload_at") || 0) || 0; } catch (e) {}
+            if (now - last < 15000) return;
+            try { sessionStorage.setItem("thw_sw_reload_at", String(now)); } catch (e) {}
+            try { showInstallMsg('Update ready - reloading...'); } catch (_) {}
+            window.location.reload();
+          }
           reg.addEventListener('updatefound', function () {
             var installing = reg.installing;
             if (!installing) return;
             installing.addEventListener('statechange', function () {
               if (installing.state !== 'installed') return;
-              if (navigator.serviceWorker.controller) {
-                // An older worker is still in control: a real update is pending.
-                try { showInstallMsg('Update ready - reloading...'); } catch (_) {}
-                if (!refreshing) { refreshing = true; window.location.reload(); }
-              }
-              // No controller means this is the very first install. Nothing to
-              // reload: the page is already running the freshly installed worker.
+              if (navigator.serviceWorker.controller) swReload();
+              // No controller means this is the very first install: the page is
+              // already running the freshly installed worker, so do nothing.
             });
           });
 
-          /* If a worker is already waiting (e.g. the tab was restored from a
-             previous visit), adopt it on the next load instead of leaving the
-             user on a stale build until the next hard refresh. */
-          if (reg.waiting && navigator.serviceWorker.controller) {
-            if (!refreshing) { refreshing = true; window.location.reload(); }
-          }
+          /* A worker already waiting (e.g. a restored tab) is adopted on this
+             load instead of leaving the user on a stale build. */
+          if (reg.waiting && navigator.serviceWorker.controller) swReload();
         }).catch(function () {});
 
         /* A push click can arrive before this page's scripts have finished

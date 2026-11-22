@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, ipcMain } = require("electron");
+const { app, BrowserWindow, Menu, shell, ipcMain, globalShortcut } = require("electron");
 const path = require("path");
 
 /* ------------------------------------------------------------------ CONFIG
@@ -237,16 +237,41 @@ handle("highwrld:set-keyboard-shortcuts", function (payload) {
   return { enabled: keyboardShortcuts };
 });
 
+/* Playback keys are registered here rather than left to the page alone, so
+   they still work when the web view does not have focus (after alt-tabbing,
+   with another app on top). Each one forwards a plain action to the page,
+   which already owns the actual player functions. */
+const PLAYBACK_SHORTCUTS = [
+  ["MediaPlayPause", "playpause"],
+  ["MediaNextTrack", "next"],
+  ["MediaPreviousTrack", "prev"],
+];
+
+function sendPlaybackAction(action) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    mainWindow.webContents.send("highwrld:playback-shortcut", { action });
+  } catch (e) { /* the window can go away mid-send */ }
+}
+
+function registerPlaybackShortcuts() {
+  PLAYBACK_SHORTCUTS.forEach(function (pair) {
+    const accel = pair[0], action = pair[1];
+    try { globalShortcut.unregister(accel); } catch (e) {}
+    if (!keyboardShortcuts) return;
+    try {
+      globalShortcut.register(accel, function () { sendPlaybackAction(action); });
+    } catch (e) { /* an accelerator may be taken by another app */ }
+  });
+}
+
 function applyShortcuts() {
-  const menu = Menu.getApplicationMenu();
-  /* no menu is set by default, so the accelerators are registered as a hidden
-     template menu - they keep working while the menu itself stays hidden */
-  const items = keyboardShortcuts ? [
-    { role: "togglefullscreen" },
-    { role: "close" },
-  ] : [{ role: "close" }];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(items));
+  /* Keep the app menu hidden - the desktop app is a single window with no need
+     for a menu bar. Playback shortcuts live in globalShortcut instead: the old
+     build set a menu here and then cleared it on the next line, so nothing was
+     ever registered and the keys silently did nothing in the EXE. */
   Menu.setApplicationMenu(null);
+  registerPlaybackShortcuts();
 }
 
 handle("highwrld:drp-set-enabled", function (payload) {
@@ -346,6 +371,7 @@ if (!gotLock) {
       app.setAppUserModelId("com.thehighwrld.dashboard");
     }
     createWindow();
+    applyShortcuts();
 
     app.on("activate", function () {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -362,5 +388,8 @@ if (!gotLock) {
   });
 
   /* never leave a presence showing after the app is gone */
-  app.on("before-quit", function () { teardown(); });
+  app.on("before-quit", function () {
+    teardown();
+    try { globalShortcut.unregisterAll(); } catch (e) {}
+  });
 }

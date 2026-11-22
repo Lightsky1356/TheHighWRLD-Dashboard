@@ -16,6 +16,7 @@ const { contextBridge, ipcRenderer } = require("electron");
    Getting this wrong means the settings panel never updates its toggle. */
 const statusListeners = new Set();
 const eventListeners = new Set();
+const playbackListeners = new Set();
 
 function each(set, fn) {
   set.forEach(function (listener) {
@@ -31,6 +32,11 @@ ipcRenderer.on("highwrld:drp", function (_event, payload) {
   /* the status arrives on its own channel too, so both styles of listener hear it */
   if (payload && payload.type === "status") each(statusListeners, function (fn) { fn(payload.status); });
   each(eventListeners, function (fn) { fn(payload); });
+});
+
+/* Media keys pressed in the desktop app arrive here as a plain action. */
+ipcRenderer.on("highwrld:playback-shortcut", function (_event, payload) {
+  each(playbackListeners, function (fn) { fn(payload); });
 });
 
 contextBridge.exposeInMainWorld("highwrld", {
@@ -75,5 +81,12 @@ contextBridge.exposeInMainWorld("highwrld", {
   },
   setKeyboardShortcutsEnabled: function (enabled) {
     return ipcRenderer.invoke("highwrld:set-keyboard-shortcuts", { enabled: !!enabled });
+  },
+
+  /* Subscribe to the playback actions sent by the main process for media keys. */
+  onPlaybackShortcut: function (fn) {
+    if (typeof fn !== "function") return function () {};
+    playbackListeners.add(fn);
+    return function () { playbackListeners.delete(fn); };
   },
 });

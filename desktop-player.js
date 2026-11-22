@@ -1606,14 +1606,9 @@
     if (ov) switchTab(ov, "playlists");
   };
 
+  /* Escape still dismisses the sheet. The old O shortcut was removed - F is
+     the single key that opens and closes the full sheet (see script.js). */
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && document.getElementById(OV)) close();
-    if (e.key === "o" || e.key === "O") {
-      var tag = (e.target && e.target.tagName) || "";
-      if (/INPUT|TEXTAREA|SELECT/.test(tag) || (e.target && e.target.isContentEditable)) return;
-      if (document.getElementById(OV)) close();
-      else open();
-      e.preventDefault();
-    }
   });
 })();

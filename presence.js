@@ -320,7 +320,7 @@
         : '<i class="fas fa-user" aria-hidden="true"></i>';
       return '<div class="online-now-row" role="listitem">' +
         '<span class="online-now-avatar">' + avatar + '</span>' +
-        '<span class="online-now-meta"><span class="online-now-name">' + escapeHtml(m.name) + '</span></span>' +
+        '<span class="online-now-meta"><button type="button" class="online-now-name" data-online-profile="' + escapeHtml(m.uid || '') + '" title="View ' + escapeHtml(m.name) + '&#39;s profile">' + escapeHtml(m.name) + '</button></span>' +
         '<span class="online-now-level">Lv ' + (m.level || 1) + '</span>' +
       '</div>';
     }).join('');
@@ -354,6 +354,16 @@
     /* The mobile profile sheet's online button opens this same panel; don't
        let the outside-click dismissal close it on the very same click. */
     if (e.target && e.target.closest && e.target.closest('#thwSheetOnlineBtn')) return;
+    /* A name in the online list or the leaderboard board opens that member's
+       profile. Delegated because both lists are re-rendered on every poll. */
+    var nameLink = e.target && e.target.closest ? e.target.closest('[data-online-profile]') : null;
+    if (nameLink) {
+      e.preventDefault();
+      var profileUid = nameLink.getAttribute('data-online-profile') || '';
+      setPopOpen(false);
+      if (profileUid && typeof window.openProfile === 'function') window.openProfile(profileUid);
+      return;
+    }
     if (badge && badge.contains(e.target)) { e.preventDefault(); setPopOpen(!popOpen); return; }
     if (panel && !panel.contains(e.target)) setPopOpen(false);
   });
@@ -429,7 +439,7 @@
               return '<div class="online-now-board-row">' +
                 '<span class="online-now-board-rank' + (top3 ? ' top' : '') + '">' + m.rank + '</span>' +
                 '<span class="online-now-board-av">' + av + '</span>' +
-                '<span class="online-now-board-name">' + escapeHtml(m.name) + '</span>' +
+                '<button type="button" class="online-now-board-name" data-online-profile="' + escapeHtml(m.uid || '') + '" title="View ' + escapeHtml(m.name) + '&#39;s profile">' + escapeHtml(m.name) + '</button>' +
                 (you ? '<span class="online-now-board-you">You</span>' : '') +
                 '<span class="online-now-board-xp">' + Number(m.xp || 0).toLocaleString() + ' XP</span>' +
               '</div>';

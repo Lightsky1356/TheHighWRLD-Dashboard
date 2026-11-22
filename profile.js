@@ -392,6 +392,23 @@
     if (isMe) html += '<div class="pv2-hero-actions"><button type="button" class="pv2-mini-btn" onclick="if(window.openEditProfile)window.openEditProfile()"><i class="fas fa-pen"></i>Edit profile</button></div>';
     html += '</div></div>';
     html += nowPlayingHTML(d.nowPlaying);
+
+    /* Links — shown to everybody on the profile, right under the presence card. */
+    var links = Array.isArray(p.links) ? p.links : [];
+    html += '<div class="pv2-links">' +
+      '<span class="pv2-links-label"><i class="fas fa-link" aria-hidden="true"></i>Links</span>' +
+      '<div class="pv2-links-row">' +
+      (links.length
+        ? links.map(function (l) {
+            var url = String((l && l.url) || "").trim();
+            var label = String((l && l.label) || "").trim() || url;
+            if (!/^https?:\/\//i.test(url)) return "";
+            return '<a class="pv2-link-chip" href="' + esc2(url) + '" target="_blank" rel="noopener noreferrer nofollow">' +
+              '<i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>' + esc2(label) + '</a>';
+          }).join("") || '<span class="pv2-links-empty">No usable links yet.</span>'
+        : '<span class="pv2-links-empty">' + (isMe ? 'No links yet &mdash; add them in Edit profile.' : 'No links added yet.') + '</span>') +
+      '</div></div>';
+
     html += '<div class="pv2-strip">';
     html += statBlock(isMe && rank != null ? ordinal(rank) : (rank != null ? ordinal(rank) : "-"), rank != null ? "Leaderboard" : "Unranked");
     html += statBlock(fmtNum(stats.plays), "Plays");
@@ -415,7 +432,11 @@
     html += '<div class="pv2-grid" style="margin-top:16px">';
     html += '<div class="pv2-card" style="grid-column:span 2"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-fire"></i>Top songs</h2><span class="pv2-card-note">' + topList.length + (topList.length === 1 ? ' song' : ' songs') + '</span></div>' + topSongsHTML(topList) + '</div>';
     html += '<div class="pv2-card"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-layer-group"></i>Top eras</h2><span class="pv2-card-note">by your top plays</span></div>' + eraStackHTML(topList) + '</div>';
-    html += '<div class="pv2-card" style="grid-column:span 2"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-clock-rotate-left"></i>When you listen</h2><span class="pv2-card-note">24-hour pattern</span></div>' + hourHistogramHTML(hoursArr) + '</div>';
+    /* Your listening pattern is personal - it only appears on your own page,
+       never when you are looking at somebody else's profile. */
+    if (isMe) {
+      html += '<div class="pv2-card" style="grid-column:span 2"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-clock-rotate-left"></i>When you listen</h2><span class="pv2-card-note">24-hour pattern</span></div>' + hourHistogramHTML(hoursArr) + '</div>';
+    }
     html += '</div>'; /* grid */
 
     /* Recently played (self only — the API only answers the signed-in member) */
@@ -622,6 +643,8 @@
       if (d.profile.ok === false) { host.innerHTML = '<div class="pv2-page">' + signInGate() + '</div>'; return; }
       if (d.profile.hidden) { host.innerHTML = '<div class="pv2-page">' + privateGate() + '</div>'; return; }
       try {
+        /* Links live at the top level of /api/profile, not inside profile. */
+        d.profile.links = Array.isArray(d.links) ? d.links : [];
         host.innerHTML = '<div class="pv2-page">' + buildPage(d.profile, d.xp) + '</div>';
         bindCopy(host, d.profile);
         bindSongs(host);
@@ -1013,6 +1036,30 @@
   window.renderProfilePageBody = renderFullProfile;
   window.profileSectionShown = function () { renderFullProfile(); };
   window.__THW_PROFILE_V2 = true;
+
+  /* Delete the retired profile layout, do not merely hide it. Several legacy
+     modules (profile-enhancements, wrld-stats, follows, privacy, playlists-ui)
+     still append their old cards into #profilePageBody. The v2 profile is the
+     only layout this page serves, so strip those nodes as they are added - the
+     observer catches late/asynchronous mounts, the periodic pass catches any
+     that slipped through. */
+  function purgeLegacyProfileBlocks() {
+    var host = document.getElementById("profilePageBody");
+    if (!host) return;
+    var sel = ".pv-block, .ws-block, .pp-shelf, .cmp-head, .cmp-sec-card";
+    Array.prototype.forEach.call(host.querySelectorAll(sel), function (el) {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    });
+  }
+  try {
+    if (!window.__pv2LegacyPurge) {
+      window.__pv2LegacyPurge = true;
+      var legacyObserver = new MutationObserver(purgeLegacyProfileBlocks);
+      legacyObserver.observe(document.documentElement, { childList: true, subtree: true });
+      setInterval(purgeLegacyProfileBlocks, 500);
+    }
+  } catch (e) {}
+  purgeLegacyProfileBlocks();
 
   /* Stacking fix: #editProfileModal and #xpPanelModal ship inside <main>,
      which carries position:relative + z-index:1 and therefore forms a stacking

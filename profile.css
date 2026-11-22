@@ -2,6 +2,16 @@
    PROFILE - the rebuilt self / member page, juicewrld.io-style
    ========================================================================== */
 
+/* The legacy profile board (profile-enhancements.js, wrld-stats.js, follows,
+   playlists-ui, privacy) still appends cards into #profilePageBody. The v2
+   profile owns this page now, so retire those old blocks everywhere - self
+   and other members - leaving only the rebuilt page and its Links section. */
+#profilePageBody .pv-block,
+#profilePageBody .ws-block,
+#profilePageBody .pp-shelf,
+#profilePageBody .cmp-head,
+#profilePageBody .cmp-sec-card{display:none !important}
+
 :root{
   --pv-glass:linear-gradient(180deg,rgba(22,22,36,.72),rgba(15,16,28,.78));
   --pv-border:rgba(255,255,255,.1);
@@ -78,6 +88,12 @@
 @media (max-width:720px){.pv2-hero-mid{flex-direction:column;align-items:flex-start;gap:12px}.pv2-avatar{width:88px;height:88px}.pv2-avatar-fallback{width:88px;height:88px;font-size:30px}}
 
 /* ---------- banner stats strip ---------- */
+.pv2-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 0 14px}
+.pv2-links-label{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--pv-mute)}
+.pv2-links-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
+.pv2-link-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;border:1px solid var(--pv-border-soft);background:rgba(255,255,255,.05);color:var(--pv-text);font-size:11px;font-weight:700;text-decoration:none;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv2-link-chip:hover{border-color:rgba(34,211,238,.5);color:#7dd3fc;background:rgba(34,211,238,.1)}
+.pv2-links-empty{font-size:11px;color:var(--pv-mute);font-style:italic}
 .pv2-strip{display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--pv-border-soft);margin-top:16px}
 .pv2-strip>div{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:110px;padding:12px 14px;flex:1}
 .pv2-strip>div+div{border-left:1px solid var(--pv-border-soft)}
