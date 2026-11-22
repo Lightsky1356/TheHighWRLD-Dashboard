@@ -75,10 +75,13 @@ if (inertCalls !== 2) {
   ok("setBackgroundInert() has a single call site");
 }
 
-if (!/var modal = !!state\.open && panelIsModal\(\);[\s\S]{0,200}setBackgroundInert\(modal\)/.test(js)) {
-  fail("syncPanelModality() no longer gates inert on state.open && panelIsModal() - the nav and the player would go dead again while the panel is open");
+/* Messages is now a full page rather than an overlay. The !PAGE_MODE guard is
+   deliberate: a page has no background to inert, and inerting <body> there
+   freezes the whole site (including the WRLD Log close button). */
+if (!/var modal = !PAGE_MODE && !!state\.open && panelIsModal\(\);[\s\S]{0,200}setBackgroundInert\(modal\)/.test(js)) {
+  fail("syncPanelModality() no longer gates inert on !PAGE_MODE && state.open && panelIsModal()");
 } else {
-  ok("inert is applied only while the panel is open AND modal");
+  ok("inert is applied only to the overlay panel, never to the full-page mode");
 }
 
 /* 3. aria-modal follows the same gate rather than sitting true forever. */
@@ -119,19 +122,12 @@ if (js.indexOf('closest("#page-nav-wanted")') !== -1 || js.indexOf("notifyCommun
   ok("the Community trigger is no longer intercepted");
 }
 
-/* The menu now has to clear the panel by measurement, so the shift must be
-   re-run when the panel changes size as well as on open and on resize. */
-const clearanceHooks = count(js, "syncCommMenuClearance()");
-if (clearanceHooks < 4) {
-  fail("syncCommMenuClearance() has only " + (clearanceHooks - 1) + " call sites; expected open, resize and the panel-size toggle (a resize that changes the panel width must re-measure)");
+/* The Community dropdown was hidden and neutralised at the owner's request;
+   its clearance shim went with it. There must be no half-wired remnants. */
+if (js.indexOf("syncCommMenuClearance") !== -1) {
+  fail("the removed Community-menu clearance shim is still wired in social-panel.js");
 } else {
-  ok("the Community menu is re-measured on open, on resize and on the size toggle");
-}
-
-if (!/m\.right - \(p\.left - 12\)/.test(js)) {
-  fail("syncCommMenuClearance() no longer measures the menu's right edge against the panel's left edge");
-} else {
-  ok("the menu is shifted by the measured distance to the panel");
+  ok("the Community dropdown is gone, so no clearance shim is needed");
 }
 
 console.log(failures ? "\n  " + failures + " modal-gating problem(s)\n" : "\n  social panel modality: all good\n");

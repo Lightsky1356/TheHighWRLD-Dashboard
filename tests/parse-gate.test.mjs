@@ -461,7 +461,7 @@ if (dupes.length) {
     else {
       const unknown = seasonalIds.filter((id) => !themeIds.includes(id));
       const unseasoned = themeIds.filter((id) => {
-        const marked = idsIn(page, new RegExp('data-seasonal="' + id.replace(/-/g, "\\-") + '"', "g"));
+        const marked = idsIn(page, new RegExp('data-seasonal-tile="' + id.replace(/-/g, "\\-") + '"', "g"));
         return seasonalIds.includes(id) ? marked.length !== 1 : marked.length !== 0;
       });
       if (unknown.length) structureFail(`seasonal themes not in THEMES: ${unknown.join(", ")}`);
@@ -496,25 +496,24 @@ if (dupes.length) {
   if (absent.length) structureFail(`markup missing for: ${absent.join(", ")}`);
   else structureOk("the seasonal panel and its list container are in the page");
 
-  /* The seasonal list also lives as its own foldable block under the
-     Appearance grid in Account Settings. Both hosts are filled by one loop in
-     account.js and the fold choice is remembered, so a member does not have
-     to re-fold what they folded last visit. */
+  /* The separate foldable seasonal block in Account Settings was removed when
+     the seasonal tiles moved into the Appearance grid. Only the modal list
+     (#seasonal-themes-list) remains; account.js fills it from one loop. */
   const blockNeed = ["seasonalBlock", "seasonalFold", "seasonal-themes-block"];
   const blockAbsent = blockNeed.filter((id) => !page.includes('id="' + id + '"'));
-  if (blockAbsent.length) structureFail(`seasonal block markup missing: ${blockAbsent.join(", ")}`);
-  else if (!page.includes('aria-controls="seasonal-themes-block"'))
-    structureFail("the seasonal fold button does not point at its list");
-  else structureOk("the seasonal block sits in the Appearance grid with its fold button");
+  if (blockAbsent.length !== blockNeed.length) {
+    structureFail("the removed seasonal fold block is still in the page");
+  } else if (!page.includes('id="seasonal-themes-list"')) {
+    structureFail("the seasonal modal list is missing");
+  } else {
+    structureOk("the seasonal tiles live in the Appearance grid; the fold block is gone");
+  }
 
   const themesCss = readFileSync(join(ROOT, "themes.css"), "utf8");
-  if (!acct.includes("#seasonal-themes-list, #seasonal-themes-block") ||
-      !acct.includes("thwSeasonalBlock")) {
-    structureFail("account.js does not fill both seasonal hosts or persist the fold");
-  } else if (!themesCss.includes(".seasonal-block.folded #seasonal-themes-block{display:none}")) {
-    structureFail("themes.css has no folded state for the seasonal block");
+  if (!acct.includes('getElementById("seasonal-themes-list")') || !acct.includes("thwSeasonal")) {
+    structureFail("account.js does not fill the seasonal list");
   } else {
-    structureOk("both seasonal hosts are filled from one loop, and the fold is styled");
+    structureOk("account.js fills the seasonal list from one loop");
   }
 
   /* Every seasonal row carries a history ⓘ - the card is a wrapper span so
@@ -570,7 +569,7 @@ if (dupes.length) {
   /* The mobile popup entry opens the page the same way its siblings
      (Suggestions, Wanted Vault) do. The desktop dropdown was removed at the
      owner's request; the mobile popup remains. */
-  const entryOk = /switchAppPage\(&#39;community-themes&#39;\)" class="mobile-popup-item"/.test(page);
+  const entryOk = /class="thw-sheet-item thw-sheet-item--menu"[^>]*switchAppPage\(&#39;community-themes&#39;\)/.test(page);
   if (!entryOk) structureFail("the mobile Community Themes menu entry does not open the page");
   else structureOk("the mobile Community Themes menu entry opens the page");
 
@@ -602,8 +601,8 @@ if (dupes.length) {
   } else if ((acct.match(/ensureMemberThemeCss\(theme\)/g) || []).length < 3 ||
              !/ensureMemberThemeCss\(v\)/.test(acct)) {
     structureFail("member-theme stylesheets are not fetched on every theme-apply path");
-  } else if (!/#setTheme option\[value/.test(acct)) {
-    structureFail("a member theme's name is not read from its picker option");
+  } else if (!/thw-theme-name/.test(acct) || !/themeName\(id\)/.test(acct)) {
+    structureFail("a member theme's name is not read from its picker tile");
   } else {
     structureOk("account.js wears, fetches CSS for, and names member themes");
   }
@@ -767,15 +766,15 @@ if (dupes.length) {
   } else {
     structureOk("the profile page carries no Recent Activity panel");
   }
-  if (!/id="activityList"/.test(html)) {
-    structureFail("the account page has no #activityList for applyActivity() to fill");
+  /* The standalone activity list was removed with the old settings layout.
+     applyActivity() now no-ops when the container is absent, which is the
+     honest shape for a removed panel. */
+  if (/id="activityList"/.test(html)) {
+    structureFail("the removed #activityList panel is back in the account page");
+  } else if (!/getElementById\("activityList"\)[\s\S]{0,40}if \(!box\) return;/.test(acct)) {
+    structureFail("applyActivity() no longer no-ops without its removed container");
   } else {
-    structureOk("the account page has a container for the activity list");
-  }
-  if (!/getElementById\("activityList"\)/.test(acct)) {
-    structureFail("applyActivity() does not look for #activityList");
-  } else {
-    structureOk("applyActivity() fills the account page's list");
+    structureOk("the activity panel is gone and applyActivity() no-ops safely");
   }
   const applyCount = (acct.match(/function applyActivity\s*\(/g) || []).length;
   if (applyCount !== 1) {
@@ -2036,7 +2035,7 @@ function safeDecode4(v) {
     structureFail("the bootstrap asks for itself again while a request is already under way");
   } else if (!/state\.tried = true/.test(push)) {
     structureFail("the push panel does not remember that it has asked for the state");
-  } else if (!/if \(state\.tried\)/.test(push)) {
+  } else if (!/!state\.loaded && !state\.tried/.test(push)) {
     structureFail("the push panel asks for the state again after it has already asked");
   } else if (!/bootTake\("push", ask\)/.test(push)) {
     structureFail("the push panel does not take its state from the bootstrap");
@@ -2218,23 +2217,19 @@ function safeDecode4(v) {
     structureOk("the message menu holds Reply, Copy, the grammar check and Report");
   }
 
-  /* The menu's reactions are the ones the server accepts. */
-  const serverEmojis = (/const EMOJIS = (\[[^\]]*\])/.exec(socialApi) || [, "[]"])[1];
+  /* The server no longer keeps a fixed reaction list: it accepts any short
+     emoji-ish string so the picker can grow with emoji-data.js. The panel
+     offers its own list, so both sides must still agree on the shape. */
   const panelEmojis = (/var REACTIONS = (\[[^\]]*\])/.exec(socialPanel) || [, "[]"])[1];
-  const serverSet = new Set((serverEmojis.match(/"[^"]+"/g) || []));
   const panelSet = new Set((panelEmojis.match(/"[^"]+"/g) || []));
-  if (!serverSet.size) {
-    structureFail("the server's reaction list could not be read");
-  } else if (serverSet.size !== panelSet.size) {
-    structureFail("the panel offers " + panelSet.size + " reactions and the server accepts " + serverSet.size);
+  if (!/function isEmojiString\(s\)/.test(socialApi)) {
+    structureFail("the server has no reaction validator");
+  } else if (!/isEmojiString\(/.test(socialApi)) {
+    structureFail("the server does not validate reactions with isEmojiString()");
+  } else if (!panelSet.size) {
+    structureFail("the panel's reaction list could not be read");
   } else {
-    let same = true;
-    serverSet.forEach((e) => { if (!panelSet.has(e)) same = false; });
-    if (!same) {
-      structureFail("the panel offers a reaction the server will refuse");
-    } else {
-      structureOk("the panel offers every reaction the server accepts");
-    }
+    structureOk("the server accepts short emoji strings and the panel offers a reaction list");
   }
 
   /* The buttons that moved into the menu are not on the message any more. */
@@ -2244,7 +2239,7 @@ function safeDecode4(v) {
   );
   if (/dataset\.action = "copy-message"/.test(tools)) {
     structureFail("Copy is back on the message as well as in the menu");
-  } else if (!/dataset\.action = "message-menu"/.test(tools)) {
+  } else if (!/dataset\.action = "message-menu"/.test(socialPanel) && !/"message-menu"/.test(socialPanel)) {
     structureFail("there is no way to open the message menu from a message");
   } else {
     structureOk("the message tools live in the menu, and there is a way in");

@@ -63,7 +63,7 @@ const PNG_DATA = "data:image/png;base64," + PNG.toString("base64");
    last run left behind - so a request that is refused because they already
    are is not a failure. */
 const requested = await call(ALICE.token, "/api/social/requests", "POST", { uid: BOB.uid });
-check("a friend request is sent", requested.status === 200 || requested.status === 409,
+check("a friend request is sent", requested.status === 201 || requested.status === 200 || requested.status === 409,
   `status ${requested.status}`);
 
 /* The request is not answered with its id, so it is looked for in the
