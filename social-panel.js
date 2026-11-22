@@ -267,7 +267,7 @@
                 '<button class="thw-social-attach" id="thw-social-attach" type="button" aria-label="Attach tools" title="Attach tools" aria-expanded="false"><i class="fas fa-plus" aria-hidden="true"></i></button>' +
                 '<input id="thw-social-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,application/zip,audio/*" multiple hidden>' +
                 '<input id="thw-social-photo" type="file" accept="image/*" multiple hidden>' +
-                '<span class="thw-social-composer-field"><label class="sr-only" for="thw-social-input">Write a message</label><div class="thw-social-mentions" id="thw-social-mentions" hidden role="listbox" aria-label="Mention a person"></div><textarea id="thw-social-input" maxlength="2000" rows="1" placeholder="Write a message" disabled></textarea><span class="thw-social-counter" id="thw-social-counter" aria-live="off"></span><span class="thw-composer-drop" id="thw-composer-drop" hidden aria-hidden="true"><i class="fas fa-file-arrow-up"></i><b>Drop to attach</b><span>Audio, photos, PDFs, zips, text</span></span></span>' +
+                '<span class="thw-social-composer-field"><label class="sr-only" for="thw-social-input">Sign in to write a message</label><div class="thw-social-mentions" id="thw-social-mentions" hidden role="listbox" aria-label="Mention a person"></div><textarea id="thw-social-input" maxlength="2000" rows="1" placeholder="Sign in to write a message" disabled></textarea><span class="thw-social-counter" id="thw-social-counter" aria-live="off"></span><span class="thw-composer-drop" id="thw-composer-drop" hidden aria-hidden="true"><i class="fas fa-file-arrow-up"></i><b>Drop to attach</b><span>Audio, photos, PDFs, zips, text</span></span></span>' +
                 '<button class="thw-social-mention-btn" id="thw-social-mention-btn" type="button" aria-label="Mention someone" title="Mention someone"><i class="fas fa-at" aria-hidden="true"></i></button>' +
                 '<button class="thw-social-send" id="thw-social-send" type="submit" disabled>Send</button></form>' +
 '</div></div>' +
@@ -1211,6 +1211,10 @@
       state.boot = data;
       state.lastSyncAt = Date.now();
       clearRetry();
+      /* A successful bootstrap means this visitor is signed in: restore the
+         composer's normal prompt. renderThread() may refine it for a blocked
+         conversation once a thread is open. */
+      setComposerPrompt("Write a message");
       showStatus(data.presenceAvailable === false ? "Live status is temporarily unavailable." : "", "warn");
       renderFriends(data.friends || []);
       renderRequests(data.requests || []);
@@ -1251,10 +1255,23 @@
     if (requestCount) requestCount.textContent = counts.requests ? "(" + counts.requests + ")" : "";
   }
 
+  /* The composer is visible in the Messages tab even for guests. Keep its
+     text honest: a disabled box that says "Write a message" reads like a bug,
+     not like a sign-in requirement. */
+  function setComposerPrompt(text) {
+    var input = document.getElementById("thw-social-input");
+    if (!input) return;
+    var label = document.querySelector('label[for="thw-social-input"]');
+    if (label) label.textContent = text;
+    input.placeholder = text;
+    input.setAttribute("aria-label", text);
+  }
+
   /* A guest is the most common state this panel is in, so it gets a designed
      state rather than an error string over empty lists. Replaces every list in
      the panel and clears the freshness stamp, so nothing reads as stale data. */
   function renderSignedOut() {
+    setComposerPrompt("Sign in to write a message");
     var friends = document.getElementById("thw-social-friends");
     var requests = document.getElementById("thw-social-requests");
     var convos = document.getElementById("thw-social-conversations");
@@ -2782,9 +2799,9 @@
       }
       input.disabled = state.blocked;
       send.disabled = state.blocked;
-      input.placeholder = state.blocked
+      setComposerPrompt(state.blocked
         ? (state.blockedByTarget ? "You have been blocked" : "Messaging is unavailable due to privacy settings or a block")
-        : "Write a message";
+        : "Write a message");
       renderMessages();
       if (older) body.scrollTop = body.scrollHeight - oldHeight + oldTop;
       else if (!preserveScroll || wasNearBottom) body.scrollTop = body.scrollHeight;

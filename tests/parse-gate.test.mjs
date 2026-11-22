@@ -196,11 +196,13 @@ if (!curAbout || (baseline.ok && !baseAbout)) {
   const expectedDelta = [
     ['<section class="abp-sec"', 0],
     ['class="abp-social"', 0],
-    /* The desktop links moved to the v1.0.3 release; the retired Intel .dmg
+    /* The desktop links moved to the v1.0.5 release; the retired Intel .dmg
        and .deb links were dropped, leaving three current installers. */
     ['releases/download/v1\\.0\\.1', -5],
     ['releases/download/v1\\.0\\.2', 0],
-    ['releases/download/v1\\.0\\.3', 3],
+    ['releases/download/v1\\.0\\.3', 0],
+    ['releases/download/v1\\.0\\.4', 0],
+    ['releases/download/v1\\.0\\.5', 3],
     ['class="abp-card-top abp-link"', 0],
   ];
   let contentOk = true;
