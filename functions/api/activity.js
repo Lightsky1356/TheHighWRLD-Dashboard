@@ -305,21 +305,30 @@ async function publish(context, me, body) {
 
   if (type === "listening") {
     /* One row per member, so a new track replaces the old one rather than
-       stacking up. The id is stable, which is what makes it a replace rather
-       than an insert. */
-    await db.prepare(
+       stacking up. The listening row carries a live position, but that column
+       arrived in migration 0059 - on a database that has not applied it yet
+       the insert below is retried without the live fields so publishing never
+       fails outright. */
+    const rid = "act_listening_" + me.uid;
+    const expires = new Date(Date.now() + LISTENING_TTL_MS).toISOString();
+    const live = [rid, me.uid, trackId, title, artist, artwork, label, detail, safeLink,
+      positionMs, durationMs, playing, positionAt, expires, now];
+    const base = [rid, me.uid, trackId, title, artist, artwork, label, detail, safeLink, expires, now];
+    const withLive =
       "INSERT INTO friend_activity (id, uid, type, track_id, title, artist, artwork, label, detail, link, position_ms, duration_ms, playing, position_at, expires_at, created_at) " +
       "VALUES (?, ?, 'listening', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
       "ON CONFLICT(id) DO UPDATE SET track_id = excluded.track_id, title = excluded.title, " +
       "artist = excluded.artist, artwork = excluded.artwork, position_ms = excluded.position_ms, " +
       "duration_ms = excluded.duration_ms, playing = excluded.playing, position_at = excluded.position_at, " +
-      "expires_at = excluded.expires_at, created_at = excluded.created_at"
-    ).bind(
-      "act_listening_" + me.uid, me.uid, trackId, title, artist, artwork,
-      label, detail, safeLink,
-      positionMs, durationMs, playing, positionAt,
-      new Date(Date.now() + LISTENING_TTL_MS).toISOString(), now
-    ).run();
+      "expires_at = excluded.expires_at, created_at = excluded.created_at";
+    const noLive =
+      "INSERT OR REPLACE INTO friend_activity (id, uid, type, track_id, title, artist, artwork, label, detail, link, expires_at, created_at) " +
+      "VALUES (?, ?, 'listening', ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    try {
+      await db.prepare(withLive).bind(...live).run();
+    } catch (err) {
+      await db.prepare(noLive).bind(...base).run();
+    }
     return json({ ok: true, published: true });
   }
 

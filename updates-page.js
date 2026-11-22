@@ -16,7 +16,8 @@
       if (count) count.textContent = "0 releases";
       return;
     }
-    list.reverse();
+    /* wrldlog-data.js is already newest-first - keep that order so the top of
+       the page is the latest release and the bottom is the oldest. */
     var html = list.map(function (e) {
       var title = e.title ? '<h2 class="upd-title">' + esc(e.title) + '</h2>' : "";
       var items = [];

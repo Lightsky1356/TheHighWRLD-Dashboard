@@ -202,6 +202,13 @@
       if (msg.type === 'report:created' || msg.type === 'report:updated' || msg.type === 'report:deleted') { try { window.dispatchEvent(new CustomEvent('thw:report', { detail: msg })); } catch (_) {} return; }
       if (msg.type.indexOf('social:') === 0) { try { window.dispatchEvent(new CustomEvent('thw:social', { detail: msg })); } catch (_) {} return; }
       if (msg.type === 'notification:created') { try { window.dispatchEvent(new CustomEvent('thw:notification', { detail: msg })); } catch (_) {} return; }
+      /* The hub publishes the roster itself on every change - render it
+         immediately instead of waiting for the next poll. */
+      if (msg.type === 'presence:members') {
+        try { window.dispatchEvent(new CustomEvent('thw:members', { detail: msg })); } catch (_) {}
+        if (msg.members) renderPanel({ members: msg.members, total: (typeof msg.total === 'number' ? msg.total : msg.members.length) });
+        return;
+      }
       if (msg.type !== 'connected' && msg.type !== 'presence:update') return;
       try { window.dispatchEvent(new CustomEvent('thw:presence')); } catch (_) {}
       const counts = msg.presence && msg.presence.counts;
@@ -344,6 +351,9 @@
   document.addEventListener('click', function (e) {
     var badge = badgeEl();
     var panel = panelEl();
+    /* The mobile profile sheet's online button opens this same panel; don't
+       let the outside-click dismissal close it on the very same click. */
+    if (e.target && e.target.closest && e.target.closest('#thwSheetOnlineBtn')) return;
     if (badge && badge.contains(e.target)) { e.preventDefault(); setPopOpen(!popOpen); return; }
     if (panel && !panel.contains(e.target)) setPopOpen(false);
   });
@@ -357,5 +367,93 @@
     setPopOpen(false);
     try { if (typeof window.switchAppPage === 'function') window.switchAppPage('leaderboard'); } catch (_) {}
   });
+
+  /* =====================================================================
+     The panel is part leaderboard: a tab pair switches between who is on
+     the site right now and who is on the top 10 of the all-time board.
+     ===================================================================== */
+  try {
+    var panelEl2 = panelEl();
+    var listEl = document.getElementById('online-now-list');
+    var headEl = panelEl2 && panelEl2.querySelector ? panelEl2.querySelector('.online-now-head') : null;
+    if (panelEl2 && listEl && headEl && !panelEl2.querySelector('.online-now-tabs')) {
+      var tabsEl = document.createElement('div');
+      tabsEl.className = 'online-now-tabs';
+      tabsEl.setAttribute('role', 'tablist');
+      tabsEl.innerHTML =
+        '<button type="button" class="online-now-tab is-active" data-tab="online" role="tab" aria-selected="true">Online</button>' +
+        '<button type="button" class="online-now-tab" data-tab="board" role="tab" aria-selected="false">Leaderboard</button>';
+      headEl.parentNode.insertBefore(tabsEl, listEl);
+
+      var boardEl = document.createElement('div');
+      boardEl.className = 'online-now-board';
+      boardEl.id = 'online-now-board';
+      boardEl.setAttribute('role', 'tabpanel');
+      boardEl.hidden = true;
+      boardEl.innerHTML = '<p class="online-now-empty">Loading the board…</p>';
+      listEl.parentNode.insertBefore(boardEl, listEl.nextSibling);
+
+      var tabBtns = tabsEl.querySelectorAll('.online-now-tab');
+      var boardLoading = false;
+      function selectTab(name) {
+        tabBtns.forEach(function (t) {
+          var on = t.getAttribute('data-tab') === name;
+          t.classList.toggle('is-active', on);
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        var isOnline = name === 'online';
+        listEl.hidden = !isOnline;
+        boardEl.hidden = isOnline;
+        if (!isOnline) loadBoard();
+      }
+      function loadBoard() {
+        if (boardLoading || boardEl.dataset.ready === '1') return;
+        boardLoading = true;
+        fetch('/api/xp', { credentials: 'same-origin' })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            boardLoading = false;
+            boardEl.dataset.ready = '1';
+            var rows = (d && d.ok && d.board && d.board.alltime) || [];
+            if (!rows.length) {
+              boardEl.innerHTML = '<p class="online-now-empty">The board could not be loaded right now.</p>';
+              return;
+            }
+            var myUid = (d && d.me && d.me.uid) || '';
+            boardEl.innerHTML = rows.slice(0, 10).map(function (m) {
+              var you = myUid && m.uid === myUid;
+              var av = m.avatar
+                ? '<img decoding="async" loading="lazy" src="' + escapeHtml(m.avatar) + '" alt="" onerror="this.onerror=null;this.src=\'\'">'
+                : '<i class="fas fa-user" aria-hidden="true"></i>';
+              var top3 = Number(m.rank) <= 3;
+              return '<div class="online-now-board-row">' +
+                '<span class="online-now-board-rank' + (top3 ? ' top' : '') + '">' + m.rank + '</span>' +
+                '<span class="online-now-board-av">' + av + '</span>' +
+                '<span class="online-now-board-name">' + escapeHtml(m.name) + '</span>' +
+                (you ? '<span class="online-now-board-you">You</span>' : '') +
+                '<span class="online-now-board-xp">' + Number(m.xp || 0).toLocaleString() + ' XP</span>' +
+              '</div>';
+            }).join('');
+          })
+          .catch(function () {
+            boardLoading = false;
+            boardEl.innerHTML = '<p class="online-now-empty">The board could not be loaded right now.</p>';
+          });
+      }
+      tabBtns.forEach(function (t) {
+        t.addEventListener('click', function () { selectTab(t.getAttribute('data-tab')); });
+      });
+      /* Keep the hidden board in sync when its data changes: cheaply re-fetch xp
+         only when the board tab is showing, rather than polling in the background. */
+    }
+  } catch (_) {}
+
+  /* The mobile profile sheet's "N online" is a shortcut into this roster.
+     Close the sheet first so it is not stacked on top of the panel, then open
+     the panel through its own state setter (which also starts the refresh). */
+  window.thwOpenOnlineFromSheet = function () {
+    try { if (typeof window.closeMobileProfileMenu === 'function') window.closeMobileProfileMenu(); } catch (_) {}
+    setPopOpen(true);
+  };
 
 })();

@@ -30,16 +30,16 @@
   window.__eraPageMounted = true;
 
   var ERAS = [
-    { code: "SOUNDCLOUD", slug: "soundcloud", name: "SoundCloud era",         sub: "The tapes before the vault", art: null },
-    { code: "AF",         slug: "af",         name: "affliction",             sub: "The very first recordings",  art: null },
-    { code: "BDM",        slug: "bdm",        name: "BINGEDRINKINGMUSIC",     sub: "2017",                       art: null },
-    { code: "ND",         slug: "nd",         name: "NOTHING'S DIFFERENT </3", sub: "Late 2017",               art: null },
+    { code: "SOUNDCLOUD", slug: "soundcloud", name: "SoundCloud era",         sub: "The tapes before the vault", art: "assets/settings-era/JUTE.webp" },
+    { code: "AF",         slug: "af",         name: "affliction",             sub: "The very first recordings",  art: "assets/settings-era/AFF.webp" },
+    { code: "BDM",        slug: "bdm",        name: "BINGEDRINKINGMUSIC",     sub: "2017",                       art: "assets/settings-era/BDM.webp" },
+    { code: "ND",         slug: "nd",         name: "NOTHING'S DIFFERENT </3", sub: "Late 2017",               art: "assets/settings-era/ND.webp" },
     { code: "GB&GR",      slug: "gbgr",       name: "Goodbye & Good Riddance", sub: "Dec 2017 – May 2018",        art: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/GB%26GR.png" },
     { code: "WOD",        slug: "wod",        name: "WRLD ON DRUGS",          sub: "2018",                       art: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/WOD.png" },
     { code: "DRFL",       slug: "drfl",       name: "Death Race For Love",    sub: "Oct 2018 – Mar 2019",        art: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/DRFL.png" },
-    { code: "JW3",        slug: "jw3",        name: "Legends Never Die",      sub: "2019–2020",                  art: null },
-    { code: "OUT",        slug: "out",        name: "Outsiders",              sub: "2019–2020",                  art: null },
-    { code: "POST",       slug: "post",       name: "Posthumous",             sub: "Dec 2019 – present",         art: null },
+    { code: "JW3",        slug: "jw3",        name: "Legends Never Die",      sub: "2019–2020",                  art: "assets/settings-era/JW999.webp" },
+    { code: "OUT",        slug: "out",        name: "Outsiders",              sub: "2019–2020",                  art: "assets/settings-era/OUT.webp" },
+    { code: "POST",       slug: "post",       name: "Posthumous",             sub: "Dec 2019 – present",         art: "assets/settings-era/POST.webp" },
   ];
 
   function esc(s) {
@@ -213,6 +213,7 @@
 
     pane.innerHTML =
       '<div class="era-page">' +
+        '<button class="era-back" id="era-back" type="button"><i class="fas fa-chevron-left" aria-hidden="true"></i><span>Back</span></button>' +
         '<header class="era-hero">' +
           '<div class="era-hero-artwrap"><img class="era-hero-art" id="era-hero-art" src="' + esc(heroArt(def)) + '" alt="" decoding="async" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'"></div>' +
           '<div class="era-hero-body">' +
@@ -249,6 +250,10 @@
         '</section>' +
       '</div>';
 
+    var eraBack = document.getElementById("era-back");
+    if (eraBack) eraBack.addEventListener("click", function () {
+      if (window.switchAppPage) window.switchAppPage("era");
+    });
     document.getElementById("era-play").addEventListener("click", function () { playEra(def, false); });
     document.getElementById("era-shuffle").addEventListener("click", function () { playEra(def, true); });
     document.getElementById("era-in-vault").addEventListener("click", function () {
@@ -273,6 +278,7 @@
       var row = document.createElement("button");
       row.type = "button";
       row.className = "era-row";
+      row.dataset.trackIdx = String(i);
       row.innerHTML =
         '<img decoding="async" loading="lazy" class="era-row-cover" src="' + esc(coverThumb(t.cover, "64")) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
         '<span class="era-row-meta"><span class="era-row-title">' + esc(t.title) + '</span>' +
@@ -287,6 +293,32 @@
       });
       listEl.appendChild(row);
     });
+
+    /* The play button on the right of each row only ever means "press to play
+       this one". The track that is actually playing carries a pause icon
+       instead - and only that track does. Synced on a light interval because
+       the deck already knows how to switch tracks on its own (shuffle, next at
+       the end) - anything event-sourced would drift the moment the queue
+       advanced itself. */
+    function paintEraPlayState() {
+      try {
+        var cur = typeof currentTrackIndex === "number" ? currentTrackIndex : -1;
+        var playing = typeof isPlaying !== "undefined" && !!isPlaying;
+        var rows = listEl.querySelectorAll(".era-row");
+        for (var i = 0; i < rows.length; i++) {
+          var isThis = playing && cur === Number(rows[i].dataset.trackIdx);
+          rows[i].classList.toggle("is-playing", isThis);
+          var icon = rows[i].querySelector(".era-row-play i");
+          if (icon) {
+            icon.className = "fas " + (isThis ? "fa-pause" : "fa-play");
+            icon.setAttribute("aria-hidden", "true");
+          }
+        }
+      } catch (e) {}
+    }
+    if (window.__eraPlaySync) { clearInterval(window.__eraPlaySync); window.__eraPlaySync = null; }
+    window.__eraPlaySync = setInterval(paintEraPlayState, 1000);
+    paintEraPlayState();
 
     /* most played */
     var most = document.getElementById("era-most-list");

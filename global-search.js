@@ -135,11 +135,14 @@
       (document.head || document.documentElement).appendChild(st);
     }
 
-    /* Anchor FIRST on the DRP pill itself: the left nav cluster is
-       <div class="flex items-center gap-3">THW + #ps-nav-drp</div>, and the
-       <nav> carries class "nav-home" (not ".nav"), so the old nav query
-       missed and the toggle fell back to body-top. Insert immediately
-       AFTER #ps-nav-drp inside its own parent so the two sit side by side. */
+    /* Anchor inside #nav-pill, right after the Lobby button, so Search sits
+       with the other page controls. The older anchors (DRP pill, account
+       cluster, body-top) are kept for pages without the pill. */
+    var pill = document.getElementById("nav-pill");
+    var homeBtn = pill ? pill.querySelector("#page-nav-home") : null;
+    if (homeBtn && homeBtn.parentNode) {
+      homeBtn.parentNode.insertBefore(wrap, homeBtn.nextSibling);
+    } else {
     var drp0 = document.getElementById("ps-nav-drp");
     if (drp0 && drp0.parentNode) {
       drp0.parentNode.insertBefore(wrap, drp0.nextSibling);
@@ -154,6 +157,7 @@
       top.innerHTML = wrap.innerHTML;
       wrap = top;
       body.insertBefore(wrap, body.firstChild);
+    }
     }
 
     var toggle = document.getElementById("gsToggle");

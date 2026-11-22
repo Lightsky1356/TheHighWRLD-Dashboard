@@ -558,13 +558,20 @@
     };
     tick();
   }
+  /* Renders race: mount() asks for one when state arrives and the boot code
+     asks for another - both fetch the subscription, and both callbacks used
+     to append to the host, leaving the whole panel twice in the page. A
+     sequence number lets only the newest render win the host. */
+  var renderSeq = 0;
   function render() {
     var host = document.getElementById("thw-push-section");
     if (!host) return;
 
     host.innerHTML = "";
+    var seq = ++renderSeq;
 
     currentSubscription().catch(function () { return null; }).then(function (sub) {
+      if (seq !== renderSeq) return;
       if (!document.getElementById("thw-push-section")) return;
       // state.devices is what makes a mismatch detectable. Fetch it first if it has
       // not been loaded, otherwise an empty list on first paint would look like a

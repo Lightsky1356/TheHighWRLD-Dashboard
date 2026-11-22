@@ -12,16 +12,25 @@ const CORS = {
   "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
-/* The reactions a message can carry.
- *
- * It used to be six, and the panel only ever offered three of them - so
- * the other three could not be given without going round the API. The
- * list is the whole set now, and the panel offers all of it.
- *
- * A reaction is a fixed set rather than free text, because it goes into
- * a column and it is drawn as a button. Anything else would be a
- * different kind of thing. */
-const EMOJIS = ["❤️", "🔥", "😂", "😮", "👏", "💯", "👍", "👎", "🎉", "😢", "🤔", "🙏"];
+/* The set of reactions the API accepts used to be a fixed six. The picker
+   now offers every emoji the shipped emoji-data.js holds - and many more
+   will arrive over time. What we actually need is "a small emoji-ish
+   string", not a fixed list. An emoji is any non-control, non-whitespace
+   string of at most 16 code units that carries at least one non-ASCII
+   codepoint; that covers keycaps and flag letters while keeping garbage
+   words out. */
+function isEmojiString(s) {
+  if (typeof s !== "string") return false;
+  if (s.length < 1 || s.length > 16) return false;
+  if (/[\u0000-\u001F\u007F\s]/.test(s)) return false;
+  /* At least one codepoint outside ASCII — every emoji qualifies, and
+     ASCII words never do. */
+  for (let i = 0; i < s.length; i++) {
+    const code = s.charCodeAt(i);
+    if (code > 0x7E) return true;
+  }
+  return false;
+}
 const MAX_MESSAGE = 2000;
 /* A group is a group rather than a broadcast list, so it stays small enough
    for the thread to be readable and for one send to reach everybody. */
@@ -99,6 +108,7 @@ async function privacy(db, uid) {
    payload can never become an open redirect. */
 const PUSH_URL_BY_TYPE = {
   dm_message: "social:conversation",
+  dm_mention: "social:conversation",
   friend_request: "social:requests",
   friend_accepted: "social:friends",
 };
@@ -168,10 +178,13 @@ async function signalRefresh(env, recipientUid) {
  * The sizes are the ones the gallery already uses for artwork: 800KB for a
  * single picture, and six of them on a message. */
 const ATTACH_MAX = 800 * 1024;
+const ATTACH_AUDIO_MAX = 8 * 1024 * 1024;
 const ATTACH_MAX_COUNT = 6;
 const ATTACH_DAILY = 40;
 
-/* The types that may be attached, and how each one's bytes are checked. */
+/* The types that may be attached, and how each one's bytes are checked.
+   Audio files carry their ID3 metadata (artist/title/album) into the
+   message so the player in the thread can say who made what. */
 const ATTACH_MIME = {
   "image/jpeg": { magic: [0xff, 0xd8, 0xff], inline: true },
   "image/png": { magic: [0x89, 0x50, 0x4e, 0x47], inline: true },
@@ -179,7 +192,17 @@ const ATTACH_MIME = {
   "image/webp": { magic: null, inline: true },
   "application/pdf": { magic: [0x25, 0x50, 0x44, 0x46], inline: false },
   "application/zip": { magic: [0x50, 0x4b, 0x03, 0x04], inline: false },
-  "text/plain": { magic: null, inline: false }
+  "text/plain": { magic: null, inline: false },
+  "audio/mpeg": { magic: [0x49, 0x44, 0x33], inline: true, kind: "audio", max: ATTACH_AUDIO_MAX },
+  "audio/mp3": { magic: [0x49, 0x44, 0x33], inline: true, kind: "audio", max: ATTACH_AUDIO_MAX },
+  "audio/wav": { magic: [0x52, 0x49, 0x46, 0x46], inline: true, kind: "audio", max: ATTACH_AUDIO_MAX },
+  "audio/x-wav": { magic: [0x52, 0x49, 0x46, 0x46], inline: true, kind: "audio", max: ATTACH_AUDIO_MAX },
+  "audio/ogg": { magic: [0x4f, 0x67, 0x67, 0x53], inline: true, kind: "audio", max: ATTACH_AUDIO_MAX },
+  "audio/webm": { magic: [0x1a, 0x45, 0xdf, 0xa3], inline: true, kind: "audio", max: ATTACH_AUDIO_MAX },
+  "audio/flac": { magic: [0x66, 0x4c, 0x61, 0x43], inline: true, kind: "audio", max: ATTACH_AUDIO_MAX },
+  "audio/mp4": { magic: null, inline: true, kind: "audio", max: ATTACH_AUDIO_MAX },
+  "audio/x-m4a": { magic: null, inline: true, kind: "audio", max: ATTACH_AUDIO_MAX },
+  "audio/m4a": { magic: null, inline: true, kind: "audio", max: ATTACH_AUDIO_MAX }
 };
 
 function b64ToBytes(data) {
@@ -193,7 +216,13 @@ function b64ToBytes(data) {
 
 function magicOk(bytes, mime) {
   const rule = ATTACH_MIME[mime];
-  if (!rule || !rule.magic) return true;
+  if (!rule || !rule.magic) {
+    /* An MP3 without an ID3 tag starts with an MPEG sync block. */
+    if ((mime === "audio/mpeg" || mime === "audio/mp3") && bytes.length > 1) {
+      return bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0;
+    }
+    return true;
+  }
   if (bytes.length < rule.magic.length) return false;
   for (let i = 0; i < rule.magic.length; i++) {
     if (bytes[i] !== rule.magic[i]) return false;
@@ -220,6 +249,20 @@ async function ensureAttachmentSchema(db) {
       "size INTEGER NOT NULL DEFAULT 0, width INTEGER NOT NULL DEFAULT 0, height INTEGER NOT NULL DEFAULT 0, " +
       "data BLOB, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))"
     ).run();
+    /* The columns audio files use for their encoded artist/title/album.
+       They were added later, so a database that predates them gets the
+       columns here rather than a fatal insert elsewhere. */
+    try {
+      const info = await db.prepare("SELECT name FROM pragma_table_info('dm_attachments')").all();
+      const have = (info.results || []).map((r) => String(r.name || ""));
+      for (const col of ["artist", "title", "album"]) {
+        if (!have.includes(col)) {
+          await db.prepare("ALTER TABLE dm_attachments ADD COLUMN " + col + " TEXT NOT NULL DEFAULT ''").run();
+        }
+      }
+    } catch (_) {
+      /* Cannot alter it here. The migration will. */
+    }
     await db.prepare("CREATE INDEX IF NOT EXISTS idx_dm_attachments_message ON dm_attachments(message_id)").run();
     /* The friend activity table is read by the panel too, and it was added
        later than the rest. A database that has not been migrated yet must
@@ -246,11 +289,18 @@ async function attachmentsFor(db, messageIds) {
   let rows = [];
   try {
     rows = (await db.prepare(
-      "SELECT id, message_id, kind, name, mime, size, width, height FROM dm_attachments " +
+      "SELECT id, message_id, kind, name, mime, size, width, height, artist, title, album FROM dm_attachments " +
       "WHERE message_id IN (" + marks + ") ORDER BY id"
     ).bind(...ids).all()).results || [];
   } catch (_) {
-    return out;
+    try {
+      rows = (await db.prepare(
+        "SELECT id, message_id, kind, name, mime, size, width, height FROM dm_attachments " +
+        "WHERE message_id IN (" + marks + ") ORDER BY id"
+      ).bind(...ids).all()).results || [];
+    } catch (_) {
+      return out;
+    }
   }
   for (const row of rows) {
     const key = Number(row.message_id);
@@ -263,6 +313,9 @@ async function attachmentsFor(db, messageIds) {
       size: Number(row.size) || 0,
       width: Number(row.width) || 0,
       height: Number(row.height) || 0,
+      artist: row.artist || "",
+      title: row.title || "",
+      album: row.album || "",
       url: "/api/social/attachments/" + encodeURIComponent(row.id)
     });
   }
@@ -338,6 +391,61 @@ async function namesFor(db, uids) {
   const map = {};
   for (const row of rows.results || []) map[row.uid] = row.name;
   return map;
+}
+
+/* Everyone in a conversation, with the two things the thread needs to show
+   them: who they are, and what they look like. The client fills its @-picker
+   from exactly this, so what the picker offers and what the sender can be
+   pinged about are the same list. */
+async function membersFor(db, conversationId) {
+  const rows = await db.prepare(
+    "SELECT u.uid, COALESCE(NULLIF(p.name,''), NULLIF(d.display_name,''), u.name, 'Member') AS name, " +
+    "COALESCE(NULLIF(p.avatar,''), NULLIF(d.avatar,''), u.avatar, '') AS avatar " +
+    "FROM dm_conversation_members m JOIN users u ON u.uid = m.uid " +
+    "LEFT JOIN user_profiles p ON p.site_uid = u.uid LEFT JOIN discord_links d ON d.site_uid = u.uid " +
+    "WHERE m.conversation_id = ? ORDER BY name COLLATE NOCASE LIMIT 50"
+  ).bind(conversationId).all();
+  return (rows.results || []).map((r) => ({ uid: r.uid, name: r.name, avatar: r.avatar || "" }));
+}
+
+/* Which of the members a message body pings.
+ *
+ * A ping is "@" and then the person's display name, matched by hand rather
+ * than by regex so a name with spaces ("@Ruth B") works and a name with
+ * regex punctuation cannot break the scan. Longest name first so "Ruth B"
+ * wins over "Ruth", and ranges that a longer match already claimed are
+ * skipped - a ping for one must not come out of it as a ping for both.
+ *
+ * Names are the site's display names; a stranger's name is never pinged -
+ * only the people in the conversation can be. */
+function detectMentionsInText(text, members) {
+  const body = String(text || "");
+  if (!body) return [];
+  const lower = body.toLowerCase();
+  const names = (members || [])
+    .filter((m) => m && m.name && String(m.name).length >= 2)
+    .map((m) => ({ uid: m.uid, name: String(m.name).toLowerCase() }))
+    .sort((a, b) => b.name.length - a.name.length);
+  const claimed = [];
+  const found = [];
+  for (const m of names) {
+    const needle = "@" + m.name;
+    let idx = lower.indexOf(needle);
+    while (idx !== -1) {
+      const boundaryBefore = idx === 0 ? "" : lower.charAt(idx - 1);
+      const beforeOk = idx === 0 || !/[a-z0-9_]/i.test(boundaryBefore);
+      if (beforeOk) {
+        const end = idx + needle.length;
+        const overlapping = claimed.some(([s, e]) => !(end <= s || idx >= e));
+        if (!overlapping) {
+          claimed.push([idx, end]);
+          if (!found.find((f) => f.uid === m.uid)) found.push(m);
+        }
+      }
+      idx = lower.indexOf(needle, idx + 1);
+    }
+  }
+  return found.map((f) => f.uid);
 }
 
 /* An event for everybody but me in a conversation. The Durable Object routes
@@ -449,8 +557,11 @@ async function bootstrap(db, env, me) {
     let activities = { results: [] };
     try {
       activities = await db.prepare(
-        "SELECT uid, track_id, title, artist, artwork, label, detail, expires_at, ROW_NUMBER() OVER (PARTITION BY uid ORDER BY created_at DESC) AS rn " +
-        "FROM friend_activity WHERE uid IN (" + q + ") AND type = 'listening' AND (expires_at IS NULL OR expires_at > ?) WHERE rn = 1"
+        "SELECT uid, track_id, title, artist, artwork, label, detail, expires_at" +
+        " FROM (SELECT uid, track_id, title, artist, artwork, label, detail, expires_at," +
+        " ROW_NUMBER() OVER (PARTITION BY uid ORDER BY created_at DESC) AS rn" +
+        " FROM friend_activity WHERE uid IN (" + q + ") AND type = 'listening' AND (expires_at IS NULL OR expires_at > ?))" +
+        " WHERE rn = 1"
       ).bind(...statusIds, new Date().toISOString()).all();
     } catch (err) {
       /* A database that has not been migrated yet has no friend activity.
@@ -750,6 +861,8 @@ async function listMessages(db, me, conversationId, url) {
      not permission to type. */
   const blocked = conversation.kind === "group" ? false
     : (others.length ? await isBlocked(db, me.uid, others[0]) : true);
+  const blockedByTarget = conversation.kind === "group" ? false
+    : (others.length ? await isBlocked(db, others[0], me.uid) : false);
   const canSend = conversation.kind === "group" ? others.length > 0
     : (!blocked && others.length > 0 && await canMessage(db, me.uid, others[0]));
   const ordered = (rows.results || []).reverse();
@@ -772,8 +885,11 @@ async function listMessages(db, me, conversationId, url) {
     })),
     /* Who said what. A group has to name its senders; a one-to-one already
        knows, but the map comes back either way so the client has one path. */
+    /* Who said what, and who is in the room - the @-picker is filled from
+       exactly the people who can be pinged, which is everybody in it. */
     senders: await namesFor(db, others),
-    otherUid: others[0] || "", others, blocked, canSend,
+    members: await membersFor(db, conversationId),
+    otherUid: others[0] || "", others, blocked, blockedByTarget, canSend,
   });
 }
 
@@ -786,6 +902,12 @@ async function sendMessage(context, db, me, conversationId, body) {
      group was allowed by everyone in it when it was made, and each of them is
      still asked below whether this particular sender reaches them. */
   if (conversation.kind !== "group" && !(await canMessage(db, me.uid, others[0]))) {
+    /* A distinct code when it is a block. A generic 403 makes the sender
+       guess between "they turned messages off" and "they blocked me" - both
+       are 403, so without this the true answer is invisible to the client. */
+    if (await isBlocked(db, others[0], me.uid)) {
+      return json({ error: "blocked_by_target" }, 403);
+    }
     return json({ error: "messages_not_allowed" }, 403);
   }
   /* The words of the message. A sticker is not words - it is a picture of a
@@ -845,25 +967,42 @@ async function sendMessage(context, db, me, conversationId, body) {
       } catch (err) {
         return json({ error: "the file could not be read" }, 400);
       }
-      if (!bytes.length || bytes.length > ATTACH_MAX) {
-        return json({ error: "file too large (800KB max)" }, 400);
+      const maxSize = rule.max || ATTACH_MAX;
+      if (!bytes.length || bytes.length > maxSize) {
+        const limit = maxSize >= 1024 * 1024 ? Math.round(maxSize / (1024 * 1024)) + "MB" : Math.round(maxSize / 1024) + "KB";
+        return json({ error: "file too large (" + limit + " max)" }, 400);
       }
       if (!magicOk(bytes, mime)) {
         return json({ error: "that file is not what it says it is" }, 400);
       }
-      const kind = rule.inline ? (item.kind === "sticker" ? "sticker" : "photo") : "file";
+      const kind = rule.kind ? rule.kind : (rule.inline ? (item.kind === "sticker" ? "sticker" : "photo") : "file");
+      const artist = String(item.artist || "").replace(/\u0000/g, "").trim().slice(0, 120);
+      const title = String(item.title || "").replace(/\u0000/g, "").trim().slice(0, 160);
+      const album = String(item.album || "").replace(/\u0000/g, "").trim().slice(0, 160);
       const attId = "att_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
-      await db.prepare(
-        "INSERT INTO dm_attachments (id, conversation_id, message_id, uid, kind, name, mime, size, width, height, data) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-      ).bind(
-        attId, conversationId, id, me.uid, kind,
-        safeFileName(item.name), mime, bytes.length,
-        Number(item.width) || 0, Number(item.height) || 0, bytes.buffer
-      ).run();
+      try {
+        await db.prepare(
+          "INSERT INTO dm_attachments (id, conversation_id, message_id, uid, kind, name, mime, size, width, height, artist, title, album, data) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        ).bind(
+          attId, conversationId, id, me.uid, kind,
+          safeFileName(item.name), mime, bytes.length,
+          Number(item.width) || 0, Number(item.height) || 0, artist, title, album, bytes.buffer
+        ).run();
+      } catch (_) {
+        await db.prepare(
+          "INSERT INTO dm_attachments (id, conversation_id, message_id, uid, kind, name, mime, size, width, height, data) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        ).bind(
+          attId, conversationId, id, me.uid, kind,
+          safeFileName(item.name), mime, bytes.length,
+          Number(item.width) || 0, Number(item.height) || 0, bytes.buffer
+        ).run();
+      }
       stored.push({
         id: attId, kind: kind, name: safeFileName(item.name), mime: mime,
         size: bytes.length, width: Number(item.width) || 0, height: Number(item.height) || 0,
+        artist: artist, title: title, album: album,
         url: "/api/social/attachments/" + encodeURIComponent(attId)
       });
     }
@@ -877,14 +1016,40 @@ async function sendMessage(context, db, me, conversationId, body) {
   for (const uid of others) {
     if (conversation.kind !== "group" || await canMessage(db, me.uid, uid)) reached.push(uid);
   }
+  /* Who the words ping. Only the people in this conversation can be pinged,
+     and a ping is rate-limited twice: 8 per sender per minute, and 1 per
+     sender-to-recipient pair per five minutes - so a group cannot hammer one
+     person and a message cannot turn into a flurry of buzzes. A mention on
+     cooldown degrades to the default message notification instead of
+     disappearing. */
+  const pinged = new Set();
+  const pingCooldown = new Set();
+  let mentioned = [];
+  if (text) {
+    const all = await membersFor(db, conversationId);
+    mentioned = detectMentionsInText(text, all.filter((m) => m.uid !== me.uid)).slice(0, 5);
+  }
+  if (mentioned.length && await rateLimit(db, me.uid, "ping_send", 8, 60000)) {
+    for (const uid of mentioned) {
+      if (pinged.size >= 5) break;
+      if (await rateLimit(db, me.uid + "|" + uid, "ping_pair", 1, 300000)) {
+        pinged.add(uid);
+      } else {
+        pingCooldown.add(uid);
+      }
+    }
+  }
   /* What the notification says the person did. A track names itself - and it
      is the one thing worth naming when previews are on, because a card with
      no words would otherwise arrive as a message that says nothing. */
   const label = conversation.kind === "group"
     ? (me.name || "Someone") + (trackTitle ? " sent a track in \u201C" + (conversation.title || "a group") + "\u201D" : " sent a message in \u201C" + (conversation.title || "a group") + "\u201D")
     : (me.name || "Someone") + (trackTitle ? " sent you a track: " + trackTitle : " sent you a message");
+  const pingLabel = conversation.kind === "group"
+    ? (me.name || "Someone") + " pinged you in \u201C" + (conversation.title || "the group") + "\u201D"
+    : (me.name || "Someone") + " pinged you";
   for (const uid of reached) {
-    await notifyBestEffort(db, context.env, uid, me, "dm_message", label, context);
+    await notifyBestEffort(db, context.env, uid, me, pinged.has(uid) ? "dm_mention" : "dm_message", pinged.has(uid) ? pingLabel : label, context);
   }
   await fanoutToOthers(context.env, reached, {
     type: "social:message",
@@ -911,6 +1076,9 @@ async function sendMessage(context, db, me, conversationId, body) {
       track: row.track_title ? { title: row.track_title, artist: row.track_artist || "" } : null,
       attachments: stored,
     },
+    /* How many pings this send actually delivered, and how many were held
+       back by the cooldown. The client words it as one status line. */
+    pings: { sent: pinged.size, cooldown: pingCooldown.size },
   }, 201);
 }
 
@@ -929,8 +1097,8 @@ async function typing(context, db, me, conversationId, body) {
   const conversation = await conversationOf(db, conversationId, me.uid);
   if (!conversation) return json({ error: "conversation_not_found" }, 404);
   const others = await memberUids(db, conversationId, me.uid);
-  if (conversation.kind !== "group" && others.length && await isBlocked(db, me.uid, others[0])) {
-    return json({ error: "blocked" }, 403);
+  if (conversation.kind !== "group" && others.length && (await isBlocked(db, me.uid, others[0]) || await isBlocked(db, others[0], me.uid))) {
+    return json({ error: "blocked_by_target" }, 403);
   }
   /* The typing limit. See the client for why it is a limit and not a
      once-per-burst. This is the server's own bound, in case a client does
@@ -962,6 +1130,9 @@ async function mutateMessage(context, db, me, messageId, method, body) {
   if (!conversation) return json({ error: "message_not_found" }, 404);
   if (row.sender_uid !== me.uid) return json({ error: "forbidden" }, 403);
   const others = await memberUids(db, row.conversation_id, me.uid);
+  if (conversation.kind !== "group" && others.length && (await isBlocked(db, me.uid, others[0]) || await isBlocked(db, others[0], me.uid))) {
+    return json({ error: "blocked_by_target" }, 403);
+  }
   if (method === "PATCH") {
     /* The words of the message. A sticker is not words - it is a picture of a
      feeling - so it does not fill the words field. */
@@ -987,15 +1158,15 @@ async function mutateMessage(context, db, me, messageId, method, body) {
 async function reactToMessage(context, db, me, messageId, body) {
   const id = Number(messageId);
   const emoji = String(body.emoji || "");
-  if (!Number.isInteger(id) || id < 1 || !EMOJIS.includes(emoji)) return json({ error: "invalid_reaction" }, 400);
+  if (!Number.isInteger(id) || id < 1 || !isEmojiString(emoji)) return json({ error: "invalid_reaction" }, 400);
   const message = await db.prepare(
     "SELECT conversation_id FROM dm_messages WHERE id = ? AND deleted_at IS NULL"
   ).bind(id).first();
   const conversation = message && await conversationOf(db, message.conversation_id, me.uid);
   if (!conversation) return json({ error: "message_not_found" }, 404);
   const others = await memberUids(db, message.conversation_id, me.uid);
-  if (conversation.kind !== "group" && others.length && await isBlocked(db, me.uid, others[0])) {
-    return json({ error: "blocked" }, 403);
+  if (conversation.kind !== "group" && others.length && (await isBlocked(db, me.uid, others[0]) || await isBlocked(db, others[0], me.uid))) {
+    return json({ error: "blocked_by_target" }, 403);
   }
   if (!(await rateLimit(db, me.uid, "dm_reaction", 60, 60000))) return json({ error: "rate_limited" }, 429);
   const existing = await db.prepare(
@@ -1086,6 +1257,54 @@ async function settingsRequest(context, db, me, method, body) {
   return json({ ok: true, settings: next });
 }
 
+/* Who this user has blocked, so the panel can show a Blocked Users tab
+   and the Unblock / Add friend actions. */
+async function blockedList(db, me) {
+  const rows = await db.prepare(
+    "SELECT u.uid, COALESCE(NULLIF(p.name,''), NULLIF(d.display_name,''), u.name, 'Member') AS name, " +
+    "COALESCE(NULLIF(p.avatar,''), NULLIF(d.avatar,''), u.avatar, '') AS avatar, " +
+    "b.blocked_discord_id " +
+    "FROM user_blocks b JOIN users u ON u.uid = b.blocked_user_id " +
+    "LEFT JOIN user_profiles p ON p.site_uid = u.uid LEFT JOIN discord_links d ON d.site_uid = u.uid " +
+    "WHERE b.blocker_user_id = ? ORDER BY u.name COLLATE NOCASE LIMIT 100"
+  ).bind(me.uid).all();
+  return json({ ok: true, users: rows.results || [] });
+}
+
+async function gifSearch(context, db, me, url) {
+  const raw = String(url.searchParams.get("q") || "").trim().slice(0, 60);
+  const q = raw.toLowerCase();
+  if (!(await rateLimit(db, me.uid, "gif_search", 40, 60000))) return json({ error: "rate_limited" }, 429);
+  const key = context.env && context.env.TENOR_API_KEY;
+  /* An honest 503 when the key is absent: the client renders "GIFs aren't
+     set up yet" instead of showing zero results and looking broken. */
+  if (!key) return json({ ok: false, error: "gifs_not_configured", results: [] }, 503);
+  const limit = Math.min(30, Math.max(1, Number(url.searchParams.get("limit")) || 24));
+  const tenorUrl = "https://tenor.googleapis.com/v2/search?q=" + encodeURIComponent(q || "trending")
+    + "&key=" + encodeURIComponent(key) + "&limit=" + limit + "&media_filter=gif,tinygif&client_hints=true&contentfilter=medium";
+  try {
+    const res = await fetch(tenorUrl);
+    if (!res.ok) return json({ ok: false, error: "gif_search_failed", results: [] }, 502);
+    const data = await res.json();
+    const results = (data.results || []).map(function (r) {
+      const gif = r.media_formats && r.media_formats.gif;
+      const tiny = r.media_formats && r.media_formats.tinygif;
+      const src = tiny || gif;
+      return {
+        id: String(r.id || ""),
+        title: String(r.content_description || r.title || "GIF").slice(0, 80),
+        preview: src ? src.url : "",
+        full: gif ? gif.url : (src ? src.url : ""),
+        width: src ? (src.dims && src.dims[0]) || 0 : 0,
+        height: src ? (src.dims && src.dims[1]) || 0 : 0,
+      };
+    }).filter(function (r) { return r.full; });
+    return json({ ok: true, results });
+  } catch (_) {
+    return json({ ok: false, error: "gif_search_failed", results: [] }, 502);
+  }
+}
+
 export async function onRequest(context) {
   const { request } = context;
   const method = request.method;
@@ -1112,6 +1331,8 @@ export async function onRequest(context) {
       return handleRequestAction(context, db, me, parts[1], String(body.action || ""));
     }
     if (parts.length === 2 && parts[0] === "friends" && method === "DELETE") return removeFriend(context, db, me, parts[1]);
+    if (parts.length === 1 && parts[0] === "gifs" && method === "GET") return gifSearch(context, db, me, url);
+    if (parts.length === 1 && parts[0] === "blocked" && method === "GET") return blockedList(db, me);
     if (parts.length === 2 && parts[0] === "attachments" && method === "GET") {
       await ensureAttachmentSchema(db);
       return serveAttachment(db, me, parts[1]);

@@ -247,25 +247,28 @@ if (dupes.length) {
   const colsM = /const COLUMNS = \[([\s\S]*?)\];/.exec(settingsApi);
   const apiKeys = colsM ? [...colsM[1].matchAll(/"([a-z_]+)"/g)].map((x) => x[1]) : [];
   const jsKeys = pairs.map((p) => p.key);
+  /* The four bubble categories are saved on tap, outside the Save handler. */
+  const NOTIF_BUBBLE_FIELDS = ["announcements", "wanted_replies", "suggestions", "comment_replies"];
 
-  // The switch ids in the page, minus the save button and the result line,
-  // which share the prefix but are not switches.
+  // The switch ids in the page, minus the Save button, the result line and the
+  // wrapper block, which share the prefix but are not switches.
   const pageIds = [...html.matchAll(/id="(notifPref[A-Za-z]+)"/g)]
     .map((x) => x[1])
-    .filter((id) => !/^notifPrefs(SaveBtn|Result)$/.test(id));
+    .filter((id) => !/^notifPrefs(Block|SaveBtn|Result)$/.test(id));
   const jsIds = pairs.map((p) => p.id);
 
   if (!fieldsM) structureFail("the account page has no NOTIF_PREF_FIELDS list");
   else if (!colsM) structureFail("the notification settings API has no COLUMNS allowlist");
   else {
-    if (jsKeys.length !== 9) structureFail(`the account page lists ${jsKeys.length} categories, expected 9`);
-    else structureOk("the account page lists nine notification categories");
-    if (apiKeys.length !== jsKeys.length) {
-      structureFail(`the server allows ${apiKeys.length} categories and the page shows ${jsKeys.length}`);
+    if (jsKeys.length !== 8) structureFail(`the account page lists ${jsKeys.length} Save-handler categories, expected 8`);
+    else structureOk("the account page lists eight Save-handler notification categories");
+    const allKeys = jsKeys.concat(NOTIF_BUBBLE_FIELDS);
+    if (apiKeys.length !== allKeys.length) {
+      structureFail(`the server allows ${apiKeys.length} categories and the page shows ${allKeys.length}`);
     } else {
-      const drift = jsKeys.filter((k) => !apiKeys.includes(k)).concat(apiKeys.filter((k) => !jsKeys.includes(k)));
+      const drift = allKeys.filter((k) => !apiKeys.includes(k)).concat(apiKeys.filter((k) => !allKeys.includes(k)));
       if (drift.length) structureFail(`the page and the server name different categories: ${drift.join(", ")}`);
-      else structureOk("the page and the server name the same nine categories");
+      else structureOk("the page and the server name the same twelve categories");
     }
     const missingIds = jsIds.filter((id) => !pageIds.includes(id));
     const strayIds = pageIds.filter((id) => !jsIds.includes(id));
@@ -426,15 +429,22 @@ if (dupes.length) {
       structureOk(`the server accepts exactly the ${themeIds.length} themes the picker offers`);
     }
 
-    const cssless = themeIds.filter((id) => !new RegExp("html\\[data-theme=" + id.replace(/-/g, "\\-") + "\\]\\s*\\{").test(themesCss));
+    /* Quoted and unquoted attribute selectors are both valid; the era themes
+       use quotes, the older built-ins do not. */
+    const cssless = themeIds.filter((id) => !new RegExp('html\\[data-theme=?["\']?' + id.replace(/-/g, "\\-") + '["\']?\\]\\s*\\{').test(themesCss));
     if (cssless.length) structureFail(`themes with no CSS block of their own: ${cssless.join(", ")}`);
     else structureOk(`all ${themeIds.length} themes have a CSS block`);
 
     /* The picker, by extracting the <select> and looking inside it - a bare
        search for value="default" would also match the mode picker. */
+    /* The picker used to be a <select id="setTheme">; it is now radio tiles in
+       the Appearance section. Either shape is fine — read whichever exists. */
     const pickerOptions = (id) => {
-      const m = new RegExp('<select id="' + id + '"[^>]*>([\\s\\S]*?)</select>').exec(page);
-      return m ? new Set(idsIn(m[1], /<option value="([a-z0-9-]+)"/g)) : null;
+      const sel = new RegExp('<select id="' + id + '"[^>]*>([\\s\\S]*?)</select>').exec(page);
+      if (sel) return new Set(idsIn(sel[1], /<option value="([a-z0-9-]+)"/g));
+      const radios = idsIn(page, /<input[^>]*type="radio"[^>]*name="appearanceTheme"[^>]*value="([a-z0-9-]+)"/g);
+      if (radios.length) return new Set(radios);
+      return null;
     };
     const optionless = [];
     for (const id of themeIds) {
@@ -557,12 +567,12 @@ if (dupes.length) {
     structureOk("the Community Themes page replaced the popup, with no popup wiring left");
   }
 
-  /* The menu entry opens the page the way its siblings (Suggestions, Wanted
-     Vault) do: real switchAppPage pages, desktop dropdown and mobile popup. */
-  const entryOk = (/switchAppPage\(&#39;community-themes&#39;\)" id="nav-comm-themes"/.test(page) &&
-    /switchAppPage\(&#39;community-themes&#39;\)" class="mobile-popup-item"/.test(page));
-  if (!entryOk) structureFail("a Community Themes menu entry does not open the page");
-  else structureOk("the Community Themes menu entry opens the page (desktop and mobile)");
+  /* The mobile popup entry opens the page the same way its siblings
+     (Suggestions, Wanted Vault) do. The desktop dropdown was removed at the
+     owner's request; the mobile popup remains. */
+  const entryOk = /switchAppPage\(&#39;community-themes&#39;\)" class="mobile-popup-item"/.test(page);
+  if (!entryOk) structureFail("the mobile Community Themes menu entry does not open the page");
+  else structureOk("the mobile Community Themes menu entry opens the page");
 
   if (!page.includes('<script src="./community-themes.js?v=thw-v') ||
       !page.includes('community-themes.css?v=thw-v')) {
@@ -2649,20 +2659,21 @@ function safeDecode4(v) {
 }
 
 
-/* ---- the footer's links, the Deck's opacity, and Bluetooth ----
+/* ---- the footer's links, the Deck's opacity, and the missing Bluetooth ----
  *
  * The RSS feed is out of the footer, and so is all of its code: the
  * endpoint, the test, and the row in the Public API page that named it.
  * The Community Board is out of the footer's list of links.
  *
  * The Deck can be see-through, in steps, and remembers how see-through
- * it was left. And there is a Bluetooth button in the Deck and in the
- * WRLD Player, so the music can go to a speaker without wires.
+ * it was left. The Bluetooth button was removed at the owner's request,
+ * and this now guards that it does not creep back in.
  */
 {
   const page = readFileSync(join(ROOT, "index.html"), "utf8");
   const css = readFileSync(join(ROOT, "player-settings.css"), "utf8");
   const deck = readFileSync(join(ROOT, "deck.js"), "utf8");
+  const swbt = readFileSync(join(ROOT, "sw.js"), "utf8");
   const footStart = page.indexOf('class="foot-brand"');
   const footEnd = page.indexOf("</footer>", footStart);
   const foot = footStart < 0 || footEnd < 0 ? "" : page.slice(footStart, footEnd);
@@ -2683,12 +2694,14 @@ function safeDecode4(v) {
     structureFail("the WRLD Deck has no opacity, or the choice is not remembered");
   } else if (!/thw-deck-opacity/.test(deck)) {
     structureFail("the WRLD Deck's opacity is not remembered");
-  } else if ((page.match(/data-thw-bluetooth/g) || []).length < 2) {
-    structureFail("the Bluetooth button is not in both the WRLD Deck and the WRLD Player");
+  } else if (/id="deck-bluetooth-btn"|data-thw-bluetooth|bluetooth\.js/i.test(page) || /bluetooth/i.test(deck)) {
+    structureFail("some Bluetooth-only markup or code made it back into the page or the deck");
+  } else if (/bluetooth\.js/i.test(swbt)) {
+    structureFail("the service worker still precaches bluetooth.js");
   } else if (!/\.deck-opacity\{/.test(css)) {
     structureFail("the WRLD Deck's opacity dropdown has no styling");
   } else {
-    structureOk("the WRLD Deck has an opacity that is remembered, and both it and the player have a Bluetooth button");
+    structureOk("the WRLD Deck has an opacity that is remembered, and the Bluetooth button is gone");
   }
 }
 

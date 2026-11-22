@@ -1331,6 +1331,9 @@ body:has(#owner-backdrop.show)>*:not(#mini-player):not(#mini-shortcuts):not(#own
 .set-nav-item.active,.set-nav-item[aria-current="true"]{background:rgba(255,255,255,.11);color:#fff}
 .set-nav-item:focus-visible{outline:2px solid var(--accent,#b7a3ff);outline-offset:2px}
 .set-body{min-width:0;display:flex;flex-direction:column;gap:14px}
+/* Profile is the first section a signed-in member sees; guests never see it
+   (data-signed-in), so the other sections keep their natural order. */
+.set-body > #profile{order:-1}
 @media (max-width:900px){.set-body{gap:12px}}
 
 .settings-section{scroll-mt:calc(var(--nav-offset,72px) + 14px)}

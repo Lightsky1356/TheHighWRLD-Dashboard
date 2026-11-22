@@ -6,6 +6,7 @@ function _thwAttachSheetDismiss(sheet){
   if (!sheet || sheet._thwDismissWired) return;
   sheet._thwDismissWired = true;
   var panel = sheet.querySelector(".thw-sheet-panel");
+  var backdrop = sheet.querySelector(".thw-sheet-backdrop");
   var handle = sheet.querySelector(".thw-sheet-handle");
   var startY = null, startScroll = 0, THRESH = 72;
   function onStart(y) {
@@ -13,51 +14,73 @@ function _thwAttachSheetDismiss(sheet){
     startY = y;
     startScroll = panel.scrollTop || 0;
   }
-  function onMove(y) {
+  function onMove(y, e) {
     if (startY === null || !panel) return;
     // Only start a drag-to-dismiss once the panel is already at the very top;
     // a downward drag higher than the top translates the panel with the finger.
     if ((startScroll > 0) || (y - startY < -8)) {
       startY = null;
+      dragging = false;
       panel.style.transform = "";
       panel.style.opacity = "";
+      if (backdrop) backdrop.style.opacity = "";
       return;
     }
     var dy = y - startY;
     if (dy < 0) return;
+    /* Once the drag is engaged, take the gesture away from the browser.
+       Without this a slow finger gets treated as a native scroll/rubber-band
+       and the panel stops following the finger while the backdrop never
+       budges — the sheet looks detached from its background. */
+    dragging = true;
+    if (e && e.cancelable) e.preventDefault();
+    var eased = dy;
+    /* Slight resistance so the sheet never runs away from the finger. */
+    if (dy > 120) eased = 120 + (dy - 120) * 0.6;
     panel.style.transition = "none";
-    panel.style.transform = "translateY(" + dy + "px)";
-    panel.style.opacity = String(Math.max(0.35, 1 - dy / 360));
+    panel.style.transform = "translateY(" + eased + "px)";
+    panel.style.opacity = String(Math.max(0.35, 1 - eased / 480));
+    /* The dim behind the sheet fades with the panel, so the background
+       stays visually attached to the content instead of hanging fixed. */
+    if (backdrop) backdrop.style.opacity = String(Math.max(0, 1 - eased / 240));
   }
   function onEnd() {
     if (startY === null) return;
     var panelEl = panel;
+    var backdropEl = backdrop;
     startY = null;
+    dragging = false;
     if (!panelEl) return;
     // Did the user drag far enough? Measure the current transform.
     var m = /translateY\((-?\d+(?:\.\d+)?)px\)/.exec(panelEl.style.transform || "");
     var dy = m ? parseFloat(m[1]) : 0;
-    panelEl.style.transition = "transform .18s ease, opacity .18s ease";
+    panelEl.style.transition = "transform .22s cubic-bezier(.2,.8,.2,1), opacity .22s ease";
+    if (backdropEl) backdropEl.style.transition = "opacity .22s ease";
     if (dy >= THRESH) {
       panelEl.style.transform = "translateY(110%)";
       panelEl.style.opacity = "0";
+      if (backdropEl) backdropEl.style.opacity = "0";
       setTimeout(function () {
         try { closeMobileProfileMenu(); } catch (e) {}
         panelEl.style.transform = "";
         panelEl.style.opacity = "";
         panelEl.style.transition = "";
-      }, 180);
+        if (backdropEl) { backdropEl.style.opacity = ""; backdropEl.style.transition = ""; }
+      }, 240);
     } else {
       panelEl.style.transform = "";
       panelEl.style.opacity = "";
-      setTimeout(function () { panelEl.style.transition = ""; }, 200);
+      if (backdropEl) backdropEl.style.opacity = "";
+      setTimeout(function () { panelEl.style.transition = ""; if (backdropEl) backdropEl.style.transition = ""; }, 230);
     }
   }
   var targets = [panel, handle];
   targets.forEach(function (t) {
     if (!t) return;
     t.addEventListener("touchstart", function (e) { var p = e.touches && e.touches[0]; if (p) onStart(p.clientY); }, { passive: true });
-    t.addEventListener("touchmove", function (e) { var p = e.touches && e.touches[0]; if (p) onMove(p.clientY); }, { passive: true });
+    /* touchmove must not be passive: during an engaged downward drag we
+       preventDefault so the panel tracks the finger 1:1 on slow swipes. */
+    t.addEventListener("touchmove", function (e) { var p = e.touches && e.touches[0]; if (p) onMove(p.clientY, e); }, { passive: false });
     t.addEventListener("touchend", onEnd, { passive: true });
     t.addEventListener("touchcancel", onEnd, { passive: true });
   });
@@ -485,6 +508,14 @@ window.MATURE_COVERS = [
 (function () {
   var KEY = "matureBlur";
   var REVEALED_KEY = "matureRevealed";
+  /* A guest's reveals are remembered separately from a member's: clicking a
+     flagged cover to see it is allowed for everyone now, but bringing your
+     account's reveal list into a signed-out session (or the other way round)
+     would silently change what a visitor sees on a shared device. */
+  function revealKey() {
+    try { return isGuest() ? REVEALED_KEY + "_guest" : REVEALED_KEY; }
+    catch (e) { return REVEALED_KEY + "_guest"; }
+  }
   function isGuest() {
     /* Same signal as account.js isSignedInNow(), read directly because that
        function is not exported and script.js must not depend on load order. */
@@ -531,7 +562,7 @@ window.MATURE_COVERS = [
     if (_revealed) return _revealed;
     _revealed = {};
     try {
-      var raw = localStorage.getItem(REVEALED_KEY);
+      var raw = localStorage.getItem(revealKey());
       if (raw) {
         var list = JSON.parse(raw);
         if (Object.prototype.toString.call(list) === "[object Array]") {
@@ -542,17 +573,13 @@ window.MATURE_COVERS = [
     return _revealed;
   }
   function isRevealed(src) {
-    /* A guest must not inherit a reveal the same browser recorded while signed
-       in, so this reads false even when the cover is in the reveal set. */
-    if (isGuest()) return false;
     return !!revealedSet()[stemOf(src)];
   }
   function setRevealed(src, on) {
-    if (isGuest()) return false;
     var k = stemOf(src);
     if (!k) return false;
     if (on) revealedSet()[k] = true; else delete revealedSet()[k];
-    try { localStorage.setItem(REVEALED_KEY, JSON.stringify(Object.keys(revealedSet()))); } catch (e) {}
+    try { localStorage.setItem(revealKey(), JSON.stringify(Object.keys(revealedSet()))); } catch (e) {}
     return !!on;
   }
   function isFlaggedUrl(url) {
@@ -798,10 +825,9 @@ window.MATURE_COVERS = [
            handler rather than after it. */
         e.preventDefault();
         e.stopPropagation();
-        /* Signed out: the click is consumed but reveals nothing, so a guest
-           cannot cycle a flagged cover open. Stopping propagation either way
-           keeps the click from also starting the track behind it. */
-        if (isGuest()) return;
+        /* The cover is a toggle for everyone, signed in or not - reveal, blur
+           again, reveal again. The event is stopped every time so cycling the
+           blur never starts the track that sits behind it. */
         var on = !el.classList.contains("revealed");
         setRevealed(el.getAttribute("src"), on);
         el.classList.toggle("revealed", on);
@@ -895,13 +921,10 @@ window.MATURE_COVERS = [
 })();
 ;document.addEventListener("contextmenu",function(e){e.preventDefault();});
 
-function toggleMoreMenu(){var w=document.getElementById("nav-more-wrap");if(!w)return;var open=w.classList.toggle("open");var b=document.getElementById("page-nav-more");if(b)b.setAttribute("aria-expanded",open?"true":"false");}
-function closeMoreMenu(){var w=document.getElementById("nav-more-wrap");if(w)w.classList.remove("open");var b=document.getElementById("page-nav-more");if(b)b.setAttribute("aria-expanded","false");}
+function toggleMoreMenu(){var w=document.getElementById("nav-more-wrap");if(!w)return;var open=w.classList.toggle("open");document.body.classList.toggle("more-open",open);var b=document.getElementById("page-nav-more");if(b)b.setAttribute("aria-expanded",open?"true":"false");}
+function closeMoreMenu(){var w=document.getElementById("nav-more-wrap");if(w)w.classList.remove("open");document.body.classList.remove("more-open");var b=document.getElementById("page-nav-more");if(b)b.setAttribute("aria-expanded","false");}
 document.addEventListener("click",function(e){var wrap=document.getElementById("nav-more-wrap");if(!wrap||!wrap.classList.contains("open"))return;if(wrap.contains(e.target))return;closeMoreMenu();});
 document.addEventListener("keydown",function(e){if(e.key!=="Escape")return;var w=document.getElementById("nav-more-wrap");if(!w||!w.classList.contains("open"))return;e.preventDefault();closeMoreMenu();});
-function toggleCommMenu(){var w=document.getElementById("nav-comm-wrap");if(!w)return;var open=w.classList.toggle("open");var b=document.getElementById("page-nav-wanted");if(b)b.setAttribute("aria-expanded",open?"true":"false");}
-function closeCommMenu(){var w=document.getElementById("nav-comm-wrap");if(w)w.classList.remove("open");var b=document.getElementById("page-nav-wanted");if(b)b.setAttribute("aria-expanded","false");}
-document.addEventListener("click",function(e){var wrap=document.getElementById("nav-comm-wrap");if(!wrap||!wrap.classList.contains("open"))return;if(wrap.contains(e.target))return;closeCommMenu();});
 ;(function(){if(window.__ownerStatsLive)return;window.__ownerStatsLive=true;setInterval(function(){try{var bak=document.getElementById("owner-backdrop");if(!bak||!bak.classList.contains("show"))return;var u=window.__ownerStatsURL;if(!u)return;fetch(u,{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){if(!d||d.error||!d.totals)return;var e=document.getElementById("owner-stats");if(!e)return;var st=e.scrollTop;renderOwnerStats(d);try{e.scrollTop=st;}catch(_){}}).catch(function(){});}catch(_){}},10000);})();
 window.showTrackInfo=function(idx){idx=parseInt(idx,10);if(isNaN(idx)||idx<0)return;try{showInfoPanel();refreshInfoPanel(idx);}catch(e){}};
 /* ============ Favorites fix + server playlists (account-linked) ============ */

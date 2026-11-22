@@ -69,6 +69,7 @@ const PUSH_SUMMARY = {
   vote: { title: "Upvote", body: "Someone upvoted your post." },
   reply_vote: { title: "Reply upvoted", body: "Someone upvoted your reply." },
   dm_message: { title: "New message", body: "You have a new direct message." },
+  dm_mention: { title: "You were mentioned", body: "Someone mentioned you in a message." },
   friend_request: { title: "Friend request", body: "Someone sent you a friend request." },
   friend_accepted: { title: "Friend request accepted", body: "Someone accepted your friend request." },
   playlist: { title: "Playlist activity", body: "Someone interacted with your playlist." },
@@ -113,6 +114,7 @@ function pushTargetFor(type) {
     case "playlist":
       return "profile";
     case "dm_message":
+    case "dm_mention":
       return "social:conversation";
     case "friend_request":
       return "social:requests";
@@ -325,6 +327,7 @@ const TYPE_CATEGORY = {
   upvote: "upvotes",
   reply_vote: "upvotes",
   dm_message: "direct_messages",
+  dm_mention: "mentions",
   friend_request: "friend_requests",
   friend_accepted: "friend_requests",
   announcement: "announcements",

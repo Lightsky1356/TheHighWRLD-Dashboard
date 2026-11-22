@@ -251,7 +251,7 @@
     var av = $("navAvatarInner");
     if (av) {
       var name = u.name || u.email || "9";
-      av.textContent = name.trim().charAt(0).toUpperCase();var mbni = $("mbnAvatarInner"); if (mbni) mbni.textContent = name.trim().charAt(0).toUpperCase();
+      av.textContent = name.trim().charAt(0).toUpperCase();var mbni = $("mbnAvatarInner"); if (mbni) mbni.innerHTML = '<i class="fas fa-user" aria-hidden="true"></i>';
       var ami = $("acctAvatarInnerMenu"); if (ami) ami.textContent = name.trim().charAt(0).toUpperCase();
       var asi = $("thwSheetAvatarInner"); if (asi) asi.textContent = name.trim().charAt(0).toUpperCase();
     }

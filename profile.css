@@ -55,8 +55,8 @@
 
 /* ---------- hero (span all) ---------- */
 .pv2-hero{position:relative;overflow:hidden;border-radius:20px;border:1px solid var(--pv-border);min-height:230px;box-shadow:0 26px 60px rgba(0,0,0,.4)}
-.pv2-hero-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
-.pv2-hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,8,16,.15) 0%,rgba(6,8,16,.42) 40%,rgba(6,8,16,.93) 100%)}
+.pv2-hero-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.5}
+.pv2-hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,8,16,.42) 0%,rgba(6,8,16,.58) 40%,rgba(6,8,16,.94) 100%)}
 .pv2-hero-inner{position:relative;display:flex;flex-direction:column;height:100%;padding:22px}
 .pv2-hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .pv2-era-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,242,255,.55);font-weight:800}
@@ -167,6 +167,16 @@ a.pv2-song:hover{background:rgba(255,255,255,.06);border-color:var(--pv-border-s
 /* ---------- favourites collage ---------- */
 .pv2-collage{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .pv2-collage img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--pv-border-soft);background:#0f0f1e}
+.pv2-fav-item{position:relative;display:block;padding:0;margin:0;border:0;background:none;cursor:pointer;border-radius:10px;overflow:hidden;text-align:left}
+.pv2-fav-name{position:absolute;left:0;right:0;bottom:0;padding:6px 7px;font-size:10px;font-weight:800;color:#fff;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.85));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transform:translateY(4px);transition:opacity .15s ease,transform .15s ease}
+.pv2-fav-item:hover .pv2-fav-name,.pv2-fav-item:focus-visible .pv2-fav-name{opacity:1;transform:none}
+.pv2-fav-item:hover img,.pv2-fav-item:focus-visible img{filter:brightness(1.15);border-color:rgba(34,211,238,.5)}
+.pv2-fav-info{position:absolute;top:5px;left:5px;width:26px;height:26px;border:0;border-radius:50%;background:rgba(8,8,16,.72);color:#7dd3fc;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .15s ease,background .15s ease}
+.pv2-fav-item:hover .pv2-fav-info,.pv2-fav-info:focus-visible{opacity:1}
+.pv2-fav-info:hover{background:rgba(56,189,248,.35);color:#fff}
+.pv2-fav-heart{position:absolute;top:5px;right:5px;width:26px;height:26px;border:0;border-radius:50%;background:rgba(8,8,16,.72);color:#fb7185;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .15s ease,background .15s ease}
+.pv2-fav-item:hover .pv2-fav-heart,.pv2-fav-heart:focus-visible{opacity:1}
+.pv2-fav-heart:hover{background:rgba(244,63,94,.35);color:#fff}
 @media (max-width:560px){.pv2-collage{grid-template-columns:repeat(3,1fr)}}
 
 /* ---------- misc / responsive ---------- */
@@ -180,16 +190,10 @@ a.pv2-song:hover{background:rgba(255,255,255,.06);border-color:var(--pv-border-s
 .pv2-copy-btn:hover{background:rgba(6,7,15,.72)}
 
 /* ==========================================================================
-   EDIT PROFILE - centred card (~880px), like the reference: preview rail + form
+   EDIT PROFILE - the reference design: preview rail + form. The modal
+   context was retired on 2026-11-17 - the markup now lives inline in the
+   Settings Profile pane (classes kept so the wiring is unchanged).
    ========================================================================== */
-#editProfileModal.editpf-overlay{position:fixed;inset:0;z-index:420;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(5,3,12,.74);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-#editProfileModal.editpf-overlay.open{display:flex}
-.editpf-shell{display:flex;flex-direction:column;width:min(880px,100%);max-height:min(88vh,860px);background:#1d1d21;border:1px solid rgba(255,255,255,.09);border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55);animation:editpf-in .18s ease}
-@keyframes editpf-in{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
-.editpf-topbar{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;flex:0 0 auto}
-.editpf-title{font-size:14.5px;font-weight:700;color:#fff;letter-spacing:.01em}
-.editpf-close,.rank-close{width:32px;height:32px;border-radius:9px;border:0;background:transparent;color:rgba(255,255,255,.75);font-size:16px;cursor:pointer;transition:background .15s,color .15s}
-.editpf-close:hover,.rank-close:hover{background:rgba(255,255,255,.08);color:#fff}
 .editpf-panes{display:grid;grid-template-columns:245px minmax(0,1fr);flex:1 1 auto;min-height:0;gap:0;padding:0 20px 16px;overflow:hidden}
 
 /* ---------- left rail: the preview card ---------- */
@@ -300,15 +304,48 @@ a.pv2-song:hover{background:rgba(255,255,255,.06);border-color:var(--pv-border-s
 .editpf-save:hover{background:#fff}
 
 @media (max-width:900px){
-  #editProfileModal.editpf-overlay{padding:0;align-items:stretch}
-  .editpf-shell{width:100%;max-height:none;height:100%;border-radius:0;border:0}
-  .editpf-panes{grid-template-columns:minmax(0,1fr);overflow-y:auto;padding:0 16px 14px}
-  .editpf-rail{padding-right:0;padding-bottom:14px}
-  .editpf-preview-card{max-width:100%}
   .editpf-form{overflow:visible}
   .editpf-link-row{grid-template-columns:minmax(0,1fr) auto}
   .editpf-duo{grid-template-columns:minmax(0,1fr)}
   .editpf-banners{grid-template-columns:minmax(0,1fr)}
+}
+
+/* The editor is one DOM node that lives inline in /account → Profile and is
+   relocated into #editProfileModal when the profile page asks to edit. */
+.profile-editor{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
+.profile-editor > .editpf-pane{flex:1 1 auto}
+#editProfileModal.editpf-overlay{position:fixed;inset:0;z-index:420;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(5,3,12,.74);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#editProfileModal.editpf-overlay.open{display:flex}
+.editpf-shell{display:flex;flex-direction:column;width:min(880px,100%);max-height:min(88vh,860px);background:#1d1d21;border:1px solid rgba(255,255,255,.09);border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55);animation:editpf-in .18s ease}
+@keyframes editpf-in{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.editpf-topbar{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;flex:0 0 auto}
+.editpf-title{font-size:14.5px;font-weight:700;color:#fff;letter-spacing:.01em}
+.editpf-close{width:32px;height:32px;border-radius:9px;border:0;background:transparent;color:rgba(255,255,255,.75);font-size:16px;cursor:pointer;transition:background .15s,color .15s}
+.editpf-close:hover{background:rgba(255,255,255,.08);color:#fff}
+.editpf-mount{display:flex;flex:1 1 auto;min-height:0;overflow:hidden}
+@media (max-width:900px){
+  #editProfileModal.editpf-overlay{padding:0;align-items:stretch}
+  .editpf-shell{width:100%;max-height:none;height:100%;border-radius:0;border:0}
+  .editpf-mount{overflow:auto}
+}
+
+/* ==========================================================================
+   SETTINGS - Profile pane: the edit-profile design promoted into the
+   signed-in Settings Profile section (rail on the left, form on the right on
+   desktop; stacked on mobile).
+   ========================================================================== */
+.editpf-card{max-width:1100px;margin:0 auto;padding:0;overflow:hidden}
+.editpf-pane{display:grid;grid-template-columns:280px minmax(0,1fr);gap:22px;padding:20px 18px;align-items:start;max-height:70vh;overflow-y:auto}
+.editpf-pane .editpf-rail{padding:0;position:sticky;top:0;align-self:start}
+.editpf-pane .editpf-form--pane{overflow:visible;padding:0;gap:18px;scrollbar-width:auto}
+.editpf-actions--pane{padding:16px 18px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;gap:10px;align-items:center}
+.sl-view-profile{gap:8px;margin-left:auto;align-self:center;display:inline-flex;align-items:center;font-size:12px;font-weight:700;color:#e8e8ec;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:9px 14px;cursor:pointer;text-decoration:none}
+.sl-view-profile:hover{background:rgba(255,255,255,.13);color:#fff}
+@media (max-width:1024px){
+  .editpf-pane{grid-template-columns:minmax(0,1fr);padding:16px;max-height:none;overflow:visible}
+  .editpf-pane .editpf-rail{padding-bottom:4px;position:static}
+  .editpf-pane .editpf-form--pane{overflow:visible;max-height:none}
+  .editpf-actions--pane{padding:14px}
 }
 
 /* ==========================================================================

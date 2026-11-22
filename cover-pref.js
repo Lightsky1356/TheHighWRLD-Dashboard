@@ -73,7 +73,7 @@
           cur = trackList[currentTrackIndex];
         }
       } catch (_) {}
-      var on = !!window.movingColors() && !!cur && !!cur.cover;
+      var on = !!window.movingColors() && !!cur && !!cur.cover && !!window.coverGradientsOn && window.coverGradientsOn();
       var cls = "thw-moving-gradient";
       if (!on) { wash.classList.remove("on"); wash.classList.remove(cls); wash.style.background = "none"; return; }
       var gradient = null;
@@ -108,6 +108,7 @@
       paintDeckWash();
     } catch (_) {}
   }
+  window.paintDeckWash = paintDeckWash;
   if (typeof MutationObserver === 'function') {
     try {
       var deck = document.getElementById('deck-cover');

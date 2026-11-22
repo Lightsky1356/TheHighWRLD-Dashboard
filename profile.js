@@ -19,9 +19,12 @@
 
   /* ---------- era helpers ---------- */
   var ERA_ORDER = ["GB&GR", "WOD", "DRFL", "JW3", "POST", "OUT", "AF", "ND", "BDM", "HIH", "999", "JW999", "JTK"];
+  /* High-resolution era cover art for the hero backdrop. The settings-era
+     thumbnails are only 64px and turn to mush when stretched behind a hero. */
   var ERA_ART = {
     "GB&GR": "AlbumArt/goodbye.jpg",
-    "DRFL": "AlbumArt/death.jpg",
+    "WOD": "AlbumArt/WOD.png",
+    "DRFL": "AlbumArt/DRFL.png",
     "JW3": "AlbumArt/legends.jpg",
     "POST": "AlbumArt/party.jpg",
     "999": "AlbumArt/999.jpg",
@@ -260,12 +263,15 @@
       var idx = playIndexById(t.track_id);
       var cover = coverForId(t.track_id);
       var era = eraFromTrackId(t.track_id);
+      var rec = (typeof trackList !== "undefined") ? trackByTitle(t.track_id) : null;
+      var album = rec && rec.track ? (rec.track.album || rec.track.album_name || "") : "";
       var plays = Number(t.n) || 0;
       var pct = Math.max(4, Math.round((plays / maxPlays) * 100));
       var inner = '<span class="pv2-rank">' + (i + 1) + '</span>' +
         '<img class="pv2-song-cover" src="' + esc2(cover) + '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'">' +
         '<span class="pv2-song-t"><span class="pv2-song-title">' + esc2(t.track_id) + '</span>' +
-          '<span class="pv2-song-meta">' + (era ? '<span class="pv2-song-era">' + esc2(era) + '</span>' : '') + ((typeof trackList !== "undefined" && (function () { var r = trackByTitle(t.track_id); return r && r.track.producer ? '<span class="pv2-song-prod">prod. ' + esc2(r.track.producer) + '</span>' : ''; })()) || '') + '</span>' +
+          '<span class="pv2-song-meta">' + (era ? '<span class="pv2-song-era">' + esc2(era) + '</span>' : '') +
+          (album ? '<span class="pv2-song-album"><i class="fas fa-compact-disc" aria-hidden="true"></i>' + esc2(album) + '</span>' : '') + '</span>' +
         '</span>' +
         '<span class="pv2-plays">' + fmtNum(plays) + '<span>plays</span></span>';
       return idx >= 0
@@ -304,7 +310,11 @@
     var picks = favorites.slice(0, 8).map(function (f) { return f && f.title; }).filter(Boolean);
     return '<div class="pv2-collage">' + picks.map(function (title) {
       var cover = coverForId(title);
-      return '<img src="' + esc2(cover) + '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'">';
+      return '<div class="pv2-fav-item" role="button" tabindex="0" data-fav-title="' + esc2(title) + '" aria-label="Play ' + esc2(title) + '">' +
+        '<img src="' + esc2(cover) + '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'">' +
+        '<span class="pv2-fav-name">' + esc2(title) + '</span>' +
+        '<button type="button" class="pv2-fav-info" data-fav-info="' + esc2(title) + '" aria-label="Info for ' + esc2(title) + '"><i class="fas fa-circle-info" aria-hidden="true"></i></button>' +
+        '<button type="button" class="pv2-fav-heart" data-unfav="' + esc2(title) + '" aria-label="Remove ' + esc2(title) + ' from favourites"><i class="fas fa-heart-circle-xmark" aria-hidden="true"></i></button></div>';
     }).join("") + '</div>';
   }
 
@@ -379,7 +389,7 @@
     if (topEra) html += '<span class="pv2-era-chip"><i class="fas fa-crown"></i>' + esc2(eraLabel(topEra)) + '</span>';
     var favSong = p.favSong || "";
     html += favChipHTML(favSong);
-    if (isMe) html += '<div class="pv2-hero-actions"><button type="button" class="pv2-mini-btn" onclick="if(window.openEditProfile)window.openEditProfile()"><i class="fas fa-pen"></i>Edit profile</button><button type="button" class="pv2-mini-btn" onclick="if(window.authSignOut)window.authSignOut();else window.location.href=\'/api/auth/logout\'"><i class="fas fa-right-from-bracket"></i>Sign out</button></div>';
+    if (isMe) html += '<div class="pv2-hero-actions"><button type="button" class="pv2-mini-btn" onclick="if(window.openEditProfile)window.openEditProfile()"><i class="fas fa-pen"></i>Edit profile</button></div>';
     html += '</div></div>';
     html += nowPlayingHTML(d.nowPlaying);
     html += '<div class="pv2-strip">';
@@ -403,7 +413,7 @@
 
     /* Grid: top songs / top eras / hours / recent strip */
     html += '<div class="pv2-grid" style="margin-top:16px">';
-    html += '<div class="pv2-card" style="grid-column:span 2"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-fire"></i>Top songs</h2><span class="pv2-card-note">' + topList.length + ' ranked</span></div>' + topSongsHTML(topList) + '</div>';
+    html += '<div class="pv2-card" style="grid-column:span 2"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-fire"></i>Top songs</h2><span class="pv2-card-note">' + topList.length + (topList.length === 1 ? ' song' : ' songs') + '</span></div>' + topSongsHTML(topList) + '</div>';
     html += '<div class="pv2-card"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-layer-group"></i>Top eras</h2><span class="pv2-card-note">by your top plays</span></div>' + eraStackHTML(topList) + '</div>';
     html += '<div class="pv2-card" style="grid-column:span 2"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-clock-rotate-left"></i>When you listen</h2><span class="pv2-card-note">24-hour pattern</span></div>' + hourHistogramHTML(hoursArr) + '</div>';
     html += '</div>'; /* grid */
@@ -413,10 +423,8 @@
       html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-rotate"></i>Recently played</h2></div><div class="pv2-recent" id="pv2Recent"><p class="pv2-none">Loading&hellip;</p></div></div>';
     }
 
-    /* Favourites collage */
-    if (favs.length) {
-      html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-heart"></i>Favourites</h2><span class="pv2-card-note">' + favs.length + ' saved</span></div>' + collageHTML(favs) + '</div>';
-    }
+    /* Favourites — always present, even when empty, and refreshed live. */
+    html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-heart"></i>Favourites</h2><span class="pv2-card-note" id="pv2FavCount">' + favs.length + ' saved</span></div><div id="pv2Fav">' + collageHTML(favs) + '</div></div>';
 
     return html;
   }
@@ -442,10 +450,28 @@
       if (!b) return;
       var idx = parseInt(b.getAttribute("data-play-idx"), 10);
       if (!isNaN(idx) && window.selectTrackFromList) {
-        try { window.selectTrackFromList(idx); if (window.switchAppPage) window.switchAppPage("player"); } catch (e) {}
+        /* selectTrackFromList already loads and plays the track - stay on the
+           profile so clicking a top song does not bounce to the player page. */
+        try { window.selectTrackFromList(idx); } catch (e) {}
       }
     });
   }
+  /* Playing a song from a profile card must not move the reader: some play
+     paths switch to another page, and switchAppPage() always scrolls to the
+     top, so restore both the page and the exact scroll position. */
+  function keepProfileAfterPlay(was, y) {
+    setTimeout(function () {
+      try {
+        var now = document.querySelector(".app-page.active");
+        if (was && now && was !== now && window.switchAppPage) {
+          window.switchAppPage(String(was.id || "page-section-profile").replace(/^page-section-/, ""));
+          /* switchAppPage always scrolls to the top - undo that. */
+          window.scrollTo(0, y);
+        }
+      } catch (e) {}
+    }, 140);
+  }
+
   function fillRecent() {
     var host = document.getElementById("pv2Recent");
     if (!host) return;
@@ -458,12 +484,129 @@
       if (!out.length) { host.innerHTML = '<p class="pv2-none">No recent plays yet. Press play.</p>'; return; }
       host.innerHTML = out.slice(0, 10).map(function (title) {
         var cover = coverForId(title);
-        return '<a class="pv2-recent-item" href="#" onclick="return false">' +
+        return '<a class="pv2-recent-item" href="#" data-recent-title="' + esc2(title) + '" onclick="return false">' +
           '<img class="pv2-recent-art" src="' + esc2(cover) + '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'">' +
           '<span class="pv2-recent-t">' + esc2(title) + '</span></a>';
       }).join("");
+      /* Recent rows play their song in place, like Top songs. Delegated once
+         because this list is repainted by the realtime poll. */
+      if (!host.__pv2RecentWired) {
+        host.__pv2RecentWired = true;
+        host.addEventListener("click", function (e) {
+          var row = e.target.closest ? e.target.closest("[data-recent-title]") : null;
+          if (!row) return;
+          e.preventDefault();
+          var title = row.getAttribute("data-recent-title") || "";
+          var idx = -1;
+          try { idx = (typeof trackList !== "undefined") ? trackList.findIndex(function (t) { return String((t || {}).title || "").toLowerCase() === title.toLowerCase(); }) : -1; } catch (err) {}
+          if (idx < 0 && window.trackByTitle) {
+            var rec = window.trackByTitle(title);
+            if (rec && typeof rec.index === "number") idx = rec.index;
+          }
+          if (idx >= 0 && window.selectTrackFromList) {
+            try {
+              var was = document.querySelector(".app-page.active");
+              var y = window.scrollY;
+              window.selectTrackFromList(idx);
+              keepProfileAfterPlay(was, y);
+            } catch (err) {}
+          }
+        });
+      }
     });
   }
+  function fillFavourites() {
+    var host = document.getElementById("pv2Fav");
+    if (!host) return;
+    var favUrl = "/api/profile" + (ownUid ? "?user=" + encodeURIComponent(ownUid) : "");
+    fetchJson(favUrl).then(function (d) {
+      if (!d || d.ok === false) return;
+      var favs = Array.isArray(d.favorites) ? d.favorites : [];
+      /* Favourites kept only on this device (before sign-in) still count. */
+      if (!favs.length) {
+        try {
+          var map = JSON.parse(localStorage.getItem("jw_favorites") || "{}");
+          favs = Object.keys(map).filter(function (k) { return !!map[k]; }).map(function (k) { return { title: k }; });
+        } catch (e) {}
+      }
+      host.innerHTML = collageHTML(favs);
+      var note = document.getElementById("pv2FavCount");
+      if (note) note.textContent = favs.length + " saved";
+      if (!host.__pv2FavWired) {
+        host.__pv2FavWired = true;
+        host.addEventListener("click", function (e) {
+          var info = e.target.closest ? e.target.closest("[data-fav-info]") : null;
+          if (info) {
+            e.preventDefault();
+            e.stopPropagation();
+            var ti = info.getAttribute("data-fav-info") || "";
+            var ii = -1;
+            try { ii = (typeof trackList !== "undefined") ? trackList.findIndex(function (t) { return String((t || {}).title || "").toLowerCase() === ti.toLowerCase(); }) : -1; } catch (err) {}
+            /* Open the panel for this song without touching playback. */
+            try {
+              if (window.showInfoPanel) window.showInfoPanel();
+              if (ii >= 0 && typeof refreshInfoPanel === "function") refreshInfoPanel(ii);
+            } catch (err) {}
+            return;
+          }
+          var heart = e.target.closest ? e.target.closest("[data-unfav]") : null;
+          if (heart) {
+            e.preventDefault();
+            e.stopPropagation();
+            var t = heart.getAttribute("data-unfav") || "";
+            var u = sessionUidCache || "";
+            try { u = u || localStorage.getItem("wantedUserId") || ""; } catch (err) {}
+            fetch("/api/account", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "toggleFavorite", title: t, user: u }),
+            }).then(function (r) { return r.json().catch(function () { return {} }); })
+              .then(function (d) {
+                if (!d || !d.ok) return;
+                /* Keep the on-device fallback in step with the server so an
+                   unfavourited song cannot reappear through it. */
+                try {
+                  var map = JSON.parse(localStorage.getItem("jw_favorites") || "{}");
+                  Object.keys(map).forEach(function (k) {
+                    if (String(k).toLowerCase() === t.toLowerCase()) delete map[k];
+                  });
+                  localStorage.setItem("jw_favorites", JSON.stringify(map));
+                } catch (err) {}
+                fillFavourites();
+              })
+              .catch(function () {});
+            return;
+          }
+          var btn = e.target.closest ? e.target.closest("[data-fav-title]") : null;
+          if (!btn) return;
+          e.preventDefault();
+          var title = btn.getAttribute("data-fav-title") || "";
+          var idx = -1;
+          try { idx = (typeof trackList !== "undefined") ? trackList.findIndex(function (t) { return String((t || {}).title || "").toLowerCase() === title.toLowerCase(); }) : -1; } catch (err) {}
+          if (idx < 0) return;
+          var was = document.querySelector(".app-page.active");
+          var y = window.scrollY;
+          try { if (window.selectTrackFromList) window.selectTrackFromList(idx); } catch (err) {}
+          keepProfileAfterPlay(was, y);
+        });
+      }
+    }).catch(function () {});
+  }
+
+  /* Recently played updates in realtime while the profile is on screen: a
+     short poll, paused when the tab is hidden, so a play made anywhere on the
+     site shows up here without a reload. */
+  try {
+    if (!window.__pv2RecentPoll) {
+      window.__pv2RecentPoll = setInterval(function () {
+        var sec = document.getElementById("page-section-profile");
+        if (!document.hidden && sec && sec.classList.contains("active")) {
+          if (document.getElementById("pv2Recent")) fillRecent();
+          if (document.getElementById("pv2Fav")) fillFavourites();
+        }
+      }, 8000);
+    }
+  } catch (e) {}
 
   function renderFullProfile() {
     var host = document.getElementById("profilePageBody");
@@ -480,7 +623,11 @@
         bindSongs(host);
         wireAchievementClicks(host);
         fillRecent();
+        fillFavourites();
         afterMount();
+        /* Rebuild the user's playlist manager (and its Create button) after
+           the v2 host is painted - an earlier mount would be wiped here. */
+        try { if (typeof window.thwMountPlaylistsManager === "function") window.thwMountPlaylistsManager(); } catch (e) {}
         window.__pv2Mounted = true;
       } catch (e) {
         console.error("profile render failed", e);

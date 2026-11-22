@@ -325,6 +325,7 @@
     st.id = "dplayer-style";
     st.textContent =
       ".dpl-ov{position:fixed;inset:0;z-index:10500;display:flex;flex-direction:column;background:#0e0c0a;color:#fff;font-family:inherit;overflow:hidden}" +
+      "html.dpl-scrolllock,html.dpl-scrolllock body{overflow:hidden!important}" +
       ".dpl-ov[hidden]{display:none}" +
       ".dpl-bg{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,#17120f,#100d0b);transition:background .6s ease}" +
       ".dpl-vignette{position:absolute;inset:0;z-index:0;background:radial-gradient(130% 90% at 30% 60%,transparent 40%,rgba(4,3,2,.55) 100%);pointer-events:none}" +
@@ -612,7 +613,7 @@
             '<h1 class="dpl-title" data-dpl="title">' + esc(title) + '</h1>' +
             '<button type="button" class="dpl-act" data-dpl="fav" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
             '<button type="button" class="dpl-act" data-dpl="addqueue" aria-label="Add to the queue"><i class="fas fa-list-ul" aria-hidden="true"></i></button>' +
-            '<button type="button" class="dpl-act" data-dpl="songpage" aria-label="Open the song page"><i class="fas fa-expand" aria-hidden="true"></i></button>' +
+            '<button type="button" class="dpl-act" data-dpl="songpage" aria-label="Open the song page"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></button>' +
           '</div>' +
           '<p class="dpl-albumline" data-dpl="albumline"></p>' +
           '<p class="dpl-meta"><span class="dpl-meta-tag"><i class="fas fa-asterisk" aria-hidden="true"></i><span data-dpl="album">Session edit</span></span><span class="dpl-meta-artists" data-dpl="artist">' + esc(artist) + '</span></p>' +
@@ -762,7 +763,7 @@
           return;
         }
         if (a === "versions") { var tt2 = currentTitle(); if (window.openSongPage) { window.openSongPage(tt2); close(); } return; }
-        if (a === "songpage") { var tt = currentTitle(); if (window.openSongPage) { window.openSongPage(tt); close(); } return; }
+        if (a === "songpage") { var tt3 = currentTitle(); if (window.openSongPage) { window.openSongPage(tt3); close(); } return; }
         if (a === "play") { var mp = document.getElementById("deck-play"); if (mp) mp.click(); return; }
         if (a === "prev") { var pb = document.getElementById("prev-btn"); if (pb) pb.click(); else if (document.getElementById("deck-prev")) document.getElementById("deck-prev").click(); return; }
         if (a === "next") { if (typeof nextTrack === "function") nextTrack(); else { var nb = document.getElementById("next-btn"); if (nb) nb.click(); } return; }
@@ -881,7 +882,20 @@
         au.currentTime = Math.max(0, Math.min(au.duration, ratio(e) * au.duration));
         sync(true);
       };
-      scrub.addEventListener("mousedown", function (e) { seek(e); var mv = function (ev) { seek(ev); }; var up = function () { document.removeEventListener("mousemove", mv); document.removeEventListener("mouseup", up); }; document.addEventListener("mousemove", mv); document.addEventListener("mouseup", up); });
+      /* Pointer events cover mouse, pen and touch with one path. */
+      scrub.addEventListener("pointerdown", function (e) {
+        if (e.cancelable) e.preventDefault();
+        seek(e);
+        var mv = function (ev) { seek(ev); };
+        var up = function () {
+          document.removeEventListener("pointermove", mv);
+          document.removeEventListener("pointerup", up);
+          document.removeEventListener("pointercancel", up);
+        };
+        document.addEventListener("pointermove", mv);
+        document.addEventListener("pointerup", up);
+        document.addEventListener("pointercancel", up);
+      });
     }
 
     /* the year chip only shows with a year */
@@ -1561,12 +1575,16 @@
     sync(true);
     loadComments(ov);
     if (window.THWCommentMarkers) window.THWCommentMarkers.refresh(ov);
+    /* The Now Playing view owns the screen: lock the page behind it so a wheel
+       or touch scroll does not move the page under the overlay. */
+    try { document.documentElement.classList.add("dpl-scrolllock"); } catch (e) {}
   }
 
   function close() {
     stopSync();
     var ov = document.getElementById(OV);
     if (ov) ov.remove();
+    try { document.documentElement.classList.remove("dpl-scrolllock"); } catch (e) {}
   }
 
   /* ================================================================== */

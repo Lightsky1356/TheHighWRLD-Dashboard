@@ -34,7 +34,27 @@
   }
 
   /* ---- the bar and the times at its ends ---- */
+  var lastBarGrad = "";
+  function paintBarGradient() {
+    var t = null;
+    try {
+      if (typeof trackList !== "undefined" && trackList && typeof currentTrackIndex === "number") {
+        t = trackList[currentTrackIndex];
+      }
+    } catch (e) {}
+    if (!t || typeof window.getCoverGradientValue !== "function") return;
+    var g;
+    try { g = window.getCoverGradientValue(t.cover || t.title); } catch (e) { return; }
+    if (!g || g === lastBarGrad) return;
+    lastBarGrad = g;
+    var bar = el("deck-progress-bar");
+    var vol = el("deck-volume-fill");
+    if (bar) bar.style.background = g;
+    if (vol) vol.style.background = g;
+  }
+
   function paintProgress() {
+    paintBarGradient();
     var a = audio();
     if (!a) return;
     var bar = el("deck-progress-bar");
@@ -132,10 +152,25 @@
       new MutationObserver(paintFav).observe(fav, { attributes: true, attributeFilter: ["class", "style"] });
     }
 
-    /* The version line follows the title. */
+    /* The version line follows the title, and the title itself opens the track
+       info panel (the same one the player's info button opens). */
     var title = el("deck-title");
-    if (title && window.MutationObserver) {
-      new MutationObserver(paintTag).observe(title, { childList: true, characterData: true, subtree: true });
+    if (title) {
+      if (window.MutationObserver) {
+        new MutationObserver(paintTag).observe(title, { childList: true, characterData: true, subtree: true });
+      }
+      title.style.cursor = "pointer";
+      title.setAttribute("role", "button");
+      title.setAttribute("tabindex", "0");
+      title.title = "Song details";
+      function deckOpenInfo() {
+        if (typeof window.showInfoPanel === "function") window.showInfoPanel();
+        else if (typeof window.openSongPage === "function") window.openSongPage();
+      }
+      title.addEventListener("click", function (e) { e.stopPropagation(); deckOpenInfo(); });
+      title.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); deckOpenInfo(); }
+      });
     }
 
     /* The queue. */
@@ -167,11 +202,14 @@
     if (opacitySel) {
       var OPACITY_KEY = "thw-deck-opacity";
       var applyOpacity = function () {
-        var v = parseFloat(opacitySel.value);
-        if (!isFinite(v)) v = 1;
         var d = el("deck-player");
-        if (d) d.style.opacity = String(v);
-        try { localStorage.setItem(OPACITY_KEY, String(v)); } catch (e) {}
+        var v = opacitySel.value;
+        var isSolid = v === "solid";
+        if (d) {
+          d.classList.toggle("deck-solid", isSolid);
+          d.style.opacity = isSolid ? "1" : String(parseFloat(v) || 1);
+        }
+        try { localStorage.setItem(OPACITY_KEY, isSolid ? "solid" : String(parseFloat(v) || 1)); } catch (e) {}
       };
       var remembered = "1";
       try { remembered = localStorage.getItem(OPACITY_KEY) || "1"; } catch (e) {}
@@ -247,8 +285,54 @@
     paintFav();
   }
 
+  /* Drag-to-seek on the deck's own bar. The full-screen player has its own
+     scrubber; the deck bar previously only painted progress and ignored touch. */
+  function wireSeek() {
+    var progress = el("deck-progress");
+    if (!progress) return;
+    var dragging = false;
+    function seek(clientX) {
+      var a = audio();
+      if (!a || !a.duration || !isFinite(a.duration)) return;
+      var r = progress.getBoundingClientRect();
+      if (!r.width) return;
+      var ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+      var bar = el("deck-progress-bar");
+      if (bar) bar.style.transform = "scaleX(" + ratio + ")";
+      try { a.currentTime = ratio * a.duration; } catch (e) {}
+    }
+    function move(e) {
+      if (!dragging) return;
+      if (e.cancelable) e.preventDefault();
+      seek(e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX);
+    }
+    function end() {
+      dragging = false;
+      document.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseup", end);
+      document.removeEventListener("touchmove", move);
+      document.removeEventListener("touchend", end);
+    }
+    progress.addEventListener("mousedown", function (e) {
+      e.stopPropagation();
+      dragging = true;
+      seek(e.clientX);
+      document.addEventListener("mousemove", move);
+      document.addEventListener("mouseup", end);
+    });
+    progress.addEventListener("touchstart", function (e) {
+      e.stopPropagation();
+      if (e.cancelable) e.preventDefault();
+      dragging = true;
+      seek(e.touches[0] ? e.touches[0].clientX : 0);
+      document.addEventListener("touchmove", move, { passive: false });
+      document.addEventListener("touchend", end);
+    }, { passive: false });
+  }
+
   function boot() {
     wire();
+    wireSeek();
     /* The page may load the audio late, so the first paint is repeated a
        little while the page settles. */
     setTimeout(function () { paintProgress(); paintVolume(); paintTag(); paintFav(); }, 1200);
@@ -341,11 +425,9 @@
     }
   }
 
-  /* The opacity steps and the Bluetooth button do nothing on a phone -
-     routing audio out of a browser phone is not the browser's job, and the
-     phone has no room for the steps. The stylesheet hides them; this makes
-     sure they are really gone even if an old copy of the stylesheet is
-     cached on the device. */
+  /* The opacity steps do nothing on a phone - the phone has no room for
+     them. The stylesheet hides them; this makes sure they are really gone
+     even if an old copy of the stylesheet is cached on the device. */
   function removeOnPhones() {
     try {
       if (!window.matchMedia) return;
@@ -354,8 +436,6 @@
       if (!phone) return;
       var op = document.querySelector(".deck-opacity");
       if (op && op.parentNode) op.parentNode.removeChild(op);
-      var bt = document.querySelector("[data-thw-bluetooth]");
-      if (bt && bt.parentNode) bt.parentNode.removeChild(bt);
     } catch (e) {}
   }
 

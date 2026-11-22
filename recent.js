@@ -170,7 +170,9 @@ function _smallCoverRecent(src) {
   function boot() {
     css();
     document.addEventListener("click", function (e) {
-      var row = e.target.closest ? e.target.closest("[data-recent-title]") : null;
+      /* Only our own recent strip rows. The Profile v2 card uses the same
+         data attribute for its clickable songs and must not be sent here. */
+      var row = e.target.closest ? e.target.closest(".ws-recent-row[data-recent-title]") : null;
       if (!row) return;
       var idx = idxFor(row.getAttribute("data-recent-title") || "");
       if (idx < 0) return;

@@ -14,6 +14,9 @@
  */
 
 (function () {
+  /* Where the reader was before opening a song. The Back button returns here
+     instead of always dumping them in the Vault. */
+  var songReturnPage = "hub";
   "use strict";
   if (window.__songPageMounted) return;
   window.__songPageMounted = true;
@@ -267,6 +270,24 @@
     });
   }
 
+  /* ---- alternate names ----
+     Most songs carry an explicit altnames list; older entries only have the
+     extra names buried in their tag as parenthesised segments. Pull those out
+     so a song like Toxic Humans shows its alternate titles instead of nothing. */
+  function altNamesOf(track) {
+    if (!track) return [];
+    if (Array.isArray(track.altnames)) return track.altnames.filter(Boolean);
+    if (typeof track.altnames === "string") return track.altnames.split(/\s*,\s*/).filter(Boolean);
+    var tag = String(track.tag || "");
+    var title = String(track.title || "");
+    if (title && tag.indexOf(title) === 0) tag = tag.slice(title.length);
+    var skip = /^(sessions?|leaks?|instrumentals?|stems?|halloween|snippet|demo|final|v\d+|remaster(ed)?|gb&gr|g&gr|gbgr|wod|drfl|af|jw3|post|out|nd|bdm|jtk|999|soundcloud|live|remix|edit|version|clean|explicit)$/i;
+    return (tag.match(/\(([^)]*)\)/g) || [])
+      .map(function (s) { return s.slice(1, -1).trim(); })
+      .filter(function (s) { return s && !skip.test(s); })
+      .slice(0, 12);
+  }
+
   /* ---- the facts, in the order they are read ---- */
   function facts(track) {
     var out = [];
@@ -274,8 +295,6 @@
       if (!value) return;
       out.push({ label: label, value: value, href: href || "" });
     }
-    var album = "";
-    try { if (typeof getTrackAlbum === "function") album = getTrackAlbum(track); } catch (e) {}
     add("Producer", track && track.producer);
     add("Year", track && track.year);
     add("Length", track && track.duration ? fmtTime(track.duration) : "");
@@ -283,7 +302,13 @@
     add("Category", track && track.category ? String(track.category).charAt(0).toUpperCase() + String(track.category).slice(1) : "");
     var credit = coverCredit(track);
     add("Cover art", credit ? "Made by " + credit : "");
-    add("Version", album);
+    /* The old "Version" fact just echoed the album, which is already shown in
+       the hero. Use this slot for the song's alternate names instead, and omit
+       the block entirely when the song has none. */
+    var alts = altNamesOf(track);
+    /* Several alternate names need a full-width strip; a single one fits the
+       normal fact grid. */
+    if (alts.length) out.push({ label: "Alt names", value: alts.join(", "), href: "", wide: alts.length > 1 });
     return out;
   }
 
@@ -300,7 +325,7 @@
     back.type = "button";
     back.innerHTML = '<i class="fas fa-arrow-left" aria-hidden="true"></i><span>Back</span>';
     back.addEventListener("click", function () {
-      if (typeof window.switchAppPage === "function") window.switchAppPage("hub");
+      if (typeof window.switchAppPage === "function") window.switchAppPage(songReturnPage);
     });
     wrap.appendChild(back);
 
@@ -342,8 +367,10 @@
     play.type = "button";
     play.innerHTML = '<i class="fas fa-play" aria-hidden="true"></i><span>Play</span>';
     play.addEventListener("click", function () {
+      /* selectTrackFromList already loads and plays the track. Staying on the
+         song page keeps the reader where they were instead of bouncing them
+         to the WRLD Player page. */
       if (typeof window.selectTrackFromList === "function") window.selectTrackFromList(index);
-      if (typeof window.switchAppPage === "function") window.switchAppPage("player");
     });
     actions.appendChild(play);
 
@@ -402,7 +429,7 @@
     if (factList.length) {
       var factsBox = el("div", "song-facts");
       factList.forEach(function (f) {
-        var cell = el("div", "song-fact");
+        var cell = el("div", "song-fact" + (f.wide ? " song-fact--wide" : ""));
         cell.appendChild(el("span", "song-fact-label", f.label));
         if (f.href) {
           var link = el("a", "song-fact-value song-fact-link", f.value);
@@ -546,6 +573,14 @@
   function openSong(title, noPush) {
     var hit = findTrack(title);
     if (!hit) { renderMissing(title); return false; }
+    /* Remember the page underneath before the song page covers it. */
+    try {
+      var active = document.querySelector(".app-page.active");
+      var id = active ? active.id : "";
+      if (id && id !== "page-section-song") {
+        songReturnPage = id.replace(/^page-section-/, "");
+      }
+    } catch (e) {}
     if (typeof window.switchAppPage === "function") window.switchAppPage("song");
     render(hit.track, hit.index);
     try {

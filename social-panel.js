@@ -5,6 +5,10 @@
   window.__thwSocialMounted = true;
 
   var API = "/api/social";
+  /* Messages is a real page, not a drawer over one - so the open/close
+     lifecycle does not exist there. Set once in mount() when the messages
+     stage is present. */
+  var PAGE_MODE = false;
   var state = {
     open: false,
     tab: "friends",
@@ -61,7 +65,13 @@
     /* What is about to be sent: the pictures and files chosen but not yet
        sent, and the sticker picked but not yet sent. */
     pendingAttachments: [],
-    pendingSticker: ""
+    pendingSticker: "",
+    /* Who is in the open conversation - the @-picker is filled from this,
+       and it holds exactly the people who can be pinged. */
+    members: [],
+    /* The live @-picker state: which conversation-member query is open,
+       which row is highlighted, and where the "@" sits in the textarea. */
+    mention: { open: false, query: "", items: [], index: 0, start: -1 }
   };
 
   /* One empty state for the whole panel. These three places used to be bare
@@ -114,6 +124,8 @@
   function describeError(error) {
     var status = error && error.status;
     if (status === 401) return "Sign in to use Inner Circle.";
+    if (status === 403 && error && error.code === "blocked_by_target") return "You have been blocked";
+    if (status === 403 && error && error.code === "messages_not_allowed") return "That person is not accepting messages right now.";
     if (status === 403) return "You do not have permission to do that.";
     if (status === 404) return "That is no longer available.";
     if (status === 409) return "That no longer matches what is saved. Try again.";
@@ -174,11 +186,14 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v40";
+    css.href = "/social.css?v=thw-v53";
     document.head.appendChild(css);
 
     var root = el("div");
     root.id = "thw-social-root";
+    var stage = document.getElementById("messages-stage");
+    if (stage) PAGE_MODE = true;
+    if (PAGE_MODE) root.classList.add("thw-social-root--page");
     root.innerHTML =
       '<button id="thw-social-fab" type="button" aria-label="Open Inner Circle" aria-haspopup="dialog" aria-expanded="false" title="Inner Circle">' +
         '<i class="fas fa-comments" aria-hidden="true"></i><span id="thw-social-badge" hidden></span>' +
@@ -221,15 +236,40 @@
               '<div class="thw-social-thread"><header class="thw-social-thread-head" id="thw-social-thread-head"></header>' +
                 '<div class="thw-social-thread-body" id="thw-social-thread-body"><div class="thw-social-thread-placeholder"><span class="thw-social-empty-icon"><i class="fas fa-comment-dots" aria-hidden="true"></i></span><strong class="thw-social-empty-title">No conversation open</strong><span class="thw-social-empty-text">Pick someone from your friends to start messaging.</span></div></div>' +
                 '<div class="thw-social-typing" id="thw-social-typing" aria-live="polite"></div>' +
+                '<div class="thw-conversation-blocked-note" id="thw-social-blocked-note" hidden role="status"><i class="fas fa-ban" aria-hidden="true"></i><span id="thw-social-blocked-note-text">You have been blocked</span></div>' +
                 '<div class="thw-social-replying" id="thw-social-replying"><span id="thw-social-reply-label"></span><button id="thw-social-reply-cancel" type="button" aria-label="Cancel reply">Cancel</button></div>' +
                                 '<div class="thw-social-attachments" id="thw-social-attachments" hidden></div>' +
                 '<form class="thw-social-composer" id="thw-social-composer">' +
-                '<button class="thw-social-attach" id="thw-social-attach" type="button" aria-label="Attach a photo or file" title="Attach a photo or file"><i class="fas fa-paperclip" aria-hidden="true"></i></button>' +
-                '<input id="thw-social-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,application/zip" multiple hidden>' +
-                '<span class="thw-social-composer-field"><label class="sr-only" for="thw-social-input">Write a message</label><textarea id="thw-social-input" maxlength="2000" rows="1" placeholder="Write a message" disabled></textarea><span class="thw-social-counter" id="thw-social-counter" aria-live="off"></span></span>' +
-                '<button class="thw-social-sticker-btn" id="thw-social-sticker-btn" type="button" aria-label="Send a sticker" aria-haspopup="true" aria-expanded="false" title="Send a sticker"><i class="fas fa-smile-beam" aria-hidden="true"></i></button>' +
+                '<div class="thw-social-plus" id="thw-social-plus" hidden aria-label="Attach options">' +
+                '<div class="thw-plus-popover" role="menu" aria-label="Attach options">' +
+                  '<button type="button" class="thw-plus-item" role="menuitem" data-plus="file"><i class="fas fa-cloud-arrow-up" aria-hidden="true"></i><span class="thw-plus-item-txt"><span class="thw-plus-item-title">Upload a File</span><span class="thw-plus-item-sub">PDFs, zips, text, any file</span></span></button>' +
+                  '<button type="button" class="thw-plus-item" role="menuitem" data-plus="photo"><i class="fas fa-image" aria-hidden="true"></i><span class="thw-plus-item-txt"><span class="thw-plus-item-title">Upload Photo</span><span class="thw-plus-item-sub">Send pictures from this device</span></span></button>' +
+                  '<div class="thw-plus-divider" aria-hidden="true"></div>' +
+                  '<button type="button" class="thw-plus-item thw-plus-item--soon" role="menuitem" aria-disabled="true" tabindex="-1"><i class="fas fa-microphone-lines" aria-hidden="true"></i><span class="thw-plus-item-txt"><span class="thw-plus-item-title">Record Voice Message</span><span class="thw-plus-item-sub">Coming soon</span></span></button>' +
+                  '<button type="button" class="thw-plus-item thw-plus-item--soon" role="menuitem" aria-disabled="true" tabindex="-1"><i class="fas fa-poll-h" aria-hidden="true"></i><span class="thw-plus-item-txt"><span class="thw-plus-item-title">Create Poll</span><span class="thw-plus-item-sub">Coming soon</span></span></button>' +
+                  '<button type="button" class="thw-plus-item thw-plus-item--soon" role="menuitem" aria-disabled="true" tabindex="-1"><i class="fas fa-comments" aria-hidden="true"></i><span class="thw-plus-item-txt"><span class="thw-plus-item-title">Create Thread</span><span class="thw-plus-item-sub">Coming soon</span></span></button>' +
+                  '<button type="button" class="thw-plus-item thw-plus-item--soon" role="menuitem" aria-disabled="true" tabindex="-1"><i class="fas fa-shapes" aria-hidden="true"></i><span class="thw-plus-item-txt"><span class="thw-plus-item-title">Use Apps</span><span class="thw-plus-item-sub">Coming soon</span></span></button>' +
+                  '<button type="button" class="thw-plus-item thw-plus-item--soon" role="menuitem" aria-disabled="true" tabindex="-1"><i class="fas fa-calendar-clock" aria-hidden="true"></i><span class="thw-plus-item-txt"><span class="thw-plus-item-title">Schedule Message</span><span class="thw-plus-item-sub">Coming soon</span></span></button>' +
+                '</div>' +
+                '<div class="thw-plus-sheet" role="dialog" aria-modal="false" aria-label="Message tools">' +
+                  '<div class="thw-plus-sheet-handle" aria-hidden="true"></div>' +
+                  '<p class="thw-plus-sheet-title">Compose tools</p>' +
+                  '<div class="thw-plus-sheet-grid">' +
+                    '<button type="button" class="thw-plus-sheet-btn" data-plus="photo"><i class="fas fa-image" aria-hidden="true"></i><span>Photos</span></button>' +
+                    '<button type="button" class="thw-plus-sheet-btn thw-plus-sheet-btn--soon" aria-disabled="true" tabindex="-1"><i class="fas fa-poll-h" aria-hidden="true"></i><span>Poll</span><small>Soon</small></button>' +
+                    '<button type="button" class="thw-plus-sheet-btn thw-plus-sheet-btn--soon" aria-disabled="true" tabindex="-1"><i class="fas fa-comments" aria-hidden="true"></i><span>Thread</span><small>Soon</small></button>' +
+                    '<button type="button" class="thw-plus-sheet-btn thw-plus-sheet-btn--soon" aria-disabled="true" tabindex="-1"><i class="fas fa-shapes" aria-hidden="true"></i><span>Apps</span><small>Soon</small></button>' +
+                    '<button type="button" class="thw-plus-sheet-btn" data-plus="file"><i class="fas fa-paperclip" aria-hidden="true"></i><span>Files</span></button>' +
+                  '</div>' +
+                  '<p class="thw-plus-sheet-footnote">Photos opens your device&rsquo;s photo library. Files opens a file picker.</p>' +
+                '</div>' +
+                '</div>' +
+                '<button class="thw-social-attach" id="thw-social-attach" type="button" aria-label="Attach tools" title="Attach tools" aria-expanded="false"><i class="fas fa-plus" aria-hidden="true"></i></button>' +
+                '<input id="thw-social-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,application/zip,audio/*" multiple hidden>' +
+                '<input id="thw-social-photo" type="file" accept="image/*" multiple hidden>' +
+                '<span class="thw-social-composer-field"><label class="sr-only" for="thw-social-input">Write a message</label><div class="thw-social-mentions" id="thw-social-mentions" hidden role="listbox" aria-label="Mention a person"></div><textarea id="thw-social-input" maxlength="2000" rows="1" placeholder="Write a message" disabled></textarea><span class="thw-social-counter" id="thw-social-counter" aria-live="off"></span><span class="thw-composer-drop" id="thw-composer-drop" hidden aria-hidden="true"><i class="fas fa-file-arrow-up"></i><b>Drop to attach</b><span>Audio, photos, PDFs, zips, text</span></span></span>' +
+                '<button class="thw-social-mention-btn" id="thw-social-mention-btn" type="button" aria-label="Mention someone" title="Mention someone"><i class="fas fa-at" aria-hidden="true"></i></button>' +
                 '<button class="thw-social-send" id="thw-social-send" type="submit" disabled>Send</button></form>' +
-                '<div class="thw-social-stickers" id="thw-social-stickers" hidden><div class="thw-social-sticker-grid" id="thw-social-sticker-grid"></div></div>' +
 '</div></div>' +
           '</section>' +
           '<section class="thw-social-view" data-view="requests" role="tabpanel"><div class="thw-social-list" id="thw-social-requests"></div></section>' +
@@ -282,7 +322,12 @@
           '</form>' +
         '</div>' +
       '</div>';
-    document.body.appendChild(root);
+    if (stage) {
+      stage.appendChild(root);
+      setOpen(true);
+    } else {
+      document.body.appendChild(root);
+    }
 
     loadFriendsCollapse();
     applyFriendsCollapse();
@@ -291,7 +336,41 @@
     document.getElementById("thw-social-fab").addEventListener("click", function () { setOpen(!state.open); });
     document.getElementById("thw-social-close").addEventListener("click", function () { setOpen(false); });
     root.addEventListener("click", onClick);
+    /* Rows made out of divs still open on Enter/Space, the way buttons do. */
+    root.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter" && event.key !== " " && event.key !== "Spacebar") return;
+      var row = event.target.closest && event.target.closest("[data-conversation-id]");
+      if (!row || event.target.closest("[data-action]")) return;
+      event.preventDefault();
+      var item = (state.boot && state.boot.conversations || []).find(function (c) { return c.id === row.dataset.conversationId; });
+      if (item) openConversation(item);
+    });
     root.addEventListener("input", onInput);
+    /* A mention is a doorway to the person's profile - tapping one opens it. */
+    document.getElementById("thw-social-thread-body").addEventListener("click", function (event) {
+      var mention = event.target.closest && event.target.closest(".thw-social-mention");
+      if (!mention || !mention.dataset.uid) return;
+      if (window.openProfile) { try { window.openProfile(mention.dataset.uid); } catch (e) { /* unavailable */ } }
+    });
+    /* The @-picker owns the arrow keys, Enter and Escape while it is open -
+       before anything else can act on them. */
+    document.getElementById("thw-social-input").addEventListener("keydown", function (event) {
+      if (mentionPickerKey(event)) event.preventDefault();
+    }, true);
+    /* The @ button - a one-tap way to start a mention, mostly for phones. */
+    document.getElementById("thw-social-mention-btn").addEventListener("click", function () {
+      var input = document.getElementById("thw-social-input");
+      if (!input || input.disabled) return;
+      var at = (input.selectionStart == null ? input.value.length : input.selectionStart);
+      var before = input.value.slice(0, at);
+      /* A leading space so the token always starts at a boundary. */
+      if (before && !/\s$/.test(before)) before += " ";
+      input.value = before + "@" + input.value.slice(at);
+      var cursor = before.length + 1;
+      try { input.setSelectionRange(cursor, cursor); } catch (e) {}
+      input.focus();
+      updateMentionFromInput(input);
+    });
     /* Right-clicking a message opens its menu.
      *
      * This is the way the menu is meant to be reached, and it is why the
@@ -310,6 +389,58 @@
       closeGrammarResult();
       openMessageMenu(target, event.clientX, event.clientY);
     });
+    /* Long-press on touch: the same hold a phone does before any of its own
+       menus appear. 450ms feels native rather than accidental, it cancels if
+       the finger moves more than a few pixels (scroll), and it opens the same
+       bottom sheet from the screenshot, with the reactions row of smileYS at
+       the top. */
+    var LONG_PRESS_MS = 450;
+    var longPressTimer = null;
+    var longPressStart = null;
+    var longPressBubble = null;
+    var clearLongPress = function () {
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+      longPressStart = null;
+      longPressBubble = null;
+    };
+    root.addEventListener("touchstart", function (event) {
+      var bubble = event.target.closest && event.target.closest(".thw-social-message");
+      if (!bubble) return;
+      var id = bubble.dataset.messageId;
+      var target = state.messages.find(function (m) { return String(m.id) === String(id); });
+      if (!target || target.deleted) return;
+      var t = event.touches && event.touches[0];
+      if (!t) return;
+      clearLongPress();
+      longPressStart = { x: t.clientX, y: t.clientY };
+      longPressBubble = target;
+      longPressTimer = setTimeout(function () {
+        longPressTimer = null;
+        /* The haptic tick a phone gives, and the guard against the subsequent
+           contextmenu event that Android fires anyway. */
+        try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
+        try { closeGrammarResult(); } catch (e) {}
+        openMessageMenu(target, t.clientX, t.clientY);
+        try { event.preventDefault(); } catch (e) {}
+      }, LONG_PRESS_MS);
+    }, { passive: true });
+    root.addEventListener("touchmove", function (event) {
+      var t = event.touches && event.touches[0];
+      if (!t || !longPressStart) return;
+      var dx = Math.abs(t.clientX - longPressStart.x);
+      var dy = Math.abs(t.clientY - longPressStart.y);
+      if (dx > 10 || dy > 10) clearLongPress();
+    }, { passive: true });
+    root.addEventListener("touchend", clearLongPress);
+    root.addEventListener("touchcancel", clearLongPress);
+    /* Android fires a real contextmenu after a long press; without this line
+       the sheet would open twice. Desktop keeps right-click as-is because the
+       contextmenu event already does its work and never reaches this branch. */
+    root.addEventListener("contextmenu", function (event) {
+      var bubble = event.target.closest && event.target.closest(".thw-social-message");
+      if (!bubble) return;
+      try { if (navigator.maxTouchPoints > 0) event.preventDefault(); } catch (e) {}
+    }, true);
     /* A click anywhere else closes the menu. It is a capture-phase listener on
        the document, so a click inside the menu does not close it before the
        menu's own button has been acted on. */
@@ -319,27 +450,103 @@
       if (menu && event.target && menu.contains(event.target)) return;
       closeMessageMenu();
     }, true);
+    /* Drag a file onto the composer - audio, photo, PDF - and it lands in
+       the attachment row waiting to send, exactly as if it had been picked. */
+    var composerForm = document.getElementById("thw-social-composer");
+    var composerDrop = document.getElementById("thw-composer-drop");
+    var composerCounter = 0;
+    composerForm.addEventListener("dragenter", function (event) {
+      if (!event.dataTransfer || !Array.prototype.includes.call(event.dataTransfer.types || [], "Files")) return;
+      event.preventDefault();
+      composerCounter++;
+      composerForm.classList.add("is-drop-target");
+      composerDrop.hidden = false;
+    });
+    composerForm.addEventListener("dragover", function (event) {
+      if (!event.dataTransfer || !Array.prototype.includes.call(event.dataTransfer.types || [], "Files")) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    });
+    composerForm.addEventListener("dragleave", function (event) {
+      if (!event.dataTransfer || !Array.prototype.includes.call(event.dataTransfer.types || [], "Files")) return;
+      composerCounter--;
+      if (composerCounter <= 0) { composerCounter = 0; composerForm.classList.remove("is-drop-target"); composerDrop.hidden = true; }
+    });
+    composerForm.addEventListener("drop", function (event) {
+      if (!event.dataTransfer || !event.dataTransfer.files || !event.dataTransfer.files.length) return;
+      event.preventDefault();
+      composerCounter = 0;
+      composerForm.classList.remove("is-drop-target");
+      composerDrop.hidden = true;
+      addFiles(event.dataTransfer.files);
+    });
     document.getElementById("thw-social-composer").addEventListener("submit", sendMessage);
 
-    /* The attach button, and the file chooser it opens. */
+    /* The "+" tools button. It opens a small popover on desktop and a
+       bottom sheet on mobile; the stylesheet decides which one shows. */
     var attachBtn = document.getElementById("thw-social-attach");
     var fileInput = document.getElementById("thw-social-file");
-    if (attachBtn && fileInput) {
-      attachBtn.addEventListener("click", function () { fileInput.click(); });
+    var photoInput = document.getElementById("thw-social-photo");
+    var plus = document.getElementById("thw-social-plus");
+    function plusOpen() {
+      return plus && !plus.hidden;
+    }
+    function closePlus() {
+      if (!plus) return;
+      plus.hidden = true;
+      if (attachBtn) { attachBtn.setAttribute("aria-expanded", "false"); attachBtn.classList.remove("is-open"); }
+      var thread = plus.closest(".thw-social-thread");
+      if (thread) thread.classList.remove("is-plus-open");
+    }
+    function togglePlus() {
+      if (!plus || !attachBtn) return;
+      var open = !plusOpen();
+      plus.hidden = !open;
+      attachBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      attachBtn.classList.toggle("is-open", open);
+      var thread = plus.closest(".thw-social-thread");
+      if (thread) thread.classList.toggle("is-plus-open", open);
+    }
+    if (attachBtn) attachBtn.addEventListener("click", togglePlus);
+    if (fileInput) {
       fileInput.addEventListener("change", function () {
         addFiles(fileInput.files);
         fileInput.value = "";
       });
     }
-    /* The sticker picker. */
-    var stickerBtn = document.getElementById("thw-social-sticker-btn");
-    if (stickerBtn) stickerBtn.addEventListener("click", toggleStickerPicker);
-    /* A click anywhere else closes it. */
+    if (photoInput) {
+      photoInput.addEventListener("change", function () {
+        addFiles(photoInput.files);
+        photoInput.value = "";
+      });
+    }
+    if (plus) {
+      plus.addEventListener("click", function (event) {
+        if (event.target.closest(".thw-plus-item--soon, .thw-plus-sheet-btn--soon")) return;
+        var item = event.target.closest("[data-plus]");
+        if (!item) return;
+        var kind = item.getAttribute("data-plus");
+        closePlus();
+        if (kind === "photo" && photoInput) photoInput.click();
+        else if (kind === "file" && fileInput) fileInput.click();
+      });
+    }
+    /* The plus tools stay open until something else is tapped - the rest of
+       the app closes tools menus with outside clicks, and these two follow
+       the same pattern. */
     document.addEventListener("click", function (e) {
-      var picker = document.getElementById("thw-social-stickers");
-      if (!picker || picker.hidden) return;
-      if (e.target.closest("#thw-social-stickers") || e.target.closest("#thw-social-sticker-btn")) return;
-      closeStickerPicker();
+      if (plusOpen() && !e.target.closest("#thw-social-plus") && !e.target.closest("#thw-social-attach")) closePlus();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && plusOpen()) closePlus();
+    });
+    /* A click anywhere else also closes the mention picker and the group
+       roster - neither should linger over the thread. */
+    document.addEventListener("click", function (e) {
+      var mentionPicker = document.getElementById("thw-social-mentions");
+      if (mentionPicker && !mentionPicker.hidden && !e.target.closest("#thw-social-mentions") && !e.target.closest("#thw-social-mention-btn")) closeMentionPicker();
+      var roster = document.querySelector(".thw-group-roster");
+      if (roster && !e.target.closest(".thw-group-roster") && !e.target.closest('[data-action="group-roster"]')) roster.remove();
     });
     document.getElementById("thw-social-reply-cancel").addEventListener("click", clearReply);
     document.getElementById("thw-social-rules-link").addEventListener("click", openRules);
@@ -480,15 +687,10 @@
 
   /* Rotating a phone or dragging a window across 680px changes whether the panel
      should be holding the page still. Re-check rather than locking on open and
-     leaving a stranded hold behind.
-
-     The same crossing decides whether the background is inert and whether the
-     Community menu has room beside the panel, so all three settle here - a
-     rotation to landscape must not strand an inert <main> on a wide window. */
+     leaving a stranded hold behind. */
   window.addEventListener("resize", function () {
     syncPanelScrollLock();
     syncPanelModality();
-    syncCommMenuClearance();
   });
 
   /* Make the rest of the document inert while the panel is covering it.
@@ -524,55 +726,39 @@
      moment: true over a background that is genuinely unavailable, false over a
      background the reader is welcome to walk into. */
   function syncPanelModality() {
-    var modal = !!state.open && panelIsModal();
+    /* Messages is a full page, not a modal sheet: there is nothing behind it
+       to take away. Inerting every other body child on a phone left the nav,
+       the WRLD Player and every other overlay dead to clicks - the WRLD Log's
+       close button included - with no way to release the hold, because page
+       mode deliberately ignores setOpen(false). So never go modal in page mode. */
+    var modal = !PAGE_MODE && !!state.open && panelIsModal();
     setBackgroundInert(modal);
     var panel = document.getElementById("thw-social-panel");
     if (panel) panel.setAttribute("aria-modal", modal ? "true" : "false");
-  }
-
-  /* The Community menu drops out of the middle of the nav; the panel is a sheet
-     on the right of the window. How much of them collide depends on both
-     widths, so it is not a decision one rule can make: at 1904px they are 280px
-     apart, at 1440px 51px apart, and at 1280px they cross by 29. Hiding the
-     menu outright, as this used to, took the whole nav dropdown away every time
-     the panel was open in order to dodge a collision that only happens in some
-     windows.
-
-     So it is shifted instead - by exactly the distance that clears the panel -
-     which keeps it working at every desktop width. Only horizontal position is
-     touched: the menu keeps its layout, its hover and focus behaviour, and the
-     shift is dropped the moment the panel closes. */
-  function syncCommMenuClearance() {
-    var menu = document.querySelector(".nav-comm-menu");
-    if (!menu) return;
-    var panel = document.getElementById("thw-social-panel");
-    var shift = 0;
-    if (state.open && panel && !panelIsModal()) {
-      /* Measured while the menu is still hidden: visibility:hidden keeps it in
-         layout, so this rect is the real one and nothing has to flash open to
-         be measured. 12px is the gutter it gets to keep beside the panel. */
-      var m = menu.getBoundingClientRect();
-      var p = panel.getBoundingClientRect();
-      if (m.width && p.width) {
-        shift = m.right - (p.left - 12);
-        if (shift < 0) shift = 0;
-        /* Never slide it off the left edge to make room - a menu that is half
-           under the panel beats one that is half off the screen. */
-        if (shift > 0 && m.left - shift < 8) shift = Math.max(0, m.left - 8);
-      }
-    }
-    menu.style.marginLeft = shift ? -Math.round(shift) + "px" : "";
   }
 
   function setOpen(open) {
     var overlay = document.getElementById("thw-social-overlay");
     var fab = document.getElementById("thw-social-fab");
     if (!overlay || !fab) return;
+    /* Messages is a page: there is nothing to open or close, only views to
+       show. Mark it open once, run the side effects, and ignore close. */
+    if (PAGE_MODE) {
+      if (!state.open) {
+        state.open = true;
+        overlay.hidden = false;
+        syncPanelModality();
+        /* No scroll lock, no focus steal, no hidden overlay - the page is
+           the panel. Refresh just primes the data. */
+        refresh();
+        document.documentElement.classList.remove("thw-social-open");
+      }
+      return;
+    }
     if (open && !state.open) state.focusBeforeOpen = document.activeElement;
     state.open = !!open;
     overlay.hidden = !state.open;
     syncPanelModality();
-    syncCommMenuClearance();
     fab.setAttribute("aria-expanded", state.open ? "true" : "false");
     /* Rules lives inside this panel, so closing the panel closes Rules with it.
        closeRules() drops its own lock hold; without this the count would be left
@@ -581,11 +767,6 @@
     if (!state.open && state.groupOpen) closeGroupDialog();
     if (!state.open && state.shareOpen) closeShareDialog();
     if (state.open) {
-      /* A Community menu left hovering would sit straight over the panel the
-         moment focus moved into it, so it is closed once on open. It is not
-         blocked after that on desktop: it reopens shifted clear of the panel
-         (syncCommMenuClearance), so closing here costs nothing. */
-      if (typeof closeCommMenu === "function") { try { closeCommMenu(); } catch (e) {} }
       refresh();
       document.getElementById("thw-social-close").focus();
       /* On a phone the on-screen keyboard shrinks the viewport, which used to
@@ -918,16 +1099,22 @@
       syncSettingsButton();
       return;
     }
+    /* Explicit data-action wins over the conversation-row branch: a row can
+       carry both, and the name link opening a profile must not also open
+       the thread beneath it. */
+    var action = event.target.closest("[data-action]");
+    if (action && !action.disabled) {
+      event.preventDefault();
+      event.stopPropagation();
+      runAction(action);
+      return;
+    }
     var convo = event.target.closest("[data-conversation-id]");
     if (convo) {
       var item = (state.boot && state.boot.conversations || []).find(function (c) { return c.id === convo.dataset.conversationId; });
       if (item) openConversation(item);
       return;
     }
-    var action = event.target.closest("[data-action]");
-    if (!action || action.disabled) return;
-    event.preventDefault();
-    runAction(action);
   }
 
   function onInput(event) {
@@ -946,6 +1133,7 @@
       if (clearBtn) clearBtn.hidden = event.target.value.length === 0;
     } else if (event.target.id === "thw-social-input") {
       scheduleTyping();
+      updateMentionFromInput(event.target);
       /* Only warn as the hard 2000 limit approaches, so the counter is
          informative rather than permanently in the way. */
       var counter = document.getElementById("thw-social-counter");
@@ -1406,8 +1594,9 @@
     markAll.dataset.action = "mark-all-read";
     list.appendChild(markAll);
     sorted.forEach(function (conversation) {
-      var row = el("button", "thw-social-convo" + (state.conversation && state.conversation.id === conversation.id ? " active" : ""));
-      row.type = "button";
+      var row = el("div", "thw-social-convo" + (state.conversation && state.conversation.id === conversation.id ? " active" : ""));
+      row.setAttribute("role", "button");
+      row.tabIndex = 0;
       row.dataset.conversationId = conversation.id;
       var face = el("span", "thw-social-face");
       if (conversation.kind === "group") {
@@ -1422,7 +1611,18 @@
       }
       row.appendChild(face);
       var copy = el("span", "thw-social-convo-copy");
-      copy.appendChild(el("span", "thw-social-name", conversation.name || (conversation.kind === "group" ? "Group chat" : "")));
+      /* The name is a doorway to their profile - the whole row opens the
+         thread, but the name itself lands on the person. */
+      if (conversation.kind !== "group" && conversation.uid) {
+        var nameLink = el("button", "thw-social-name thw-social-convo-profile");
+        nameLink.type = "button";
+        nameLink.dataset.action = "view-profile";
+        nameLink.dataset.uid = conversation.uid;
+        nameLink.textContent = conversation.name || "Member";
+        copy.appendChild(nameLink);
+      } else {
+        copy.appendChild(el("span", "thw-social-name", conversation.name || (conversation.kind === "group" ? "Group chat" : "")));
+      }
       copy.appendChild(el("span", "thw-social-preview",
         conversation.lastMessage || (conversation.kind === "group" ? "Say something to the group" : "Start a conversation")));
       /* When did they last talk? Useful on its own, and it is the timestamp the
@@ -1505,29 +1705,49 @@
     var menu = el("div", "thw-social-menu");
     menu.id = "thw-social-menu";
     menu.setAttribute("role", "menu");
+    if (window.matchMedia && window.matchMedia("(max-width: 681px)").matches) {
+      menu.classList.add("thw-social-menu--sheet");
+      menu.setAttribute("role", "dialog");
+      menu.setAttribute("aria-modal", "true");
+      menu.setAttribute("aria-label", "Message options");
+    }
 
     /* The reactions. The ones already given are shown with their count, so
        the menu says what is there as well as what can be added. */
-    var reactRow = el("div", "thw-social-menu-reactions");
-    reactRow.setAttribute("role", "group");
-    reactRow.setAttribute("aria-label", "React to this message");
-    var mine = {};
-    (message.reactions || []).forEach(function (reaction) { mine[reaction.emoji] = reaction; });
-    var every = REACTIONS.slice();
-    Object.keys(mine).forEach(function (emoji) { if (every.indexOf(emoji) === -1) every.push(emoji); });
-    every.forEach(function (emoji) {
-      var reaction = mine[emoji];
-      var node = el("button", "thw-social-menu-reaction" + (reaction && reaction.mine ? " mine" : ""),
-        emoji + (reaction && reaction.count > 1 ? " " + reaction.count : ""));
-      node.type = "button";
-      node.dataset.action = "react";
-      node.dataset.messageId = message.id;
-      node.dataset.emoji = emoji;
-      node.title = reaction ? (reaction.count + (reaction.count === 1 ? " reaction" : " reactions")) : "React";
-      reactRow.appendChild(node);
-    });
-    menu.appendChild(reactRow);
-    menu.appendChild(el("div", "thw-social-menu-divider"));
+    /* A blocked person may look, copy, grammar-check and report - but may not
+       put anything of theirs into the conversation. */
+    var blockedView = !!state.blocked;
+    if (!blockedView) {
+      var reactRow = el("div", "thw-social-menu-reactions");
+      reactRow.setAttribute("role", "group");
+      reactRow.setAttribute("aria-label", "React to this message");
+      var mine = {};
+      (message.reactions || []).forEach(function (reaction) { mine[reaction.emoji] = reaction; });
+      var every = REACTIONS.slice();
+      Object.keys(mine).forEach(function (emoji) { if (every.indexOf(emoji) === -1) every.push(emoji); });
+      every.forEach(function (emoji) {
+        var reaction = mine[emoji];
+        var node = el("button", "thw-social-menu-reaction" + (reaction && reaction.mine ? " mine" : ""),
+          emoji + (reaction && reaction.count > 1 ? " " + reaction.count : ""));
+        node.type = "button";
+        node.dataset.action = "react";
+        node.dataset.messageId = message.id;
+        node.dataset.emoji = emoji;
+        node.title = reaction ? (reaction.count + (reaction.count === 1 ? " reaction" : " reactions")) : "React";
+        reactRow.appendChild(node);
+      });
+      /* Full emoji picker - the last tile opens every emoji the vault holds,
+         desktop and mobile alike. */
+      var more = el("button", "thw-social-menu-reaction thw-social-menu-more", "＋");
+      more.type = "button";
+      more.dataset.action = "more-emoji";
+      more.dataset.messageId = message.id;
+      more.setAttribute("aria-label", "All emojis");
+      more.title = "All emojis";
+      reactRow.appendChild(more);
+      menu.appendChild(reactRow);
+      menu.appendChild(el("div", "thw-social-menu-divider"));
+    }
 
     var add = function (label, action) {
       var node = el("button", "thw-social-menu-item", label);
@@ -1539,15 +1759,26 @@
       return node;
     };
 
-    add("Reply", "reply");
+    if (!blockedView) add("Reply", "reply");
     add("Copy", "copy-message");
     add("Grammar check", "grammar-check");
     var mineMessage = message.senderUid === (state.boot && state.boot.me && state.boot.me.uid);
-    if (mineMessage) {
-      add("Edit", "edit-message");
-      add("Delete", "delete-message");
-    } else {
-      add("Report", "report-message");
+    if (mineMessage) { if (!blockedView) add("Edit", "edit-message"); }
+    else add("Report", "report-message");
+
+    /* Delete sits alone at the bottom of the menu in destructive-red - the
+       one way to destroy content in this UI, so it is not allowed to look
+       like everything else. */
+    if (mineMessage && !blockedView) {
+      menu.appendChild(el("div", "thw-social-menu-divider"));
+      menu.appendChild(el("div", "thw-social-menu-section", "Delete"));
+      var del = el("button", "thw-social-menu-item thw-social-menu-item--danger");
+      del.type = "button";
+      del.dataset.action = "delete-message";
+      del.dataset.messageId = message.id;
+      del.setAttribute("role", "menuitem");
+      del.innerHTML = '<i class="fas fa-trash-can" aria-hidden="true"></i><span>Delete Message</span>';
+      menu.appendChild(del);
     }
 
     /* On the page, and not inside the panel's root.
@@ -1563,16 +1794,26 @@
      * kept inside the panel - a menu that hangs off the edge of the panel is
      * a menu whose half the items cannot be reached. */
     document.body.appendChild(menu);
-    var box = menu.getBoundingClientRect();
-    var bounds = panel.getBoundingClientRect();
-    var left = x;
-    var top = y;
-    if (left + box.width > bounds.right - 8) left = bounds.right - box.width - 8;
-    if (left < bounds.left + 8) left = bounds.left + 8;
-    if (top + box.height > bounds.bottom - 8) top = bounds.bottom - box.height - 8;
-    if (top < bounds.top + 8) top = bounds.top + 8;
-    menu.style.left = Math.round(left) + "px";
-    menu.style.top = Math.round(top) + "px";
+    /* Sheet mode pins the menu to the bottom of the viewport, full width -
+       the same panel a phone pushes up when you hold a message. It is taller
+       and scrollable; the floating context-menu position is ignored. */
+    if (menu.classList.contains("thw-social-menu--sheet")) {
+      menu.style.left = "0px";
+      menu.style.top = "auto";
+      menu.style.width = "100%";
+      menu.style.maxWidth = "100%";
+    } else {
+      var box = menu.getBoundingClientRect();
+      var bounds = panel.getBoundingClientRect();
+      var left = x;
+      var top = y;
+      if (left + box.width > bounds.right - 8) left = bounds.right - box.width - 8;
+      if (left < bounds.left + 8) left = bounds.left + 8;
+      if (top + box.height > bounds.bottom - 8) top = bounds.bottom - box.height - 8;
+      if (top < bounds.top + 8) top = bounds.top + 8;
+      menu.style.left = Math.round(left) + "px";
+      menu.style.top = Math.round(top) + "px";
+    }
 
     /* The menu is not inside the panel's root any more, so the root's own
        click handler does not see its buttons. It has its own. */
@@ -1592,6 +1833,97 @@
     var menu = document.getElementById("thw-social-menu");
     if (menu && menu.parentNode) menu.parentNode.removeChild(menu);
     state.menuOpen = false;
+  }
+
+  /* The full emoji picker.
+     Triggered by the "+" tile in the reaction row (desktop right-click,
+     mobile long-press). Replaces the menu with a search box, a category
+     strip, and a scrolling grid. Picking one reacts and closes. */
+  var EMOJI_CATS = (window.THW_EMOJI || []);
+  function expandEmojiPicker(node) {
+    var menu = document.getElementById("thw-social-menu");
+    if (!menu) return;
+    var messageId = node.dataset.messageId;
+    menu.innerHTML = "";
+    menu.classList.add("thw-social-menu--picker");
+    menu.setAttribute("aria-label", "Pick an emoji reaction");
+
+    var head = document.createElement("div");
+    head.className = "thw-emoji-head";
+    head.innerHTML = '<label class="thw-emoji-search"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="search" placeholder="Find the perfect reaction" autocomplete="off" spellcheck="false" maxlength="40" aria-label="Search emojis"></label>';
+    menu.appendChild(head);
+
+    var cats = document.createElement("div");
+    cats.className = "thw-emoji-cats";
+    cats.setAttribute("role", "tablist");
+    EMOJI_CATS.forEach(function (cat, i) {
+      var tab = document.createElement("button");
+      tab.type = "button";
+      tab.className = "thw-emoji-cat" + (i === 0 ? " is-active" : "");
+      tab.dataset.cat = cat.id;
+      tab.setAttribute("role", "tab");
+      tab.setAttribute("aria-selected", i === 0 ? "true" : "false");
+      tab.title = cat.name;
+      tab.textContent = cat.icon;
+      cats.appendChild(tab);
+    });
+    menu.appendChild(cats);
+
+    var grid = document.createElement("div");
+    grid.className = "thw-emoji-grid";
+    grid.setAttribute("role", "tabpanel");
+    menu.appendChild(grid);
+
+    var render = function (query) {
+      var q = String(query || "").trim().toLowerCase();
+      var html = "";
+      EMOJI_CATS.forEach(function (cat) {
+        var names = (cat.name || "").toLowerCase();
+        if (q && names.indexOf(q) === -1) return;
+        html += '<div class="thw-emoji-group" data-cat="' + cat.id + '"><div class="thw-emoji-group-title">' + cat.name + '</div><div class="thw-emoji-group-grid">';
+        cat.list.forEach(function (emoji) {
+          html += '<button type="button" class="thw-emoji-cell" data-emoji="' + emoji + '" aria-label="React with ' + emoji + '">' + emoji + '</button>';
+        });
+        html += '</div></div>';
+      });
+      grid.innerHTML = html || '<div class="thw-emoji-empty">No emojis match “' + q + '”.</div>';
+    };
+    render("");
+
+    var input = head.querySelector("input");
+    input.addEventListener("input", function () {
+      render(input.value);
+      /* When searching, drop the group headers and show a flat grid. */
+      grid.classList.toggle("is-search", !!String(input.value).trim());
+    });
+
+    /* Category tabs scroll to the group. */
+    cats.addEventListener("click", function (event) {
+      var tab = event.target.closest(".thw-emoji-cat");
+      if (!tab) return;
+      cats.querySelectorAll(".thw-emoji-cat").forEach(function (t) {
+        var on = t === tab;
+        t.classList.toggle("is-active", on);
+        t.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      var group = grid.querySelector('.thw-emoji-group[data-cat="' + tab.dataset.cat + '"]');
+      if (group && group.scrollIntoView) group.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+    grid.setAttribute("data-cat", "all");
+
+    grid.addEventListener("click", function (event) {
+      var cell = event.target.closest(".thw-emoji-cell");
+      if (!cell) return;
+      var emoji = cell.dataset.emoji;
+      var synthetic = document.createElement("button");
+      synthetic.dataset.action = "react";
+      synthetic.dataset.messageId = messageId;
+      synthetic.dataset.emoji = emoji;
+      runAction(synthetic);
+    });
+
+    /* Focus the search so a keyboard - mobile included - can type at once. */
+    try { input.focus({ preventScroll: true }); } catch (e) { try { input.focus(); } catch (_) {} }
   }
 
   /* The grammar check.
@@ -1758,10 +2090,17 @@
     state.typingStarted = false;
     state.typingStamps = [];
     state.blocked = false;
+    state.blockedByTarget = false;
+    var note = document.getElementById("thw-social-blocked-note");
+    if (note) note.hidden = true;
+    var oldThread = document.querySelector(".thw-social-thread--blocked");
+    if (oldThread) oldThread.classList.remove("thw-social-thread--blocked");
     state.conversation = conversation;
     state.messages = [];
     /* The names of who said what belong to the thread being left. */
     state.senders = {};
+    state.members = [];
+    closeMentionPicker();
     state.olderCursor = 0;
     state.hasOlder = false;
     state.replyTo = null;
@@ -1784,10 +2123,19 @@
    * behind on its own.
    */
   var ATTACH_MAX = 800 * 1024;
+  var AUDIO_MAX = 8 * 1024 * 1024;
   var ATTACH_TYPES = {
     "image/jpeg": true, "image/png": true, "image/gif": true, "image/webp": true,
     "application/pdf": true, "text/plain": true, "application/zip": true
   };
+  function isAudioMime(type) {
+    return /^audio\//i.test(String(type || "")) || ["application/ogg", "application/x-ogg"].indexOf(String(type || "").toLowerCase()) !== -1;
+  }
+  function attachKindFor(file) {
+    if (isAudioMime(file && file.type)) return "audio";
+    if (/^image\//.test(String(file && file.type || ""))) return "photo";
+    return "file";
+  }
 
   /* How many bytes a data URL really holds. The base64 is four characters
      for every three bytes, and the padding is not a byte - so the length
@@ -1844,6 +2192,124 @@
     reader.readAsDataURL(file);
   }
 
+  /* An audio file, with whatever ID3v2 tags it carries read out of the
+     first bytes - artist, title and album travel with the message so the
+     player in the thread can show who made the song without the sender
+     typing a word. */
+  function parseId3(buffer) {
+    var out = { artist: "", title: "", album: "" };
+    try {
+      var view = new Uint8Array(buffer);
+      if (view.length < 10) return out;
+      if (view[0] !== 0x49 || view[1] !== 0x44 || view[2] !== 0x33) return out; /* "ID3" */
+      var version = view[3];
+      var flags = view[5];
+      var size = syncsafe(view, 6);
+      var end = Math.min(view.length, 10 + size);
+      var pos = 10;
+      while (pos + 10 <= end) {
+        var frameId = readAscii(view, pos, 4);
+        var sizeBytes = view.subarray(pos + 4, pos + 8);
+        var frameSize = version === 4
+          ? syncsafe(sizeBytes, 0)
+          : ((sizeBytes[0] << 24 | sizeBytes[1] << 16 | sizeBytes[2] << 8 | sizeBytes[3]) >>> 0);
+        if (!frameId || frameSize <= 0 || frameSize > end - pos - 10) break;
+        var framePos = pos + 10;
+        var bytes = view.subarray(framePos, framePos + frameSize);
+        if (flags & 0x80) {
+          /* Unsynchronisation: 0xFF followed by 0x00 in the frame is 0xFF. */
+          var cleaned = [];
+          for (var i = 0; i < bytes.length; i++) {
+            if (bytes[i] === 0x00 && i > 0 && bytes[i - 1] === 0xff) continue;
+            cleaned.push(bytes[i]);
+          }
+          bytes = new Uint8Array(cleaned);
+        }
+        var encoding = bytes[0];
+        var text = decodeText(bytes.subarray(1), encoding);
+        if (frameId === "TIT2") out.title = text;
+        else if (frameId === "TPE1") out.artist = text;
+        else if (frameId === "TALB") out.album = text;
+        pos += 10 + frameSize;
+        if (out.artist && out.title && out.album) break;
+      }
+    } catch (e) { /* a broken tag is just no tag */ }
+    return out;
+  }
+  function syncsafe(view, offset) {
+    return ((view[offset] & 0x7f) << 21) | ((view[offset + 1] & 0x7f) << 14) | ((view[offset + 2] & 0x7f) << 7) | (view[offset + 3] & 0x7f);
+  }
+  function readAscii(view, offset, length) {
+    var s = "";
+    for (var i = 0; i < length; i++) {
+      var c = view[offset + i];
+      if (c === 0) return "";
+      s += String.fromCharCode(c);
+    }
+    return s;
+  }
+  function decodeText(bytes, encoding) {
+    try {
+      if (encoding === 1 || encoding === 2) {
+        /* UTF-16 - a BOM is at the start of both v2.3 and v2.4 here. */
+        var bom = bytes[0] === 0xff && bytes[1] === 0xfe ? "utf-16le" : "utf-16be";
+        var start = (bytes[0] === 0xff && (bytes[1] === 0xfe || bytes[1] === 0xff)) ? 2 : 0;
+        var s = "";
+        for (var i = start; i + 1 < bytes.length; i += 2) {
+          var code = bom === "utf-16be" ? (bytes[i] << 8 | bytes[i + 1]) : (bytes[i + 1] << 8 | bytes[i]);
+          if (code === 0) break;
+          s += String.fromCharCode(code);
+        }
+        return s.trim();
+      }
+      if (encoding === 3) return utf8Decode(bytes).replace(/\u0000.*$/, "").trim();
+      var latin = "";
+      for (var j = 0; j < bytes.length; j++) {
+        if (bytes[j] === 0) break;
+        latin += String.fromCharCode(bytes[j]);
+      }
+      return latin.trim();
+    } catch (e) { return ""; }
+  }
+  function utf8Decode(bytes) {
+    var s = "", i = 0;
+    while (i < bytes.length) {
+      var b = bytes[i];
+      if (b < 0x80) { s += String.fromCharCode(b); i += 1; continue; }
+      var len = b >= 0xf0 ? 4 : b >= 0xe0 ? 3 : 2;
+      var cp = b & (0xff >> (len + 1));
+      for (var k = 1; k < len; k++) cp = (cp << 6) | (bytes[i + k] & 0x3f);
+      s += String.fromCodePoint ? String.fromCodePoint(cp) : String.fromCharCode(cp);
+      i += len;
+    }
+    return s;
+  }
+  function readAudio(file, done) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var tags = parseId3(reader.result);
+      var bytes = new Uint8Array(reader.result);
+      /* The ID3 tag is kept in the file: if we strip it here, the player on
+         the other end loses exactly the metadata it is there to show. */
+      var out = new FileReader();
+      out.onload = function () {
+        done(null, {
+          mime: file.type || "audio/mpeg",
+          data: String(out.result || ""),
+          width: 0,
+          height: 0,
+          artist: tags.artist,
+          title: tags.title,
+          album: tags.album
+        });
+      };
+      out.onerror = function () { done(new Error("Could not read that audio file.")); };
+      out.readAsDataURL(file);
+    };
+    reader.onerror = function () { done(new Error("Could not read that audio file.")); };
+    reader.readAsArrayBuffer(file.slice(0, Math.min(file.size, 256 * 1024)));
+  }
+
   /* A document, as it is. */
   function readDocument(file, done) {
     var reader = new FileReader();
@@ -1869,29 +2335,38 @@
       list = list.slice(0, room);
     }
     list.forEach(function (file) {
-      if (!ATTACH_TYPES[file.type]) {
+      var isAudio = isAudioMime(file.type);
+      if (!isAudio && !ATTACH_TYPES[file.type]) {
         showStatus("\u201C" + file.name + "\u201D is not a kind of file that can be sent.", "warn");
         return;
       }
-      if (file.size > ATTACH_MAX * 2) {
-        showStatus("\u201C" + file.name + "\u201D is too big (800KB max).", "warn");
+      if (file.size > (isAudio ? AUDIO_MAX : ATTACH_MAX * 2)) {
+        showStatus("\u201C" + file.name + "\u201D is too big (" + (isAudio ? "8 MB" : "800KB") + " max).", "warn");
+        return;
+      }
+      if (isAudio && file.size > AUDIO_MAX) {
+        showStatus("\u201C" + file.name + "\u201D is too big for an audio file (8MB max).", "warn");
         return;
       }
       var isPicture = /^image\//.test(file.type);
-      var read = isPicture ? readPicture : readDocument;
+      var read = isAudio ? readAudio : (isPicture ? readPicture : readDocument);
       read(file, function (err, data) {
         if (err) { showStatus(err.message || "That file could not be read.", "warn"); return; }
-        if (data.data.length * 0.75 > ATTACH_MAX) {
-          showStatus("\u201C" + file.name + "\u201D is too big (800KB max).", "warn");
+        var maxData = isAudio ? AUDIO_MAX : ATTACH_MAX;
+        if (data.data.length * 0.75 > maxData) {
+          showStatus("\u201C" + file.name + "\u201D is too big (" + (isAudio ? "8MB" : "800KB") + " max).", "warn");
           return;
         }
         state.pendingAttachments.push({
-          kind: isPicture ? "photo" : "file",
-          name: file.name || (isPicture ? "picture" : "file"),
+          kind: isAudio ? "audio" : (isPicture ? "photo" : "file"),
+          name: file.name || (isAudio ? "audio" : (isPicture ? "picture" : "file")),
           mime: data.mime,
           size: dataBytes(data.data),
           width: data.width || 0,
           height: data.height || 0,
+          artist: data.artist || "",
+          title: data.title || "",
+          album: data.album || "",
           data: data.data
         });
         renderPendingAttachments();
@@ -1917,7 +2392,9 @@
         chip.appendChild(thumb);
       } else {
         var icon = el("span", "thw-social-attachment-icon");
-        icon.innerHTML = '<i class="fas fa-file" aria-hidden="true"></i>';
+        icon.innerHTML = item.kind === "audio"
+          ? '<i class="fas fa-music" aria-hidden="true"></i>'
+          : '<i class="fas fa-file" aria-hidden="true"></i>';
         chip.appendChild(icon);
       }
       var name = el("span", "thw-social-attachment-name", item.name);
@@ -1934,48 +2411,238 @@
     });
   }
 
-  /* ---------- Stickers ----------
-   *
-   * A sticker is a picture of a feeling, and the cheapest honest version of
-   * one is a big emoji. It needs no upload, so it arrives at once, and it
-   * travels in the message itself - so the person on the other end sees
-   * exactly the sticker that was sent.
-   */
-  var STICKERS = [
-    "\uD83E\uDD17", "\uD83D\uDE00", "\uD83D\uDE02", "\uD83D\uDE05", "\uD83D\uDE0A", "\uD83D\uDE0E",
-    "\uD83D\uDE18", "\uD83D\uDC4F", "\uD83D\uDE4C", "\uD83E\uDD14", "\uD83E\uDD25", "\uD83C\uDF89",
-    "\uD83D\uDC4F\uD83D\uDE00", "\uD83D\uDE0D", "\u2764\uFE0F", "\uD83D\uDC96", "\uD83D\uDE80", "\uD83D\uDD25\uD83D\uDE00"
-  ];
-
-  function renderStickerGrid() {
-    var grid = document.getElementById("thw-social-sticker-grid");
-    if (!grid || grid.childNodes.length) return;
-    STICKERS.forEach(function (emoji) {
-      var pick = el("button", "thw-social-sticker", emoji);
-      pick.type = "button";
-      pick.dataset.action = "send-sticker";
-      pick.dataset.emoji = emoji;
-      pick.setAttribute("aria-label", "Send the sticker " + emoji);
-      grid.appendChild(pick);
+  /* ===== Mentioning people =============================================
+     An @ starts a ping. Typing @ opens a picker of exactly the people in
+     the open conversation - no one else can be pinged, which is the honest
+     version of "ping anyone" - and matches as you type, so @Ru already
+     finds Ruth B. Names keep their case and spaces: the insert and the
+     server's scan use the same list, so what you pick is what gets pinged.
+     The ping itself is rate-limited server-side (once per sender per pair
+     per five minutes). */
+  function memberMentionList() {
+    /* The person themselves never appears - pinging yourself does nothing. */
+    var me = state.boot && state.boot.me && state.boot.me.uid;
+    return (state.members || []).filter(function (m) { return m && m.uid !== me; });
+  }
+  function mentionMatches(query) {
+    var q = String(query || "").trim().toLowerCase();
+    var list = memberMentionList();
+    if (!q) return list.slice(0, 6);
+    var starts = [], contains = [];
+    list.forEach(function (m) {
+      var n = String(m.name || "").toLowerCase();
+      if (n.indexOf(q) === 0) starts.push(m);
+      else if (n.indexOf(q) !== -1) contains.push(m);
     });
+    return starts.concat(contains).slice(0, 6);
+  }
+  function updateMentionFromInput(input) {
+    var cursor = input.selectionStart == null ? input.value.length : input.selectionStart;
+    var before = input.value.slice(0, cursor);
+    var at = before.lastIndexOf("@");
+    if (at === -1) return closeMentionPicker();
+    /* The "@" has to start a token - not be part of an email or word. */
+    if (at > 0 && /[A-Za-z0-9_]/i.test(before.charAt(at - 1))) return closeMentionPicker();
+    var query = before.slice(at + 1);
+    if (query.length > 40 || /\n/.test(query)) return closeMentionPicker();
+    var items = mentionMatches(query);
+    if (!items.length) return closeMentionPicker();
+    state.mention = { open: true, query: query, items: items, index: 0, start: at };
+    renderMentionPicker();
+  }
+  function renderMentionPicker() {
+    var picker = document.getElementById("thw-social-mentions");
+    if (!picker) return;
+    var s = state.mention;
+    picker.replaceChildren();
+    s.items.forEach(function (m, i) {
+      var row = el("button", "thw-social-mention-row" + (i === s.index ? " is-active" : ""));
+      row.type = "button";
+      row.setAttribute("role", "option");
+      row.setAttribute("aria-selected", i === s.index ? "true" : "false");
+      row.dataset.uid = m.uid;
+      var avatar = avatarNode(m, 26);
+      avatar.classList.add("thw-social-mention-avatar");
+      row.appendChild(avatar);
+      var text = el("span", "thw-social-mention-text");
+      text.appendChild(el("span", "thw-social-mention-name", m.name || "Member"));
+      text.appendChild(el("span", "thw-social-mention-tag", "Ping them"));
+      row.appendChild(text);
+      row.addEventListener("mousedown", function (event) {
+        /* Keep the textarea focused - a blur would destroy the selection
+           the insert works from. */
+        event.preventDefault();
+        insertMention(m);
+      });
+      picker.appendChild(row);
+    });
+    picker.hidden = false;
+  }
+  function closeMentionPicker() {
+    var picker = document.getElementById("thw-social-mentions");
+    if (picker && !picker.hidden) picker.hidden = true;
+    if (state.mention) state.mention.open = false;
+  }
+  function insertMention(m) {
+    var input = document.getElementById("thw-social-input");
+    if (!input) return closeMentionPicker();
+    var s = state.mention || { start: -1 };
+    if (s.start === -1) return closeMentionPicker();
+    var before = input.value.slice(0, s.start);
+    var after = input.value.slice(input.selectionStart == null ? input.value.length : input.selectionStart);
+    var insert = "@" + String(m.name || "") + " ";
+    input.value = before + insert + after;
+    var cursor = (before + insert).length;
+    try { input.setSelectionRange(cursor, cursor); } catch (e) {}
+    closeMentionPicker();
+    input.focus();
+    var counterNode = document.getElementById("thw-social-counter");
+    if (counterNode) {
+      var left = 2000 - input.value.length;
+      counterNode.textContent = left <= 200 ? String(left) : "";
+      counterNode.classList.toggle("warn", left <= 200);
+    }
+    scheduleTyping();
+  }
+  function mentionPickerKey(event) {
+    var s = state.mention;
+    if (!s || !s.open) return false;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      var delta = event.key === "ArrowDown" ? 1 : -1;
+      s.index = (s.index + delta + s.items.length) % s.items.length;
+      renderMentionPicker();
+      return true;
+    }
+    if (event.key === "Enter" || event.key === "Tab") {
+      if (s.items[s.index]) {
+        event.preventDefault();
+        event.stopPropagation();
+        insertMention(s.items[s.index]);
+        return true;
+      }
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeMentionPicker();
+      return true;
+    }
+    return false;
+  }
+  /* Highlight the ping chips inside a message body, without ever setting
+     HTML - the text stays text, only the mentions become chips. */
+  function appendBodyWithMentions(node, text) {
+    var body = String(text || "");
+    if (!body) return;
+    var me = state.boot && state.boot.me && state.boot.me.uid;
+    var names = memberMentionList()
+      .concat((state.members || []).filter(function (m) { return m && m.uid === me && m.name && m.name.length >= 2; }))
+      .filter(function (m) { return m && m.name && String(m.name).length >= 2; })
+      .map(function (m) { return { uid: m.uid, name: String(m.name) }; })
+      .sort(function (a, b) { return b.name.length - a.name.length; });
+    var lower = body.toLowerCase();
+    var claimed = [];
+    var hits = [];
+    names.forEach(function (m) {
+      var needle = "@" + m.name.toLowerCase();
+      var idx = lower.indexOf(needle);
+      while (idx !== -1) {
+        var boundaryBefore = idx === 0 ? "" : lower.charAt(idx - 1);
+        var beforeOk = idx === 0 || !/[A-Za-z0-9_]/i.test(boundaryBefore);
+        if (beforeOk && !claimed.some(function (r) { return !(idx + needle.length <= r[0] || idx >= r[1]); })) {
+          claimed.push([idx, idx + needle.length]);
+          hits.push({ start: idx, end: idx + needle.length, name: m.name, uid: m.uid });
+        }
+        idx = lower.indexOf(needle, idx + 1);
+      }
+    });
+    if (!hits.length) { node.textContent = body; return; }
+    hits.sort(function (a, b) { return a.start - b.start; });
+    var cursor = 0;
+    hits.forEach(function (hit) {
+      if (hit.start > cursor) node.appendChild(document.createTextNode(body.slice(cursor, hit.start)));
+      var chip = el("button", "thw-social-mention" + (hit.uid === me ? " thw-social-mention-me" : ""), "@" + hit.name);
+      chip.type = "button";
+      chip.dataset.uid = hit.uid || "";
+      node.appendChild(chip);
+      cursor = hit.end;
+    });
+    if (cursor < body.length) node.appendChild(document.createTextNode(body.slice(cursor)));
   }
 
-  function toggleStickerPicker() {
-    var picker = document.getElementById("thw-social-stickers");
-    var button = document.getElementById("thw-social-sticker-btn");
-    if (!picker || !button) return;
-    renderStickerGrid();
-    var open = picker.hidden;
-    picker.hidden = !open;
-    button.setAttribute("aria-expanded", open ? "true" : "false");
-    button.classList.toggle("is-open", open);
+  /* The overlapping avatars in the group header. Rebuilt whenever members
+     arrive - open, send, background refresh - so it can only ever show
+     the room that is actually in the conversation right now. */
+  function renderGroupAvatars(conversation) {
+    var stack = document.getElementById("thw-group-avatars");
+    if (!stack) return;
+    var meUid = state.boot && state.boot.me && state.boot.me.uid;
+    var others = (state.members || [])
+      .filter(function (m) { return m && m.uid !== meUid; })
+      .slice(0, 4);
+    stack.replaceChildren();
+    others.forEach(function (m) {
+      var a = avatarNode(m, 24);
+      a.classList.add("thw-group-avatar-chip");
+      stack.appendChild(a);
+    });
+    var extra = (state.members || []).filter(function (m) { return m && m.uid !== meUid; }).length - others.length;
+    if (extra > 0) stack.appendChild(el("span", "thw-group-avatar-more", "+" + extra));
   }
 
-  function closeStickerPicker() {
-    var picker = document.getElementById("thw-social-stickers");
-    var button = document.getElementById("thw-social-sticker-btn");
-    if (picker) picker.hidden = true;
-    if (button) { button.setAttribute("aria-expanded", "false"); button.classList.remove("is-open"); }
+  /* The room, with a one-tap ping per person. Self is listed last and
+     cannot be pinged. Clicking a row inserts "@Name" into the composer. */
+  function toggleGroupRoster() {
+    var head = document.getElementById("thw-social-thread-head");
+    if (!head || !state.conversation || state.conversation.kind !== "group") return;
+    var existing = head.querySelector(".thw-group-roster");
+    if (existing) { existing.remove(); return; }
+    var meUid = state.boot && state.boot.me && state.boot.me.uid;
+    var members = (state.members || []).slice().sort(function (a, b) {
+      if (a.uid === meUid) return 1;
+      if (b.uid === meUid) return -1;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
+    var roster = el("div", "thw-group-roster");
+    roster.setAttribute("role", "menu");
+    roster.setAttribute("aria-label", "People in this group");
+    if (!members.length) {
+      roster.appendChild(el("p", "thw-group-roster-empty", "Members appear here once the thread has loaded."));
+    }
+    members.forEach(function (m) {
+      var row = el("button", "thw-group-roster-row" + (m.uid === meUid ? " is-self" : ""));
+      row.type = "button";
+      var av = avatarNode(m, 28);
+      av.classList.add("thw-group-roster-avatar");
+      row.appendChild(av);
+      var txt = el("span", "thw-group-roster-meta");
+      txt.appendChild(el("span", "thw-group-roster-name", m.name || "Member"));
+      txt.appendChild(el("span", "thw-group-roster-hint", m.uid === meUid ? "You" : "Mention them"));
+      row.appendChild(txt);
+      if (m.uid !== meUid) {
+        row.dataset.action = "roster-ping";
+        row.dataset.uid = m.uid;
+        var at = el("span", "thw-group-roster-at", "");
+        at.innerHTML = '<i class="fas fa-at" aria-hidden="true"></i>';
+        row.appendChild(at);
+      }
+      roster.appendChild(row);
+    });
+    head.appendChild(roster);
+  }
+
+  /* Insert text at the cursor of a field, with a space in front when one
+     is needed - the composer is how a ping starts. */
+  function insertTextAtCursor(input, text) {
+    var s = input.selectionStart == null ? input.value.length : input.selectionStart;
+    var before = input.value.slice(0, s);
+    var after = input.value.slice(s);
+    if (before && !/\s$/.test(before)) before += " ";
+    input.value = before + text + after;
+    var pos = (before + text).length;
+    try { input.setSelectionRange(pos, pos); } catch (e) {}
+    input.focus();
   }
 
   function renderThreadHeader(conversation) {
@@ -1987,18 +2654,38 @@
     }
     /* A group is named by its title and sized by its members. It has no
        person on the other end, so there is no presence to report and no one
-       person to Block or Report from here. */
+       person to Block or Report from here - but it has a roomful of people
+       you may want to ping, so it gets a roster: overlapping avatars and a
+       one-tap mention per person. */
     if (conversation.kind === "group") {
-      head.appendChild(groupAvatarNode(conversation, 30));
+      head.appendChild(groupAvatarNode(conversation, 34));
       var group = el("span", "thw-social-thread-person");
       group.appendChild(el("span", "thw-social-name", conversation.name || "Group chat"));
-      group.appendChild(el("span", "thw-social-meta", (Number(conversation.memberCount) || 0) + " people"));
+      group.appendChild(el("span", "thw-social-meta", (Number(conversation.memberCount) || 0) + " people · @ to mention"));
       head.appendChild(group);
+      var stack = el("span", "thw-group-avatars");
+      stack.id = "thw-group-avatars";
+      stack.setAttribute("aria-hidden", "true");
+      head.appendChild(stack);
+      var roster = el("button", "thw-social-action thw-group-roster-btn");
+      roster.type = "button";
+      roster.dataset.action = "group-roster";
+      roster.innerHTML = '<i class="fas fa-users" aria-hidden="true"></i> Members';
+      head.appendChild(roster);
       return;
     }
     head.appendChild(avatarNode(conversation, 30));
     var person = el("span", "thw-social-thread-person");
-    person.appendChild(el("span", "thw-social-name", conversation.name));
+    /* The name is the way into that person - a click or a tap opens their
+       profile rather than the thread. */
+    var nameButton = el("button", "thw-social-name thw-social-name-button");
+    nameButton.type = "button";
+    nameButton.textContent = conversation.name || "Member";
+    if (conversation.uid) {
+      nameButton.dataset.action = "view-profile";
+      nameButton.dataset.uid = conversation.uid;
+    }
+    person.appendChild(nameButton);
     /* "Private direct message" was static on every conversation. Presence and
        last-seen already come down with the conversation payload for friends, so
        use them when present rather than showing nothing at all. */
@@ -2061,8 +2748,12 @@
         if (data.conversation.memberCount) state.conversation.memberCount = data.conversation.memberCount;
         if (!older) renderThreadHeader(state.conversation);
       }
-      /* Who said what. A one-to-one does not need it; a group does. */
+      /* Who said what, and who is in the room - the @-picker and the
+         ping affordances are filled from exactly the people who can be
+         reached in this conversation. */
       state.senders = data.senders || {};
+      state.members = data.members || state.members || [];
+      if (state.conversation && state.conversation.kind === "group") renderGroupAvatars(state.conversation);
       if (older) state.messages = (data.messages || []).concat(state.messages);
       else {
         /* Keep any message that failed to send. A reload replaces the whole
@@ -2077,9 +2768,23 @@
       var input = document.getElementById("thw-social-input");
       var send = document.getElementById("thw-social-send");
       state.blocked = data.canSend === false;
+      /* "You have been blocked" is the answer the server already knows.
+         When it's them who shut the door, the thread says exactly that -
+         no guessing at privacy settings that might simply be off. */
+      state.blockedByTarget = !!data.blockedByTarget;
+      var threadEl = input ? input.closest(".thw-social-thread") : null;
+      if (threadEl) threadEl.classList.toggle("thw-social-thread--blocked", state.blocked);
+      var blockedNote = document.getElementById("thw-social-blocked-note");
+      if (blockedNote) {
+        blockedNote.hidden = !state.blocked;
+        var blockedText = document.getElementById("thw-social-blocked-note-text");
+        if (blockedText) blockedText.textContent = state.blockedByTarget ? "You have been blocked" : "This person isn't accepting messages right now.";
+      }
       input.disabled = state.blocked;
       send.disabled = state.blocked;
-      input.placeholder = state.blocked ? "Messaging is unavailable due to privacy settings or a block" : "Write a message";
+      input.placeholder = state.blocked
+        ? (state.blockedByTarget ? "You have been blocked" : "Messaging is unavailable due to privacy settings or a block")
+        : "Write a message";
       renderMessages();
       if (older) body.scrollTop = body.scrollHeight - oldHeight + oldTop;
       else if (!preserveScroll || wasNearBottom) body.scrollTop = body.scrollHeight;
@@ -2116,6 +2821,29 @@
         image.onerror = function () { this.closest(".thw-social-photo").classList.add("is-missing"); };
         pic.appendChild(image);
         files.appendChild(pic);
+      } else if (item.kind === "audio") {
+        /* A song in the thread, not a download link nobody plays. */
+        var track = item.title || String(item.name || "Audio").replace(/\.[A-Za-z0-9]{1,5}$/, "");
+        var audioBubble = el("div", "thw-social-audio");
+        var audioBar = el("div", "thw-social-audio-top");
+        var cover = el("span", "thw-social-audio-cover", "");
+        cover.innerHTML = '<i class="fas fa-music" aria-hidden="true"></i>';
+        audioBar.appendChild(cover);
+        var meta = el("span", "thw-social-audio-meta");
+        meta.appendChild(el("strong", "thw-social-audio-title", track));
+        var credit = [item.artist, item.album].filter(Boolean).join(" · ");
+        if (credit) meta.appendChild(el("span", "thw-social-audio-credit", credit));
+        else meta.appendChild(el("span", "thw-social-audio-credit", item.name || "Audio"));
+        audioBar.appendChild(meta);
+        audioBubble.appendChild(audioBar);
+        var player = document.createElement("audio");
+        player.className = "thw-social-audio-player";
+        player.controls = true;
+        player.preload = "metadata";
+        player.src = item.url;
+        player.setAttribute("aria-label", track);
+        audioBubble.appendChild(player);
+        files.appendChild(audioBubble);
       } else {
         var file = el("a", "thw-social-file");
         file.href = item.url;
@@ -2160,18 +2888,63 @@
         jump.hidden = body.scrollHeight - body.scrollTop - body.clientHeight < 60;
       }, { passive: true });
     }
+    /* A thread reads like one conversation rather than a stack of isolated
+       rows: the day divider breaks messages into Today/Yesterday/their date,
+       and a run of messages from the same sender within five minutes shares
+       one meta line, Discord-style. */
+    function dayLabel(value) {
+      var d = new Date(value || 0);
+      if (isNaN(d)) return "";
+      var now = new Date();
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var that = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      var diff = Math.round((today - that) / 86400000);
+      if (diff === 0) return "Today";
+      if (diff === 1) return "Yesterday";
+      return that.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+    }
+    function memberByUid(uid) {
+      return (state.members || []).find(function (m) { return m && m.uid === uid; }) || null;
+    }
+    var prev = null, prevDay = "";
     state.messages.forEach(function (message) {
       var mine = message.senderUid === (state.boot && state.boot.me && state.boot.me.uid);
-      var bubble = el("article", "thw-social-message" + (mine ? " mine" : "") + (message.deleted ? " deleted" : "") + (message.failed ? " failed" : ""));
+      var day = dayLabel(message.createdAt);
+      if (day && day !== prevDay) {
+        prevDay = day;
+        prev = null;
+        body.appendChild(el("div", "thw-social-day", day));
+      }
+      var ts = Date.parse(message.createdAt || 0) || 0;
+      var continued = !message.deleted && !message.track && !message.sticker &&
+        prev && prev.uid === message.senderUid && (ts - prev.time) < 300000;
+      prev = { uid: message.senderUid, time: ts };
+      var bubble = el("article", "thw-social-message" + (mine ? " mine" : "") + (message.deleted ? " deleted" : "") + (message.failed ? " failed" : "") + (continued ? " continued" : ""));
       bubble.dataset.messageId = message.id;
       var meta = el("div", "thw-social-message-meta");
-      meta.appendChild(el("span", "", mine ? "You" : senderName(message)));
-      meta.appendChild(el("time", "", relativeTime(message.createdAt)));
-      if (message.editedAt) meta.appendChild(el("span", "", "edited"));
-      if (message.failed) meta.appendChild(el("span", "thw-social-msg-state", "Not sent"));
-      bubble.appendChild(meta);
+      if (state.conversation && state.conversation.kind === "group" && !mine) {
+        var sender = memberByUid(message.senderUid);
+        if (sender && !continued) {
+          var tiny = avatarNode(sender, 16);
+          tiny.classList.add("thw-social-message-avatar");
+          meta.appendChild(tiny);
+        }
+      }
+      if (continued) {
+        /* A merged line still says when it was, quietly. */
+        if (message.editedAt) meta.appendChild(el("span", "", "edited"));
+        if (message.failed) meta.appendChild(el("span", "thw-social-msg-state", "Not sent"));
+      } else {
+        meta.appendChild(el("span", "", mine ? "You" : senderName(message)));
+        meta.appendChild(el("time", "", relativeTime(message.createdAt)));
+        if (message.editedAt) meta.appendChild(el("span", "", "edited"));
+        if (message.failed) meta.appendChild(el("span", "thw-social-msg-state", "Not sent"));
+      }
+      if (meta.childNodes.length) bubble.appendChild(meta);
       if (message.replyBody && !message.deleted) {
-        bubble.appendChild(el("div", "thw-social-reply-quote", message.replyBody));
+        var quote = el("div", "thw-social-reply-quote");
+        appendBodyWithMentions(quote, message.replyBody);
+        bubble.appendChild(quote);
       }
       /* The card, above the words. It is the message when there are no words,
          which is how a shared track usually arrives - and the title under it
@@ -2193,8 +2966,64 @@
       }
       drawWhatItCarries(bubble, message);
       if (message.deleted || (message.body && !message.sticker)) {
-        bubble.appendChild(el("p", "thw-social-message-text", message.deleted ? "Message deleted" : message.body));
+        var textNode = el("p", "thw-social-message-text");
+        if (message.deleted) {
+          textNode.textContent = "Message deleted";
+        } else {
+          appendBodyWithMentions(textNode, message.body);
+        }
+        bubble.appendChild(textNode);
       }
+      /* The hover toolbar - Discord's pattern: hover a message and three
+         quick reactions land next to Reply/Edit and the menu. Adds nothing
+         to the layout, it sits above the message corner, revealed on hover
+         or focus and gone on leave. */
+      if (!message.deleted) {
+        var hover = el("div", "thw-social-message-hover");
+        var mk = function (label, action, cls) {
+          var b = el("button", cls || "", label);
+          b.type = "button";
+          b.dataset.action = action;
+          b.dataset.messageId = message.id;
+          return b;
+        };
+        /* Blocked from sending: no reactions, no reply, no edit. Reporting
+           and the menu stay - a blocked person can still call for help. */
+        if (!state.blocked) {
+          ["🔥", "❤️", "😂"].forEach(function (emoji) {
+            var b = mk(emoji, "react", "thw-social-message-hover-btn thw-social-message-hover-emoji");
+            b.dataset.emoji = emoji;
+            b.setAttribute("aria-label", "React with " + emoji);
+            hover.appendChild(b);
+          });
+          var moreReact = mk("✨", "message-menu", "thw-social-message-hover-btn thw-social-message-hover-sparkle");
+          moreReact.setAttribute("aria-label", "More reactions");
+          hover.appendChild(moreReact);
+          var replyB = mk("", "reply", "thw-social-message-hover-btn");
+          replyB.innerHTML = '<i class="fas fa-reply" aria-hidden="true"></i>';
+          replyB.setAttribute("aria-label", "Reply");
+          hover.appendChild(replyB);
+          if (mine) {
+            var editB = mk("", "edit-message", "thw-social-message-hover-btn");
+            editB.innerHTML = '<i class="fas fa-pen-to-square" aria-hidden="true"></i>';
+            editB.setAttribute("aria-label", "Edit message");
+            hover.appendChild(editB);
+          }
+        }
+        if (!mine) {
+          var reportB = mk("", "report-message", "thw-social-message-hover-btn");
+          reportB.innerHTML = '<i class="fas fa-flag" aria-hidden="true"></i>';
+          reportB.setAttribute("aria-label", "Report message");
+          hover.appendChild(reportB);
+        }
+        var menuB = mk("", "message-menu", "thw-social-message-hover-btn");
+        menuB.innerHTML = '<i class="fas fa-ellipsis-h" aria-hidden="true"></i>';
+        menuB.setAttribute("aria-label", "Message options");
+        hover.appendChild(menuB);
+        bubble.appendChild(hover);
+      }
+
+      /* The reactions that are already there stay visible on the message for touch, plus a small "…" menu button for everyone. */
       var tools = el("div", "thw-social-message-tools");
       if (message.failed) {
         /* The failed message offers exactly the two things you can do with it,
@@ -2223,16 +3052,9 @@
           reactionButton.dataset.emoji = reaction.emoji;
           tools.appendChild(reactionButton);
         });
-        /* The one control that stays visible: how to open the menu. It is
-           there because a menu that can only be reached by right-clicking
-           is a menu nobody finds - and a phone has no right-click at all. */
-        var more = el("button", "thw-social-message-more", "⋯");
-        more.type = "button";
-        more.dataset.action = "message-menu";
-        more.dataset.messageId = message.id;
-        more.setAttribute("aria-label", "Message options");
-        more.title = "Message options";
-        tools.appendChild(more);
+        /* The one control that stayed visible used to be a small "⋯" in the
+           corner. It is gone now - the menu is a right-click away on desktop
+           and a long-press away on touch, and the corner stays clean. */
       }
       bubble.appendChild(tools);
       body.appendChild(bubble);
@@ -2347,7 +3169,7 @@
         sticker: sticker || null,
         replyToId: state.replyTo ? state.replyTo.id : null,
         attachments: attachments.map(function (a) {
-          return { kind: a.kind, name: a.name, mime: a.mime, data: a.data, width: a.width, height: a.height };
+          return { kind: a.kind, name: a.name, mime: a.mime, data: a.data, width: a.width, height: a.height, artist: a.artist || "", title: a.title || "", album: a.album || "" };
         })
       }
     }).then(function (data) {
@@ -2355,10 +3177,18 @@
       input.value = "";
       state.pendingSticker = "";
       state.pendingAttachments = [];
+      closeMentionPicker();
       renderPendingAttachments();
       clearReply();
       var counterNode = document.getElementById("thw-social-counter");
       if (counterNode) { counterNode.textContent = ""; counterNode.classList.remove("warn"); }
+      /* Honest ping feedback: how many pings this message actually
+         delivered, and whether the cooldown held any back. */
+      if (data.pings && data.pings.sent > 0) {
+        showStatus("Ping sent to " + data.pings.sent + (data.pings.sent === 1 ? " person." : " people."), "success");
+      } else if (data.pings && data.pings.cooldown > 0) {
+        showStatus("Ping on cooldown — message sent without notifying.", "warn");
+      }
       renderMessages();
       document.getElementById("thw-social-thread-body").scrollTop = document.getElementById("thw-social-thread-body").scrollHeight;
       scheduleRefresh();
@@ -2416,30 +3246,47 @@
     var uid = node.dataset.uid;
     var requestId = node.dataset.requestId;
     var messageId = node.dataset.messageId;
+    if (action === "group-roster") { toggleGroupRoster(); return; }
+    if (action === "roster-ping") {
+      var picked = (state.members || []).find(function (m) { return m && m.uid === uid; });
+      var head = document.getElementById("thw-social-thread-head");
+      var roster = head && head.querySelector(".thw-group-roster");
+      if (roster) roster.remove();
+      var box = document.getElementById("thw-social-input");
+      if (picked && box && !box.disabled) {
+        insertTextAtCursor(box, "@" + (picked.name || ""));
+        closeMentionPicker();
+      }
+      return;
+    }
+    /* Full emoji picker: swap the menu's contents for a search + grid of
+       every emoji, for both desktop right-click and mobile long-press. */
+    if (action === "more-emoji") {
+      expandEmojiPicker(node);
+      return;
+    }
     /* The menu closes when something in it is chosen. The click that chose
        it is still on its way, and the menu would otherwise stay open over
        a message that has just been reacted to or reported. */
     closeMessageMenu();
     if (action === "noop") return;
+    /* When the other person has blocked you (or won't accept messages), no
+       content may be added to the conversation from this side - not even a
+       reaction. Local-only actions (Copy, Grammar check, Report) stay. */
+    if (state.blocked && (action === "reply" || action === "edit-message" || action === "delete-message" || action === "react" || action === "more-emoji")) {
+      showStatus(state.blockedByTarget ? "You have been blocked" : "This person isn't accepting messages right now.", true);
+      return;
+    }
+    /* The name in the Friends list is the way to that person. The link
+       carries their address for the browser, and the page opens it in
+       place - the same call the search results and the notifications
+       use. The panel steps aside as it goes: it would otherwise sit
+       over the profile it just opened, under its own dimmed wash. */
     if (action === "view-profile") {
-      /* The name in the Friends list is the way to that person. The link
-         carries their address for the browser, and the page opens it in
-         place - the same call the search results and the notifications
-         use. The panel steps aside as it goes: it would otherwise sit
-         over the profile it just opened, under its own dimmed wash. */
       if (uid && window.openProfile) {
         window.openProfile(uid);
         setOpen(false);
       }
-      return;
-    }
-    if (action === "send-sticker") {
-      /* A sticker is the whole message. */
-      var emoji = node.dataset.emoji || "";
-      if (!emoji || !state.conversation) return;
-      state.pendingSticker = emoji;
-      closeStickerPicker();
-      sendMessage({ preventDefault: function () {} });
       return;
     }
     if (action === "remove-attachment") {
@@ -2498,8 +3345,7 @@
         var glyph = btn.querySelector("i");
         if (glyph) glyph.className = wide ? "fas fa-compress" : "fas fa-expand";
       }
-      /* Panel width is one of the two numbers the Community menu has to clear. */
-      syncCommMenuClearance();
+      /* Remembered for next time. */
       return;
     }
     if (action === "new-group") {
@@ -2669,6 +3515,22 @@
       api("/friends/" + encodeURIComponent(uid), { method: "DELETE" }).then(refresh).catch(function (error) { showStatus(describeError(error), "error"); });
       return;
     }
+    if (action === "unblock-user") {
+      if (!uid) return;
+      fetch("/api/users/" + encodeURIComponent(uid) + "/block", { method: "DELETE", credentials: "same-origin" })
+        .then(function (response) {
+          return response.json().then(function (data) {
+            if (!response.ok) { var err = new Error(data.message || data.error || "Unable to unblock"); err.status = response.status; throw err; }
+            return data;
+          });
+        })
+        .then(function () {
+          showStatus("Unblocked. They can reach you again.");
+          loadBlockedUsers();
+        })
+        .catch(function (error) { showStatus(describeError(error), "error"); });
+      return;
+    }
     if (action === "block-user") {
       if (!window.confirm("Block this user? This removes the friendship and prevents new messages.")) return;
       fetch("/api/users/" + encodeURIComponent(uid) + "/block", { method: "POST", credentials: "same-origin" })
@@ -2754,6 +3616,11 @@
     var card = el("section", "thw-social-settings-card");
     card.id = "thw-social-settings";
     card.innerHTML =
+      '<div class="thw-settings-tabs" role="tablist" aria-label="Settings sections">' +
+        '<button class="thw-settings-tab is-active" type="button" role="tab" data-settings-tab="privacy" aria-selected="true">Privacy</button>' +
+        '<button class="thw-settings-tab" type="button" role="tab" data-settings-tab="blocked" aria-selected="false">Blocked Users</button>' +
+      '</div>' +
+      '<div class="thw-settings-pane" data-settings-pane="privacy">' +
       '<h3>Friends &amp; Messaging privacy</h3>' +
       '<p>Choose who can send you friend requests and direct messages, and who can see your online and activity status. Following remains separate.</p>' +
       '<h4 class="thw-social-settings-group">Who can reach you</h4>' +
@@ -2785,9 +3652,74 @@
           '<label>Playlist activity<select name="activity_playlists"><option value="nobody">Off</option><option value="friends">Friends only</option></select></label>' +
           '<label>Community activity<select name="activity_community"><option value="nobody">Off</option><option value="friends">Friends only</option></select></label>' +
         '</div>' +
-        '<button class="thw-social-settings-save" type="button">Save settings</button><span class="thw-social-settings-message" role="status"></span>';
+        '<button class="thw-social-settings-save" type="button">Save settings</button><span class="thw-social-settings-message" role="status"></span>' +
+      '</div>' +
+      '<div class="thw-settings-pane" data-settings-pane="blocked" hidden>' +
+        '<h3>Blocked Users</h3>' +
+        '<p class="thw-social-settings-note">People you have blocked cannot message you or see your activity. Blocking also removes any friendship. Unblock them here, then send a friend request again if you want to be friends again.</p>' +
+        '<div class="thw-blocked-list" id="thw-blocked-list" role="list"></div>' +
+        '<p class="thw-settings-note thw-settings-note-hint">Unblocking only removes the block. It does not add anyone as a friend again - use Add friend on each row to send a new request.</p>' +
+      '</div>';
     mount.appendChild(card);
     card.querySelector(".thw-social-settings-save").addEventListener("click", savePrivacySettings);
+    /* The two tabs trade places - Privacy by default, Blocked Users on tap. */
+    card.querySelectorAll("[data-settings-tab]").forEach(function (tabButton) {
+      tabButton.addEventListener("click", function () {
+        var target = tabButton.getAttribute("data-settings-tab");
+        card.querySelectorAll("[data-settings-tab]").forEach(function (other) {
+          var on = other === tabButton;
+          other.classList.toggle("is-active", on);
+          other.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        card.querySelectorAll("[data-settings-pane]").forEach(function (pane) {
+          pane.hidden = pane.getAttribute("data-settings-pane") !== target;
+        });
+        if (target === "blocked") loadBlockedUsers();
+      });
+    });
+    loadBlockedUsers();
+  }
+
+  /* The Blocked Users list. It re-reads the server every time the card is
+     mounted, so it is always the true list, never a cached one. */
+  function loadBlockedUsers() {
+    var box = document.getElementById("thw-blocked-list");
+    if (!box) return;
+    box.replaceChildren();
+    box.appendChild(el("p", "thw-settings-note", "Loading blocked users…"));
+    api("/blocked").then(function (data) {
+      var list = (data && data.users) || [];
+      box.replaceChildren();
+      if (!list.length) {
+        box.appendChild(el("p", "thw-settings-note", "Nobody is blocked. People you block will appear here."));
+        return;
+      }
+      list.forEach(function (user) {
+        var row = el("div", "thw-blocked-row");
+        row.setAttribute("role", "listitem");
+        row.appendChild(avatarNode(user, 26));
+        row.appendChild(el("span", "thw-social-name", user.name || "Member"));
+        var actions = el("span", "thw-blocked-actions");
+        var unblock = el("button", "thw-social-action", "Unblock");
+        unblock.type = "button";
+        unblock.dataset.action = "unblock-user";
+        unblock.dataset.uid = user.uid || "";
+        actions.appendChild(unblock);
+        var add = el("button", "thw-social-action primary", "Add friend");
+        add.type = "button";
+        add.dataset.action = "send-request";
+        add.dataset.uid = user.uid || "";
+        add.classList.add("thw-blocked-add");
+        actions.appendChild(add);
+        row.appendChild(actions);
+        box.appendChild(row);
+      });
+    }).catch(function () {
+      box.replaceChildren();
+      var note = el("p", "thw-settings-note", "Could not load the blocked list right now.");
+      note.classList.add("thw-settings-note-error");
+      box.appendChild(note);
+    });
   }
 
   function loadPrivacySettings() {

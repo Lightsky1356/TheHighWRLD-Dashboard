@@ -89,11 +89,30 @@
       ".plui-btn{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.05);color:rgba(255,255,255,.8);border-radius:9px;padding:5px 10px;font-size:11px;cursor:pointer}" +
       ".plui-btn:hover{background:rgba(251,191,36,.13);border-color:rgba(251,191,36,.4);color:#fbbf24}" +
       ".plui-btn.danger:hover{background:rgba(244,63,94,.13);border-color:rgba(244,63,94,.45);color:#fb7185}" +
+      ".plui-suggest{margin-top:8px;max-height:220px;overflow-y:auto;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:4px}" +
+      ".plui-suggest[hidden]{display:none}" +
+      ".plui-srow{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;font-size:12px;color:#fff}" +
+      ".plui-srow span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".plui-srow small{color:rgba(255,255,255,.45);font-size:10px;flex-shrink:0}" +
+      ".plui-srow i{font-size:15px;color:rgba(255,255,255,.4)}" +
+      ".plui-srow.on i{color:#22d3ee}" +
+      ".plui-selbar{display:flex;align-items:center;gap:8px;padding:6px 2px 2px;font-size:11px;color:rgba(255,255,255,.6)}" +
+      ".plui-selbar button{border:1px solid rgba(34,211,238,.4);background:rgba(34,211,238,.14);color:#a5f3fc;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer}" +
+      ".plui-edit{margin-top:9px;padding:10px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);display:grid;gap:7px}" +
+      ".plui-edit[hidden]{display:none}" +
+      ".plui-edit input,.plui-edit select{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13);border-radius:8px;color:#fff;font-size:12px;padding:7px 9px;outline:none}" +
+      ".plui-edit-btns{display:flex;gap:6px}" +
+      ".plui-edit-btns button{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#fff;border-radius:8px;padding:6px 11px;font-size:11px;cursor:pointer}" +
+      ".plui-edit-btns .save{background:#fbbf24;color:#1a1206;border-color:#fbbf24;font-weight:800}" +
       ".plui-tracks{margin-top:8px;border-top:1px solid rgba(255,255,255,.07);padding-top:6px}" +
       ".plui-track{display:flex;align-items:center;gap:8px;font-size:12px;color:#fff;padding:4px 2px}" +
+      ".plui-track-cover{width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;background:#1c1530}" +
+      ".plui-srow-cover{width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0;background:#1c1530}" +
       ".plui-track span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".plui-mini{border:none;background:transparent;color:rgba(255,255,255,.45);cursor:pointer;font-size:11px;padding:2px 5px}" +
       ".plui-mini:hover{color:#fbbf24}" +
+      ".plui-track-play{opacity:0;transition:opacity .15s ease;color:#7dd3fc}" +
+      ".plui-track:hover .plui-track-play,.plui-track-play:focus-visible{opacity:1}" +
       ".plui-add{display:flex;gap:6px;margin-top:8px}" +
       ".plui-add input{flex:1;min-width:0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;font-size:12px;padding:7px 10px;outline:none}" +
       ".plui-create{display:flex;gap:6px;margin-bottom:10px}" +
@@ -157,7 +176,6 @@
     h += '<button type="button" class="plui-btn" data-act="queue"><i class="fas fa-list-ul"></i> Queue</button>';
     h += '<button type="button" class="plui-btn" data-act="tracks"><i class="fas fa-music"></i> Tracks</button>' +
       '<button type="button" class="plui-btn" data-act="rename"><i class="fas fa-pen"></i></button>' +
-      '<button type="button" class="plui-btn" data-act="share"><i class="fas fa-share-nodes"></i></button>' +
       '<button type="button" class="plui-btn" data-act="dup"><i class="fas fa-copy"></i></button>' +
       '<button type="button" class="plui-btn danger" data-act="del"><i class="fas fa-trash"></i></button></div>' +
       '<div class="plui-tracks" hidden></div></div>';
@@ -165,7 +183,13 @@
   }
 
   function trackRow(t, i, n) {
-    return '<div class="plui-track" data-tid="' + t.id + '"><span>' + (i + 1) + ". " + esc(t.title) + "</span>" +
+    var src = coverFor(t.title) || "Juice-WRLD.png";
+    var thumb = src;
+    try { if (window._coverThumb) thumb = window._coverThumb(src, "64") || src; } catch (e) {}
+    return '<div class="plui-track" data-tid="' + t.id + '">' +
+      '<img class="plui-track-cover" loading="lazy" src="' + esc(thumb) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+      '<span>' + (i + 1) + ". " + esc(t.title) + "</span>" +
+      '<button type="button" class="plui-mini plui-track-play" data-tact="play" title="Play ' + esc(t.title) + '"><i class="fas fa-play"></i></button>' +
       (i > 0 ? '<button type="button" class="plui-mini" data-tact="up" title="Move up"><i class="fas fa-chevron-up"></i></button>' : "") +
       (i < n - 1 ? '<button type="button" class="plui-mini" data-tact="down" title="Move down"><i class="fas fa-chevron-down"></i></button>' : "") +
       '<button type="button" class="plui-mini" data-tact="rm" title="Remove"><i class="fas fa-xmark"></i></button></div>';
@@ -174,8 +198,8 @@
   function renderTracks(box, p) {
     var h = "";
     for (var i = 0; i < p.tracks.length; i++) h += trackRow(p.tracks[i], i, p.tracks.length);
-    h += '<div class="plui-add"><input maxlength="140" placeholder="Add track by title…" data-add-inp>' +
-      '<button type="button" class="plui-btn" data-act="add"><i class="fas fa-plus"></i> Add</button></div>';
+    h += '<div class="plui-add"><input maxlength="140" placeholder="Add track by title…" data-add-inp></div>' +
+      '<div class="plui-suggest" data-add-list hidden></div>';
     box.innerHTML = h;
     box.hidden = false;
   }
@@ -189,6 +213,15 @@
     var host = document.getElementById(WID);
     if (!host) return;
     var list = host.querySelector("[data-pl-list]");
+    /* Reordering or removing a track re-renders the list. Remember which
+       track menus were open so they stay open instead of snapping shut. */
+    var openIds = [];
+    try {
+      host.querySelectorAll(".plui-row").forEach(function (row) {
+        var box = row.querySelector(".plui-tracks");
+        if (box && !box.hidden) openIds.push(String(row.getAttribute("data-pl")));
+      });
+    } catch (e) {}
     fetch("/api/playlists?mine=1", { cache: "no-store", credentials: "same-origin" })
       .then(function (r) { return r.json(); })
       .catch(function () { return { ok: false }; })
@@ -196,9 +229,19 @@
         if (!list) return;
         if (!d || d.ok !== true) { list.innerHTML = '<p class="plui-note">Sign in to manage playlists.</p>'; return; }
         var pls = d.playlists || [];
-        if (pls.length) paintList(list, pls);
-        /* Empty right after a mutation is usually replica lag — leave any
-           optimistic rows in place; the delayed resync converges. */
+        if (pls.length) {
+          paintList(list, pls);
+          openIds.forEach(function (id) {
+            var p2 = null;
+            for (var k = 0; k < pls.length; k++) if (String(pls[k].id) === id) p2 = pls[k];
+            var row2 = list.querySelector('.plui-row[data-pl="' + id + '"]');
+            if (p2 && row2) renderTracks(row2.querySelector(".plui-tracks"), p2);
+          });
+        }
+        /* An empty result right after a mutation can be replica lag, so keep
+           optimistic rows. On a fresh load, though, "Loading…" must give way
+           to the real empty state. */
+        else if (/Loading/i.test(list.textContent || "")) paintList(list, []);
       });
   }
 
@@ -218,14 +261,17 @@
   }
 
   function mountManager() {
-    if (window.__THW_PROFILE_V2) return;
     var body = document.getElementById("profilePageBody");
     if (!body || !isSelfProfile() || document.getElementById(WID)) return;
     css();
+    var v2 = !!window.__THW_PROFILE_V2;
     var div = document.createElement("div");
-    div.className = "pv-block";
+    div.className = v2 ? "pv2-card" : "pv-block";
+    div.style.marginTop = v2 ? "16px" : "";
     div.id = WID;
-    div.innerHTML = '<div class="pv-block-title">My Playlists</div>' +
+    div.innerHTML = (v2
+      ? '<div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-list" aria-hidden="true"></i>My Playlists</h2></div>'
+      : '<div class="pv-block-title">My Playlists</div>') +
       '<div class="plui-create"><input id="plui-new" maxlength="80" placeholder="New playlist name…" autocomplete="off">' +
       '<button type="button" id="plui-create-btn"><i class="fas fa-plus"></i> Create</button></div>' +
       '<p class="plui-note" data-pl-status hidden></p>' +
@@ -272,6 +318,11 @@
       if (e.key === "Enter") { e.preventDefault(); doCreate(); }
     });
     div.addEventListener("click", onManagerClick);
+    div.addEventListener("input", function (e) {
+      if (!e.target.hasAttribute || !e.target.hasAttribute("data-add-inp")) return;
+      var row = e.target.closest ? e.target.closest(".plui-row") : null;
+      if (row) renderAddSuggestions(row);
+    });
     div.addEventListener("keydown", function (e) {
       if (e.key === "Enter" && e.target && e.target.hasAttribute && e.target.hasAttribute("data-add-inp")) {
         var row = e.target.closest ? e.target.closest(".plui-row") : null;
@@ -282,6 +333,69 @@
   }
 
   function curPid(row) { return Number(row.getAttribute("data-pl")) || 0; }
+
+  var addSelected = {};
+  function renderAddSuggestions(row) {
+    var inp = row.querySelector("[data-add-inp]");
+    var box = row.querySelector("[data-add-list]");
+    if (!inp || !box) return;
+    var query = String(inp.value || "").trim().toLowerCase();
+    if (!query) { box.hidden = true; box.textContent = ""; return; }
+    var tl = getTL();
+    var found = [];
+    for (var i = 0; i < tl.length && found.length < 12; i++) {
+      var t = tl[i] || {};
+      var title = String(t.title || "");
+      if (title.toLowerCase().indexOf(query) >= 0) found.push({ idx: i, title: title, cat: t.category || "" });
+    }
+    box.textContent = "";
+    if (!found.length) {
+      box.innerHTML = '<p class="plui-note">No matching songs in the vault. You can still add “' + esc(inp.value.trim()) + '” by title.</p>';
+      box.hidden = false;
+      return;
+    }
+    found.forEach(function (f) {
+      var r = document.createElement("div");
+      r.className = "plui-srow" + (addSelected[f.idx] ? " on" : "");
+      r.setAttribute("data-addsong", String(f.idx));
+      var src = coverFor(f.title) || "Juice-WRLD.png";
+      var thumb = src;
+      try { if (window._coverThumb) thumb = window._coverThumb(src, "64") || src; } catch (e) {}
+      r.innerHTML = '<img class="plui-srow-cover" loading="lazy" src="' + esc(thumb) + '" alt="" onerror="this.onerror=null;this.src=\'Juice-WRLD.png\'">' +
+        '<i class="' + (addSelected[f.idx] ? "fas fa-check-circle" : "far fa-circle") + '" aria-hidden="true"></i>' +
+        '<span>' + esc(f.title) + '</span><small>' + esc(f.cat) + '</small>';
+      r.addEventListener("click", function () {
+        addSelected[f.idx] = !addSelected[f.idx];
+        r.classList.toggle("on", !!addSelected[f.idx]);
+        var icon = r.querySelector("i");
+        if (icon) icon.className = addSelected[f.idx] ? "fas fa-check-circle" : "far fa-circle";
+        var bar = box.querySelector("[data-addselbar]");
+        if (bar) bar.hidden = !selectedAddTitles().length;
+        var cnt = box.querySelector("[data-addselcount]");
+        if (cnt) cnt.textContent = selectedAddTitles().length + " selected";
+      });
+      box.appendChild(r);
+    });
+    var sel = Object.keys(addSelected).filter(function (k) { return addSelected[k]; }).length;
+    var bar = document.createElement("div");
+    bar.className = "plui-selbar";
+    bar.setAttribute("data-addselbar", "");
+    bar.hidden = !sel;
+    bar.innerHTML = '<span data-addselcount>' + sel + ' selected</span>' +
+      '<button type="button" data-act="addsel">Add selected</button>';
+    box.appendChild(bar);
+    box.hidden = false;
+  }
+  function selectedAddTitles() {
+    var out = [];
+    var tl = getTL();
+    Object.keys(addSelected).forEach(function (k) {
+      if (!addSelected[k]) return;
+      var t = tl[Number(k)];
+      if (t && t.title) out.push(String(t.title));
+    });
+    return out;
+  }
 
   function addTrack(row) {
     var inp = row.querySelector("[data-add-inp]");
@@ -312,6 +426,15 @@
       if (tact === "rm") {
         var tid = self ? self.getAttribute("data-tid") : null;
         api("remove", { id: pid, track_id: Number(tid) || 0 }).then(function () { refreshManager(); });
+        return;
+      }
+      if (tact === "play") {
+        var label = self ? self.querySelector("span") : null;
+        var title = label ? String(label.textContent || "").replace(/^\d+\.\s*/, "") : "";
+        var ix = idxFor(title);
+        if (ix >= 0 && window.selectTrackFromList) {
+          try { window.selectTrackFromList(ix); } catch (e) {}
+        }
         return;
       }
       var j = tact === "up" ? pos - 1 : pos + 1;
@@ -346,10 +469,43 @@
       return;
     }
     if (act === "rename") {
-      var cur = row.querySelector(".plui-name");
-      var name = null;
-      try { name = window.prompt("Rename playlist", cur ? cur.textContent : ""); } catch (err) {}
-      if (name && name.trim()) api("update", { id: pid, name: name.trim() }).then(function () { refreshManager(); });
+      var panel = row.querySelector(".plui-edit");
+      if (panel) { panel.hidden = !panel.hidden; return; }
+      /* A real inline editor instead of window.prompt(): name, description and
+         visibility, saved through the same authenticated update endpoint. */
+      fetch("/api/playlists?mine=1", { cache: "no-store", credentials: "same-origin" })
+        .then(function (r) { return r.json(); }).catch(function () { return { ok: false }; })
+        .then(function (d) {
+          var pl = null;
+          var pls = (d && d.playlists) || [];
+          for (var i = 0; i < pls.length; i++) if (pls[i].id === pid) pl = pls[i];
+          pl = pl || {};
+          var p = document.createElement("div");
+          p.className = "plui-edit";
+          p.innerHTML =
+            '<input data-ef-name maxlength="80" placeholder="Playlist name" value="' + esc(pl.name || "") + '">' +
+            '<input data-ef-desc maxlength="300" placeholder="Description" value="' + esc(pl.desc || "") + '">' +
+            '<div class="plui-edit-btns">' +
+              '<button type="button" class="save" data-act="edit-save">Save</button>' +
+              '<button type="button" data-act="edit-cancel">Cancel</button></div>';
+          row.appendChild(p);
+        });
+      return;
+    }
+    if (act === "edit-save") {
+      var pnl = row.querySelector(".plui-edit");
+      if (!pnl) return;
+      var ni = pnl.querySelector("[data-ef-name]");
+      var di = pnl.querySelector("[data-ef-desc]");
+      var name = ni ? String(ni.value || "").trim() : "";
+      if (!name) { if (ni) ni.focus(); return; }
+      api("update", { id: pid, name: name, desc: di ? String(di.value || "").trim() : "" })
+        .then(function (d) { if (d && d.ok) { refreshManager(); if (window.toast) window.toast("Playlist updated", "success"); } });
+      return;
+    }
+    if (act === "edit-cancel") {
+      var pnl2 = row.querySelector(".plui-edit");
+      if (pnl2) pnl2.hidden = true;
       return;
     }
     if (act === "vis") {
@@ -361,12 +517,6 @@
       } catch (err) {}
       var next = order[(order.indexOf(curV) + 1) % order.length];
       api("update", { id: pid, visibility: next }).then(function () { refreshManager(); });
-      return;
-    }
-    if (act === "share") {
-      api("share", { id: pid }).then(function (d) {
-        if (d && d.ok) openShare(d.share_key, null);
-      });
       return;
     }
     if (act === "dup") {
@@ -385,6 +535,19 @@
       return;
     }
     if (act === "add") addTrack(row);
+    if (act === "addsel") {
+      var titles = selectedAddTitles();
+      if (titles.length) {
+        api("add", { id: pid, titles: titles }).then(function (d) {
+          if (d && d.ok) {
+            addSelected = {};
+            refreshManager();
+            if (window.toast) window.toast("Added " + titles.length + " songs", "success");
+          }
+        });
+      }
+      return;
+    }
   }
 
   /* ---------------- public share view ---------------- */
@@ -530,6 +693,20 @@
       }
     } catch (e) {}
   }
+
+  /* Profile v2 rebuilds its host after the observer fires, which wipes the
+     manager. Let the profile renderer remount it once its HTML is in place. */
+  window.thwMountPlaylistsManager = function () {
+    if (!document.getElementById(WID)) {
+      try { syncNative(); mountManager(); } catch (e) {}
+    }
+  };
+
+  /* This script loads after profile.js, so the first profile render had no
+     mount hook yet. Mount once the v2 host has had time to paint. */
+  setTimeout(function () {
+    try { if (document.getElementById("page-section-profile") && document.getElementById("page-section-profile").classList.contains("active")) window.thwMountPlaylistsManager(); } catch (e) {}
+  }, 1300);
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();

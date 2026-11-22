@@ -465,9 +465,56 @@ export class CommunityHub extends DurableObject {
     }
   }
 
-  onPresenceChanged() {
+  async onPresenceChanged() {
     this.fanout({ type: "presence:update", presence: { online: this.presenceOnlineCount(), counts: this.presenceCounts() } });
+    /* Publish the roster itself on every change. The D1 /api/online/members
+       answer is a snapshot of a heartbeat that may be a minute old, so a
+       popover driven by it shows somebody who left fifteen seconds ago still
+       sitting in the list. This is the hub's own truth, sent the moment
+       anybody comes or goes - the popover renders from it and nobody waits. */
+    try {
+      this.fanout({ type: "presence:members", members: await this.membersSnapshot(), total: this.presenceOnlineCount() });
+    } catch (err) {
+      console.log(JSON.stringify({ level: "warn", msg: "presence members snapshot failed", error: String(err && err.message || err) }));
+    }
     this.ensureAlarm();
+  }
+
+  /* Everyone the hub currently holds, with just enough to draw the row -
+     name, avatar, level, xp. Built from its in-memory map and one narrow
+     D1 read per signed-in member. Anonymous visitors stay a count. */
+  async membersSnapshot() {
+    const LEVEL_BASE = 50;
+    const levelFor = (xp) => Math.max(1, Math.floor(Math.sqrt(Math.max(0, Number(xp) || 0) / LEVEL_BASE)) + 1);
+    const out = [];
+    for (const [key, info] of this.presence) {
+      if (info.type !== "auth") continue;
+      const uid = key.slice(2);
+      let name = info.name || "";
+      let avatar = "", xp = 0, level = 1;
+      if (this.env.wanted_vault) {
+        try {
+          const u = await this.env.wanted_vault.prepare("SELECT name, avatar FROM users WHERE uid = ?").bind(uid).first();
+          if (u) { name = name || u.name || ""; avatar = u.avatar || ""; }
+        } catch (_) {}
+        try {
+          const p = await this.env.wanted_vault.prepare("SELECT name, avatar FROM user_profiles WHERE site_uid = ?").bind(uid).first();
+          if (p) { name = p.name || name; avatar = p.avatar || avatar; }
+        } catch (_) {}
+        try {
+          const d = await this.env.wanted_vault.prepare("SELECT display_name, avatar FROM discord_links WHERE site_uid = ?").bind(uid).first();
+          if (d) { name = d.display_name || name; avatar = d.avatar || avatar; }
+        } catch (_) {}
+        try {
+          const x = await this.env.wanted_vault.prepare("SELECT xp, level FROM xp WHERE user_id = ?").bind(uid).first();
+          if (x) { xp = x.xp || 0; level = x.level || levelFor(xp); }
+        } catch (_) {}
+      }
+      if (!name) continue;
+      out.push({ uid, name: String(name).slice(0, 64), avatar: String(avatar || "").slice(0, 512), level, xp });
+    }
+    out.sort((a, b) => (Number(b.level || 1) - Number(a.level || 1)) || (Number(b.xp || 0) - Number(a.xp || 0)));
+    return out;
   }
 
   /** Durable "last seen" only on auth transitions — never per heartbeat.

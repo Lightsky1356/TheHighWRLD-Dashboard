@@ -1030,7 +1030,7 @@
     if (!container) return;
     container.innerHTML = src
       ? '<img decoding="async" src="' + esc(src) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:' + (radius || "inherit") + '">'
-      : esc(initial(name));
+      : (container.id === "mbnAvatarInner" ? '<i class="fas fa-user" aria-hidden="true"></i>' : esc(initial(name)));
   }
 
   function applyAvatarEverywhere(src) {

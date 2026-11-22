@@ -216,12 +216,14 @@
   /* ---------- Profile ---------- */
   function applyProfile() {
     var p = _profile;
+    var pSub = document.getElementById("profHeadSub");
+    if (pSub) pSub.textContent = "thehighwrlddashboard.pages.dev/@" + String(profileUsername() || p.name || "999").toLowerCase();
     var aInner = document.getElementById("profileAvatarInner");
     if (aInner) {
       aInner.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : esc(initial(p.name));
     }
     var nav = document.getElementById("navAvatarInner");
-    if (nav) nav.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : esc(initial(p.name));var mbn = document.getElementById("mbnAvatarInner");if (mbn) mbn.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : esc(initial(p.name));
+    if (nav) nav.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : esc(initial(p.name));var mbn = document.getElementById("mbnAvatarInner");if (mbn) mbn.innerHTML = p.avatar ? '<img decoding="async" src="' + esc(p.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : '<i class="fas fa-user" aria-hidden="true"></i>';
     /* Account dropdown + mobile sheet: mirror the avatar and the sheet head */
     ["acctAvatarInnerMenu", "thwSheetAvatarInner"].forEach(function (id) {
       var el = document.getElementById(id);
@@ -635,6 +637,13 @@ function compactProfileViewHtml(d) {
   }
   window.setNotifBell = setNotifBell;
   function gotoNotif(n) {
+    if (n.type === "dm_message" || n.type === "dm_mention") {
+      /* A message is opened on the messages page - the Inner Circle lives
+         there full-screen, so this lands on the conversation list. */
+      if (window.switchAppPage) switchAppPage("messages");
+      else if (window.openInnerCircle) window.openInnerCircle();
+      return;
+    }
     if (n.type === "playlist" && n.post_id) {
       if (window.openSharedPlaylistById) { try { window.openSharedPlaylistById(Number(n.post_id)); } catch (e) {} }
       return;
@@ -901,7 +910,7 @@ function compactProfileViewHtml(d) {
       return;
     }
     list.innerHTML = rows.slice(0, 40).map(function (n) {
-      var ico = n.type === "reply" || n.type === "comment_reply" ? "fa-comment" : n.type === "mention" ? "fa-at" : n.type === "playlist" ? "fa-list-music" : n.type === "drop" ? "fa-ticket" : n.type === "suggestion" ? "fa-lightbulb" : n.type === "wanted" ? "fa-fire" : n.type === "announcement" ? "fa-bullhorn" : n.type === "appeal" ? "fa-scale-balanced" : n.type === "warning" ? "fa-triangle-exclamation" : n.type === "ban" ? "fa-ban" : n.type === "follow" ? "fa-user-plus" : n.type === "moderation" ? "fa-shield-halved" : n.type === "leak" ? "fa-fire" : n.type === "vote" ? "fa-vote-yea" : "fa-bell";
+      var ico = n.type === "reply" || n.type === "comment_reply" ? "fa-comment" : n.type === "mention" || n.type === "dm_mention" ? "fa-at" : n.type === "dm_message" ? "fa-comment-dots" : n.type === "playlist" ? "fa-list-music" : n.type === "drop" ? "fa-ticket" : n.type === "suggestion" ? "fa-lightbulb" : n.type === "wanted" ? "fa-fire" : n.type === "announcement" ? "fa-bullhorn" : n.type === "appeal" ? "fa-scale-balanced" : n.type === "warning" ? "fa-triangle-exclamation" : n.type === "ban" ? "fa-ban" : n.type === "follow" ? "fa-user-plus" : n.type === "moderation" ? "fa-shield-halved" : n.type === "leak" ? "fa-fire" : n.type === "vote" ? "fa-vote-yea" : "fa-bell";
       return '<button type="button" class="nav-notif-item' + (n.read ? " read" : " unread") + '" data-nid="' + n.id + '" data-ntype="' + esc(n.type || "") + '" data-actor="' + esc(n.actor_uid || "") + '" data-track="' + esc(n.track_id || "") + '" data-rid="' + (n.reply_id || "") + '" data-post="' + (n.post_id || "") + '"><span class="nni-ico"><i class="fas ' + ico + '"></i></span><span class="nni-main"><span class="nni-txt">' + esc(n.message) + '</span><span class="nni-time">' + esc(relTime(n.ts)) + (n.actor ? " &middot; " + esc(n.actor) : "") + '</span></span>' + (n.read ? "" : '<span class="unread-dot"></span>') +
       /* Close control, inside the row so it travels with it when the list
          re-renders. A span with role=button rather than a nested <button>: the
@@ -2310,9 +2319,25 @@ function compactProfileViewHtml(d) {
     var editBtn = document.getElementById("editProfileBtn");
     if (editBtn) editBtn.addEventListener("click", function () {
       if (window.openEditProfile) { window.openEditProfile(); return; }
+    });
+    var viewMyProfile = document.getElementById("viewMyProfileBtn");
+    if (viewMyProfile) viewMyProfile.addEventListener("click", function () { if (window.openProfile) window.openProfile(); });
+    var discardBtn = document.getElementById("mCancelBtn");
+    if (discardBtn) discardBtn.addEventListener("click", function () {
+      /* Discard: refill every field from the stored profile so unsaved edits vanish. */
       var mp = document.getElementById("mAvatarPreview");
       if (mp) mp.innerHTML = _profile.avatar ? '<img decoding="async" src="' + esc(_profile.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : '<i class="fas fa-user"></i>';
-      openModal("editProfileModal");
+      var pp = document.getElementById("mPicPreview");
+      if (pp) pp.innerHTML = mp ? mp.innerHTML : (_profile.avatar ? '<img decoding="async" src="' + esc(_profile.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : '<i class="fas fa-user"></i>');
+      var n = document.getElementById("mName"); if (n) n.value = _profile.name || "";
+      var b = document.getElementById("mBio"); if (b) b.value = _profile.bio || "";
+      var mh = document.getElementById("mHandle"); if (mh) mh.value = String(profileUsername() || "").toLowerCase();
+      var bc = document.getElementById("mBioCount"); if (bc) bc.textContent = String((_profile.bio || "").length) + " / 160";
+      var fs = document.getElementById("mFavSearch"); if (fs) fs.value = _profile.favSong || "";
+      Array.prototype.forEach.call(document.querySelectorAll('input[name="mBannerChoice"]'), function (r) { r.checked = r.value === (_profile.bannerChoice || "auto"); });
+      if (typeof _hideFavResults === "function") _hideFavResults();
+      applyProfile();
+      toast(_tt("toastDiscarded", "Changes discarded"), "info");
     });
     var mAv = document.getElementById("mAvatarFile");
     if (mAv) mAv.addEventListener("change", function () {
@@ -2348,8 +2373,15 @@ function compactProfileViewHtml(d) {
       if (fsEl) _profile.favSong = fsEl.value.trim();
       var bsel = document.getElementById("mBannerClassic");
       if (bsel) _profile.bannerChoice = bsel.checked ? "classic" : (_profile.bannerChoice || "auto");
-      persistProfile();
+      persistProfile().then(function () {
+        /* Saving re-fetches the account; repaint the profile surface so it can
+           never be left empty after the reload. */
+        try { if (typeof window.profileSectionShown === "function") window.profileSectionShown(); } catch (e) {}
+        try { if (typeof window.thwMountPlaylistsManager === "function") window.thwMountPlaylistsManager(); } catch (e) {}
+      });
       applyProfile();
+      /* Saving is done - leave the editor and put the page back. closeModal()
+         also returns the editor to its inline home and frees the scroll lock. */
       closeModal("editProfileModal");
       toast(_tt("toastProfileUpdated", "Profile updated"), "success");
     });
@@ -2796,17 +2828,12 @@ function compactProfileViewHtml(d) {
     });
     window.acctJump = acctJump;
     window.openEditProfile = function () {
-      var mp = document.getElementById("mAvatarPreview");
-      if (mp) mp.innerHTML = _profile.avatar ? '<img decoding="async" src="' + esc(_profile.avatar) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' : '<i class="fas fa-user"></i>';
-      var mh = document.getElementById("mHandle"); if (mh) mh.value = String(profileUsername() || "").toLowerCase();
-      _favSel = typeof _profile.favSong === "string" ? _profile.favSong : "";
-      var fs = document.getElementById("mFavSearch"); if (fs) fs.value = _favSel;
-      _hideFavResults();
+      placeEditor("modal");
       openModal("editProfileModal");
       /* The form container is scrollable; a stale scrollTop left the modal
          opened scrolled past the Picture row. Always start at the top. */
-      var formEl = document.querySelector("#editProfileModal .editpf-form");
-      if (formEl) formEl.scrollTop = 0;
+      var mount = document.getElementById("editProfileMount");
+      if (mount) mount.scrollTop = 0;
       applyProfile();
       syncEditPrivacy();
       renderEditSocials();
@@ -3148,14 +3175,6 @@ function compactProfileViewHtml(d) {
       /* Expose the preview + autosave for the avatar flow registered elsewhere. */
       window.__refreshDrpPreview = refreshDrpPreview;
       window.__markDirty = markDirty;
-
-      /* Backdrop click + Escape close (data-close buttons are handled globally) */
-      var overlay = document.getElementById("editProfileModal");
-      if (overlay && !overlay.dataset.dismissWired) {
-        overlay.dataset.dismissWired = "1";
-        overlay.addEventListener("click", function (e) { if (e.target === overlay) closeModal("editProfileModal"); });
-        document.addEventListener("keydown", function (e) { if (e.key === "Escape" && overlay.classList.contains("open")) closeModal("editProfileModal"); });
-      }
     }
     bindEditV2();
     window.viewMyProfile = function () {
@@ -3470,18 +3489,39 @@ window.profileSectionShown = function () {
   }
 
   /* ---------- Modals ---------- */
+  var EDITOR_HOME = null;
+  /* The editor is relocated into the modal when it opens and back into the
+     inline Settings pane when it closes, so both surfaces render the same DOM
+     with the same state. */
+  function placeEditor(where) {
+    var wrap = document.getElementById("profileEditor");
+    if (!wrap) return;
+    if (where === "modal") {
+      EDITOR_HOME = wrap.parentNode;
+      var mount = document.getElementById("editProfileMount");
+      if (mount) mount.appendChild(wrap);
+    } else if (EDITOR_HOME) {
+      EDITOR_HOME.appendChild(wrap);
+    }
+  }
   function openModal(id) { var el = document.getElementById(id); if (el) el.classList.add("open"); }
-  function closeModal(id) { var el = document.getElementById(id); if (el) el.classList.remove("open"); }
+  function closeModal(id) {
+    var el = document.getElementById(id); if (el) el.classList.remove("open");
+    if (id === "editProfileModal") placeEditor("home");
+    /* setModalOpen() locked the page when the modal opened - release that lock
+       once no modal is left open, otherwise the profile stays frozen. */
+    try { if (!document.querySelector(".modal-overlay.open")) document.body.style.overflow = ""; } catch (e) {}
+  }
   function bindModals() {
     document.querySelectorAll("[data-close]").forEach(function (btn) {
       btn.addEventListener("click", function () { closeModal(btn.getAttribute("data-close")); });
     });
     document.querySelectorAll(".modal-overlay").forEach(function (ov) {
-      ov.addEventListener("click", function (e) { if (e.target === ov) ov.classList.remove("open"); });
+      ov.addEventListener("click", function (e) { if (e.target === ov) closeModal(ov.id); });
     });
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
-        document.querySelectorAll(".modal-overlay.open").forEach(function (ov) { ov.classList.remove("open"); });
+        document.querySelectorAll(".modal-overlay.open").forEach(function (ov) { closeModal(ov.id); });
       }
     });
   }
@@ -4006,7 +4046,7 @@ window.profileSectionShown = function () {
    meant two sources of truth for the same job. _navPillFor already resolves both
    to their real nav buttons (page-nav-about, page-nav-partner), so nothing else
    needed changing to highlight them. */
-var NAV_URL = { home: "/", community: "/community", developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register", era: "/era", leaderboard: "/leaderboard", stats: "/stats", updates: "/updates", tracker: "/tracker" };
+var NAV_URL = { home: "/", community: "/community", developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register", era: "/era", leaderboard: "/leaderboard", stats: "/stats", updates: "/updates", tracker: "/tracker", messages: "/messages" };
   var NAV_URL_REV = {};
   Object.keys(NAV_URL).forEach(function (k) { NAV_URL_REV[NAV_URL[k]] = k; });
   /* The router, for a link that has to be a link but must not reload the
@@ -4050,7 +4090,7 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
     return "lobby";
   }
   function _navPillFor(page) {
-    if (page === "wanted" || page === "suggestions") return "page-nav-wanted";
+    if (page === "wanted" || page === "suggestions") return "";
     if (page === "profile" || page === "account" || page === "owner") return "";
     /* These have no button in the nav bar at all - Gallery and Downloads are
        reached from elsewhere in the vault, Failed Projects from its own card, and
@@ -4118,7 +4158,7 @@ var NAV_URL = { home: "/", community: "/community", developers: "/developers", p
       if (page === "stats" && typeof window.renderStatsPage === "function") { try { window.renderStatsPage(); } catch (e) {} }
     if (page === "updates" && typeof window.renderUpdatesPage === "function") { try { window.renderUpdatesPage(); } catch (e) {} }
     if (page === "tracker" && typeof window.renderTrackerPage === "function") { try { window.renderTrackerPage(); } catch (e) {} }
-    var labels = { player: "WRLD Player", hub: "The Vault", era: "Era Pages", leaderboard: "Leaderboard", stats: "Stats", updates: "Updates", tracker: "The Tracker", developers: "Public API", community: "Community Board", wanted: "Wanted Vault", suggestions: "Suggestions", "community-themes": "Community Themes", downloads: "Downloads", failed: "Failed Projects", credits: "Covers", gallery: "Gallery", roadmap: "Roadmap", about: "About the project", partner: "Partnership", tos: "Terms of Service", pp: "Privacy Policy", dmca: "Copyright & DMCA", copyright: "Copyright", settings: "Account Settings", profile: "Profile", account: "Account Settings", "account-gate": "Sign In", register: "Register", login: "Sign In", song: "Track", owner: "Owner Dashboard" };
+    var labels = { player: "WRLD Player", hub: "The Vault", era: "Era Pages", leaderboard: "Leaderboard", stats: "Stats", updates: "Updates", tracker: "The Tracker", messages: "Messages", developers: "Public API", community: "Community Board", wanted: "Wanted Vault", suggestions: "Suggestions", "community-themes": "Community Themes", downloads: "Downloads", failed: "Failed Projects", credits: "Covers", gallery: "Gallery", roadmap: "Roadmap", about: "About the project", partner: "Partnership", tos: "Terms of Service", pp: "Privacy Policy", dmca: "Copyright & DMCA", copyright: "Copyright", settings: "Account Settings", profile: "Profile", account: "Account Settings", "account-gate": "Sign In", register: "Register", login: "Sign In", song: "Track", owner: "Owner Dashboard" };
       var label = labels[page];
       var bcRoot = bc.querySelector("#bc-root");
       var bcSepDetail = bc.querySelector("#bc-sep-detail");

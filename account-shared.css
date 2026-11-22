@@ -137,7 +137,6 @@ nav.nav-wanted #nav-bubble,nav.nav-suggestions #nav-bubble{background:linear-gra
 .page-tab-btn#page-nav-roadmap.active{background:rgba(96,165,250,.13);color:#60a5fa;border-color:rgba(96,165,250,.35);box-shadow:0 0 24px rgba(96,165,250,.1),inset 0 1px 0 rgba(255,255,255,.16)}
 .page-tab-btn#page-nav-about.active{background:rgba(203,213,225,.12);color:#cbd5e1;border-color:rgba(203,213,225,.32);box-shadow:0 0 24px rgba(203,213,225,.08),inset 0 1px 0 rgba(255,255,255,.16)}
 .page-tab-btn#page-nav-partner.active{background:rgba(251,146,60,.13);color:#fb923c;border-color:rgba(251,146,60,.35);box-shadow:0 0 24px rgba(251,146,60,.1),inset 0 1px 0 rgba(255,255,255,.16)}
-.page-tab-btn#page-nav-wanted.active{background:rgba(212,165,116,.13);color:#d4a574;border-color:rgba(212,165,116,.35);box-shadow:0 0 24px rgba(212,165,116,.1),inset 0 1px 0 rgba(255,255,255,.16)}
 /* icons */
 .page-tab-btn#page-nav-era.active i,.page-tab-btn#page-nav-leaderboard.active i,.page-tab-btn#page-nav-gallery.active i{filter:drop-shadow(0 0 8px currentColor)}
 

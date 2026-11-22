@@ -4,8 +4,10 @@
     coverGradients: true,
     /* Autoplay similar songs — when the queue is empty and shuffle is off,
        stay inside the era of the song that just ended instead of walking
-       through the vault in order. On by default. */
-    autoplaySimilar: true,
+       through the vault in order. Off by default: a listener who never
+       touched shuffle expects the next song to be the next song, not a
+       random same-era pick. It can still be turned on in Player Settings. */
+    autoplaySimilar: false,
     /* When you press play: whether picking a new song clears the queue.
        Off (Keep queue) is the site's historic behaviour. */
     replaceQueue: false,
@@ -63,6 +65,10 @@
   function set(k, v){ settings[k] = v; try { localStorage.setItem(storageKey, JSON.stringify(settings)); } catch(e){} }
 
   var isElectron = !!(window.highwrld);
+  /* The desktop app cannot offer "press Ctrl+D to bookmark" - its chrome has no
+     bookmark bar - and the hint is noise on phones too. Tag the page so CSS
+     can hide the hint in both places. */
+  try { if (isElectron) document.documentElement.classList.add("is-electron"); } catch (e) {}
 
   /* Localised strings with English fallback - same contract as account.js's _tt. */
   function _ptT(key, fb) {
@@ -414,6 +420,12 @@
        functions, so those are what have to be called again. The title in
        particular is not the style helper's business - it is the title, the
        album and the controls that go white when the gradients are off. */
+    try {
+      if (typeof window.paintDeckWash === 'function') window.paintDeckWash();
+      if (typeof window.__thwRepaintDeck === 'function') window.__thwRepaintDeck();
+    } catch (e) {}
+    /* The deck's cover wash is painted by cover-pref.js from the same gradient
+       helper - replay it so turning Cover Gradients off clears the deck too. */
     try {
       if (typeof trackList !== 'undefined' && trackList[currentTrackIndex]) {
         var cover = trackList[currentTrackIndex].cover || 'Juice-WRLD.png';
