@@ -1,5 +1,29 @@
 <!DOCTYPE html>
-<html data-theme="default" lang="en"><head><base href="/"><meta charset="UTF-8"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<html data-theme="default" lang="en"><head><base href="/"><script>
+/* Paint the saved theme and cached sign-in on the very first frame. These
+   used to be applied by deferred scripts, so a saved theme flashed the
+   default and a signed-in member flashed "Sign In" until the session came
+   back. Both are cheap localStorage reads; auth.js drops the cached class
+   once the real session answers. */
+(function(){
+  try{
+    var t=localStorage.getItem("wantedTheme");
+    if(t){document.documentElement.setAttribute("data-theme",t);document.body&&document.body.setAttribute("data-theme",t);}
+    var s={};try{s=JSON.parse(localStorage.getItem("wrldPlayerSettings")||"{}")}catch(e){}
+    if(s.movingColors===false)document.documentElement.setAttribute("data-motion","still");
+    var l=localStorage.getItem("wantedLang");if(l)document.documentElement.setAttribute("lang",l);
+    var u=localStorage.getItem("wantedAuthUser");
+    if(u){var o={};try{o=JSON.parse(u)}catch(e){}if(o&&o.uid)document.documentElement.classList.add("thw-auth-cached");}
+  }catch(e){}
+})();
+</script><style>
+html.thw-auth-cached #navPillAuthBtn{display:none!important}
+html.thw-auth-cached #nav-account-wrap{display:flex!important}
+html.thw-auth-cached #nav-account-menu{display:block!important}
+html.thw-auth-cached #navAccountSignedIn{display:block!important}
+html.thw-auth-cached #authNavSettings,html.thw-auth-cached #authNavSignin,html.thw-auth-cached #ppSettingsBtn,html.thw-auth-cached #ppSigninBtn{display:none!important}
+html.thw-auth-cached #authNavSignout,html.thw-auth-cached #ppSignoutBtn,html.thw-auth-cached #ppProfileBtn,html.thw-auth-cached #ppAccountBtn{display:block!important}
+</style><meta charset="UTF-8"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="color-scheme" content="dark"><title>TheHighWRLD Dashboard</title><link rel="manifest" href="./manifest.webmanifest?v=2"><meta name="theme-color" content="#07040f"><link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png"><link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="TheHighWRLD Dashboard"><link rel="icon" type="image/jpeg" href="JW-Favi.png"><meta name="description" content="Explore the WRLD Player, discover unreleased gems in The Vault, vote in the Wanted Vault, share ideas, and join TheHighWRLD community.">
 <meta name="owner-passcode" content="Light"><meta property="og:title" content="TheHighWRLD Dashboard"><meta property="og:description" content="Explore the WRLD Player, discover unreleased gems in The Vault, vote in the Wanted Vault, share ideas, and join TheHighWRLD community."><meta property="og:image" content="https://thehighwrlddashboard.pages.dev/thehighwrld-logo.png"><meta property="og:image:width" content="1672"><meta property="og:image:height" content="941"><meta property="og:url" content="https://thehighwrlddashboard.pages.dev"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><link rel="preconnect" href="https://cdnjs.cloudflare.com/"><link rel="preconnect" href="https://unpkg.com/"><link rel="stylesheet" href="./all.min.css?v=thw-v2" media="all" onload="this.media=&quot;all&quot;,this.onload=null"><noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all';this.onload=null"></noscript><style>:root{--nav-offset:72px}@media(max-width:767px){:root{--nav-offset:128px}}body,html{background:#090d16;margin:0;overflow-x:hidden;overflow-y:auto}@media(max-width:767px){#nav-links,#nav-pill{display:none!important}}@media(min-width:768px){.mobile-toggle-btn{display:none!important}}[x-cloak]{display:none!important}</style><link rel="stylesheet" href="./style.css?v=thw-v55"><link rel="stylesheet" href="./profile.css?v=thw-v24"><!-- The first paint. The big stylesheet used to sit on the critical path, so
      nothing could be painted until all 293 KB of it had arrived - and what
@@ -362,7 +386,7 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
 <script src="./cover-artists.js?v=thw-v95" defer></script>
 <script src="./credits-wall.js?v=thw-v17" defer></script>
 <script src="./suggestions.js?v=thw-v2" defer=""></script>
-<script src="./auth.js?v=thw-v18" defer=""></script>
+<script src="./auth.js?v=thw-v19" defer=""></script>
 <script src="./wanted-realtime.js?v=thw-v4" defer=""></script>
 <script src="./reports.js?v=thw-v4" defer=""></script>
 <script src="./owner-vault-sync.js?v=thw-v4" defer></script>

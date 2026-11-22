@@ -217,6 +217,8 @@
   /* ---------- State UI ---------- */
   function applyLoggedIn(u) {
     user = u;
+    /* The real session has answered - stop relying on the cached paint. */
+    try { document.documentElement.classList.remove("thw-auth-cached"); } catch (e) {}
     try {
       localStorage.setItem("wantedUserId", u.uid);
       localStorage.setItem("wantedAuthUser", JSON.stringify(u));
@@ -260,6 +262,7 @@
 
   function applyLoggedOut() {
     user = null;
+    try { document.documentElement.classList.remove("thw-auth-cached"); } catch (e) {}
     try { localStorage.removeItem("wantedAuthUser"); } catch (e) {}
     /* Signed out: flagged covers must blur again and the toggle must go away.
        Without this the page would keep the signed-in view of the setting. */
