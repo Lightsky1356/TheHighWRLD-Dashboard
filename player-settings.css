@@ -3948,7 +3948,16 @@ html.foot-in-view #scrollTopBtn{
 .nav-more-group-title-comm i{color:#a855f7}
 .nav-more-group-title-proj i{color:#22d3ee}
 .nav-more-item{display:flex;align-items:center;gap:11px;width:100%;box-sizing:border-box;padding:9px 12px;border-radius:13px;background:none;border:1px solid transparent;cursor:pointer;text-align:left;font-family:inherit;transition:background .15s,border-color .15s}
-.nav-more-item:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.07)}
+/* Each group gets its own accent, on hover and while selected. */
+.nav-more-item:hover,.nav-more-item:focus-visible{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.07)}
+.nav-more-group:nth-child(1) .nav-more-item:hover,.nav-more-group:nth-child(1) .nav-more-item:focus-visible{background:rgba(212,165,116,.14);border-color:rgba(212,165,116,.32)}
+.nav-more-group:nth-child(2) .nav-more-item:hover,.nav-more-group:nth-child(2) .nav-more-item:focus-visible{background:rgba(168,85,247,.16);border-color:rgba(168,85,247,.34)}
+.nav-more-group:nth-child(3) .nav-more-item:hover,.nav-more-group:nth-child(3) .nav-more-item:focus-visible{background:rgba(34,211,238,.14);border-color:rgba(34,211,238,.32)}
+.nav-more-item.active{font-weight:800}
+.nav-more-group:nth-child(1) .nav-more-item.active{background:rgba(212,165,116,.15);border-color:rgba(212,165,116,.4)}
+.nav-more-group:nth-child(2) .nav-more-item.active{background:rgba(168,85,247,.17);border-color:rgba(168,85,247,.42)}
+.nav-more-group:nth-child(3) .nav-more-item.active{background:rgba(34,211,238,.15);border-color:rgba(34,211,238,.4)}
+.nav-more-item.active .nmi-t{color:#fff}
 .nav-more-item:focus-visible{outline:2px solid rgba(34,211,238,.6);outline-offset:2px}
 .nav-more-item i{width:18px;text-align:center;font-size:13px;color:#a5b4fc;flex-shrink:0}
 .nav-more-group:nth-child(2) .nav-more-item i{color:#d8b4fe}

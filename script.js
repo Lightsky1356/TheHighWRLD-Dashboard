@@ -923,6 +923,25 @@ window.MATURE_COVERS = [
 
 function toggleMoreMenu(){var w=document.getElementById("nav-more-wrap");if(!w)return;var open=w.classList.toggle("open");document.body.classList.toggle("more-open",open);var b=document.getElementById("page-nav-more");if(b)b.setAttribute("aria-expanded",open?"true":"false");}
 function closeMoreMenu(){var w=document.getElementById("nav-more-wrap");if(w)w.classList.remove("open");document.body.classList.remove("more-open");var b=document.getElementById("page-nav-more");if(b)b.setAttribute("aria-expanded","false");}
+/* A clicked More item keeps the menu open and stays highlighted, so the
+   reader can see which page they chose and jump to another one. */
+function selectMoreItem(node){
+  var items=document.querySelectorAll("#nav-more-wrap .nav-more-item");
+  Array.prototype.forEach.call(items,function(x){x.classList.remove("active");x.removeAttribute("aria-current");});
+  if(node){node.classList.add("active");node.setAttribute("aria-current","page");}
+}
+function syncMoreMenuActive(){
+  var page=(document.querySelector(".app-page.active")||{}).id||"";
+  page=page.replace("page-section-","");
+  Array.prototype.forEach.call(document.querySelectorAll("#nav-more-wrap .nav-more-item"),function(b){
+    var m=/switchAppPage\(['"]([^'"]+)['"]\)/.exec(b.getAttribute("onclick")||"");
+    var on=!!(m&&m[1]===page);
+    b.classList.toggle("active",on);
+    if(on)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");
+  });
+}
+document.addEventListener("DOMContentLoaded",syncMoreMenuActive);
+document.addEventListener("click",function(e){var t=e.target&&e.target.closest?e.target.closest(".app-page,.page-tab-btn,.mbn-item"):null;if(t)setTimeout(syncMoreMenuActive,0);});
 document.addEventListener("click",function(e){var wrap=document.getElementById("nav-more-wrap");if(!wrap||!wrap.classList.contains("open"))return;if(wrap.contains(e.target))return;closeMoreMenu();});
 document.addEventListener("keydown",function(e){if(e.key!=="Escape")return;var w=document.getElementById("nav-more-wrap");if(!w||!w.classList.contains("open"))return;e.preventDefault();closeMoreMenu();});
 ;(function(){if(window.__ownerStatsLive)return;window.__ownerStatsLive=true;setInterval(function(){try{var bak=document.getElementById("owner-backdrop");if(!bak||!bak.classList.contains("show"))return;var u=window.__ownerStatsURL;if(!u)return;fetch(u,{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){if(!d||d.error||!d.totals)return;var e=document.getElementById("owner-stats");if(!e)return;var st=e.scrollTop;renderOwnerStats(d);try{e.scrollTop=st;}catch(_){}}).catch(function(){});}catch(_){}},10000);})();
