@@ -450,10 +450,44 @@ a.thw-social-name:hover{color:#67e8f9;text-decoration:underline;text-underline-o
 .thw-menu-item--danger:hover{background:rgba(248,113,113,.14);color:#ffe4e6}
 .thw-menu-item--danger:hover i{color:#fca5a5}
 .thw-menu-reactions{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:4px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
-.thw-social-menu-reaction{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:0;border-radius:8px;background:transparent;font-size:16px;cursor:pointer;transition:background .12s,transform .12s}
+.thw-social-menu-reaction{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:0;border-radius:8px;background:transparent;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;font-size:16px;cursor:pointer;transition:background .12s,transform .12s}
 .thw-social-menu-reaction:hover{background:rgba(255,255,255,.08);transform:scale(1.15)}
 .thw-social-menu--sheet{top:auto!important;bottom:0;left:0;right:0;width:100%;max-width:none;min-width:0;border-radius:22px 22px 0 0;padding:10px 14px calc(18px + env(safe-area-inset-bottom,0px));max-height:82dvh;overflow-y:auto}
 @media (min-width:681px){.thw-social-menu--sheet{display:none}}
+
+/* The message menu was only partly styled: the reaction row had rules but the
+   action items, dividers and the full emoji picker did not. Without these the
+   actions ran together ("ReplyCopyGrammar checkReport") and the picker grew
+   past the viewport with no way to scroll to its lower categories. */
+.thw-social-menu-reactions{display:flex;flex-wrap:wrap;align-items:center;gap:3px;padding:2px 0 4px}
+.thw-social-menu-more{color:#7dd3fc;font-size:16px}
+.thw-social-menu-divider{height:1px;margin:6px 2px;background:rgba(148,163,184,.16)}
+.thw-social-menu-section{padding:7px 10px 3px;color:#64748b;font:800 9px/1 "Sora",system-ui,sans-serif;letter-spacing:.13em;text-transform:uppercase}
+.thw-social-menu-item{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border:0;border-radius:9px;background:transparent;color:#cbd5e1;font:600 12px/1.3 system-ui,sans-serif;text-align:left;cursor:pointer;transition:background .12s,color .12s}
+.thw-social-menu-item:hover,.thw-social-menu-item:focus-visible{background:rgba(255,255,255,.08);color:#f8fafc;outline:none}
+.thw-social-menu-item--danger{color:#fca5a5}
+.thw-social-menu-item--danger:hover,.thw-social-menu-item--danger:focus-visible{background:rgba(248,113,113,.14);color:#fecaca}
+
+/* Full emoji picker inside the same menu: a fixed-height scroll area so every
+   category is reachable, on desktop and in the mobile sheet. */
+.thw-social-menu--picker{display:flex;flex-direction:column;width:min(420px,calc(100vw - 24px));max-width:420px;max-height:min(70dvh,560px);padding:10px;overflow:hidden}
+.thw-emoji-head{flex:none;margin-bottom:8px}
+.thw-emoji-search{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1px solid rgba(148,163,184,.22);background:rgba(255,255,255,.05);color:#94a3b8}
+.thw-emoji-search input{flex:1;min-width:0;border:0;outline:none;background:transparent;color:#f8fafc;font:500 12px system-ui}
+.thw-emoji-search input::placeholder{color:#64748b}
+.thw-emoji-cats{flex:none;display:flex;gap:4px;margin-bottom:8px;padding-bottom:4px;overflow-x:auto;overscroll-behavior-x:contain}
+.thw-emoji-cat{flex:none;width:30px;height:30px;border:0;border-radius:8px;background:rgba(255,255,255,.05);font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;font-size:14px;cursor:pointer}
+.thw-emoji-cat:hover{background:rgba(255,255,255,.12)}
+.thw-emoji-cat.is-active{background:rgba(56,189,248,.18);box-shadow:inset 0 0 0 1px rgba(56,189,248,.4)}
+.thw-emoji-grid{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:4px}
+.thw-emoji-group{margin-bottom:12px}
+.thw-emoji-group-title{position:sticky;top:0;z-index:1;padding:4px 0 6px;background:rgba(10,13,31,.97);color:#94a3b8;font:800 10px/1 "Sora",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase}
+.thw-emoji-group-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:2px}
+.thw-emoji-cell{width:100%;height:34px;border:0;border-radius:8px;background:transparent;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;font-size:20px;line-height:1;cursor:pointer;transition:background .12s,transform .12s}
+.thw-emoji-cell:hover,.thw-emoji-cell:focus-visible{background:rgba(255,255,255,.1);transform:scale(1.1);outline:none}
+.thw-emoji-grid.is-search .thw-emoji-group-title{display:none}
+.thw-emoji-empty{padding:24px 8px;text-align:center;color:#94a3b8;font-size:12px}
+.thw-social-menu--sheet.thw-social-menu--picker{max-height:82dvh}
 
 /* ===========================================================================
    Message grammar - a quiet panel that explains the slip-ups a reader sees
@@ -585,6 +619,10 @@ a.thw-social-name:hover{color:#67e8f9;text-decoration:underline;text-underline-o
 .thw-blocked-actions .thw-social-action{padding:6px 10px;font-size:10px}
 .thw-blocked-add{display:none}
 .thw-conversation-blocked-note{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:8px;border-radius:14px;border:1px solid rgba(248,113,113,.32);background:linear-gradient(135deg,rgba(248,113,113,.1),rgba(248,113,113,.04));color:#fecaca;font:600 12px/1.4 system-ui,sans-serif}
+/* display:flex above beats the browser's [hidden]{display:none}, so without
+   this the "not accepting messages" banner showed even when canSend was true
+   and the composer was enabled. */
+.thw-conversation-blocked-note[hidden]{display:none}
 
 /* Richer, cleaner bubbles - depth through layers rather than borders. */
 .thw-social-message{padding:10px 12px;border:1px solid rgba(148,163,184,.16);border-radius:16px;background:linear-gradient(160deg,rgba(17,23,42,.96),rgba(13,18,36,.92));box-shadow:0 10px 26px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.04)}
