@@ -1,7 +1,7 @@
 {
   "name": "thehighwrld-dashboard",
   "productName": "TheHighWRLD Dashboard",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "TheHighWRLD Dashboard desktop app",
   "main": "main.js",
   "author": "TheHighWRLD",
@@ -39,7 +39,7 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "license": "TOS.txt"
+      "license": "TOS.rtf"
     },
     "mac": {
       "target": [
