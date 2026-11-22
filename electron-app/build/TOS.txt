@@ -43,8 +43,9 @@ These terms may change. Continued use of the app after a change means you
 accept the updated terms.
 
 9. CONTACT
-Questions or concerns: open an issue at
-https://github.com/Lightsky1356/TheHighWRLD-Dashboard/issues
+Feedback and bug reports can be sent from inside the app: use the Suggestions
+page to submit a report or idea, or use the Report action on a message or post
+that breaks the site rules. GitHub Issues are not enabled for this project.
 
 By selecting "I accept the agreement" you confirm that you have read and agree
 to these Terms of Service.
