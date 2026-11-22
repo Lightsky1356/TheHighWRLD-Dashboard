@@ -1,0 +1,50 @@
+THEHIGHWRLD DASHBOARD - DESKTOP APP TERMS OF SERVICE
+
+Last updated: 22 November 2026
+
+1. ACCEPTANCE
+By installing or using this application you agree to these terms. If you do not
+agree, cancel the installation now.
+
+2. WHAT THIS APP IS
+TheHighWRLD Dashboard is an unofficial, fan-made desktop application that opens
+the public website at thehighwrlddashboard.pages.dev in its own window. It is
+not affiliated with or endorsed by Juice WRLD, his estate, or any record label.
+All music, artwork, names and trademarks belong to their respective owners.
+
+3. PERMITTED USE
+Personal, non-commercial use only. Do not use this app or its community
+features to harass, spam, impersonate anyone, scrape the service, or disrupt
+the site or other members. The site rules shown in the app still apply.
+
+4. YOUR ACCOUNT AND DATA
+Sign-in, playlists, favourites, messages, and profile settings are stored by
+the service on its servers. The desktop app keeps a small local session so you
+stay signed in between launches. You are responsible for your account and for
+the content you post through the app.
+
+5. DISCORD RICH PRESENCE (OPTIONAL)
+When you turn on Discord Rich Presence in Player Settings, the app shares the
+track title, artist, and cover currently playing with the Discord desktop
+client so friends can see your listening activity. Nothing is sent while the
+toggle is off. Discord is a third-party service with its own terms.
+
+6. DOWNLOADS AND UPDATES
+Installers are published on the project's public GitHub releases page. The
+download page lists SHA256 checksums - verify your download before running it.
+Updates are installed by downloading the new installer from that same page.
+
+7. NO WARRANTY
+This app is provided "as is", without warranty of any kind. The maintainers
+are not liable for any loss, damage, or data loss arising from its use.
+
+8. CHANGES
+These terms may change. Continued use of the app after a change means you
+accept the updated terms.
+
+9. CONTACT
+Questions or concerns: open an issue at
+https://github.com/Lightsky1356/TheHighWRLD-Dashboard/issues
+
+By selecting "I accept the agreement" you confirm that you have read and agree
+to these Terms of Service.
