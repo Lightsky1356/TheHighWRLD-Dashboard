@@ -15,10 +15,13 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux
+            installer: "*.AppImage"
           - os: macos-latest
             target: mac
+            installer: "*.dmg"
           - os: windows-latest
             target: win
+            installer: "*.exe"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +41,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-build
-          path: electron-app/release/
+          # Only the installer. Uploading the whole release folder made every
+          # platform ship files with the same names (vk_swiftshader_icd.json,
+          # *.pak, ...), and the release action died on the duplicate with a
+          # 422 already_exists - leaving the other platforms' installers off
+          # the release even though all three builds had succeeded.
+          path: electron-app/release/${{ matrix.installer }}
 
   release:
     needs: build
@@ -52,5 +60,7 @@ jobs:
         with:
           files: artifacts/**/*
           generate_release_notes: true
+          overwrite: true
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
