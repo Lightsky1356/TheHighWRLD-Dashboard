@@ -633,12 +633,31 @@
     }
   } catch (e) {}
 
+  /* Profile addresses are always /Profile/<handle>. A uid or Discord id may
+     open a profile, but once the API has resolved it to a handle the address
+     bar is replaced with the canonical one - the old uid form is not kept. */
+  function canonicaliseProfileAddress(apiData) {
+    try {
+      var handle = (apiData && (apiData.handle || (apiData.profile && apiData.profile.username))) || "";
+      handle = String(handle).trim().replace(/^@/, "");
+      if (!handle) return;
+      var want = "/Profile/" + encodeURIComponent(handle);
+      if (location.pathname !== want && history.replaceState) {
+        history.replaceState({ profile: handle }, "", want);
+      }
+    } catch (e) {}
+  }
+
+  var _profileRenderGen = 0;
   function renderFullProfile() {
     var host = document.getElementById("profilePageBody");
     if (!host) return;
+    var gen = ++_profileRenderGen;
+    function current() { return gen === _profileRenderGen && document.getElementById("profilePageBody") === host; }
     host.classList.remove("cmp-profile-host");
     host.innerHTML = '<div class="pv2-signin"><i class="fas fa-circle-notch fa-spin"></i><p>Loading your profile&hellip;</p></div>';
     loadData().then(function (d) {
+      if (!current()) return; /* a newer profile was opened while this one loaded */
       if (!d || !d.profile) { host.innerHTML = '<div class="pv2-page">' + signInGate() + '</div>'; return; }
       if (d.profile.ok === false) { host.innerHTML = '<div class="pv2-page">' + signInGate() + '</div>'; return; }
       if (d.profile.hidden) { host.innerHTML = '<div class="pv2-page">' + privateGate() + '</div>'; return; }
@@ -649,6 +668,7 @@
         bindCopy(host, d.profile);
         bindSongs(host);
         wireAchievementClicks(host);
+        canonicaliseProfileAddress(d.profile);
         fillRecent();
         fillFavourites();
         afterMount();
@@ -661,7 +681,7 @@
         host.innerHTML = renderError("Something broke while drawing the page.");
       }
     })["catch"](function () {
-      renderInto(host, renderError("The vault didn't answer. Try again in a moment."));
+      if (current()) renderInto(host, renderError("The vault didn't answer. Try again in a moment."));
     });
   }
 

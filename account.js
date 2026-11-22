@@ -3370,13 +3370,16 @@ function compactProfileViewHtml(d) {
     if (!target || String(target) === String(uid)) {
       if (!uid) { if (window.switchAppPage) switchAppPage("account"); toast(_tt("toastSignInProfile", "Sign in to view your profile"), "info"); return; }
       _profilePage.self = true; _profilePage.key = ""; _profilePage.byDiscord = false; _profilePage.data = null;
-      if (window.switchAppPage) switchAppPage("profile");
+      /* The address must be in place BEFORE the page is shown: the profile
+         module reads location.pathname to decide whose data to fetch. Doing it
+         the other way round rendered the previous member's name and stats. */
       try { if (history.pushState) history.pushState({ profile: true }, "", PROFILE_PATH_ROOT); } catch (e) {}
+      if (window.switchAppPage) switchAppPage("profile");
       return;
     }
     _profilePage.self = false; _profilePage.key = target; _profilePage.byDiscord = !!byDiscord; _profilePage.data = null;
-    if (window.switchAppPage) switchAppPage("profile");
     try { if (history.pushState) history.pushState({ profile: target }, "", PROFILE_PATH_ROOT + "/" + encodeURIComponent(target)); } catch (e) {}
+    if (window.switchAppPage) switchAppPage("profile");
   };
 window.profileSectionShown = function () {
     renderProfilePageBody();
@@ -3798,7 +3801,7 @@ window.profileSectionShown = function () {
     card.id = "thwSuggestCard";
     card.className = "thw-suggest-card";
     card.innerHTML =
-      '<span class="thw-suggest-copy"><b>' + esc("Put TheHighWRLD on your home screen") + '</b>' +
+      '<span class="thw-suggest-copy"><b>' + esc("Put TheHighWRLD Dashboard on your home screen") + '</b>' +
       '<span>' + esc("The vault opens like an app, with no address bar in the way.") + '</span></span>' +
       '<span class="thw-suggest-actions">' +
         '<button type="button" class="thw-suggest-never">' + esc("Not now") + '</button>' +
