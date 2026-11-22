@@ -135,7 +135,9 @@
       if (location.pathname !== want && history.pushState) history.pushState({ era: slug || "" }, "", want);
     } catch (e) {}
   }
-  function sectionTitle(t) { return document.title = t; }
+  /* Era pages used to rename the browser tab while browsing. The tab title is
+     left alone now - it belongs to the site, not to the page on screen. */
+  function sectionTitle(t) { return t; }
 
   /* shuffle-era: pick a random opener, fill the queue with distinct random era songs */
   function playEra(era, shuffle) {

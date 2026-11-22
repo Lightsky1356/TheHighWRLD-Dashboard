@@ -1807,6 +1807,10 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
 }
 #features-section .lobby-panel.card::before,
 #features-section .lobby-panel.card::after{display:none!important}
+/* The two long cards (rules and Comps) scroll, so they need their bottom fade
+   back - otherwise the last line is simply cut off with nothing to say there
+   is more below. The plain cards keep the clean, gloss-free look. */
+#features-section .lobby-panel-fade.card::after{display:block!important;top:auto!important;bottom:1px!important;pointer-events:none}
 /* All five titles are set to the same size. "THEHIGHWRLD" is the
    longest of them and it did not fit a 240px column at 20px - the first
    letters were cut off. */

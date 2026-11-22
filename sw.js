@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v516';
+const VERSION = 'thw-v521';
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -44,7 +44,7 @@ const PRECACHE = [
   './effects.js?v=thw-v2',
   './theme-drift.js?v=thw-v9',
   './i18n.js?v=11',
-  './script.js?v=thw-v112',
+  './script.js?v=thw-v113',
   './suggestions.js?v=thw-v2',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v17',
@@ -56,7 +56,7 @@ const PRECACHE = [
   './electron-playback.js?v=thw-v1',
   './community-realtime.css?v=thw-v2',
   './song-comments.js?v=thw-v10',
-  './era-page.js?v=thw-v8',
+  './era-page.js?v=thw-v9',
 
 
   './context-menu.js?v=thw-v3',
@@ -73,7 +73,7 @@ const PRECACHE = [
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v24',
   './account-shared.css?v=thw-v6',
-  './player-settings.css?v=thw-v203',
+  './player-settings.css?v=thw-v205',
   './style.css?v=thw-v55',
   './site-mode.css?v=thw-v3',
   './tailwind.css?v=thw-v2',
