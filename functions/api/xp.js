@@ -54,14 +54,21 @@ export async function onRequestGet(context) {
 
   let me = null;
   try {
-    const session = await getSessionUser(db, request);
-    if (session && session.uid) {
-      const st = await memberStanding(db, session.uid);
-      const allIdx = b.alltime.findIndex((m) => m.uid === session.uid);
-      const weekIdx = b.week.findIndex((m) => m.uid === session.uid);
+    /* A ?user= parameter asks for that member's standing (profile pages use
+       it). Without one, the signed-in member is the subject, as before. */
+    const asked = String(new URL(request.url).searchParams.get("user") || "").trim().slice(0, 64);
+    let subject = asked || "";
+    if (!subject) {
+      const session = await getSessionUser(db, request);
+      subject = session && session.uid ? session.uid : "";
+    }
+    if (subject) {
+      const st = await memberStanding(db, subject);
+      const allIdx = b.alltime.findIndex((m) => m.uid === subject);
+      const weekIdx = b.week.findIndex((m) => m.uid === subject);
       me = {
-        uid: session.uid,
-        name: session.name || "You",
+        uid: subject,
+        name: (asked && st.name) ? st.name : (asked ? subject : "You"),
         xp: st.xp,
         level: st.level || levelFor(st.xp),
         week_xp: st.week_xp,

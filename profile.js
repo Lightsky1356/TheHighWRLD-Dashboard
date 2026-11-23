@@ -145,7 +145,7 @@
       }
       if (self && !ownUid) return { profile: null, xp: null, self: true };
       var url = "/api/profile?user=" + encodeURIComponent(ownUid);
-      return Promise.all([fetchJson(url), fetchJson("/api/xp?limit=100")]).then(function (r) {
+      return Promise.all([fetchJson(url), fetchJson("/api/xp?limit=100&user=" + encodeURIComponent(ownUid))]).then(function (r) {
         return { profile: r[0], xp: r[1], self: self };
       });
     });
@@ -709,8 +709,10 @@
       if (d.profile.ok === false) { host.innerHTML = '<div class="pv2-page">' + signInGate() + '</div>'; return; }
       if (d.profile.hidden) { host.innerHTML = '<div class="pv2-page">' + privateGate() + '</div>'; return; }
       try {
-        /* Links live at the top level of /api/profile, not inside profile. */
-        d.profile.links = Array.isArray(d.links) ? d.links : [];
+        /* loadData() already puts the whole /api/profile response in d.profile,
+           links included. Do not overwrite it from the wrapper - that wiped
+           everybody's links and showed "No links added yet." on every page. */
+        if (!Array.isArray(d.profile.links)) d.profile.links = [];
         host.innerHTML = '<div class="pv2-page">' + buildPage(d.profile, d.xp, d.self) + '</div>';
         bindCopy(host, d.profile);
         bindSongs(host);
