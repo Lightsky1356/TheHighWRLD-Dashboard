@@ -1,6 +1,6 @@
 import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
 import { banRejection } from "../_lib/bans.js";
-import { moderateContent } from "../_lib/automod.js";
+import { activeReview, removeContent, notifyModeration } from "../_lib/active-mod.js";
 import { evaluateSurfaceRules, recordRuleFlags } from "../_lib/submissionRules.js";
 import { createNotification } from "../_lib/notifications.js";
 
@@ -258,32 +258,35 @@ export async function onRequestPost(context) {
         }, 0);
         createdReply.clientTempId = body.clientTempId || null;
         liveEvent = { type: "reply:created", reply: createdReply, conversationId: track, clientTempId: body.clientTempId || null };
-        // Vault comment rules: flag for human review only, never block. Catches
-        // the off-platform trading/download pitches that the no-scam rule is about.
+        // Vault comment rules: AI removes clear violations, everything else
+        // is flagged for a human. Catches off-platform trading pitches too.
         {
           const body500 = String(text).slice(0, 500);
           const violations = evaluateSurfaceRules("wanted", { description: body500 });
           const recent = await db.prepare(
             "SELECT COUNT(*) as n FROM replies WHERE author_uid = ? AND created_at >= datetime('now','-10 minutes')"
           ).bind(user).first().catch(() => null);
-          const generic = await moderateContent(db, env, {
+          const review = await activeReview(db, env, {
             targetType: "wanted_reply", targetId: String(replyId), uid: user,
             text: String(track) + "\n" + body500, author: link.display_name,
             recentCount: recent ? Number(recent.n) : null,
           });
           let rule = null;
           if (violations.length) rule = await recordRuleFlags(db, { surface: "wanted", targetId: replyId, uid: user, violations });
-          if (rule || generic) {
+          const href = "wanted:" + String(track).slice(0, 80);
+          if (review.action === "remove") {
+            const removed = await removeContent(db, env, "wanted_reply", replyId);
+            await notifyModeration(db, env, user,
+              "Your comment was removed by AI moderation (" + review.category + ").", href, String(replyId));
+            replyFlag = { severity: "high", codes: ["ai:" + review.category], removed, flagId: review.flagId };
+            liveEvent = { type: "reply:deleted", replyId, conversationId: track };
+          } else if (rule || review.action === "flag") {
             const codes = violations.map((v) => v.code);
-            if (generic) codes.push(generic.category);
-            const severity = (rule && rule.severity) || (generic && generic.severity) || "low";
-            try {
-              await db.prepare(
-                "INSERT INTO notifications (uid, type, message, track_id, reply_id, actor) VALUES (?, 'moderation', ?, ?, ?, 'Automated moderation')"
-              ).bind(user, "Your comment was sent to staff review (" + codes.join(", ") + ")",
-                String(track).slice(0, 80), replyId, severity).run();
-            } catch (_) {}
-            replyFlag = { severity, codes };
+            if (review.action === "flag") codes.push(review.category);
+            const severity = (rule && rule.severity) || review.severity || "low";
+            await notifyModeration(db, env, user,
+              "Your comment was sent to staff review (" + codes.join(", ") + ")", href, String(replyId));
+            replyFlag = { severity, codes, flagId: review.flagId };
           }
         }
         if (parentAuthorId && link.discord_id && parentAuthorId !== link.discord_id) {

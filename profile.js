@@ -249,6 +249,13 @@
     return '<img class="pv2-avatar" id="pv2HeroAvatar" src="' + esc2(p.avatar) + '" alt="" decoding="async" ' +
       'data-initials="' + esc2(initials(p.name)) + '" onerror="window.__thwAvatarError(this)">';
   }
+  /* One report button for the whole profile. The modal lets the reader pick
+     the reason; the API snapshots and AI-reviews the profile in one pass. */
+  function profileReportBtn(uid) {
+    if (!uid) return "";
+    return '<button type="button" class="pv2-report-field" data-report="PROFILE:u:' + esc2(uid) +
+      '" data-report-title="Profile" title="Report this profile" aria-label="Report this profile"><i class="fas fa-flag" aria-hidden="true"></i></button>';
+  }
   function joinedStr(j) {
     if (!j) return "";
     try {
@@ -414,9 +421,13 @@
     html += '<div class="pv2-hero-inner">';
     html += '<div class="pv2-hero-top"><div><div class="pv2-era-label">Top era</div><div class="pv2-era-name">' + esc2(eraLabel(topEra)) + '</div></div>';
     if (isMe) html += '<button type="button" class="pv2-copy-btn" id="pv2CopyLink" title="Copy profile link" aria-label="Copy profile link"><i class="fas fa-link"></i></button>';
+    if (reportUid) html += profileReportBtn(reportUid);
     html += '</div>';
-    html += '<div class="pv2-hero-mid"><div class="pv2-avatar-wrap">' + avatarHtml(p) + '<span class="pv2-dot" style="background:#10b981"></span></div>';
-    html += '<div class="pv2-meta"><h1 class="pv2-name" id="pv2HeroName">' + esc2(name) + '</h1><p class="pv2-handle">@' + esc2(String(uname).toLowerCase()) + '</p>';
+    var reportUid = isMe ? "" : String(d.uid || "");
+    html += '<div class="pv2-hero-mid"><div class="pv2-avatar-wrap">' + avatarHtml(p) +
+      '<span class="pv2-dot" style="background:#10b981"></span></div>';
+    html += '<div class="pv2-meta"><h1 class="pv2-name" id="pv2HeroName">' + esc2(name) + '</h1>' +
+      '<p class="pv2-handle">@' + esc2(String(uname).toLowerCase()) + '</p>';
     html += '<p class="pv2-joined">' + (p.joined ? 'Joined ' + esc2(joinedStr(p.joined)) : '') + (dc.linked ? (p.joined ? ' &middot; ' : '') + 'Discord linked' : '') + '</p>';
     html += '<p class="pv2-bio' + (p.bio ? '' : ' hidden') + '" id="pv2HeroBio">' + esc2(p.bio || "") + '</p>';
     if (topEra) html += '<span class="pv2-era-chip"><i class="fas fa-crown"></i>' + esc2(eraLabel(topEra)) + '</span>';

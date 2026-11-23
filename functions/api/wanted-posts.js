@@ -1,6 +1,6 @@
 import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
 import { banRejection } from "../_lib/bans.js";
-import { moderateContent } from "../_lib/automod.js";
+import { activeReview, removeContent, notifyModeration } from "../_lib/active-mod.js";
 import { evaluateSurfaceRules, recordRuleFlags } from "../_lib/submissionRules.js";
 import { createNotification } from "../_lib/notifications.js";
 
@@ -46,12 +46,11 @@ async function recentCount(db, uid) {
   return row ? Number(row.n) : null;
 }
 
-// Vault submission rules: flag for human review, never block. The vault is
-// official-releases-only, so a request for a leak or another artist is the
-// main thing this catches.
+// AI first, rules second. A high-confidence AI verdict removes the request;
+// the vault-specific rules and every lesser finding still go to a human.
 async function flagSubmission(db, env, targetId, uid, fields) {
   const violations = evaluateSurfaceRules("wanted", fields);
-  const generic = await moderateContent(db, env, {
+  const review = await activeReview(db, env, {
     targetType: "wanted", targetId: String(targetId || ""), uid,
     text: String(fields.title || "") + "\n" + String(fields.altName || "") + "\n" +
       String(fields.description || "") + "\n" + String(fields.era || ""),
@@ -59,17 +58,22 @@ async function flagSubmission(db, env, targetId, uid, fields) {
   });
   let rule = null;
   if (violations.length) rule = await recordRuleFlags(db, { surface: "wanted", targetId, uid, violations });
-  if (rule || generic) {
+
+  if (review.action === "remove") {
+    const removed = await removeContent(db, env, "wanted", targetId);
+    await notifyModeration(db, env, uid,
+      "Your wanted request was removed by AI moderation (" + review.category + ").",
+      "wanted", String(targetId || ""));
+    return { severity: "high", codes: ["ai:" + review.category], removed, flagId: review.flagId };
+  }
+  if (rule || review.action === "flag") {
     const codes = violations.map((v) => v.code);
-    if (generic) codes.push(generic.category);
-    const severity = (rule && rule.severity) || (generic && generic.severity) || "low";
-    try {
-      await db.prepare(
-        "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'moderation', ?, ?, ?, ?, 'Automated moderation')"
-      ).bind(uid, "Your wanted request was sent to staff review (" + codes.join(", ") + ")",
-        "wanted-posts:" + targetId, String(targetId || ""), severity).run();
-    } catch (_) {}
-    return { severity, codes };
+    if (review.action === "flag") codes.push(review.category);
+    const severity = (rule && rule.severity) || review.severity || "low";
+    await notifyModeration(db, env, uid,
+      "Your wanted request was sent to staff review (" + codes.join(", ") + ")",
+      "wanted-posts:" + targetId, String(targetId || ""));
+    return { severity, codes, flagId: review.flagId };
   }
   return null;
 }
@@ -195,7 +199,9 @@ export async function onRequestPost(context) {
         ruleFlag = await flagSubmission(db, env, postId, uid, {
           title, altName, description, era, author: authorName, recentCount: await recentCount(db, uid),
         });
-        liveEvent = {
+        liveEvent = (ruleFlag && ruleFlag.removed)
+          ? { type: "wanted:deleted", postId }
+          : {
           type: "wanted:created",
           post: post ? {
             id: post.id, title: post.title, altName: post.alt_name,
@@ -248,7 +254,9 @@ export async function onRequestPost(context) {
             title, altName, description, era, author: uid, recentCount: null,
           });
         }
-        liveEvent = { type: "wanted:edited", postId };
+        liveEvent = (ruleFlag && ruleFlag.removed)
+          ? { type: "wanted:deleted", postId }
+          : { type: "wanted:edited", postId };
         break;
       }
       case "delete": {

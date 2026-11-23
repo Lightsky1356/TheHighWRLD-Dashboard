@@ -20,6 +20,13 @@ name = "COMMUNITY_HUB"
 class_name = "CommunityHub"
 script_name = "thehighwrld-community-hub"
 
+# ---------- Workers AI (moderation fallback; no external secrets needed) ----------
+# The Pages project needs this binding under Settings > Bindings > AI as well;
+# the entry here covers local `pages dev`. When AI_MOD_ENDPOINT/AI_MOD_KEY are
+# set those take priority, otherwise env.AI is used to review submissions.
+[ai]
+binding = "AI"
+
 # ---------- Secrets / env (set via dashboard, never committed) ----------
 # OWNER_DISCORD_ID, HCAPTCHA_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
 # DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SESSION_SECRET, OWNER_PASSCODE

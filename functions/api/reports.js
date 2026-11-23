@@ -1,5 +1,6 @@
 import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
 import { getSessionUser } from "../_lib/auth.js";
+import { moderateContent } from "../_lib/automod.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -158,6 +159,9 @@ export async function onRequestPost(context) {
     const targetId = String(body.target_id || "").trim().slice(0, 80);
     const reason = String(body.reason || "").trim().slice(0, 60);
     const details = String(body.details || "").trim().slice(0, MAX_DETAILS);
+    /* Which part of a profile was reported - bio, name, picture or handle. */
+    const field = ["bio", "name", "picture", "handle"].includes(String(body.field || ""))
+      ? String(body.field) : "";
     if (!VALID_TYPES.includes(targetType)) return json({ error: "invalid target type" }, 400);
     if (!targetId) return json({ error: "invalid target" }, 400);
     if (!VALID_REASONS.includes(reason)) return json({ error: "a reason is required" }, 400);
@@ -243,8 +247,37 @@ export async function onRequestPost(context) {
       if (reporter.uid && person.site_uid && person.site_uid === reporter.uid) {
         return json({ error: "cannot_perform_on_self", message: "You cannot perform this action on yourself." }, 400);
       }
-      snapTitle = person.display_name || person.discord_id;
+      snapTitle = "Profile: " + (person.display_name || person.discord_id);
       snapBody = ("Discord profile: " + (person.discord_id || "")).slice(0, MAX_DETAILS);
+      /* Snapshot the public profile and let the shared AI moderation hook
+         judge it. The picture is only a URL - never the image bytes. */
+      if (reporter.uid) {
+        try {
+          const row = await db.prepare(
+            "SELECT u.name AS handle, p.name AS display_name, p.bio, p.avatar " +
+            "FROM users u LEFT JOIN user_profiles p ON p.site_uid = u.uid WHERE u.uid = ?"
+          ).bind(person.site_uid).first();
+          if (row) {
+            const parts = [
+              "Name: " + (row.display_name || ""),
+              "Handle: " + (row.handle || ""),
+              "Bio: " + (row.bio || ""),
+              "Picture: " + (row.avatar || ""),
+            ];
+            snapBody = parts.join("\n").slice(0, MAX_DETAILS);
+            const ai = await moderateContent(db, env, {
+              targetType: "PROFILE",
+              targetId: String(person.site_uid || person.discord_id),
+              uid: reporter.uid,
+              text: [row.display_name, row.handle, row.bio].filter(Boolean).join("\n"),
+              author: person.display_name || "",
+              recentCount: null,
+            });
+            if (ai) snapBody = (snapBody + "\nAI review: " + (ai.category || "flagged") +
+              " (" + ai.severity + ", " + Math.round((ai.confidence || 0) * 100) + "%)").slice(0, MAX_DETAILS);
+          }
+        } catch (_) {}
+      }
     } else {
       const track = await db.prepare(
         "SELECT title, note FROM tracks WHERE LOWER(title) = LOWER(?)"

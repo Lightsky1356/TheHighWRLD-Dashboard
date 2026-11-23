@@ -1,6 +1,6 @@
 import { hubBroadcast, resolveSiteUid } from "../_lib/realtime.js";
 import { banRejection } from "../_lib/bans.js";
-import { moderateContent } from "../_lib/automod.js";
+import { activeReview, removeContent, notifyModeration } from "../_lib/active-mod.js";
 import { evaluateSurfaceRules, recordRuleFlags } from "../_lib/submissionRules.js";
 import { createNotification } from "../_lib/notifications.js";
 import { rateLimit } from "../_lib/rate-limit.js";
@@ -52,29 +52,33 @@ async function recentCount(db, uid) {
   return row ? Number(row.n) : null;
 }
 
-// Run both moderation layers for a submission: the shared spam/shouting rules
-// (moderateContent) and the surface-specific ruleset. Either can flag, neither
-// can reject. Returns null when clean, or {severity, codes} for the UI notice.
+// AI first, rules second. A high-confidence AI verdict removes the suggestion
+// outright; everything else is flagged for a human exactly as before.
 async function flagSubmission(db, env, surface, targetId, uid, fields) {
   const violations = evaluateSurfaceRules(surface, fields);
-  const generic = await moderateContent(db, env, {
+  const review = await activeReview(db, env, {
     targetType: "suggestion", targetId: String(targetId || ""), uid,
     text: String(fields.title || "") + "\n" + String(fields.description || ""),
     author: fields.author, recentCount: fields.recentCount,
   });
   let rule = null;
   if (violations.length) rule = await recordRuleFlags(db, { surface, targetId, uid, violations });
-  if (rule || generic) {
+
+  if (review.action === "remove") {
+    const removed = await removeContent(db, env, "suggestion", targetId);
+    await notifyModeration(db, env, uid,
+      "Your suggestion was removed by AI moderation (" + review.category + ").",
+      "suggestions", String(targetId || ""));
+    return { severity: "high", codes: ["ai:" + review.category], removed, flagId: review.flagId };
+  }
+  if (rule || review.action === "flag") {
     const codes = violations.map((v) => v.code);
-    if (generic) codes.push(generic.category);
-    const severity = (rule && rule.severity) || (generic && generic.severity) || "low";
-    try {
-      await db.prepare(
-        "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'moderation', ?, ?, ?, ?, 'Automated moderation')"
-      ).bind(uid, "Your suggestion was sent to staff review (" + codes.join(", ") + ")",
-        "suggestions:" + targetId, String(targetId || ""), severity).run();
-    } catch (_) {}
-    return { severity, codes };
+    if (review.action === "flag") codes.push(review.category);
+    const severity = (rule && rule.severity) || review.severity || "low";
+    await notifyModeration(db, env, uid,
+      "Your suggestion was sent to staff review (" + codes.join(", ") + ")",
+      "suggestions:" + targetId, String(targetId || ""));
+    return { severity, codes, flagId: review.flagId };
   }
   return null;
 }
@@ -236,7 +240,9 @@ export async function onRequestPost(context) {
         ruleFlag = await flagSubmission(db, env, "suggestions", sugId, uid, {
           title, description: String(body.description || ""), author: authorName, recentCount: await recentCount(db, uid),
         });
-        liveEvent = {
+        liveEvent = (ruleFlag && ruleFlag.removed)
+          ? { type: "suggestion:deleted", suggestionId: sugId }
+          : {
           type: "suggestion:created",
           suggestion: sug ? {
             id: sug.id, title: sug.title, description: sug.description,
@@ -330,7 +336,9 @@ export async function onRequestPost(context) {
             title, description: String(body.description || ""), author: uid, recentCount: null,
           });
         }
-        liveEvent = { type: "suggestion:edited", suggestionId: sugId };
+        liveEvent = (ruleFlag && ruleFlag.removed)
+          ? { type: "suggestion:deleted", suggestionId: sugId }
+          : { type: "suggestion:edited", suggestionId: sugId };
         break;
       }
       case "delete": {
@@ -374,6 +382,23 @@ export async function onRequestPost(context) {
           "INSERT INTO suggestion_comments (suggestion_id, parent_id, author_uid, author_name, author_avatar, body) VALUES (?, ?, ?, ?, ?, ?)"
         ).bind(sugId, parentId || null, uid, authorName, authorAvatar, esc(text)).run();
         const id = ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0;
+        const review = await activeReview(db, env, {
+          targetType: "suggestion_comment", targetId: String(id), uid,
+          text, author: authorName, recentCount: null,
+        });
+        if (review.action === "remove") {
+          await removeContent(db, env, "suggestion_comment", id);
+          await notifyModeration(db, env, uid,
+            "Your reply was removed by AI moderation (" + review.category + ").",
+            "suggestions:" + sugId, String(id));
+          liveEvent = { type: "suggestion:comment", suggestionId: sugId };
+          break;
+        }
+        if (review.action === "flag") {
+          await notifyModeration(db, env, uid,
+            "Your reply was flagged for staff review (" + review.category + ")",
+            "suggestions:" + sugId, String(id));
+        }
         try {
           const targetUid = parent ? parent.author_uid : sug.author_uid;
           if (targetUid && targetUid !== uid) {

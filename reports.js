@@ -169,8 +169,8 @@
     }
   }
 
-  async function openReportModal(type, id, title) {
-    cur = { type: type, id: String(id), title: title || '' };
+  async function openReportModal(type, id, title, field) {
+    cur = { type: type, id: String(id), title: title || '', field: field || '' };
     var ov = ensureModal();
     ov.querySelector('.report-target-title').textContent =
       typeLabel(type) + (title || ('#' + id));
@@ -213,6 +213,7 @@
           target_id: cur.id,
           reason: reason,
           details: details.slice(0, MAX_DETAILS),
+          field: cur.field,
           user: getUid(),
         }),
       });
@@ -252,7 +253,7 @@
         var h = card.querySelector('.sugg-card-title, .wanted-card-title, .wanted-song-title, .wanted-reply-text');
         if (h) title = h.textContent.trim().slice(0, 120);
       }
-      openReportModal(type, id, title);
+      openReportModal(type, id, title, b.getAttribute('data-report-field') || '');
     });
   }
   bindButtons();

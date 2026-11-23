@@ -201,7 +201,6 @@
       if (!msg || typeof msg.type !== 'string') return;
       if (msg.type === 'report:created' || msg.type === 'report:updated' || msg.type === 'report:deleted') { try { window.dispatchEvent(new CustomEvent('thw:report', { detail: msg })); } catch (_) {} return; }
       if (msg.type.indexOf('social:') === 0) { try { window.dispatchEvent(new CustomEvent('thw:social', { detail: msg })); } catch (_) {} return; }
-      if (msg.type.indexOf('chat:') === 0) { try { window.dispatchEvent(new CustomEvent('thw:chat', { detail: msg })); } catch (_) {} return; }
       if (msg.type === 'notification:created') { try { window.dispatchEvent(new CustomEvent('thw:notification', { detail: msg })); } catch (_) {} return; }
       /* The hub publishes the roster itself on every change - render it
          immediately instead of waiting for the next poll. */

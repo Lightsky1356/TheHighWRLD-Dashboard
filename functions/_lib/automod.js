@@ -83,12 +83,52 @@ export function evaluateRules({ text, uid, recentCount }) {
   return null;
 }
 
+/* On-platform fallback: a Workers AI binding needs no external secrets. When
+ * the owner has not supplied AI_MOD_ENDPOINT/AI_MOD_KEY, an `AI` binding is
+ * used instead. Absent both, this returns null and the rules engine decides. */
+async function workersAiVerdict(env, { text, author, kind }) {
+  const ai = env && env.AI;
+  if (!ai || typeof ai.run !== "function") return null;
+  try {
+    const system = "You are a content moderator for a music community site. " +
+      "Flag hate speech, harassment, threats, sexual content, scams, spam and " +
+      "off-platform sales pitches. Reply with ONLY a JSON object of the form " +
+      '{"category":"hate|harassment|threat|sexual|scam|spam|other",' +
+      '"confidence":0-1,"severity":"low|medium|high"}. Use "high" only for ' +
+      'clear, serious violations and "low" for benign content.';
+    const out = await ai.run("@cf/meta/llama-3.1-8b-instruct", {
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: "Kind: " + String(kind || "post") + "\nAuthor: " + String(author || "") + "\nContent: " + String(text || "").slice(0, 2000) },
+      ],
+      max_tokens: 200,
+      temperature: 0,
+    });
+    const raw = typeof out === "string" ? out : (out && (out.response || out.result || JSON.stringify(out))) || "";
+    const m = String(raw).match(/\{[\s\S]*\}/);
+    if (!m) return null;
+    const d = JSON.parse(m[0]);
+    const conf = Number(d.confidence);
+    const sev = String(d.severity || "").toLowerCase();
+    if (isNaN(conf) || conf < 0 || conf > 1) return null;
+    if (sev !== "low" && sev !== "medium" && sev !== "high") return null;
+    return {
+      category: String(d.category || "unclassified").slice(0, 40),
+      confidence: conf,
+      severity: sev,
+      recommended_action: "review",
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
 // Optional server-side AI verdict. Returns null when unconfigured or on any
 // failure — the caller keeps the rules verdict. Never throws.
 export async function aiVerdict(env, { text, author, kind }) {
   const endpoint = env.AI_MOD_ENDPOINT || "";
   const key = env.AI_MOD_KEY || "";
-  if (!endpoint || !key) return null;
+  if (!endpoint || !key) return workersAiVerdict(env, { text, author, kind });
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => { try { ctrl.abort(); } catch (_) {} }, 8000);
@@ -101,7 +141,7 @@ export async function aiVerdict(env, { text, author, kind }) {
           content: String(text || "").slice(0, 2000),
           author: String(author || "").slice(0, 40),
           kind: String(kind || "post"),
-          task: "classify: return JSON {category, confidence (0-1), severity (low|medium|high), recommended_action}",
+          task: "Moderate this " + String(kind || "post") + ". Flag hate speech, harassment, threats, sexual content, scams, spam and off-platform sales pitches. Return ONLY JSON {category (one of: hate|harassment|threat|sexual|scam|spam|other), confidence (0-1), severity (low|medium|high), recommended_action}. Use severity high only for clear, serious violations; low for benign content.",
         }),
         signal: ctrl.signal,
       });

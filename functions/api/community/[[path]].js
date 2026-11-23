@@ -11,7 +11,7 @@
 import { getSessionUser } from "../../_lib/auth.js";
 import { hubBroadcast } from "../../_lib/realtime.js";
 import { banRejection } from "../../_lib/bans.js";
-import { moderateContent } from "../../_lib/automod.js";
+import { activeReview, removeContent, notifyModeration } from "../../_lib/active-mod.js";
 import { createNotification } from "../../_lib/notifications.js";
 
 const CORS_HEADERS = {
@@ -248,18 +248,23 @@ async function createPost(request, env, db) {
 
   const row = await db.prepare("SELECT * FROM community_posts WHERE id = ?").bind(pid).first();
   const post = mapPost(row || {}, 0);
-  // Automated moderation: records a review flag when rules/AI hit. Never blocks
-  // the post itself and never bans — a human decides in the automod queue.
-  const flag = await moderateContent(db, env, {
+  // AI reviews every post now. A clear, high-confidence violation is removed
+  // outright; lesser findings still go to the human automod queue.
+  const flag = await activeReview(db, env, {
     targetType: "post", targetId: String(pid), uid: auth.uid,
     text: title + "\n" + text, author: auth.name, recentCount: await recentPostCount(db, auth.uid),
   });
-  if (flag) {
-    try {
-      await db.prepare(
-        "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'moderation', ?, ?, ?, ?, 'Automated moderation')"
-      ).bind(auth.uid, "Your post was flagged for staff review (" + flag.category + ")", "community:post:" + pid, String(pid), flag.severity).run();
-    } catch (_) {}
+  const href = "community:post:" + pid;
+  if (flag.action === "remove") {
+    await removeContent(db, env, "post", pid);
+    await notifyModeration(db, env, auth.uid,
+      "Your post was removed by AI moderation (" + flag.category + ").", href, String(pid));
+    await hubBroadcast(env, { type: "post:deleted", postId: pid });
+    return json({ ok: true, removed: true, category: flag.category, flagId: flag.flagId, clientTempId: body.clientTempId || null });
+  }
+  if (flag.action === "flag") {
+    await notifyModeration(db, env, auth.uid,
+      "Your post was flagged for staff review (" + flag.category + ")", href, String(pid));
   }
   await hubBroadcast(env, { type: "post:created", post });
   const event = { type: "post:created", post };
@@ -312,16 +317,21 @@ async function createReply(request, env, db, postIdRaw, ctx) {
   const row = await db.prepare("SELECT * FROM community_replies WHERE id = ?").bind(rid).first();
   const reply = mapReply(row || {});
 
-  const rflag = await moderateContent(db, env, {
+  const rflag = await activeReview(db, env, {
     targetType: "reply", targetId: String(rid), uid: auth.uid,
     text, author: auth.name, recentCount: await recentPostCount(db, auth.uid),
   });
-  if (rflag) {
-    try {
-      await db.prepare(
-        "INSERT INTO notifications (uid, type, message, href, post_id, data, actor) VALUES (?, 'moderation', ?, ?, ?, ?, 'Automated moderation')"
-      ).bind(auth.uid, "Your reply was flagged for staff review (" + rflag.category + ")", "community:post:" + pid, String(pid), rflag.severity).run();
-    } catch (_) {}
+  const rhref = "community:post:" + pid;
+  if (rflag.action === "remove") {
+    await removeContent(db, env, "reply", rid);
+    await notifyModeration(db, env, auth.uid,
+      "Your reply was removed by AI moderation (" + rflag.category + ").", rhref, String(pid));
+    await hubBroadcast(env, { type: "reply:deleted", replyId: rid, postId: pid, conversationId: "post-" + pid });
+    return json({ ok: true, removed: true, category: rflag.category, flagId: rflag.flagId, clientTempId: body.clientTempId || null });
+  }
+  if (rflag.action === "flag") {
+    await notifyModeration(db, env, auth.uid,
+      "Your reply was flagged for staff review (" + rflag.category + ")", rhref, String(pid));
   }
 
   // Broadcast instantly to all connected clients (dedup via server id on client).

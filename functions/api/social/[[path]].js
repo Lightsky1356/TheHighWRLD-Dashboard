@@ -6,6 +6,7 @@ import { banRejection } from "../../_lib/bans.js";
    and none of them can be delivered twice. */
 import { createNotification } from "../../_lib/notifications.js";
 import { rateLimit } from "../../_lib/rate-limit.js";
+import { activeReview, removeContent, notifyModeration } from "../../_lib/active-mod.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -942,6 +943,31 @@ async function sendMessage(context, db, me, conversationId, body) {
     "VALUES (?, ?, ?, ?, ?, ?, ?)"
   ).bind(conversationId, me.uid, text, replyTo, trackTitle, trackArtist, stickerText).run();
   const id = Number(inserted.meta && inserted.meta.last_row_id) || 0;
+
+  /* AI reviews every DM. A clear, high-confidence violation is removed before
+     it reaches anybody else; lesser findings are flagged for a human. */
+  if (text) {
+    const review = await activeReview(db, context.env, {
+      targetType: "dm_message", targetId: String(id), uid: me.uid,
+      text, author: me.name || "Member", recentCount: null,
+    });
+    if (review.action === "remove") {
+      await removeContent(db, context.env, "dm_message", id);
+      await notifyModeration(db, context.env, me.uid,
+        "Your message was removed by AI moderation (" + review.category + ").",
+        "social:conversation:" + conversationId, String(id));
+      try {
+        await notifyBestEffort(db, context.env, me.uid, me, "moderation",
+          "Your message was removed by AI moderation (" + review.category + ").", context);
+      } catch (_) {}
+      return json({ ok: true, removed: true, category: review.category, flagId: review.flagId });
+    }
+    if (review.action === "flag") {
+      await notifyModeration(db, context.env, me.uid,
+        "Your message was flagged for staff review (" + review.category + ")",
+        "social:conversation:" + conversationId, String(id));
+    }
+  }
 
   /* What the message carries beside its words. The bytes are checked before
      they are stored, and a rejected attachment rejects the whole message - a
