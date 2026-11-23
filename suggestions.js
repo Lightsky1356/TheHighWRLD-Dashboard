@@ -15,6 +15,7 @@
   };
 
   let state = { suggestions: [], myVotes: {}, isOwner: false, linked: false, total: 0, page: 1, pages: 1 };
+  let replyTo = { sid: 0, cid: 0, name: '' };
   let filters = { status: 'all', category: 'all', sort: 'newest', q: '' };
   let debounceTimer = null;
 
@@ -151,6 +152,40 @@
     if (ct) ct.textContent = state.total + ' suggestion' + (state.total !== 1 ? 's' : '');
   }
 
+  function commentNode(c, sid, isReply) {
+    var mine = c.authorUid === getUid();
+    return '<div class="sugg-comment' + (isReply ? ' is-reply' : '') + '" data-cid="' + c.id + '">' +
+      '<div class="sugg-comment-head">' +
+        '<span class="sugg-comment-name"' + (c.authorUid ? ' data-profile-link="' + esc(c.authorUid) + '"' : '') + '>' + esc(c.authorName || 'Member') + '</span>' +
+        '<span class="sugg-comment-time">' + relTime(c.createdAt) + '</span>' +
+      '</div>' +
+      (c.deleted ? '<p class="sugg-comment-gone">This reply was deleted.</p>' : '<p class="sugg-comment-text">' + esc(c.body) + '</p>') +
+      (!c.deleted && hasLinked()
+        ? '<div class="sugg-comment-actions">' +
+            '<button type="button" class="sugg-comment-reply" data-sugg-reply="' + c.id + '" data-sid="' + sid + '" data-name="' + esc(c.authorName || 'Member') + '"><i class="fas fa-reply"></i> Reply</button>' +
+            ((mine || state.isOwner) ? '<button type="button" class="sugg-comment-del" data-sugg-comment-del="' + c.id + '" data-sid="' + sid + '" title="Delete"><i class="fas fa-trash"></i></button>' : '') +
+          '</div>'
+        : '') +
+      (c.replies || []).map(function (r) { return commentNode(r, sid, true); }).join('') +
+      '</div>';
+  }
+
+  function commentsHTML(s) {
+    var list = s.comments || [];
+    var banner = '';
+    if (replyTo.sid === s.id && replyTo.cid) {
+      banner = '<div class="sugg-comment-replying"><span>Replying to ' + esc(replyTo.name) + '</span>' +
+        '<button type="button" data-sugg-reply-cancel><i class="fas fa-xmark"></i></button></div>';
+    }
+    return '<div class="sugg-comments">' +
+      '<button type="button" class="sugg-comments-toggle" data-sugg-toggle="' + s.id + '"><i class="fas fa-comments"></i> ' + list.length + ' repl' + (list.length === 1 ? 'y' : 'ies') + '</button>' +
+      '<div class="sugg-comments-body"' + (list.length ? '' : ' hidden') + '>' +
+        (list.length ? list.map(function (c) { return commentNode(c, s.id, false); }).join('') : '<p class="sugg-comment-empty">No replies yet.</p>') +
+        banner +
+        (hasLinked() ? '<div class="sugg-comment-compose"><input class="sugg-comment-input" type="text" maxlength="2000" placeholder="Write a reply\u2026" aria-label="Write a reply" data-sid="' + s.id + '"><button type="button" class="sugg-comment-send" data-sugg-send="' + s.id + '" aria-label="Send reply"><i class="fas fa-arrow-right"></i></button></div>' : '') +
+      '</div></div>';
+  }
+
   function renderList() {
     var el = document.getElementById('sugg-list');
     if (!el) return;
@@ -193,6 +228,7 @@
               adminBtns +
             (hasLinked() ? '<button class="report-flag-btn" data-report="suggestion:' + s.id + '" title="Report"><i class="fas fa-flag"></i></button>' : '') +
             '</div>' +
+            commentsHTML(s) +
           '</div>' +
         '</div>' +
       '</div>';
@@ -216,6 +252,62 @@
         }
       });
     });
+
+    el.querySelectorAll('[data-sugg-toggle]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var body = btn.parentElement.querySelector('.sugg-comments-body');
+        if (body) body.hidden = !body.hidden;
+      });
+    });
+    el.querySelectorAll('[data-sugg-reply]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var sid = parseInt(btn.getAttribute('data-sid'), 10);
+        replyTo = { sid: sid, cid: parseInt(btn.getAttribute('data-sugg-reply'), 10), name: btn.getAttribute('data-name') || 'Member' };
+        render();
+        var input = document.querySelector('.sugg-card[data-id="' + sid + '"] .sugg-comment-input');
+        var body = document.querySelector('.sugg-card[data-id="' + sid + '"] .sugg-comments-body');
+        if (body) body.hidden = false;
+        if (input) input.focus();
+      });
+    });
+    el.querySelectorAll('[data-sugg-reply-cancel]').forEach(function (btn) {
+      btn.addEventListener('click', function () { replyTo = { sid: 0, cid: 0, name: '' }; render(); });
+    });
+    el.querySelectorAll('[data-sugg-comment-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!confirm('Delete this reply?')) return;
+        api('commentDelete', { id: parseInt(btn.getAttribute('data-sugg-comment-del'), 10) }).then(function (d) {
+          if (d && d.error) { if (window.showToastSimple) window.showToastSimple(d.message || d.error, { type: 'error' }); return; }
+          load();
+        });
+      });
+    });
+    el.querySelectorAll('[data-sugg-send]').forEach(function (btn) {
+      btn.addEventListener('click', function () { sendReply(parseInt(btn.getAttribute('data-sugg-send'), 10)); });
+    });
+    el.querySelectorAll('.sugg-comment-input').forEach(function (input) {
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); sendReply(parseInt(input.getAttribute('data-sid'), 10)); }
+      });
+    });
+  }
+
+  async function sendReply(sid) {
+    if (!hasLinked()) { showGateModal('Discord Required', 'Replying requires a LINKED Discord Account'); return; }
+    var input = document.querySelector('.sugg-card[data-id="' + sid + '"] .sugg-comment-input');
+    if (!input) return;
+    var text = (input.value || '').trim();
+    if (!text) return;
+    var btn = document.querySelector('.sugg-card[data-id="' + sid + '"] [data-sugg-send]');
+    if (btn) btn.disabled = true;
+    var d = await api('commentCreate', { id: sid, body: text, parentId: replyTo.sid === sid ? replyTo.cid : 0 });
+    if (d && d.error) {
+      if (window.showToastSimple) window.showToastSimple(d.message || d.error, { type: 'error' });
+      if (btn) btn.disabled = false;
+      return;
+    }
+    replyTo = { sid: 0, cid: 0, name: '' };
+    await load();
   }
 
   async function handleVote(id, val) {
@@ -322,7 +414,7 @@
     ws.onmessage = function (ev) {
       try {
         var msg = JSON.parse(ev.data);
-        if (msg.type === 'suggestion:created' || msg.type === 'suggestion:deleted' || msg.type === 'suggestion:status' || msg.type === 'suggestion:edited') load();
+        if (msg.type === 'suggestion:created' || msg.type === 'suggestion:deleted' || msg.type === 'suggestion:status' || msg.type === 'suggestion:edited' || msg.type === 'suggestion:comment') load();
         if (msg.type === 'suggestion:voted') {
           var card = document.querySelector('[data-id="' + msg.suggestionId + '"]');
           if (card) { var cnt = card.querySelector('.sugg-vote-count'); if (cnt) cnt.textContent = msg.voteCount; }

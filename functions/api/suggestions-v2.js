@@ -3,6 +3,7 @@ import { banRejection } from "../_lib/bans.js";
 import { moderateContent } from "../_lib/automod.js";
 import { evaluateSurfaceRules, recordRuleFlags } from "../_lib/submissionRules.js";
 import { createNotification } from "../_lib/notifications.js";
+import { rateLimit } from "../_lib/rate-limit.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -78,6 +79,37 @@ async function flagSubmission(db, env, surface, targetId, uid, fields) {
   return null;
 }
 
+/* Reply threads for suggestions. A parent_id makes a comment a reply; the
+   folding below is visual only, so a reply to a reply stays in the flat list
+   as a top-level comment rather than getting lost. */
+async function loadComments(db, ids) {
+  const map = {};
+  if (!ids.length) return map;
+  let rows;
+  try {
+    const marks = ids.map(() => "?").join(",");
+    rows = await db.prepare(
+      "SELECT id, suggestion_id, parent_id, author_uid, author_name, author_avatar, body, created_at, deleted_at " +
+      "FROM suggestion_comments WHERE suggestion_id IN (" + marks + ") ORDER BY created_at ASC, id ASC"
+    ).bind(...ids).all();
+  } catch (_) { return map; } /* before migration 0063 */
+  ids.forEach(id => { map[id] = []; });
+  const byId = new Map();
+  (rows.results || []).forEach(r => {
+    const c = {
+      id: r.id, parentId: r.parent_id || 0,
+      authorUid: r.author_uid, authorName: r.author_name || "Member",
+      authorAvatar: r.author_avatar || "", body: r.deleted_at ? "" : r.body,
+      deleted: !!r.deleted_at, createdAt: r.created_at, replies: [],
+    };
+    byId.set(c.id, c);
+    const parent = c.parentId && byId.get(c.parentId);
+    if (parent) parent.replies.push(c);
+    else if (map[r.suggestion_id]) map[r.suggestion_id].push(c);
+  });
+  return map;
+}
+
 async function loadSuggestions(env, params) {
   const db = env.wanted_vault;
   const status = params.get("status") || "all";
@@ -112,6 +144,7 @@ async function loadSuggestions(env, params) {
     "SELECT s.id, s.title, s.description, s.category, s.author_uid, s.author_name, s.status, s.vote_count, s.created_at, s.updated_at FROM suggestions_v2 s WHERE " + where + " ORDER BY " + orderBy + " LIMIT ? OFFSET ?"
   ).bind(...binds, limit, offset).all();
 
+  const comments = await loadComments(db, rows.results.map(r => r.id));
   return {
     suggestions: rows.results.map(r => ({
       id: r.id,
@@ -124,6 +157,7 @@ async function loadSuggestions(env, params) {
       voteCount: r.vote_count,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
+      comments: comments[r.id] || [],
     })),
     total,
     page,
@@ -307,6 +341,63 @@ export async function onRequestPost(context) {
         await db.prepare("DELETE FROM suggestion_votes WHERE suggestion_id = ?").bind(sugId).run();
         await db.prepare("DELETE FROM suggestions_v2 WHERE id = ?").bind(sugId).run();
         liveEvent = { type: "suggestion:deleted", suggestionId: sugId };
+        break;
+      }
+      case "commentCreate": {
+        const sugId = Number(body.id);
+        if (!sugId) return json({ error: "missing id" }, 400);
+        const uid = await resolveSiteUid(db, context.request, body.user);
+        if (!uid) return json({ error: "sign in required" }, 401);
+        if (!(await isLinked(db, uid))) return json({ error: "discord_link_required", message: "Replying requires a LINKED Discord Account" }, 403);
+        const sug = await db.prepare("SELECT id, title, author_uid FROM suggestions_v2 WHERE id = ?").bind(sugId).first();
+        if (!sug) return json({ error: "not found" }, 404);
+        const text = String(body.body || "").trim().slice(0, 2000);
+        if (!text) return json({ error: "Reply is required" }, 400);
+        const parentId = Number(body.parentId) || 0;
+        let parent = null;
+        if (parentId) {
+          parent = await db.prepare("SELECT * FROM suggestion_comments WHERE id = ? AND suggestion_id = ?").bind(parentId, sugId).first();
+          if (!parent) return json({ error: "no_such_comment" }, 404);
+          if (parent.deleted_at) return json({ error: "comment_deleted" }, 409);
+        }
+        const allowed = await rateLimit(db, uid, "suggestion_comment", 8, 60000).catch(() => true);
+        if (!allowed) return json({ error: "Too many replies. Try again shortly." }, 429);
+        let authorName = "Member", authorAvatar = "";
+        const who = await db.prepare(
+          "SELECT COALESCE(NULLIF(p.name,''), NULLIF(d.display_name,''), u.name, 'Member') AS name, " +
+          "COALESCE(NULLIF(p.avatar,''), NULLIF(d.avatar,''), u.avatar, '') AS avatar " +
+          "FROM users u LEFT JOIN user_profiles p ON p.site_uid = u.uid " +
+          "LEFT JOIN discord_links d ON d.site_uid = u.uid WHERE u.uid = ?"
+        ).bind(uid).first();
+        if (who) { authorName = who.name || authorName; authorAvatar = who.avatar || ""; }
+        const ins = await db.prepare(
+          "INSERT INTO suggestion_comments (suggestion_id, parent_id, author_uid, author_name, author_avatar, body) VALUES (?, ?, ?, ?, ?, ?)"
+        ).bind(sugId, parentId || null, uid, authorName, authorAvatar, esc(text)).run();
+        const id = ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0;
+        try {
+          const targetUid = parent ? parent.author_uid : sug.author_uid;
+          if (targetUid && targetUid !== uid) {
+            await createNotification(db, env, targetUid, {
+              type: "suggestion",
+              actorUid: uid,
+              actorName: authorName,
+              message: '"' + String(sug.title || "").slice(0, 60) + '" — ' + authorName + (parent ? " replied to your comment" : " replied to your suggestion"),
+            }, context);
+          }
+        } catch (_) {}
+        liveEvent = { type: "suggestion:comment", suggestionId: sugId };
+        break;
+      }
+      case "commentDelete": {
+        const cid = Number(body.id);
+        if (!cid) return json({ error: "missing id" }, 400);
+        const uid = await resolveSiteUid(db, context.request, body.user);
+        if (!uid) return json({ error: "sign in required" }, 401);
+        const c = await db.prepare("SELECT * FROM suggestion_comments WHERE id = ?").bind(cid).first();
+        if (!c) return json({ error: "not found" }, 404);
+        if (c.author_uid !== uid && !(await isAdmin(db, uid, env))) return json({ error: "not authorized" }, 403);
+        await db.prepare("UPDATE suggestion_comments SET deleted_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), body = '' WHERE id = ?").bind(cid).run();
+        liveEvent = { type: "suggestion:comment", suggestionId: c.suggestion_id };
         break;
       }
       default:

@@ -217,7 +217,9 @@
     return ((parts[0] || "")[0] || "9").toUpperCase();
   }
   function avatarHtml(p) {
-    if (p.avatar) return '<img class="pv2-avatar" id="pv2HeroAvatar" src="' + esc2(p.avatar) + '" alt="" decoding="async" onerror="this.onerror=null;this.style.display=\'none\'">';
+    /* Discord CDN avatars can 403 or 404. Fall back to initials in place,
+       not to an empty hole where the face should be. */
+    if (p.avatar) return '<img class="pv2-avatar" id="pv2HeroAvatar" src="' + esc2(p.avatar) + '" alt="" decoding="async" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;pv2-avatar-fallback&quot; id=&quot;pv2HeroAvatar&quot; aria-hidden=&quot;true&quot;>' + esc2(initials(p.name)) + '</div>\'">';
     return '<div class="pv2-avatar-fallback" id="pv2HeroAvatar" aria-hidden="true">' + esc2(initials(p.name)) + '</div>';
   }
   function joinedStr(j) {
@@ -336,10 +338,12 @@
     return '<div class="pv2-signin"><i class="fas fa-triangle-exclamation"></i><h2>Couldn\'t load the profile</h2><p>' + esc2(msg || "Something went sideways. Try again in a moment.") + '</p></div>';
   }
 
-  function buildPage(d, xp) {
+  function buildPage(d, xp, selfFlag) {
     var p = d.profile || {}, s = d.stats || {}, dc = d.discord || {};
-    var isMe = isSelfView();
-    var name = p.name || dc.name || (isMe ? "You" : "999_" + String(d.uid || "").slice(-4));
+    /* Use the same self/other decision loadData() made, not a fresh read of
+       the address (which canonicalisation may have changed meanwhile). */
+    var isMe = (typeof selfFlag === "boolean") ? selfFlag : isSelfView();
+    var name = p.name || d.name || dc.name || (isMe ? "You" : "999_" + String(d.uid || "").slice(-4));
     var uname = p.username || d.handle || String(d.uid || "");
     var xpObj = (xp && xp.me) || null;
     var rank = xpObj && xpObj.rankAll != null ? xpObj.rankAll : null;
@@ -552,12 +556,11 @@
   function fillFavourites() {
     var host = document.getElementById("pv2Fav");
     if (!host) return;
-    /* The session uid is resolved asynchronously; ownUid in loadData() is not
-       in scope here. sessionOwnUid() is the shared, cached way to get it. */
-    sessionOwnUid().then(function (uid) {
-      var favUrl = "/api/profile" + (uid ? "?user=" + encodeURIComponent(uid) : "");
-      return fetchJson(favUrl);
-    }).then(function (d) {
+    /* On somebody else's page, ask for their favourites. Using the session
+       uid here showed the viewer's own saves under the other member's name. */
+    var key = isSelfView() ? "" : profileKey();
+    var favUrl = "/api/profile" + (key ? "?user=" + encodeURIComponent(key) : "");
+    fetchJson(favUrl).then(function (d) {
       if (!d || d.ok === false) return;
       var favs = Array.isArray(d.favorites) ? d.favorites : [];
       /* Favourites kept only on this device (before sign-in) still count. */
@@ -679,7 +682,7 @@
       try {
         /* Links live at the top level of /api/profile, not inside profile. */
         d.profile.links = Array.isArray(d.links) ? d.links : [];
-        host.innerHTML = '<div class="pv2-page">' + buildPage(d.profile, d.xp) + '</div>';
+        host.innerHTML = '<div class="pv2-page">' + buildPage(d.profile, d.xp, d.self) + '</div>';
         bindCopy(host, d.profile);
         bindSongs(host);
         wireAchievementClicks(host);
