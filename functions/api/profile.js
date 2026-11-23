@@ -128,6 +128,33 @@ export async function onRequestGet(context) {
        whether the member is listening right now. A handful of small rows, no
        listening stats, so it can sit behind a 5-second poll. */
     if (url.searchParams.get("head") === "1") {
+      /* This branch returns early, so it must resolve a /@handle to the site
+         uid itself. Without this it queried with the handle as a uid, found no
+         profile row and fell back to "999_" + last four handle letters - the
+         stale name that kept flashing over other members' pages. */
+      let headProf = await db.prepare("SELECT * FROM user_profiles WHERE site_uid = ?").bind(uid).first();
+      if (!headProf) {
+        const byUsername = await db.prepare("SELECT uid FROM users WHERE LOWER(name) = LOWER(?) LIMIT 1").bind(uid).first();
+        if (byUsername && byUsername.uid) {
+          uid = byUsername.uid;
+          headProf = await db.prepare("SELECT * FROM user_profiles WHERE site_uid = ?").bind(uid).first();
+        }
+      }
+      if (!headProf) {
+        const byName = await db.prepare("SELECT site_uid FROM user_profiles WHERE LOWER(name) = LOWER(?) LIMIT 1").bind(uid).first();
+        if (byName && byName.site_uid) {
+          uid = byName.site_uid;
+          headProf = await db.prepare("SELECT * FROM user_profiles WHERE site_uid = ?").bind(uid).first();
+        }
+      }
+      if (!headProf) {
+        const byDisc = await db.prepare("SELECT site_uid FROM discord_links WHERE LOWER(display_name) = LOWER(?) LIMIT 1").bind(uid).first();
+        if (byDisc && byDisc.site_uid) {
+          uid = byDisc.site_uid;
+          headProf = await db.prepare("SELECT * FROM user_profiles WHERE site_uid = ?").bind(uid).first();
+        }
+      }
+      const prof = headProf;
       const viewer = await getSessionUser(db, context.request).catch(() => null);
       const isSelf = !!(viewer && viewer.uid && viewer.uid === uid);
       let showProfile = 1, showActivity = 1;
@@ -144,7 +171,6 @@ export async function onRequestGet(context) {
         } catch (e2) {}
       }
       if (!isSelf && showProfile === 0) return json({ ok: true, uid: uid, hidden: true });
-      const prof = await db.prepare("SELECT * FROM user_profiles WHERE site_uid = ?").bind(uid).first();
       const userRow = await db.prepare("SELECT name, verified FROM users WHERE uid = ?").bind(uid).first();
       const link = await db.prepare("SELECT avatar, display_name FROM discord_links WHERE site_uid = ?").bind(uid).first().catch(() => null);
       let nowPlaying = null;

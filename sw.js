@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v544';
+const VERSION = 'thw-v545';
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on

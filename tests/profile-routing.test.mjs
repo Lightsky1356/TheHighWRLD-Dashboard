@@ -31,6 +31,8 @@ check("public playlists are rendered for every viewer", /pv2-playlists/.test(pro
 check("links fall back to the API's top-level array", /Array\.isArray\(d\.links\)/.test(profile));
 check("the head poll follows the viewed profile first", /if \(!isSelfView\(\)\) return profileKey\(\);/.test(profile));
 check("live hero edits cannot touch another profile", /__pv2ApplyLive[\s\S]{0,260}if \(!isSelfView\(\)\) return;/.test(profile));
+const profileApi = read("functions/api/profile.js");
+check("the head read resolves a handle to the site uid", /head"\) === "1"[\s\S]{0,500}byUsername/.test(profileApi));
 
 const social = read("social-panel.js");
 check("chat name links use the handle", /profilePathFor\(friend\.handle/.test(social));
