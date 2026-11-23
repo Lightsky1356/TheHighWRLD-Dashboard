@@ -45,6 +45,25 @@ async function board(db) {
   return cached;
 }
 
+/* Profile pages ask with a /@handle. Resolve it to the site uid the xp table
+   is keyed by, otherwise a member with real XP reads back as zero. A value
+   that is already a uid simply falls through. */
+async function resolveHandle(db, handle) {
+  if (!handle) return "";
+  try {
+    const steps = [
+      "SELECT uid AS id FROM users WHERE LOWER(name) = LOWER(?) LIMIT 1",
+      "SELECT site_uid AS id FROM user_profiles WHERE LOWER(name) = LOWER(?) LIMIT 1",
+      "SELECT site_uid AS id FROM discord_links WHERE LOWER(display_name) = LOWER(?) LIMIT 1",
+    ];
+    for (const sql of steps) {
+      const row = await db.prepare(sql).bind(handle).first();
+      if (row && row.id) return row.id;
+    }
+  } catch (_) {}
+  return handle;
+}
+
 export async function onRequestGet(context) {
   const { env, request } = context;
   const db = env.wanted_vault;
@@ -57,7 +76,7 @@ export async function onRequestGet(context) {
     /* A ?user= parameter asks for that member's standing (profile pages use
        it). Without one, the signed-in member is the subject, as before. */
     const asked = String(new URL(request.url).searchParams.get("user") || "").trim().slice(0, 64);
-    let subject = asked || "";
+    let subject = asked ? await resolveHandle(db, asked) : "";
     if (!subject) {
       const session = await getSessionUser(db, request);
       subject = session && session.uid ? session.uid : "";

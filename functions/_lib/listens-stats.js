@@ -1,3 +1,5 @@
+import { awardXp } from "./xp.js";
+
 /* The listening statistics, kept rather than asked for.
  *
  * The listens table holds one row per play, and a member's profile needs
@@ -270,6 +272,9 @@ export async function recordPlay(db, uid, trackId, seconds) {
     /* The summaries could not be kept. The play is recorded, and they are
        built again from the history when they are next needed. */
   }
+  /* Plays count for points, exactly as the leaderboard says. One XP per
+     recorded play, awarded server-side; never mirrors a client value. */
+  try { await awardXp(db, uid, 1); } catch (_) {}
   await pruneHistory(db);
   return ts;
 }
