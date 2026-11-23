@@ -1,0 +1,67 @@
+/* ==========================================================================
+   MOBILE POLISH — loaded after every other stylesheet.
+   One place for the phone-only rules that used to be scattered across ten
+   files with incompatible breakpoints. The site chrome switches at 767px;
+   this sheet uses the same boundary everywhere.
+   ========================================================================== */
+
+:root {
+  /* The visible nav plus the iPhone home indicator. Used by all floating
+     controls so they stack instead of landing on top of one another. */
+  --mbn-h: calc(54px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width:767px) {
+  /* ---- bottom nav and floating controls ---- */
+  .mobile-bottom-nav{
+    display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    padding-bottom:calc(5px + env(safe-area-inset-bottom, 0px));
+  }
+  .mobile-bottom-nav .mbn-item{min-width:0}
+  .mbn-item span{font-size:11px !important}
+  #scrollTopBtn,#nightLightToggle,.mobile-popup{z-index:10000 !important}
+  body:has(#deck-player:not(.hidden):not(.deck-away)) .mobile-popup{
+    bottom:calc(var(--mbn-h) + 90px) !important;
+  }
+
+  /* ---- grids that were clipped by overflow:hidden ---- */
+  #account-page .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  #account-page .grid-2,
+  #account-page .grid-3,
+  #account-page .an-grid,
+  #account-page .settings-grid,
+  #account-page .bm-pane.active,
+  #account-page .ach-grid,
+  #account-page .owner-grid,
+  #account-page .field-row{grid-template-columns:minmax(0,1fr) !important}
+  .thw-select{min-width:0;width:100%}
+  .thw-pick{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
+
+  /* ---- let real content reflow, keep intentional scrollers scrollable ---- */
+  html,body{overflow-x:clip}
+  .app-page{content-visibility:visible}
+  .table-wrap,.table-wrap *{overflow-x:auto}
+
+  /* ---- one breakpoint for the social panel and the mobile chrome ---- */
+  html.thw-social-open #audio-preview{max-width:none !important;margin-left:0 !important;padding-right:0 !important}
+  #thw-social-panel{width:100% !important;max-width:none !important}
+
+  /* ---- dialogs respect notches and home bars ---- */
+  .player-settings-overlay,.thw-social-rules,.thw-social-group,
+  .cw-modal,.ban-screen-ov,.modal-overlay{
+    padding-top:calc(16px + env(safe-area-inset-top,0px));
+    padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  }
+
+  /* ---- readable minimums for text that carries meaning ---- */
+  .info-label,.info-panel-stats,.rm-badge,.rm-tag,.rm-prog-label,
+  .vault-release-date,.vault-release-label,.vault-release-type,.fav-tag,
+  .deck-artist,.deck-fav,.thw-social-meta,.thw-social-preview{
+    font-size:11px !important;
+  }
+}
+
+@media (max-width:480px){
+  .pv2-collage{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+}
