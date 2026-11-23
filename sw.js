@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v564';
+const VERSION = 'thw-v565';
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -69,7 +69,7 @@ const PRECACHE = [
   './tracker.js?v=thw-v3',
   './song-page.js?v=thw-v8',
   './all.min.css?v=thw-v2',
-  './account.css?v=thw-v24',
+  './account.css?v=thw-v25',
   './account-shared.css?v=thw-v6',
   './player-settings.css?v=thw-v215',
   './style.css?v=thw-v55',
