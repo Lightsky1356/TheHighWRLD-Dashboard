@@ -180,7 +180,7 @@
     /* Added milestones - every one reads a number the profile already shows. */
     { id: "unique5", label: "5 songs", icon: "fa-music", how: "Play 5 different songs", test: function (s) { return s.unique >= 5; } },
     { id: "unique10", label: "10 songs", icon: "fa-compact-disc", how: "Play 10 different songs", test: function (s) { return s.unique >= 10; } },
-    { id: "unique50", label: "50 songs", icon: "fa-vinyl-record", how: "Play 50 different songs", test: function (s) { return s.unique >= 50; } },
+    { id: "unique50", label: "50 songs", icon: "fa-record-vinyl", how: "Play 50 different songs", test: function (s) { return s.unique >= 50; } },
     { id: "unique250", label: "250 songs", icon: "fa-layer-group", how: "Play 250 different songs", test: function (s) { return s.unique >= 250; } },
     { id: "hours1", label: "One hour", icon: "fa-clock", how: "Listen for one hour in total", test: function (s) { return s.hours >= 1; } },
     { id: "hours10", label: "Ten hours", icon: "fa-hourglass", how: "Listen for ten hours in total", test: function (s) { return s.hours >= 10; } },
@@ -199,7 +199,61 @@
     { id: "streak3", label: "3-day streak", icon: "fa-fire", how: "Listen on 3 consecutive days", test: function (s) { return s.streak >= 3; } },
     { id: "streak14", label: "14-day streak", icon: "fa-calendar-check", how: "Listen on 14 consecutive days", test: function (s) { return s.streak >= 14; } },
     { id: "top10", label: "Top 10 all-time", icon: "fa-trophy", how: "Place in the top 10 of the all-time XP leaderboard", test: function (s) { return s.rank != null && s.rank <= 10; } },
-    { id: "top3", label: "Top 3 all-time", icon: "fa-ranking-star", how: "Place in the top 3 of the all-time XP leaderboard", test: function (s) { return s.rank != null && s.rank <= 3; } }
+    { id: "top3", label: "Top 3 all-time", icon: "fa-ranking-star", how: "Place in the top 3 of the all-time XP leaderboard", test: function (s) { return s.rank != null && s.rank <= 3; } },
+    /* Second wave - more tiers on the same real numbers, no invented metrics. */
+    { id: "p5", label: "5 plays", icon: "fa-play", how: "Play 5 songs", test: function (s) { return s.plays >= 5; } },
+    { id: "p25", label: "25 plays", icon: "fa-headphones", how: "Play 25 songs", test: function (s) { return s.plays >= 25; } },
+    { id: "p75", label: "75 plays", icon: "fa-headphones", how: "Play 75 songs", test: function (s) { return s.plays >= 75; } },
+    { id: "p150", label: "150 plays", icon: "fa-bolt", how: "Play 150 songs", test: function (s) { return s.plays >= 150; } },
+    { id: "p400", label: "400 plays", icon: "fa-rocket", how: "Play 400 songs", test: function (s) { return s.plays >= 400; } },
+    { id: "p750", label: "750 plays", icon: "fa-rocket", how: "Play 750 songs", test: function (s) { return s.plays >= 750; } },
+    { id: "p1500", label: "1,500 plays", icon: "fa-gem", how: "Play 1,500 songs", test: function (s) { return s.plays >= 1500; } },
+    { id: "p2000", label: "2,000 plays", icon: "fa-gem", how: "Play 2,000 songs", test: function (s) { return s.plays >= 2000; } },
+    { id: "p5000", label: "5,000 plays", icon: "fa-infinity", how: "Play 5,000 songs", test: function (s) { return s.plays >= 5000; } },
+    { id: "u15", label: "15 songs", icon: "fa-music", how: "Play 15 different songs", test: function (s) { return s.unique >= 15; } },
+    { id: "u75", label: "75 songs", icon: "fa-compact-disc", how: "Play 75 different songs", test: function (s) { return s.unique >= 75; } },
+    { id: "u150", label: "150 songs", icon: "fa-layer-group", how: "Play 150 different songs", test: function (s) { return s.unique >= 150; } },
+    { id: "u300", label: "300 songs", icon: "fa-layer-group", how: "Play 300 different songs", test: function (s) { return s.unique >= 300; } },
+    { id: "u500", label: "500 songs", icon: "fa-box-archive", how: "Play 500 different songs", test: function (s) { return s.unique >= 500; } },
+    { id: "h3", label: "3 hours", icon: "fa-clock", how: "Listen for three hours", test: function (s) { return s.hours >= 3; } },
+    { id: "h25", label: "25 hours", icon: "fa-hourglass-half", how: "Listen for 25 hours", test: function (s) { return s.hours >= 25; } },
+    { id: "h75", label: "75 hours", icon: "fa-hourglass", how: "Listen for 75 hours", test: function (s) { return s.hours >= 75; } },
+    { id: "h200", label: "200 hours", icon: "fa-hourglass", how: "Listen for 200 hours", test: function (s) { return s.hours >= 200; } },
+    { id: "h500", label: "500 hours", icon: "fa-infinity", how: "Listen for 500 hours", test: function (s) { return s.hours >= 500; } },
+    { id: "f2", label: "2 favourites", icon: "fa-heart", how: "Save 2 favourite songs", test: function (s) { return s.favorites >= 2; } },
+    { id: "f3", label: "3 favourites", icon: "fa-heart", how: "Save 3 favourite songs", test: function (s) { return s.favorites >= 3; } },
+    { id: "f15", label: "15 favourites", icon: "fa-heart-circle-check", how: "Save 15 favourite songs", test: function (s) { return s.favorites >= 15; } },
+    { id: "f20", label: "20 favourites", icon: "fa-heart-circle-check", how: "Save 20 favourite songs", test: function (s) { return s.favorites >= 20; } },
+    { id: "f30", label: "30 favourites", icon: "fa-gem", how: "Save 30 favourite songs", test: function (s) { return s.favorites >= 30; } },
+    { id: "f50", label: "50 favourites", icon: "fa-gem", how: "Save 50 favourite songs", test: function (s) { return s.favorites >= 50; } },
+    { id: "xp25", label: "25 XP", icon: "fa-bolt", how: "Earn 25 all-time XP", test: function (s) { return s.xp >= 25; } },
+    { id: "xp250", label: "250 XP", icon: "fa-star", how: "Earn 250 all-time XP", test: function (s) { return s.xp >= 250; } },
+    { id: "xp750", label: "750 XP", icon: "fa-star", how: "Earn 750 all-time XP", test: function (s) { return s.xp >= 750; } },
+    { id: "xp2500", label: "2,500 XP", icon: "fa-medal", how: "Earn 2,500 all-time XP", test: function (s) { return s.xp >= 2500; } },
+    { id: "xp10000", label: "10,000 XP", icon: "fa-crown", how: "Earn 10,000 all-time XP", test: function (s) { return s.xp >= 10000; } },
+    { id: "w10", label: "Weekly 10", icon: "fa-calendar-day", how: "Earn 10 XP in one week", test: function (s) { return s.weekXp >= 10; } },
+    { id: "w25", label: "Weekly 25", icon: "fa-calendar-day", how: "Earn 25 XP in one week", test: function (s) { return s.weekXp >= 25; } },
+    { id: "w100", label: "Weekly 100", icon: "fa-calendar-week", how: "Earn 100 XP in one week", test: function (s) { return s.weekXp >= 100; } },
+    { id: "w500", label: "Weekly 500", icon: "fa-calendar-check", how: "Earn 500 XP in one week", test: function (s) { return s.weekXp >= 500; } },
+    { id: "s2", label: "2-day streak", icon: "fa-fire", how: "Listen on 2 consecutive days", test: function (s) { return s.streak >= 2; } },
+    { id: "s5", label: "5-day streak", icon: "fa-fire", how: "Listen on 5 consecutive days", test: function (s) { return s.streak >= 5; } },
+    { id: "s10", label: "10-day streak", icon: "fa-fire", how: "Listen on 10 consecutive days", test: function (s) { return s.streak >= 10; } },
+    { id: "s21", label: "21-day streak", icon: "fa-calendar-check", how: "Listen on 21 consecutive days", test: function (s) { return s.streak >= 21; } },
+    { id: "s45", label: "45-day streak", icon: "fa-calendar-days", how: "Listen on 45 consecutive days", test: function (s) { return s.streak >= 45; } },
+    { id: "s90", label: "90-day streak", icon: "fa-calendar-day", how: "Listen on 90 consecutive days", test: function (s) { return s.streak >= 90; } },
+    { id: "l2", label: "Level 2", icon: "fa-star", how: "Reach level 2", test: function (s) { return s.level >= 2; } },
+    { id: "l3", label: "Level 3", icon: "fa-star", how: "Reach level 3", test: function (s) { return s.level >= 3; } },
+    { id: "l4", label: "Level 4", icon: "fa-star", how: "Reach level 4", test: function (s) { return s.level >= 4; } },
+    { id: "l6", label: "Level 6", icon: "fa-star-half-stroke", how: "Reach level 6", test: function (s) { return s.level >= 6; } },
+    { id: "l8", label: "Level 8", icon: "fa-star-half-stroke", how: "Reach level 8", test: function (s) { return s.level >= 8; } },
+    { id: "l12", label: "Level 12", icon: "fa-medal", how: "Reach level 12", test: function (s) { return s.level >= 12; } },
+    { id: "l15", label: "Level 15", icon: "fa-medal", how: "Reach level 15", test: function (s) { return s.level >= 15; } },
+    { id: "l20", label: "Level 20", icon: "fa-crown", how: "Reach level 20", test: function (s) { return s.level >= 20; } },
+    { id: "r50", label: "Top 50", icon: "fa-ranking-star", how: "Place in the top 50 all-time", test: function (s) { return s.rank != null && s.rank <= 50; } },
+    { id: "r20", label: "Top 20", icon: "fa-trophy", how: "Place in the top 20 all-time", test: function (s) { return s.rank != null && s.rank <= 20; } },
+    { id: "r5", label: "Top 5", icon: "fa-trophy", how: "Place in the top 5 all-time", test: function (s) { return s.rank != null && s.rank <= 5; } },
+    { id: "r2", label: "Runner-up", icon: "fa-medal", how: "Place 2nd all-time", test: function (s) { return s.rank != null && s.rank <= 2; } },
+    { id: "r1", label: "Number one", icon: "fa-crown", how: "Place 1st all-time", test: function (s) { return s.rank != null && s.rank <= 1; } }
   ];
 
   /* ---------- HTML builders ---------- */
@@ -304,8 +358,8 @@
       return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
     } catch (e) { return String(j).slice(0, 10); }
   }
-  function statBlock(n, label) {
-    return '<div><b>' + esc2(String(n)) + '</b><span>' + esc2(label) + '</span></div>';
+  function statBlock(n, label, id) {
+    return '<div><b' + (id ? ' id="' + esc2(id) + '"' : '') + '>' + esc2(String(n)) + '</b><span>' + esc2(label) + '</span></div>';
   }
   function eraStackHTML(topList) {
     /* Sum plays per era across the top track list we can see (honest: label
@@ -501,24 +555,24 @@
       '</div></div>';
 
     html += '<div class="pv2-strip">';
-    html += statBlock(isMe && rank != null ? ordinal(rank) : (rank != null ? ordinal(rank) : "-"), rank != null ? "Leaderboard" : "Unranked");
-    html += statBlock(fmtNum(stats.plays), "Plays");
-    html += statBlock(Math.round(hoursToMin(stats.hours)) + "m", "Listened");
-    html += statBlock(fmtNum(stats.unique), "Songs");
-    html += statBlock(fmtNum(stats.streak), "Day streak");
+    html += statBlock(isMe && rank != null ? ordinal(rank) : (rank != null ? ordinal(rank) : "-"), rank != null ? "Leaderboard" : "Unranked", "pv2StatRank");
+    html += statBlock(fmtNum(stats.plays), "Plays", "pv2StatPlays");
+    html += statBlock(Math.round(hoursToMin(stats.hours)) + "m", "Listened", "pv2StatListened");
+    html += statBlock(fmtNum(stats.unique), "Songs", "pv2StatSongs");
+    html += statBlock(fmtNum(stats.streak), "Day streak", "pv2StatStreak");
     html += '</div>';
     html += '</div></div>'; /* hero inner / hero */
 
     /* Fan level + achievements card */
-    html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-bolt"></i>Fan level &amp; achievements</h2><span class="pv2-card-note">' + fmtNum(xpTotal) + ' XP all time</span></div>';
-    html += '<div class="pv2-levelrow"><div class="pv2-level-badge"><b>' + esc2(String(level)) + '</b><span>Level</span></div>';
-    html += '<div class="pv2-level-meta"><div class="pv2-level-top"><span class="pv2-level-fan">Fan</span><span class="pv2-level-xp">' + fmtNum(curXp) + ' / ' + fmtNum(nextXp) + ' XP</span></div>';
+    html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-bolt"></i>Fan level &amp; achievements</h2><span class="pv2-card-note" id="pv2XpNote">' + fmtNum(xpTotal) + ' XP all time</span></div>';
+    html += '<div class="pv2-levelrow"><div class="pv2-level-badge"><b id="pv2LevelNum">' + esc2(String(level)) + '</b><span>Level</span></div>';
+    html += '<div class="pv2-level-meta"><div class="pv2-level-top"><span class="pv2-level-fan">Fan</span><span class="pv2-level-xp" id="pv2LevelXp">' + fmtNum(curXp) + ' / ' + fmtNum(nextXp) + ' XP</span></div>';
     html += '<div class="pv2-level-bar"><span class="pv2-level-fill" id="pv2LevelFill" style="width:' + Math.round(Math.min(1, Math.max(0, prog)) * 100) + '%"></span></div>';
-    html += '<div class="pv2-level-foot"><span class="pv2-level-next">' + (level >= 10 ? "Max level fan in the vault" : (fmtNum(nextXp - curXp) + ' XP to level ' + (level + 1))) + '</span><a class="pv2-xp-link" href="#" onclick="if(window.openXpPanel)window.openXpPanel();return false">How XP works <i class="fas fa-arrow-right" style="font-size:9px"></i></a></div>';
+    html += '<div class="pv2-level-foot"><span class="pv2-level-next" id="pv2LevelNext">' + (level >= 10 ? "Max level fan in the vault" : (fmtNum(nextXp - curXp) + ' XP to level ' + (level + 1))) + '</span><a class="pv2-xp-link" href="#" onclick="if(window.openXpPanel)window.openXpPanel();return false">How XP works <i class="fas fa-arrow-right" style="font-size:9px"></i></a></div>';
     html += '</div></div>'; /* levelrow */
     /* Use the enriched bundle so the badges and the modal agree on every
        achievement (favourites, XP and weekly XP are not in `stats`). */
-    html += milestonesHTML(_profileStats);
+    html += '<div id="pv2AchWrap">' + milestonesHTML(_profileStats) + '</div>';
     html += '</div>';
 
     /* Grid: top songs / top eras / hours / recent strip */
@@ -1024,15 +1078,67 @@
     startPresenceTimer();
   }
   function renderNowPlaying(np) { applyNowPlaying(np); }
+  function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+  function refreshLiveCards(d) {
+    var s = d.stats || null, x = d.xp || null;
+    if (s) {
+      if (x) setText("pv2StatRank", x.rank != null ? ordinal(x.rank) : "-");
+      setText("pv2StatPlays", fmtNum(s.plays));
+      setText("pv2StatListened", Math.round(hoursToMin(s.hours)) + "m");
+      setText("pv2StatSongs", fmtNum(s.unique));
+      setText("pv2StatStreak", fmtNum(s.streak));
+    }
+    if (x) {
+      setText("pv2XpNote", fmtNum(x.xp) + " XP all time");
+      setText("pv2LevelNum", String(x.level));
+      var lvl = Math.max(1, Number(x.level) || 1);
+      var base = 50 * (lvl - 1) * (lvl - 1), next = 50 * lvl * lvl;
+      var cur = Math.max(0, x.xp - base), span = Math.max(1, next - base);
+      setText("pv2LevelXp", fmtNum(cur) + " / " + fmtNum(next) + " XP");
+      var fill = document.getElementById("pv2LevelFill");
+      if (fill) fill.style.width = Math.round(Math.min(1, Math.max(0, cur / span)) * 100) + "%";
+      setText("pv2LevelNext", lvl >= 10 ? "Max level fan in the vault" : (fmtNum(next - cur) + " XP to level " + (lvl + 1)));
+    }
+    if (s || x) {
+      _profileStats = {
+        plays: s ? s.plays : (_profileStats.plays || 0),
+        unique: s ? s.unique : (_profileStats.unique || 0),
+        hours: s ? s.hours : (_profileStats.hours || 0),
+        favorites: _profileStats.favorites || 0,
+        streak: s ? s.streak : (_profileStats.streak || 0),
+        level: x ? x.level : (_profileStats.level || 1),
+        rank: x ? x.rank : _profileStats.rank,
+        xp: x ? x.xp : (_profileStats.xp || 0),
+        weekXp: x ? (Number(x.week_xp) || 0) : (_profileStats.weekXp || 0),
+      };
+      var wrap = document.getElementById("pv2AchWrap");
+      if (wrap) wrap.innerHTML = milestonesHTML(_profileStats);
+      var modal = document.getElementById("achievementsModal");
+      if (modal && modal.classList.contains("open")) renderAchievementsPanel(_profileStats);
+    }
+  }
+
   function applyHead(d) {
     var changed = false;
     var prev = headKnown;
-    headKnown = { name: d.name, bio: d.bio, avatar: d.avatar, bannerChoice: d.bannerChoice, favSong: d.favSong, status: d.status };
-    if (prev && prev.name === d.name && prev.bio === d.bio && prev.avatar === d.avatar && prev.bannerChoice === d.bannerChoice && prev.favSong === d.favSong && prev.status === d.status) {
+    headKnown = {
+      name: d.name, bio: d.bio, avatar: d.avatar, bannerChoice: d.bannerChoice,
+      favSong: d.favSong, status: d.status,
+      stats: d.stats ? JSON.stringify(d.stats) : "", xp: d.xp ? JSON.stringify(d.xp) : "",
+    };
+    if (prev && prev.name === d.name && prev.bio === d.bio && prev.avatar === d.avatar &&
+        prev.bannerChoice === d.bannerChoice && prev.favSong === d.favSong && prev.status === d.status &&
+        prev.stats === headKnown.stats && prev.xp === headKnown.xp) {
       renderNowPlaying(d.nowPlaying);
       return;
     }
     changed = true;
+    /* XP, level, rank and listening stats refresh in place - the cards should
+       not need a reload when a play or an XP award lands. */
+    refreshLiveCards(d);
     var n = document.getElementById("pv2HeroName"); if (n && d.name) n.textContent = d.name;
     /* Keep the presence dot in step with the live status. */
     var statusDot = document.getElementById("pv2HeroStatusDot");

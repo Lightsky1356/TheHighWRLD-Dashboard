@@ -7,6 +7,7 @@ function json(data, status = 200) {
 
 import { getSessionUser } from "../_lib/auth.js";
 import { listeningStats, streakFromDays } from "../_lib/listens-stats.js";
+import { memberStanding, levelFor } from "../_lib/xp.js";
 import { loadPlaylistTracks } from "../_lib/playlist-tracks.js";
 import { banRejection } from "../_lib/bans.js";
 
@@ -188,9 +189,33 @@ export async function onRequestGet(context) {
           };
         }
       } catch (_) {}
+      /* Live stats + XP so a profile's cards can refresh without a reload.
+         Kept to a handful of small indexed reads; the full profile payload is
+         still the only place that loads top songs, eras and history. */
+      let headStats = null, headXp = null;
+      try {
+        const ls = await listeningStats(db, uid, { topLimit: 1, unique: false, months: false, firstLast: false });
+        headStats = {
+          plays: Number(ls && ls.plays) || 0,
+          hours: Math.round(((Number(ls && ls.seconds) || 0) / 3600) * 10) / 10,
+          unique: Number(ls && ls.uniqueTracks) || 0,
+          streak: streakFromDays((ls && ls.days) || []),
+        };
+      } catch (_) {}
+      try {
+        const st = await memberStanding(db, uid);
+        const above = await db.prepare("SELECT COUNT(*) AS n FROM xp WHERE xp > ?").bind(st.xp).first();
+        headXp = {
+          xp: st.xp, level: st.level || levelFor(st.xp), week_xp: st.week_xp,
+          rank: above ? Number(above.n) + 1 : null,
+        };
+      } catch (_) {}
+
       return json({
         ok: true,
         uid,
+        stats: headStats,
+        xp: headXp,
         name: (prof && prof.name) || (link && link.display_name) || (userRow && userRow.name) || "999_" + String(uid).slice(-4).toUpperCase(),
         handle: (userRow && userRow.name) || String(uid || ""),
         bio: (prof && prof.bio) || "",
