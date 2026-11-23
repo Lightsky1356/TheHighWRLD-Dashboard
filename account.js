@@ -4389,6 +4389,28 @@ var NAV_URL = { home: "/",  developers: "/developers", player: "/player", hub: "
       })
       .catch(fillLocal);
   }
+  /* Account dropdown head: current rank, level, XP bar and day streak. */
+  function fillRank() {
+    function put(id, value) { var el = document.getElementById(id); if (el) el.textContent = value; }
+    fetch("/api/xp", { cache: "no-store", credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var me = d && d.me;
+        if (!me) return;
+        var level = Number(me.level) || 1, xp = Number(me.xp) || 0;
+        put("acctLevel", String(level));
+        put("acctRankTitle", typeof window.__thwRankTitle === "function" ? window.__thwRankTitle(level) : "Listener");
+        var base = 50 * (level - 1) * (level - 1), next = 50 * level * level;
+        var pct = Math.min(100, Math.max(0, Math.round(((xp - base) / Math.max(1, next - base)) * 100)));
+        var fill = document.getElementById("acctXpFill");
+        if (fill) fill.style.width = pct + "%";
+      })
+      .catch(function () {});
+    fetch("/api/profile", { cache: "no-store", credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { put("acctStreakN", String(Math.max(0, Number(d && d.streak) || 0))); })
+      .catch(function () {});
+  }
   function mirrorOnline() {
     try {
       var nav = document.getElementById("presence-count");
@@ -4398,6 +4420,7 @@ var NAV_URL = { home: "/",  developers: "/developers", player: "/player", hub: "
   }
   function boot() {
     fillStats();
+    fillRank();
     mirrorOnline();
     var nav = document.getElementById("presence-count");
     if (nav && window.MutationObserver) {

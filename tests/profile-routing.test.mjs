@@ -40,6 +40,9 @@ check("achievements modal has latest, summary and category grids", /ach-latest/.
 check("progress rings use real progress, no invented rarity", /achRing\(p, m\.icon\)/.test(profile) && !/Rare: \d+%/.test(profile + read("profile.css")));
 check("the achievements modal opens when .open is set", /#achievementsModal\.rank-overlay\.open\{display:flex\}/.test(read("profile.css")));
 check("the profile card only shows earned badges", /var earned = MILESTONES\.filter/.test(profile) && /var list = cardAchShowAll \? earned/.test(profile));
+/* Account dropdown head mirrors the rank ladder and streak. */
+check("account dropdown shows rank, level, XP bar and streak", /id="acctRankTitle"/.test(read("index.html")) && /id="acctXpFill"/.test(read("index.html")) && /id="acctStreakN"/.test(read("index.html")));
+check("account dropdown values come from the APIs", /function fillRank\(\)/.test(account) && /acctXpFill/.test(account) && /acctStreakN/.test(account));
 const achApi = read("functions/_lib/achievements.js");
 check("there are no game achievements", !/cat: "Games"/.test(achApi) && !/id: "gm_/.test(achApi) && !/<h5>Games<\/h5>/.test(read("index.html")));
 check("level names use the vault's eras", /t: "JuiceTheKidd"/.test(profile) && /t: "Legends Never Die"/.test(profile) && /t: "Posthumous"/.test(profile));

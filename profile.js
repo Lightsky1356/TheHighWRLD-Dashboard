@@ -1003,6 +1003,7 @@
     setModalOpen("achievementsModal", true);
   }
   window.openAchievementsPanel = openAchievementsPanel;
+  window.__thwRankTitle = rankTitle;
 
   /* Wire clicks on the badge grid and the "How to unlock" link. */
   function wireAchievementClicks(hostEl) {

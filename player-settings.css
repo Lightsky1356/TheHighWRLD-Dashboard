@@ -4619,6 +4619,10 @@ body:has(#editProfileModal.open) #deck-handle{display:none!important}
 .acct-tag{font-size:11px;color:rgba(255,255,255,.45)}
 .acct-plays{font-size:10px;color:rgba(167,139,250,.85);margin-top:3px;font-variant-numeric:tabular-nums}
 .acct-plays b{color:#c4b5fd}
+.acct-xp-bar{display:block;width:100%;height:5px;border-radius:99px;background:rgba(255,255,255,.12);margin-top:7px;overflow:hidden}
+.acct-xp-bar span{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#38bdf8,#a78bfa)}
+.acct-streak{display:flex;align-items:center;gap:5px;padding:6px 9px;border-radius:10px;background:rgba(251,146,60,.12);color:#fb923c;font-size:11px;font-weight:800;flex:0 0 auto}
+.acct-streak i{font-size:12px}
 .acct-sep{height:1px;background:rgba(255,255,255,.09);margin:6px 4px}
 .acct-item{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:transparent;border:none;border-radius:12px;padding:10px 12px;cursor:pointer;color:rgba(255,255,255,.88);font-family:inherit;transition:background .15s ease}
 .acct-item:hover{background:rgba(255,255,255,.06)}
