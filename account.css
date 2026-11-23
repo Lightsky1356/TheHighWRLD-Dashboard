@@ -1575,4 +1575,9 @@ body[data-theme] .settings-section>.card.set-card{background:var(--ac-glass2,rgb
   #page-section-account .set-body .card,
   #page-section-account .settings-section,
   #page-section-account .settings-section > .card{width:100% !important;max-width:none !important;margin-left:0 !important;margin-right:0 !important}
+  /* Rows with a dropdown: stack the label above the select so the label is
+     never squeezed into a one-word-per-line column. Switch rows stay inline. */
+  #page-section-account .toggle-row:has(.thw-select){flex-wrap:wrap;gap:10px}
+  #page-section-account .toggle-row:has(.thw-select) > span:first-child{flex:1 1 100%;min-width:0}
+  #page-section-account .toggle-row .thw-select{flex:1 1 100%;width:100%;min-width:0}
 }
