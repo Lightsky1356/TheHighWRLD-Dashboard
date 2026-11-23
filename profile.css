@@ -375,7 +375,8 @@ a.pv2-song:hover{background:rgba(255,255,255,.06);border-color:var(--pv-border-s
    ========================================================================== */
 #xpPanelModal.rank-overlay,
 #achievementsModal.rank-overlay{position:fixed;inset:0;z-index:420;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(5,3,12,.74);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-#xpPanelModal.rank-overlay.open{display:flex}
+#xpPanelModal.rank-overlay.open,
+#achievementsModal.rank-overlay.open{display:flex}
 /* The achievements panel is the same size as the WRLD Player Info panel. */
 .rank-shell{display:flex;flex-direction:column;width:min(860px,92vw);max-width:min(860px,92vw);max-height:min(88vh,780px);background:#1d1d21;border:1px solid rgba(255,255,255,.12);border-radius:26px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,.7),0 0 0 1px rgba(34,211,238,.05),inset 0 1px 0 rgba(255,255,255,.1);animation:editpf-in .18s ease}
 .rank-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px 13px;flex:0 0 auto}

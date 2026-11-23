@@ -38,6 +38,8 @@ check("achievement rows are capped with a show-all toggle", /ACH_ROW_CAP = 25/.t
 check("profile achievement badges are capped", /CARD_ACH_CAP = 24/.test(profile) && /id="pv2CardAchMore"/.test(profile));
 check("achievements modal has latest, summary and category grids", /ach-latest/.test(profile) && /ach-summary-ring/.test(profile) && /ach-section-head/.test(profile) && /ach-cell/.test(profile));
 check("progress rings use real progress, no invented rarity", /achRing\(p, m\.icon\)/.test(profile) && !/Rare: \d+%/.test(profile + read("profile.css")));
+check("the achievements modal opens when .open is set", /#achievementsModal\.rank-overlay\.open\{display:flex\}/.test(read("profile.css")));
+check("the profile card only shows earned badges", /var earned = MILESTONES\.filter/.test(profile) && /var list = cardAchShowAll \? earned/.test(profile));
 const achApi = read("functions/_lib/achievements.js");
 check("there are no game achievements", !/cat: "Games"/.test(achApi) && !/id: "gm_/.test(achApi) && !/<h5>Games<\/h5>/.test(read("index.html")));
 check("level names use the vault's eras", /t: "JuiceTheKidd"/.test(profile) && /t: "Legends Never Die"/.test(profile) && /t: "Posthumous"/.test(profile));

@@ -466,17 +466,22 @@
   }
   var CARD_ACH_CAP = 24, cardAchShowAll = false;
   function milestonesHTML(stats) {
-    var unlockedCount = MILESTONES.filter(function (m) { return m.test(stats); }).length;
-    var list = cardAchShowAll ? MILESTONES : MILESTONES.slice(0, CARD_ACH_CAP);
-    var html = '<div class="pv2-ach-grid">';
+    var earned = MILESTONES.filter(function (m) { return m.test(stats); });
+    var unlockedCount = earned.length;
+    /* The card shows only badges the member actually has - the modal is where
+       locked achievements and their progress belong. */
+    var list = cardAchShowAll ? earned : earned.slice(0, CARD_ACH_CAP);
+    var html = !earned.length
+      ? '<p class="pv2-none">No achievements unlocked yet.</p>'
+      : '<div class="pv2-ach-grid">';
     list.forEach(function (m) {
       var unlocked = m.test(stats);
       html += '<button type="button" class="pv2-ach' + (unlocked ? ' unlocked' : ' locked') + '" data-ach-id="' + esc2(m.id) + '" title="' + esc2(m.how) + '"><i class="fas ' + m.icon + '"></i><small>' + esc2(m.label) + '</small></button>';
     });
-    html += '</div>';
-    if (MILESTONES.length > CARD_ACH_CAP) {
+    if (earned.length) html += '</div>';
+    if (earned.length > CARD_ACH_CAP) {
       html += '<button type="button" class="pv2-ach-more" id="pv2CardAchMore">' +
-        (cardAchShowAll ? "Show fewer" : "Show all " + MILESTONES.length) + '</button>';
+        (cardAchShowAll ? "Show fewer" : "Show all " + earned.length + " unlocked") + '</button>';
     }
     html += '<p class="pv2-card-note" style="margin-top:10px">' + unlockedCount + ' of ' + MILESTONES.length + ' unlocked &middot; <a class="pv2-xp-link" href="#" id="pv2AchHow">How to unlock <i class="fas fa-arrow-right" style="font-size:9px"></i></a></p>';
     return html;
