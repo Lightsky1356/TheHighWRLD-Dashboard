@@ -176,7 +176,30 @@
     { id: "streak30", label: "30-day streak", icon: "fa-calendar-days", how: "Listen on 30 consecutive days", test: function (s) { return s.streak >= 30; } },
     { id: "level5", label: "Level 5", icon: "fa-star", how: "Reach level 5 by earning XP", test: function (s) { return s.level >= 5; } },
     { id: "level10", label: "Level 10", icon: "fa-star-of-life", how: "Reach level 10 by earning XP", test: function (s) { return s.level >= 10; } },
-    { id: "top25", label: "Top 25 all-time", icon: "fa-ranking-star", how: "Place in the top 25 of the all-time XP leaderboard", test: function (s) { return s.rank != null && s.rank <= 25; } }
+    { id: "top25", label: "Top 25 all-time", icon: "fa-ranking-star", how: "Place in the top 25 of the all-time XP leaderboard", test: function (s) { return s.rank != null && s.rank <= 25; } },
+    /* Added milestones - every one reads a number the profile already shows. */
+    { id: "unique5", label: "5 songs", icon: "fa-music", how: "Play 5 different songs", test: function (s) { return s.unique >= 5; } },
+    { id: "unique10", label: "10 songs", icon: "fa-compact-disc", how: "Play 10 different songs", test: function (s) { return s.unique >= 10; } },
+    { id: "unique50", label: "50 songs", icon: "fa-vinyl-record", how: "Play 50 different songs", test: function (s) { return s.unique >= 50; } },
+    { id: "unique250", label: "250 songs", icon: "fa-layer-group", how: "Play 250 different songs", test: function (s) { return s.unique >= 250; } },
+    { id: "hours1", label: "One hour", icon: "fa-clock", how: "Listen for one hour in total", test: function (s) { return s.hours >= 1; } },
+    { id: "hours10", label: "Ten hours", icon: "fa-hourglass", how: "Listen for ten hours in total", test: function (s) { return s.hours >= 10; } },
+    { id: "hours50", label: "Fifty hours", icon: "fa-hourglass-half", how: "Listen for fifty hours in total", test: function (s) { return s.hours >= 50; } },
+    { id: "hours100", label: "100 hours", icon: "fa-hourglass", how: "Listen for 100 hours in total", test: function (s) { return s.hours >= 100; } },
+    { id: "fav1", label: "First favourite", icon: "fa-heart", how: "Save a favourite song", test: function (s) { return s.favorites >= 1; } },
+    { id: "fav5", label: "Five favourites", icon: "fa-heart-circle-plus", how: "Save 5 favourite songs", test: function (s) { return s.favorites >= 5; } },
+    { id: "fav10", label: "Ten favourites", icon: "fa-heart-circle-check", how: "Save 10 favourite songs", test: function (s) { return s.favorites >= 10; } },
+    { id: "fav25", label: "25 favourites", icon: "fa-gem", how: "Save 25 favourite songs", test: function (s) { return s.favorites >= 25; } },
+    { id: "xp100", label: "100 XP", icon: "fa-bolt", how: "Earn 100 all-time XP", test: function (s) { return s.xp >= 100; } },
+    { id: "xp500", label: "500 XP", icon: "fa-star", how: "Earn 500 all-time XP", test: function (s) { return s.xp >= 500; } },
+    { id: "xp1000", label: "1,000 XP", icon: "fa-medal", how: "Earn 1,000 all-time XP", test: function (s) { return s.xp >= 1000; } },
+    { id: "xp5000", label: "5,000 XP", icon: "fa-crown", how: "Earn 5,000 all-time XP", test: function (s) { return s.xp >= 5000; } },
+    { id: "week50", label: "Weekly 50", icon: "fa-calendar-day", how: "Earn 50 XP in one week", test: function (s) { return s.weekXp >= 50; } },
+    { id: "week200", label: "Weekly 200", icon: "fa-calendar-week", how: "Earn 200 XP in one week", test: function (s) { return s.weekXp >= 200; } },
+    { id: "streak3", label: "3-day streak", icon: "fa-fire", how: "Listen on 3 consecutive days", test: function (s) { return s.streak >= 3; } },
+    { id: "streak14", label: "14-day streak", icon: "fa-calendar-check", how: "Listen on 14 consecutive days", test: function (s) { return s.streak >= 14; } },
+    { id: "top10", label: "Top 10 all-time", icon: "fa-trophy", how: "Place in the top 10 of the all-time XP leaderboard", test: function (s) { return s.rank != null && s.rank <= 10; } },
+    { id: "top3", label: "Top 3 all-time", icon: "fa-ranking-star", how: "Place in the top 3 of the all-time XP leaderboard", test: function (s) { return s.rank != null && s.rank <= 3; } }
   ];
 
   /* ---------- HTML builders ---------- */
@@ -421,7 +444,13 @@
       rank: rank
     };
     /* Share with the achievements panel so it can render without a re-fetch. */
-    try { _profileStats = { plays: stats.plays, unique: stats.unique, streak: stats.streak, level: stats.level, rank: stats.rank }; } catch (e) {}
+    try {
+      _profileStats = {
+        plays: stats.plays, unique: stats.unique, hours: stats.hours,
+        favorites: favs.length, streak: stats.streak, level: stats.level,
+        rank: rank, xp: xpTotal, weekXp: xpObj ? (Number(xpObj.week_xp) || 0) : 0
+      };
+    } catch (e) {}
     var eraCounts = {};
     topList.forEach(function (t) { var e = eraFromTrackId(t.track_id); if (e) eraCounts[e] = (eraCounts[e] || 0) + (Number(t.n) || 0); });
     var topEra = null, topEraPlays = 0;
@@ -765,7 +794,7 @@
 
   /* ---------- Achievements panel (how to unlock) ---------- */
   /* Stats bundle kept from the last render so the panel can show real state. */
-  var _profileStats = { plays: 0, unique: 0, streak: 0, level: 1, rank: null };
+  var _profileStats = { plays: 0, unique: 0, hours: 0, favorites: 0, streak: 0, level: 1, rank: null, xp: 0, weekXp: 0 };
   function renderAchievementsPanel(stats) {
     var host = document.getElementById("achievementsBody");
     if (!host) return;
@@ -782,7 +811,7 @@
   }
   function openAchievementsPanel() {
     /* Uses the stats bundle captured at render time — no second request. */
-    var stats = _profileStats || { plays: 0, unique: 0, streak: 0, level: 1, rank: null };
+    var stats = _profileStats || { plays: 0, unique: 0, hours: 0, favorites: 0, streak: 0, level: 1, rank: null, xp: 0, weekXp: 0 };
     renderAchievementsPanel(stats);
     setModalOpen("achievementsModal", true);
   }

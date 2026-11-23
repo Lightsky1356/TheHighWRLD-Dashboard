@@ -29,6 +29,9 @@ check("public playlists are rendered for every viewer", /pv2-playlists/.test(pro
    (not inside `profile`), and the head poll must follow the profile on screen
    rather than the signed-in viewer or it overwrites the viewed member. */
 check("links fall back to the API's top-level array", /Array\.isArray\(d\.links\)/.test(profile));
+/* More achievements, each backed by a stat the profile actually loads. */
+check("extra achievements cover hours, favourites and XP", /id: "hours100"/.test(profile) && /id: "fav25"/.test(profile) && /id: "xp5000"/.test(profile));
+check("achievement stats include the new real fields", /favorites: favs\.length/.test(profile) && /weekXp: xpObj/.test(profile));
 check("the head poll follows the viewed profile first", /if \(!isSelfView\(\)\) return profileKey\(\);/.test(profile));
 check("live hero edits cannot touch another profile", /__pv2ApplyLive[\s\S]{0,260}if \(!isSelfView\(\)\) return;/.test(profile));
 const profileApi = read("functions/api/profile.js");
