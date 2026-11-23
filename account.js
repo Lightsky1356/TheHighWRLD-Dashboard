@@ -3756,12 +3756,12 @@ window.profileSectionShown = function () {
       });
     });
 
-    var qMode = document.getElementById("playQueueMode");
-    if (qMode) {
-      qMode.value = settingsGet("replaceQueue", false) === true ? "replace" : "keep";
-      qMode.addEventListener("change", function () {
-        settingsSet("replaceQueue", this.value === "replace");
-        toast(this.value === "replace" ? _tt("toastQueueCleared", "Picking a song clears the queue") : _tt("toastQueueKept", "Your queue stays when you pick a song"), "info", 2200);
+    var keepQueue = document.getElementById("pbKeepQueueToggle");
+    if (keepQueue) {
+      keepQueue.checked = settingsGet("replaceQueue", false) !== true;
+      keepQueue.addEventListener("change", function () {
+        settingsSet("replaceQueue", !this.checked);
+        toast(this.checked ? _tt("toastQueueKept", "Your queue stays when you pick a song") : _tt("toastQueueCleared", "Picking a song clears the queue"), "info", 2200);
       });
     }
 
@@ -4284,16 +4284,6 @@ var NAV_URL = { home: "/",  developers: "/developers", player: "/player", hub: "
       pbPauseHidden.addEventListener("change", function () {
         try { window.wrldPlayerSettings && window.wrldPlayerSettings.set("pauseOnHidden", this.checked); } catch (e) {}
         if (window.THWResume && window.THWResume.setPauseOnHidden) window.THWResume.setPauseOnHidden(this.checked);
-      });
-    }
-    /* Playback speed — persisted, and applied at once. */
-    var pbSpeed = document.getElementById("pbSpeedSelect");
-    if (pbSpeed) {
-      try { pbSpeed.value = String((window.wrldPlayerSettings && window.wrldPlayerSettings.get("playbackRate")) || "1"); } catch (e) {}
-      pbSpeed.addEventListener("change", function () {
-        try { window.wrldPlayerSettings && window.wrldPlayerSettings.set("playbackRate", this.value); } catch (e) {}
-        if (window.THWResume && window.THWResume.setRate) window.THWResume.setRate(Number(this.value) || 1);
-        try { if (typeof window.showToast === "function") window.showToast("Playback speed " + this.value + "x", "info", 1500); } catch (e) {}
       });
     }
   }

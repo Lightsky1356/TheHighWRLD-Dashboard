@@ -186,7 +186,7 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v57";
+    css.href = "/social.css?v=thw-v58";
     document.head.appendChild(css);
 
     var root = el("div");

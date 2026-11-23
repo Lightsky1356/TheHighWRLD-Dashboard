@@ -1607,3 +1607,17 @@ body[data-theme] .settings-section>.card.set-card{background:var(--ac-glass2,rgb
   #account-page.settings-page .guest-note .btn{flex:1 1 100%;margin-left:0 !important;margin-top:4px}
 }
 
+/* Appearance: a proper theme gallery */
+#account-page.settings-page .thw-pick{gap:10px}
+#account-page.settings-page .thw-tile{border-radius:13px;padding:11px 6px 10px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02))!important;border-color:rgba(255,255,255,.09)!important;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+#account-page.settings-page .thw-tile:hover{transform:translateY(-2px);border-color:rgba(167,139,250,.45)!important}
+#account-page.settings-page .thw-tile:has(input:checked){border-color:#a78bfa!important;box-shadow:0 0 0 1px #a78bfa,0 8px 22px rgba(167,139,250,.18);background:linear-gradient(180deg,rgba(167,139,250,.16),rgba(167,139,250,.05))!important}
+#account-page.settings-page .thw-tile-img,
+#account-page.settings-page .thw-tile-grad{width:52px;height:52px;border-radius:10px;box-shadow:0 5px 14px rgba(0,0,0,.25)}
+#account-page.settings-page .thw-tile-label{font-size:11.5px;font-weight:800;color:rgba(255,255,255,.78)}
+#account-page.settings-page .thw-tile:has(input:checked) .thw-tile-label{color:#fff}
+#account-page.settings-page .thw-tile--wide{min-height:72px;border-radius:14px;padding:12px 14px;text-align:left}
+#account-page.settings-page .thw-tile-title{font-size:14px;font-weight:800;color:#fff}
+#account-page.settings-page .thw-tile-sub{font-size:11.5px;line-height:1.5;color:rgba(255,255,255,.55)}
+#account-page.settings-page .set-legend{color:rgba(255,255,255,.55);font-size:10.5px;letter-spacing:.1em}
+

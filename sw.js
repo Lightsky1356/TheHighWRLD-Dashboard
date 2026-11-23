@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v568';
+const VERSION = 'thw-v569';
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -39,7 +39,7 @@ const PRECACHE = [
   './tracks.js?v=thw-v19',
   './browser-id3-writer.js?v=thw-v3',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v107',
+  './account.js?v=thw-v108',
   './stats-page.js?v=thw-v1',
   './effects.js?v=thw-v2',
   './theme-drift.js?v=thw-v9',
@@ -69,7 +69,7 @@ const PRECACHE = [
   './tracker.js?v=thw-v3',
   './song-page.js?v=thw-v8',
   './all.min.css?v=thw-v2',
-  './account.css?v=thw-v28',
+  './account.css?v=thw-v29',
   './account-shared.css?v=thw-v6',
   './player-settings.css?v=thw-v215',
   './style.css?v=thw-v55',
@@ -126,7 +126,7 @@ const PRECACHE = [
   /* --- page scripts --- */
   './user-relations.js?v=thw-v2',
   './user-menu.js?v=thw-v7',
-  './player-settings.js?v=thw-v21',
+  './player-settings.js?v=thw-v22',
   './profile.js?v=thw-v64',
   './profile.css?v=thw-v32',
   './cover-pref.js?v=thw-v4',
@@ -190,7 +190,7 @@ const PRECACHE = [
   './legal-info.js?v=thw-v6',
   './grammar-check.js?v=thw-v2',
   './emoji-data.js?v=thw-v1',
-  './social-panel.js?v=thw-v70',
+  './social-panel.js?v=thw-v71',
   './push-client.js?v=thw-v31',
   './simple-toast.js?v=thw-v5',
   './catalogue-watch.js?v=thw-v2',

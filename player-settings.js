@@ -18,8 +18,6 @@
     resumeLast: true,
     /* Pause the audio when the tab is hidden. */
     pauseOnHidden: false,
-    /* Playback speed as a string ('0.5','0.75','1','1.25','1.5','2'). */
-    playbackRate: '1',
     /* Suggestion cards: the cards that offer the site to your home screen.
        Off means never. */
     suggestionCards: true,
@@ -81,13 +79,12 @@
     return fb;
   }
 
-  /* ---------- Playback: resume, pause-on-hidden, speed -------------------
+  /* ---------- Playback: resume and pause-on-hidden -----------------------
      resumeLast     - the vault reopens on the song and the second you left it
      pauseOnHidden  - switching the tab away pauses the audio
-     playbackRate   - the persisted speed, applied to the media element
-     All three are plain player-session behaviour; none of them touches the
-     account. THWResume is the small live handle account.js talks to when a
-     switch flips, exactly like the moving colours dispatch. */
+     Both are plain player-session behaviour; neither touches the account.
+     THWResume is the small live handle account.js talks to when a switch
+     flips, exactly like the moving colours dispatch. */
   var RESUME_KEY = 'thw.resume.v1';
   function audioEl(){ return document.querySelector('audio'); }
   function resumeEnabled(){ return get('resumeLast') !== false; }
@@ -138,8 +135,7 @@
   }
   window.THWResume = {
     setEnabled: function(on){ if(!on) clearResume(); },
-    setPauseOnHidden: function(){ /* the listener reads the live setting */ },
-    setRate: function(r){ var a = audioEl(); if(a){ try { a.playbackRate = Number(r) || 1; } catch(e){} } }
+    setPauseOnHidden: function(){ /* the listener reads the live setting */ }
   };
   (function bindResume(){
     var a = audioEl();
@@ -155,7 +151,6 @@
     document.addEventListener('visibilitychange', function(){
       if(document.hidden && get('pauseOnHidden')){ try { a.pause(); } catch(e){} }
     });
-    try { a.playbackRate = Number(get('playbackRate')) || 1; } catch(e){}
     applyResume();
   })();
 

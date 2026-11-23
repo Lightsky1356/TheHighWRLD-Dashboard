@@ -711,3 +711,27 @@ a.thw-social-name:hover{color:#67e8f9;text-decoration:underline;text-underline-o
 .thw-social-playing-title{display:block;font:600 11px system-ui;color:#f0fdf4}
 .thw-social-playing-play{border:0;border-radius:8px;padding:6px 12px;background:#16a34a;color:#052e16;font:800 10px "Sora";letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:filter .15s}
 .thw-social-playing-play:hover{filter:brightness(1.15)}
+
+/* The tab strip is a <nav>, so the site's global nav padding leaks into it
+   (including safe-area on phones). Keep the social strip at its own spacing. */
+nav.thw-social-tabs{padding:10px 12px !important;padding-top:10px !important}
+
+/* Mobile Friends view: fill the page and stop the signed-out gate floating in
+   a short box with dead space underneath it. */
+@media (max-width:680px){
+  .thw-social-root--page #thw-social-panel{width:100%;max-width:none;overflow-x:hidden}
+  .thw-social-root--page .thw-social-view{overflow-x:hidden}
+  .thw-social-root--page [data-view="friends"],
+  .thw-social-root--page [data-view="friends"] .thw-social-list{min-width:0;max-width:100%;overflow-x:hidden}
+  .thw-social-root--page [data-view="friends"] .thw-social-search input{width:100%;min-width:0}
+  .thw-social-root--page .thw-social-friends-head{margin:6px 6px 0;padding:0;flex-wrap:wrap;gap:6px}
+  .thw-social-root--page .thw-social-friends-head::after{display:none}
+  .thw-social-root--page .thw-social-friends-head-actions{flex-wrap:wrap}
+  .thw-social-root--page .thw-social-gate{flex:1 1 auto;min-height:0;padding:24px 16px 28px;justify-content:flex-start}
+  .thw-social-root--page .thw-social-gate-text{max-width:none;width:100%;font-size:12px}
+  .thw-social-root--page .thw-social-gate-btn{min-height:44px}
+  .thw-social-root--page .thw-social-list .thw-social-row{flex-wrap:wrap;gap:8px}
+  .thw-social-root--page .thw-social-list .thw-social-person{flex:1 1 100%;min-width:0}
+  .thw-social-root--page .thw-social-list .thw-social-actions{margin-left:0;flex:1 1 100%;flex-wrap:wrap;gap:6px}
+  .thw-social-root--page .thw-social-list .thw-social-actions button{flex:1 1 auto}
+}
