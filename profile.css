@@ -75,7 +75,9 @@
 .pv2-avatar-wrap{position:relative;flex:0 0 auto}
 .pv2-avatar{width:104px;height:104px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.22);box-shadow:0 12px 40px rgba(0,0,0,.55);background:#0f0f1e}
 .pv2-avatar-fallback{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;font-size:38px;font-weight:800;color:#0f0f1e;background:linear-gradient(135deg,#fcd34d,#d4a574);border:3px solid rgba(255,255,255,.3)}
-.pv2-dot{position:absolute;right:8px;bottom:8px;width:16px;height:16px;border-radius:50%;border:3px solid #06070f;background:#10b981}
+.pv2-dot{position:absolute;right:8px;bottom:8px;width:16px;height:16px;border-radius:50%;border:3px solid #06070f;background:#10b981;cursor:help}
+.pv2-status-label{display:inline-flex;align-items:center;gap:5px;margin-left:6px;font-size:10px;font-weight:800;letter-spacing:.06em;vertical-align:middle;white-space:nowrap}
+.pv2-status-label i{font-size:7px}
 .pv2-meta{min-width:0;flex:1;position:relative;z-index:1}
 .pv2-name{margin:0;font-size:clamp(20px,4.6vw,28px);font-weight:900;letter-spacing:-.02em;text-shadow:0 4px 22px rgba(0,0,0,.6)}
 .pv2-handle{color:rgba(244,242,255,.72);font-size:13px;font-weight:600;margin-top:3px}
@@ -88,7 +90,7 @@
 @media (max-width:720px){.pv2-hero-mid{flex-direction:column;align-items:flex-start;gap:12px}.pv2-avatar{width:88px;height:88px}.pv2-avatar-fallback{width:88px;height:88px;font-size:30px}}
 
 /* ---------- banner stats strip ---------- */
-.pv2-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 0 14px}
+.pv2-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding:14px 0;border-top:1px solid var(--pv-border-soft)}
 .pv2-links-label{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--pv-mute)}
 .pv2-links-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
 .pv2-link-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;border:1px solid var(--pv-border-soft);background:rgba(255,255,255,.05);color:var(--pv-text);font-size:11px;font-weight:700;text-decoration:none;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

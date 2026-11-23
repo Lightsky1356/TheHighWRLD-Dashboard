@@ -251,6 +251,26 @@
   }
   /* One report button for the whole profile. The modal lets the reader pick
      the reason; the API snapshots and AI-reviews the profile in one pass. */
+  /* The presence dot means the same thing on every profile: green online,
+     amber idle, red do-not-disturb, gray offline/invisible. The tooltip and
+     the small label make it readable to other members, not just decorative. */
+  function statusInfo(status) {
+    var s = String(status || "Online");
+    if (s === "Online") return { color: "#10b981", label: "Online" };
+    if (s === "Idle") return { color: "#f59e0b", label: "Idle" };
+    if (s === "Do Not Disturb") return { color: "#ef4444", label: "Do Not Disturb" };
+    return { color: "#64748b", label: "Offline" };
+  }
+  function statusDotHTML(status, name, isMe) {
+    var info = statusInfo(status);
+    var title = (isMe ? "You are " : String(name || "Member") + " is ") + info.label;
+    return '<span class="pv2-dot" id="pv2HeroStatusDot" style="background:' + info.color + ';box-shadow:0 0 14px ' + info.color +
+      '" title="' + esc2(title) + '" aria-label="' + esc2(title) + '" role="img"></span>';
+  }
+  function statusLabelHTML(status) {
+    var info = statusInfo(status);
+    return '<span class="pv2-status-label" id="pv2HeroStatusLabel" style="color:' + info.color + '"><i class="fas fa-circle" aria-hidden="true"></i>' + esc2(info.label) + '</span>';
+  }
   function profileReportBtn(uid) {
     if (!uid) return "";
     return '<button type="button" class="pv2-report-field" data-report="PROFILE:u:' + esc2(uid) +
@@ -425,9 +445,9 @@
     html += '</div>';
     var reportUid = isMe ? "" : String(d.uid || "");
     html += '<div class="pv2-hero-mid"><div class="pv2-avatar-wrap">' + avatarHtml(p) +
-      '<span class="pv2-dot" style="background:#10b981"></span></div>';
+      statusDotHTML(p.status, name, isMe) + '</div>';
     html += '<div class="pv2-meta"><h1 class="pv2-name" id="pv2HeroName">' + esc2(name) + '</h1>' +
-      '<p class="pv2-handle">@' + esc2(String(uname).toLowerCase()) + '</p>';
+      '<p class="pv2-handle">@' + esc2(String(uname).toLowerCase()) + ' ' + statusLabelHTML(p.status) + '</p>';
     html += '<p class="pv2-joined">' + (p.joined ? 'Joined ' + esc2(joinedStr(p.joined)) : '') + (dc.linked ? (p.joined ? ' &middot; ' : '') + 'Discord linked' : '') + '</p>';
     html += '<p class="pv2-bio' + (p.bio ? '' : ' hidden') + '" id="pv2HeroBio">' + esc2(p.bio || "") + '</p>';
     if (topEra) html += '<span class="pv2-era-chip"><i class="fas fa-crown"></i>' + esc2(eraLabel(topEra)) + '</span>';
@@ -980,13 +1000,18 @@
   function applyHead(d) {
     var changed = false;
     var prev = headKnown;
-    headKnown = { name: d.name, bio: d.bio, avatar: d.avatar, bannerChoice: d.bannerChoice, favSong: d.favSong };
-    if (prev && prev.name === d.name && prev.bio === d.bio && prev.avatar === d.avatar && prev.bannerChoice === d.bannerChoice && prev.favSong === d.favSong) {
+    headKnown = { name: d.name, bio: d.bio, avatar: d.avatar, bannerChoice: d.bannerChoice, favSong: d.favSong, status: d.status };
+    if (prev && prev.name === d.name && prev.bio === d.bio && prev.avatar === d.avatar && prev.bannerChoice === d.bannerChoice && prev.favSong === d.favSong && prev.status === d.status) {
       renderNowPlaying(d.nowPlaying);
       return;
     }
     changed = true;
     var n = document.getElementById("pv2HeroName"); if (n && d.name) n.textContent = d.name;
+    /* Keep the presence dot and its wording in step with the live status. */
+    var statusDot = document.getElementById("pv2HeroStatusDot");
+    if (statusDot) statusDot.outerHTML = statusDotHTML(d.status, d.name, isSelfView());
+    var statusLbl = document.getElementById("pv2HeroStatusLabel");
+    if (statusLbl) statusLbl.outerHTML = statusLabelHTML(d.status);
     var b = document.getElementById("pv2HeroBio");
     if (b) {
       if (d.bio) { b.textContent = d.bio; b.classList.remove("hidden"); }
