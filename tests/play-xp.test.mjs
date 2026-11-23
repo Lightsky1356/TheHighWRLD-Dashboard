@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const src = readFileSync(join(ROOT, "functions/_lib/listens-stats.js"), "utf8");
-const pass = /import \{ awardXp \}/.test(src) && /awardXp\(db, uid, 1\)/.test(src);
-console.log(`${pass ? "PASS" : "FAIL"}  recording a play awards one XP server-side`);
+const pass = /import \{ awardXp \}/.test(src) && /awardXp\(db, uid, 5\)/.test(src);
+console.log(`${pass ? "PASS" : "FAIL"}  recording a play awards five XP server-side`);
 
 const xpApi = readFileSync(join(ROOT, "functions/api/xp.js"), "utf8");
 const resolved = /resolveHandle\(db, asked\)/.test(xpApi) && /site_uid AS id FROM discord_links/.test(xpApi);

@@ -33,7 +33,12 @@ check("links fall back to the API's top-level array", /Array\.isArray\(d\.links\
 check("extra achievements cover hours, favourites and XP", /id: "hours100"/.test(profile) && /id: "fav25"/.test(profile) && /id: "xp5000"/.test(profile));
 check("achievement stats include the new real fields", /favorites: favs\.length/.test(profile) && /weekXp: xpObj/.test(profile));
 const achCount = (profile.match(/\{ id: "/g) || []).length;
-check("the profile has a large achievement set", achCount >= 80, `${achCount} achievements`);
+check("the profile has a large achievement set", achCount >= 120, `${achCount} achievements`);
+check("achievement rows are capped with a show-all toggle", /ACH_ROW_CAP = 25/.test(profile) && /id="achShowAll"/.test(profile));
+const achApi = read("functions/_lib/achievements.js");
+check("there are no game achievements", !/cat: "Games"/.test(achApi) && !/id: "gm_/.test(achApi) && !/<h5>Games<\/h5>/.test(read("index.html")));
+check("level names use the vault's eras", /t: "JuiceTheKidd"/.test(profile) && /t: "Legends Never Die"/.test(profile) && /t: "Posthumous"/.test(profile));
+check("the achievements overlay blurs the page", /#achievementsModal\.rank-overlay\{[^}]*backdrop-filter:blur\(8px\)/.test(read("profile.css")));
 check("level and strip cards refresh from the head poll", /refreshLiveCards\(d\)/.test(profile) && /id="pv2XpNote"/.test(profile) && /"Plays", "pv2StatPlays"/.test(profile));
 const rankCss = read("profile.css").match(/\.rank-shell\{[^}]*\}/)?.[0] || "";
 check("achievements modal matches the Info panel size", /width:min\(860px,92vw\)/.test(rankCss) && /\.info-panel\{\s*width:min\(860px,92vw\)/.test(read("player-settings.css")));

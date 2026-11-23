@@ -253,7 +253,42 @@
     { id: "r20", label: "Top 20", icon: "fa-trophy", how: "Place in the top 20 all-time", test: function (s) { return s.rank != null && s.rank <= 20; } },
     { id: "r5", label: "Top 5", icon: "fa-trophy", how: "Place in the top 5 all-time", test: function (s) { return s.rank != null && s.rank <= 5; } },
     { id: "r2", label: "Runner-up", icon: "fa-medal", how: "Place 2nd all-time", test: function (s) { return s.rank != null && s.rank <= 2; } },
-    { id: "r1", label: "Number one", icon: "fa-crown", how: "Place 1st all-time", test: function (s) { return s.rank != null && s.rank <= 1; } }
+    { id: "r1", label: "Number one", icon: "fa-crown", how: "Place 1st all-time", test: function (s) { return s.rank != null && s.rank <= 1; } },
+    /* Third wave - finer tiers on the same real profile numbers. */
+    { id: "p15", label: "15 plays", icon: "fa-play", how: "Play 15 songs", test: function (s) { return s.plays >= 15; } },
+    { id: "p35", label: "35 plays", icon: "fa-headphones", how: "Play 35 songs", test: function (s) { return s.plays >= 35; } },
+    { id: "p60", label: "60 plays", icon: "fa-headphones", how: "Play 60 songs", test: function (s) { return s.plays >= 60; } },
+    { id: "p90", label: "90 plays", icon: "fa-bolt", how: "Play 90 songs", test: function (s) { return s.plays >= 90; } },
+    { id: "p200", label: "200 plays", icon: "fa-rocket", how: "Play 200 songs", test: function (s) { return s.plays >= 200; } },
+    { id: "p300", label: "300 plays", icon: "fa-rocket", how: "Play 300 songs", test: function (s) { return s.plays >= 300; } },
+    { id: "u2", label: "2 songs", icon: "fa-music", how: "Play 2 different songs", test: function (s) { return s.unique >= 2; } },
+    { id: "u3", label: "3 songs", icon: "fa-music", how: "Play 3 different songs", test: function (s) { return s.unique >= 3; } },
+    { id: "u8", label: "8 songs", icon: "fa-compact-disc", how: "Play 8 different songs", test: function (s) { return s.unique >= 8; } },
+    { id: "u12", label: "12 songs", icon: "fa-compact-disc", how: "Play 12 different songs", test: function (s) { return s.unique >= 12; } },
+    { id: "u20", label: "20 songs", icon: "fa-layer-group", how: "Play 20 different songs", test: function (s) { return s.unique >= 20; } },
+    { id: "u30", label: "30 songs", icon: "fa-layer-group", how: "Play 30 different songs", test: function (s) { return s.unique >= 30; } },
+    { id: "h2", label: "2 hours", icon: "fa-clock", how: "Listen for two hours", test: function (s) { return s.hours >= 2; } },
+    { id: "h6", label: "6 hours", icon: "fa-clock", how: "Listen for six hours", test: function (s) { return s.hours >= 6; } },
+    { id: "h12", label: "12 hours", icon: "fa-hourglass", how: "Listen for 12 hours", test: function (s) { return s.hours >= 12; } },
+    { id: "h18", label: "18 hours", icon: "fa-hourglass-half", how: "Listen for 18 hours", test: function (s) { return s.hours >= 18; } },
+    { id: "h30", label: "30 hours", icon: "fa-hourglass-half", how: "Listen for 30 hours", test: function (s) { return s.hours >= 30; } },
+    { id: "f4", label: "4 favourites", icon: "fa-heart", how: "Save 4 favourite songs", test: function (s) { return s.favorites >= 4; } },
+    { id: "f6", label: "6 favourites", icon: "fa-heart", how: "Save 6 favourite songs", test: function (s) { return s.favorites >= 6; } },
+    { id: "f8", label: "8 favourites", icon: "fa-heart-circle-check", how: "Save 8 favourite songs", test: function (s) { return s.favorites >= 8; } },
+    { id: "f12", label: "12 favourites", icon: "fa-heart-circle-check", how: "Save 12 favourite songs", test: function (s) { return s.favorites >= 12; } },
+    { id: "xp50", label: "50 XP", icon: "fa-bolt", how: "Earn 50 all-time XP", test: function (s) { return s.xp >= 50; } },
+    { id: "xp150", label: "150 XP", icon: "fa-star", how: "Earn 150 all-time XP", test: function (s) { return s.xp >= 150; } },
+    { id: "xp350", label: "350 XP", icon: "fa-star", how: "Earn 350 all-time XP", test: function (s) { return s.xp >= 350; } },
+    { id: "xp600", label: "600 XP", icon: "fa-star", how: "Earn 600 all-time XP", test: function (s) { return s.xp >= 600; } },
+    { id: "w5", label: "Weekly 5", icon: "fa-calendar-day", how: "Earn 5 XP in one week", test: function (s) { return s.weekXp >= 5; } },
+    { id: "w15", label: "Weekly 15", icon: "fa-calendar-day", how: "Earn 15 XP in one week", test: function (s) { return s.weekXp >= 15; } },
+    { id: "w30", label: "Weekly 30", icon: "fa-calendar-week", how: "Earn 30 XP in one week", test: function (s) { return s.weekXp >= 30; } },
+    { id: "s4", label: "4-day streak", icon: "fa-fire", how: "Listen on 4 consecutive days", test: function (s) { return s.streak >= 4; } },
+    { id: "s6", label: "6-day streak", icon: "fa-fire", how: "Listen on 6 consecutive days", test: function (s) { return s.streak >= 6; } },
+    { id: "s8", label: "8-day streak", icon: "fa-calendar-check", how: "Listen on 8 consecutive days", test: function (s) { return s.streak >= 8; } },
+    { id: "l5", label: "Level 5", icon: "fa-star", how: "Reach level 5", test: function (s) { return s.level >= 5; } },
+    { id: "l7", label: "Level 7", icon: "fa-star", how: "Reach level 7", test: function (s) { return s.level >= 7; } },
+    { id: "l9", label: "Level 9", icon: "fa-star", how: "Reach level 9", test: function (s) { return s.level >= 9; } }
   ];
 
   /* ---------- HTML builders ---------- */
@@ -851,11 +886,13 @@
   /* ---------- Achievements panel (how to unlock) ---------- */
   /* Stats bundle kept from the last render so the panel can show real state. */
   var _profileStats = { plays: 0, unique: 0, hours: 0, favorites: 0, streak: 0, level: 1, rank: null, xp: 0, weekXp: 0 };
+  var ACH_ROW_CAP = 25, achShowAll = false;
   function renderAchievementsPanel(stats) {
     var host = document.getElementById("achievementsBody");
     if (!host) return;
     var html = '';
-    MILESTONES.forEach(function (m) {
+    var list = achShowAll ? MILESTONES : MILESTONES.slice(0, ACH_ROW_CAP);
+    list.forEach(function (m) {
       var unlocked = m.test(stats);
       html += '<div class="ach-row' + (unlocked ? ' unlocked' : '') + '">' +
         '<span class="ach-row-icon"><i class="fas ' + esc2(m.icon) + '"></i></span>' +
@@ -863,7 +900,16 @@
         '<span class="ach-row-state">' + (unlocked ? '<i class="fas fa-check-circle" aria-hidden="true"></i>Unlocked' : '<i class="fas fa-lock" aria-hidden="true"></i>Locked') + '</span>' +
       '</div>';
     });
+    if (MILESTONES.length > ACH_ROW_CAP) {
+      html += '<button type="button" class="ach-more" id="achShowAll">' +
+        (achShowAll ? "Show fewer" : "Show all " + MILESTONES.length) + '</button>';
+    }
     host.innerHTML = html;
+    var more = document.getElementById("achShowAll");
+    if (more) more.addEventListener("click", function () {
+      achShowAll = !achShowAll;
+      renderAchievementsPanel(_profileStats);
+    });
   }
   function openAchievementsPanel() {
     /* Uses the stats bundle captured at render time — no second request. */
@@ -884,15 +930,17 @@
   }
 
   /* ---------- Rank / How XP works panel ---------- */
+  /* Rungs are named after the vault's own eras - the same era pages and
+     codes the site uses - instead of generic gaming titles. */
   var LADDER = [
-    { t: "Newcomer", l: 1, dot: "#8b8b93" },
-    { t: "Listener", l: 3, dot: "#f59e0b" },
-    { t: "Fan", l: 7, dot: "#f4f4f6" },
-    { t: "Day One", l: 14, dot: "#fcd34d" },
-    { t: "Lucid Dreamer", l: 24, dot: "#2dd4bf" },
-    { t: "Righteous", l: 60, dot: "#60a5fa" },
-    { t: "Legend", l: 150, dot: "#22d3ee" },
-    { t: "999", l: 400, dot: "#fb7185" },
+    { t: "JuiceTheKidd", l: 1, dot: "#8b8b93" },
+    { t: "999", l: 3, dot: "#f59e0b" },
+    { t: "Goodbye & Good Riddance", l: 7, dot: "#f4f4f6" },
+    { t: "WRLD on Drugs", l: 14, dot: "#fcd34d" },
+    { t: "Death Race For Love", l: 24, dot: "#2dd4bf" },
+    { t: "Legends Never Die", l: 60, dot: "#60a5fa" },
+    { t: "Outsiders", l: 150, dot: "#22d3ee" },
+    { t: "Posthumous", l: 400, dot: "#fb7185" },
     { t: "Forever 999", l: 999, dot: "#f43f5e" }
   ];
   function xpForLevel(n) { return 50 * (n - 1) * (n - 1); }

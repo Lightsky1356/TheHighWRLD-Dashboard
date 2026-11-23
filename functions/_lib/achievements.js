@@ -8,7 +8,7 @@
 import { listeningStats, streakFromDays } from "./listens-stats.js";
 
 /* ------------------------------------------------------------------
-   117 achievements. IDs are stable - once shipped, treat them as part
+   100 achievements. IDs are stable - once shipped, treat them as part
    of the schema. Rarity is a cosmetic tier and does not claim a member
    percentage; the reference's "Rare: 23% of members have it" is not
    something we can honestly compute without running a full aggregate.
@@ -125,26 +125,8 @@ export const ACHIEVEMENTS = [
   { id: "sp_righteous",   cat: "Specials",  name: "Righteous",      desc: "Unlock 20 achievements",                                      icon: "fa-medal",         rarity: "uncommon",  xp: 75,  eval: "unlocked_count>=20" },
   { id: "sp_legend",      cat: "Specials",  name: "Legend",         desc: "Unlock 50 achievements",                                      icon: "fa-crown",         rarity: "epic",      xp: 500, eval: "unlocked_count>=50" },
   { id: "sp_999",         cat: "Specials",  name: "999",             desc: "Unlock 99 achievements",                                      icon: "fa-infinity",      rarity: "legendary", xp: 999, eval: "unlocked_count>=99" },
-  { id: "sp_forever",     cat: "Specials",  name: "Forever 999",    desc: "Unlock 117 achievements",                                     icon: "fa-infinity",      rarity: "legendary", xp: 999, eval: "unlocked_count>=117" },
+  { id: "sp_forever",     cat: "Specials",  name: "Forever 999",    desc: "Unlock 100 achievements",                                     icon: "fa-infinity",      rarity: "legendary", xp: 999, eval: "unlocked_count>=100" },
 
-  /* ===== Games (17) ===== */
-  { id: "gm_name_that",  cat: "Games",     name: "Name that song",  desc: "Score 5,000 on Name that song",                               icon: "fa-question",      rarity: "common",    xp: 25,  eval: "games_nts>=5000" },
-  { id: "gm_seven",      cat: "Games",     name: "Seven for seven", desc: "Score 1,000 on Seven for seven",                              icon: "fa-fire",          rarity: "common",    xp: 25,  eval: "games_sfs>=1000" },
-  { id: "gm_one_sec",    cat: "Games",     name: "One second",      desc: "Score 10,000 on One second",                                  icon: "fa-stopwatch",     rarity: "uncommon",  xp: 50,  eval: "games_os>=10000" },
-  { id: "gm_daily",      cat: "Games",     name: "Daily dose",      desc: "Complete the Daily challenge",                                icon: "fa-calendar",      rarity: "common",    xp: 15,  eval: "games_daily>=1" },
-  { id: "gm_golden",     cat: "Games",     name: "Golden ears",     desc: "Complete 30 daily challenges",                                icon: "fa-trophy",        rarity: "rare",      xp: 150, eval: "games_daily>=30" },
-  { id: "gm_thirty",     cat: "Games",     name: "Thirty for thirty",desc:"Score 1,000 on Thirty for thirty",                            icon: "fa-calendar",      rarity: "uncommon",  xp: 50,  eval: "games_tft>=1000" },
-  { id: "gm_clued",      cat: "Games",     name: "Clued in",        desc: "Complete 1 crossword",                                        icon: "fa-puzzle-piece",  rarity: "common",    xp: 20,  eval: "games_crossword>=1" },
-  { id: "gm_sharp",      cat: "Games",     name: "Sharp eye",       desc: "Complete 10 crosswords",                                      icon: "fa-puzzle-piece",  rarity: "uncommon",  xp: 75,  eval: "games_crossword>=10" },
-  { id: "gm_legend",     cat: "Games",     name: "Legends never die",desc:"Complete 25 crosswords",                                      icon: "fa-gem",           rarity: "rare",      xp: 200, eval: "games_crossword>=25" },
-  { id: "gm_straight",   cat: "Games",     name: "Seven straight",  desc: "Score 10 in a row on Seven for seven",                        icon: "fa-fire",          rarity: "uncommon",  xp: 50,  eval: "games_sfs>=10" },
-  { id: "gm_called",     cat: "Games",     name: "Called it",       desc: "Predict 5 outcomes on the Leak Leaderboard",                  icon: "fa-bullseye",      rarity: "uncommon",  xp: 50,  eval: "games_predicted>=5" },
-  { id: "gm_no_limit",   cat: "Games",     name: "No limit",        desc: "Score 10,000 on No limit",                                    icon: "fa-infinity",      rarity: "rare",      xp: 150, eval: "games_nl>=10000" },
-  { id: "gm_good_read",  cat: "Games",     name: "Good read",       desc: "Find 10 consecutive correct answers",                         icon: "fa-arrows-up-down",rarity:"uncommon",   xp: 50,  eval: "games_consecutive>=10" },
-  { id: "gm_up_up",      cat: "Games",     name: "Up up and away",  desc: "Score 10,000 on Up up and away",                              icon: "fa-chart-line",    rarity: "uncommon",  xp: 75,  eval: "games_uua>=10000" },
-  { id: "gm_head_to",    cat: "Games",     name: "Head to head",    desc: "Win 10 Head to head matches",                                 icon: "fa-swords",        rarity: "rare",      xp: 150, eval: "games_hth_wins>=10" },
-  { id: "gm_contender",  cat: "Games",     name: "Contender",       desc: "Win 25 Head to head matches",                                 icon: "fa-swords",        rarity: "epic",      xp: 300, eval: "games_hth_wins>=25" },
-  { id: "gm_champion",   cat: "Games",     name: "Champion",        desc: "Win 50 Head to head matches",                                 icon: "fa-crown",         rarity: "legendary", xp: 500, eval: "games_hth_wins>=50" },
 ];
 
 /* Map a metric expression to [key, op, value] */
