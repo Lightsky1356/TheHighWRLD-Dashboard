@@ -12,11 +12,12 @@ const sw = read("sw.js");
 const out = [];
 const check = (name, pass) => out.push(`${pass ? "PASS" : "FAIL"}  ${name}`);
 
-check("mobile polish sheet is loaded last and precached", /mobile\.css\?v=thw-v1/.test(html) && /'\.\/mobile\.css\?v=thw-v1'/.test(sw));
+check("mobile polish sheet is loaded last and precached", /mobile\.css\?v=thw-v2/.test(html) && /'\.\/mobile\.css\?v=thw-v2'/.test(sw));
 check("zoom is no longer disabled", /name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/.test(html) && !/user-scalable=no/.test(html));
 check("critical animations are valid CSS", !/@@keyframes/.test(html));
 check("account responsive tier is valid CSS", !/#account-page @media/.test(account) && /@media \(max-width:1024px\)/.test(account) && /#account-page \.stats-grid\{grid-template-columns:repeat\(3,1fr\)\}/.test(account));
-check("one mobile breakpoint drives the layout", /@media \(max-width:767px\)/.test(css) && /--mbn-h: calc\(54px \+ env\(safe-area-inset-bottom, 0px\)\)/.test(css));
+check("one mobile breakpoint drives the layout", /@media \(max-width:767px\)/.test(css));
+check("bottom nav keeps its original styling", !/mobile-bottom-nav|mbn-item|scrollTopBtn|mobile-popup/.test(css));
 check("grids and selects collapse on phones", /\.thw-select\{min-width:0;width:100%\}/.test(css) && /grid-template-columns:minmax\(0,1fr\) !important/.test(css));
 
 console.log(out.join("\n"));

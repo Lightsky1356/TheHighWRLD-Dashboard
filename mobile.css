@@ -5,26 +5,7 @@
    this sheet uses the same boundary everywhere.
    ========================================================================== */
 
-:root {
-  /* The visible nav plus the iPhone home indicator. Used by all floating
-     controls so they stack instead of landing on top of one another. */
-  --mbn-h: calc(54px + env(safe-area-inset-bottom, 0px));
-}
-
 @media (max-width:767px) {
-  /* ---- bottom nav and floating controls ---- */
-  .mobile-bottom-nav{
-    display:grid;
-    grid-template-columns:repeat(5,minmax(0,1fr));
-    padding-bottom:calc(5px + env(safe-area-inset-bottom, 0px));
-  }
-  .mobile-bottom-nav .mbn-item{min-width:0}
-  .mbn-item span{font-size:11px !important}
-  #scrollTopBtn,#nightLightToggle,.mobile-popup{z-index:10000 !important}
-  body:has(#deck-player:not(.hidden):not(.deck-away)) .mobile-popup{
-    bottom:calc(var(--mbn-h) + 90px) !important;
-  }
-
   /* ---- grids that were clipped by overflow:hidden ---- */
   #account-page .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
   #account-page .grid-2,
