@@ -267,6 +267,10 @@
     lastBg = cover;
     var gradient = null;
     try { if (typeof getCoverGradientValue === "function") gradient = getCoverGradientValue(cover); } catch (e) {}
+    /* The seek fill wears the same gradient as the cover on desktop. Done
+       before the cache check so a freshly rendered overlay always gets it. */
+    var seekFill = ov.querySelector(".dpl-prog-fill");
+    if (seekFill && gradient) seekFill.style.background = gradient;
     var cols = gradient ? (gradient.match(/hsl\([^)]+\)|rgb\([^)]+\)|#[0-9a-fA-F]{3,8}/g) || []) : [];
     var c1 = cols[0] || "hsl(266,60%,58%)";
     var c2 = cols[1] || "hsl(20,72%,30%)";
@@ -398,10 +402,6 @@
 
       ".dpl-chips{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:flex-start}" +
       ".dpl-chip{font-size:11px;font-weight:700;letter-spacing:.03em;border-radius:8px;padding:5px 12px}" +
-      ".dpl-versions{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.92);color:#161016;border:none;cursor:pointer;font-weight:800}" +
-      ".dpl-versions:hover{background:#fff}" +
-      ".dpl-versions small{font-weight:600;color:rgba(0,0,0,.55)}" +
-      ".dpl-versions i{font-size:9px;color:rgba(0,0,0,.5)}" +
       ".chip-snippet{background:rgba(34,211,238,.13);color:#67e8f9;border:1px solid rgba(34,211,238,.3)}" +
       ".chip-leaked{background:rgba(251,191,36,.13);color:#fcd34d;border:1px solid rgba(251,191,36,.28)}" +
       ".chip-sessions{background:rgba(34,211,238,.12);color:#67e8f9;border:1px solid rgba(34,211,238,.25)}" +
@@ -618,7 +618,6 @@
           '<p class="dpl-albumline" data-dpl="albumline"></p>' +
           '<p class="dpl-meta"><span class="dpl-meta-tag"><i class="fas fa-asterisk" aria-hidden="true"></i><span data-dpl="album">Session edit</span></span><span class="dpl-meta-artists" data-dpl="artist">' + esc(artist) + '</span></p>' +
           '<div class="dpl-chips">' +
-            '<button type="button" class="dpl-chip dpl-versions" data-dpl="versions" title="Every version of this song"><i class="fas fa-code-branch" aria-hidden="true"></i>Main version<small data-dpl="versions-n"></small><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
             '<span class="dpl-chip ' + chipClass + '" data-dpl="chip-cat">' + esc(catLabel(t) || "") + '</span>' +
             '<span class="dpl-chip chip-era" data-dpl="chip-era">' + esc(eraName(t)) + '</span>' +
             '<span class="dpl-chip chip-snippet" data-dpl="chip-snippet" style="display:none">Snippet</span>' +
@@ -762,7 +761,6 @@
           else if (typeof window.switchAppPage === "function") window.switchAppPage("player");
           return;
         }
-        if (a === "versions") { var tt2 = currentTitle(); if (window.openSongPage) { window.openSongPage(tt2); close(); } return; }
         if (a === "songpage") { var tt3 = currentTitle(); if (window.openSongPage) { window.openSongPage(tt3); close(); } return; }
         if (a === "play") { var mp = document.getElementById("deck-play"); if (mp) mp.click(); return; }
         if (a === "prev") { var pb = document.getElementById("prev-btn"); if (pb) pb.click(); else if (document.getElementById("deck-prev")) document.getElementById("deck-prev").click(); return; }
@@ -1472,11 +1470,6 @@
     }
     var eraChip = q(ov, "[data-dpl='chip-era']");
     if (eraChip) eraChip.textContent = eraName(t);
-    var versN = q(ov, "[data-dpl='versions-n']");
-    if (versN) {
-      var vc = dplVersionCount(t);
-      versN.textContent = vc > 1 ? " · " + vc + " versions" : "";
-    }
     var snip = q(ov, "[data-dpl='chip-snippet']");
     if (snip) snip.style.display = /snippet/i.test(String((t && t.tag) || "")) ? "" : "none";
     var yChip = q(ov, "[data-dpl='chip-year']");

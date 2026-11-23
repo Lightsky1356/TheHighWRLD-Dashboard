@@ -1019,8 +1019,9 @@
     }
     var av = document.getElementById("pv2HeroAvatar");
     if (av && prev && prev.avatar !== d.avatar) {
-      if (d.avatar) av.outerHTML = '<img class="pv2-avatar" id="pv2HeroAvatar" src="' + esc2(d.avatar) + '" alt="" decoding="async" onerror="this.onerror=null;this.style.display=\'none\'">';
-      else av.outerHTML = '<div class="pv2-avatar-fallback" id="pv2HeroAvatar" aria-hidden="true">' + esc2(initials(d.name)) + '</div>';
+      /* Use the same fallback chain as the first paint. A raw img with
+         onerror=hide left a hole whenever a stale Discord URL was polled. */
+      av.outerHTML = avatarHtml({ avatar: d.avatar, name: d.name });
     }
     var banner = document.getElementById("pv2HeroArt");
     if (banner && prev && prev.bannerChoice !== d.bannerChoice) {
@@ -1116,10 +1117,7 @@
     }
     if (partial.avatar != null) {
       var av = document.getElementById("pv2HeroAvatar");
-      if (av) {
-        if (partial.avatar) av.outerHTML = '<img class="pv2-avatar" id="pv2HeroAvatar" src="' + esc2(String(partial.avatar)) + '" alt="" decoding="async" onerror="this.onerror=null;this.style.display=\'none\'">';
-        else av.outerHTML = '<div class="pv2-avatar-fallback" id="pv2HeroAvatar" aria-hidden="true">' + esc2(initials(String(partial.name || "999"))) + '</div>';
-      }
+      if (av) av.outerHTML = avatarHtml({ avatar: partial.avatar, name: partial.name || "999" });
     }
   };
 
