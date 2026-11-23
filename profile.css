@@ -75,7 +75,7 @@
 .pv2-avatar-wrap{position:relative;flex:0 0 auto}
 .pv2-avatar{width:104px;height:104px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.22);box-shadow:0 12px 40px rgba(0,0,0,.55);background:#0f0f1e}
 .pv2-avatar-fallback{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;font-size:38px;font-weight:800;color:#0f0f1e;background:linear-gradient(135deg,#fcd34d,#d4a574);border:3px solid rgba(255,255,255,.3)}
-.pv2-dot{position:absolute;right:8px;bottom:8px;width:16px;height:16px;border-radius:50%;border:3px solid #06070f;background:#10b981;cursor:help}
+.pv2-dot{position:absolute;right:8px;bottom:8px;width:16px;height:16px;border-radius:50%;border:3px solid #06070f;background:#10b981}
 .pv2-status-label{display:inline-flex;align-items:center;gap:5px;margin-left:6px;font-size:10px;font-weight:800;letter-spacing:.06em;vertical-align:middle;white-space:nowrap}
 .pv2-status-label i{font-size:7px}
 .pv2-meta{min-width:0;flex:1;position:relative;z-index:1}

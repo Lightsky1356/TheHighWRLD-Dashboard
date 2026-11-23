@@ -265,7 +265,7 @@
     var info = statusInfo(status);
     var title = (isMe ? "You are " : String(name || "Member") + " is ") + info.label;
     return '<span class="pv2-dot" id="pv2HeroStatusDot" style="background:' + info.color + ';box-shadow:0 0 14px ' + info.color +
-      '" title="' + esc2(title) + '" aria-label="' + esc2(title) + '" role="img"></span>';
+      '" aria-label="' + esc2(title) + '" role="img"></span>';
   }
   function statusLabelHTML(status) {
     var info = statusInfo(status);
