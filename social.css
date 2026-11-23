@@ -722,7 +722,7 @@ nav.thw-social-tabs{padding:10px 12px !important;padding-top:10px !important}
   .thw-social-root--page #thw-social-panel{width:100%;max-width:none;overflow-x:hidden}
   .thw-social-root--page .thw-social-view{overflow-x:hidden}
   .thw-social-root--page [data-view="friends"],
-  .thw-social-root--page [data-view="friends"] .thw-social-list{display:flex;flex-direction:column;min-width:0;max-width:100%;overflow-x:hidden}
+  .thw-social-root--page [data-view="friends"] .thw-social-list{display:flex;flex:1 1 auto;flex-direction:column;min-width:0;max-width:100%;overflow-x:hidden}
   .thw-social-root--page [data-view="friends"] .thw-social-search input{width:100%;min-width:0}
   .thw-social-root--page .thw-social-friends-head{margin:6px 6px 0;padding:0;flex-wrap:wrap;gap:6px}
   .thw-social-root--page .thw-social-friends-head::after{display:none}

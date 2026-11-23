@@ -186,7 +186,7 @@
     if (!document.body || document.getElementById("thw-social-root")) return;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/social.css?v=thw-v59";
+    css.href = "/social.css?v=thw-v60";
     document.head.appendChild(css);
 
     var root = el("div");
@@ -3904,3 +3904,4 @@
       };
     }
 })();
+

@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v572';
+const VERSION = 'thw-v573';
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -191,7 +191,7 @@ const PRECACHE = [
   './legal-info.js?v=thw-v6',
   './grammar-check.js?v=thw-v2',
   './emoji-data.js?v=thw-v1',
-  './social-panel.js?v=thw-v72',
+  './social-panel.js?v=thw-v73',
   './push-client.js?v=thw-v31',
   './simple-toast.js?v=thw-v5',
   './catalogue-watch.js?v=thw-v2',
@@ -684,3 +684,4 @@ self.addEventListener('notificationclick', (event) => {
 
 /* Tapping "clear all" should not leave stale notifications behind. */
 self.addEventListener('notificationclose', () => { /* nothing to persist */ });
+
