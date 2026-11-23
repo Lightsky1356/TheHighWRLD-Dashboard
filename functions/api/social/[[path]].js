@@ -944,31 +944,6 @@ async function sendMessage(context, db, me, conversationId, body) {
   ).bind(conversationId, me.uid, text, replyTo, trackTitle, trackArtist, stickerText).run();
   const id = Number(inserted.meta && inserted.meta.last_row_id) || 0;
 
-  /* AI reviews every DM. A clear, high-confidence violation is removed before
-     it reaches anybody else; lesser findings are flagged for a human. */
-  if (text) {
-    const review = await activeReview(db, context.env, {
-      targetType: "dm_message", targetId: String(id), uid: me.uid,
-      text, author: me.name || "Member", recentCount: null,
-    });
-    if (review.action === "remove") {
-      await removeContent(db, context.env, "dm_message", id);
-      await notifyModeration(db, context.env, me.uid,
-        "Your message was removed by AI moderation (" + review.category + ").",
-        "social:conversation:" + conversationId, String(id));
-      try {
-        await notifyBestEffort(db, context.env, me.uid, me, "moderation",
-          "Your message was removed by AI moderation (" + review.category + ").", context);
-      } catch (_) {}
-      return json({ ok: true, removed: true, category: review.category, flagId: review.flagId });
-    }
-    if (review.action === "flag") {
-      await notifyModeration(db, context.env, me.uid,
-        "Your message was flagged for staff review (" + review.category + ")",
-        "social:conversation:" + conversationId, String(id));
-    }
-  }
-
   /* What the message carries beside its words. The bytes are checked before
      they are stored, and a rejected attachment rejects the whole message - a
      message that says one thing and carries something else is worse than a
@@ -1033,6 +1008,32 @@ async function sendMessage(context, db, me, conversationId, body) {
       });
     }
   }
+  /* AI reviews every DM, after the attachments have been validated. A clear
+     high-confidence violation is removed before it reaches anybody else; the
+     removal clears the stored bytes too. Lesser findings go to a human. */
+  if (text) {
+    const review = await activeReview(db, context.env, {
+      targetType: "dm_message", targetId: String(id), uid: me.uid,
+      text, author: me.name || "Member", recentCount: null,
+    });
+    if (review.action === "remove") {
+      await removeContent(db, context.env, "dm_message", id);
+      await notifyModeration(db, context.env, me.uid,
+        "Your message was removed by AI moderation (" + review.category + ").",
+        "social:conversation:" + conversationId, String(id));
+      try {
+        await notifyBestEffort(db, context.env, me.uid, me, "moderation",
+          "Your message was removed by AI moderation (" + review.category + ").", context);
+      } catch (_) {}
+      return json({ ok: true, removed: true, category: review.category, flagId: review.flagId });
+    }
+    if (review.action === "flag") {
+      await notifyModeration(db, context.env, me.uid,
+        "Your message was flagged for staff review (" + review.category + ")",
+        "social:conversation:" + conversationId, String(id));
+    }
+  }
+
   await db.prepare(
     "UPDATE dm_conversations SET last_message_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?"
   ).bind(conversationId).run();

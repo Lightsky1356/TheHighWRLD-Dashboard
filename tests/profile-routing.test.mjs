@@ -25,6 +25,12 @@ const profile = read("profile.js");
 check("the copied link uses the shared path helper", /window\.profilePathFor\(handle\)/.test(profile));
 check("the address bar is canonicalised to the handle", /window\.profilePathFor\(handle\)/.test(profile));
 check("public playlists are rendered for every viewer", /pv2-playlists/.test(profile) && /d\.playlists/.test(profile));
+/* Two bugs that kept coming back: links live at the top level of /api/profile
+   (not inside `profile`), and the head poll must follow the profile on screen
+   rather than the signed-in viewer or it overwrites the viewed member. */
+check("links fall back to the API's top-level array", /Array\.isArray\(d\.links\)/.test(profile));
+check("the head poll follows the viewed profile first", /if \(!isSelfView\(\)\) return profileKey\(\);/.test(profile));
+check("live hero edits cannot touch another profile", /__pv2ApplyLive[\s\S]{0,260}if \(!isSelfView\(\)\) return;/.test(profile));
 
 const social = read("social-panel.js");
 check("chat name links use the handle", /profilePathFor\(friend\.handle/.test(social));

@@ -75,16 +75,18 @@ const spam = "http://a.test http://b.test http://c.test http://d.test";
   check("an auto-removal is recorded as actioned by ai", args.includes("actioned") && args.includes("ai") && args.includes("remove"));
 }
 
-/* 3b. Workers AI binding works without external secrets. */
-{
+/* 3b. Workers AI binding works without external secrets, in both response
+   shapes Cloudflare actually returns. */
+for (const [label, reply] of [
+  ["object under response", { response: { category: "harassment", confidence: 0.94, severity: "high" } }],
+  ["chat message content", { choices: [{ message: { content: '{"category":"hate|threat","confidence":0.93,"severity":"high"}' } }] }],
+]) {
   const db = mockDb();
-  const env = {
-    AI: { run: async () => ({ response: '{"category":"harassment","confidence":0.94,"severity":"high"}' }) },
-  };
+  const env = { AI: { run: async () => reply } };
   const r = await activeReview(db, env, {
     targetType: "suggestion", targetId: "3b", uid: "u1", text: clean, author: "A",
   });
-  check("a Workers AI binding also auto-removes", r.action === "remove" && r.category === "harassment");
+  check(`Workers AI (${label}) auto-removes`, r.action === "remove" && ["hate", "harassment"].includes(r.category));
 }
 
 /* 4. Every requested surface routes through the active review. */

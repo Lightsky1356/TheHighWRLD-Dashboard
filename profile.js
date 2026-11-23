@@ -438,7 +438,9 @@
     html += nowPlayingHTML(d.nowPlaying);
 
     /* Links — shown to everybody on the profile, right under the presence card. */
-    var links = Array.isArray(p.links) ? p.links : [];
+    /* /api/profile returns links at the top level, not inside `profile`.
+       Read both shapes so a viewed member's links never come up empty. */
+    var links = Array.isArray(p.links) ? p.links : (Array.isArray(d.links) ? d.links : []);
     html += '<div class="pv2-links">' +
       '<span class="pv2-links-label"><i class="fas fa-link" aria-hidden="true"></i>Links</span>' +
       '<div class="pv2-links-row">' +
@@ -893,8 +895,12 @@
 
   function headPollUid() {
     try {
+      /* The head poll must follow the profile ON SCREEN. Using the signed-in
+         uid here made it poll the viewer's own account every 5s and overwrite
+         another member's name, bio and avatar with stale self data. */
+      if (!isSelfView()) return profileKey();
       if (sessionUidCache) return sessionUidCache;
-      return isSelfView() ? (localStorage.getItem("wantedUserId") || "") : profileKey();
+      return localStorage.getItem("wantedUserId") || "";
     } catch (e) { return ""; }
   }
   function stopHeadPoll() { if (headTimer) { clearInterval(headTimer); headTimer = null; } }
@@ -1067,6 +1073,9 @@
 
   /* The Edit panel (or anything else) can push a live hero update. */
   window.__pv2ApplyLive = function (partial) {
+    /* Only the Edit panel calls this, and only for your own profile. Guard it
+       so a stray live update can never relabel somebody else's page. */
+    if (!isSelfView()) return;
     partial = partial || {};
     if (partial.name != null) { var n = document.getElementById("pv2HeroName"); if (n) n.textContent = String(partial.name); }
     if (partial.bio != null) {

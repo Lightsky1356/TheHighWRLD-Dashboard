@@ -86,17 +86,44 @@ export function evaluateRules({ text, uid, recentCount }) {
 /* On-platform fallback: a Workers AI binding needs no external secrets. When
  * the owner has not supplied AI_MOD_ENDPOINT/AI_MOD_KEY, an `AI` binding is
  * used instead. Absent both, this returns null and the rules engine decides. */
+/* Workers AI can hand back the verdict as a parsed object under `response`,
+   as a chat message under `choices[0].message.content`, or as a raw string.
+   All three shapes are normal across model versions. */
+function parseAiVerdict(out) {
+  if (!out) return null;
+  if (typeof out === "object") {
+    if (out.response && typeof out.response === "object") return out.response;
+    if (out.response) return parseAiVerdict(out.response);
+    if (out.result) return parseAiVerdict(out.result);
+    const content = out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content;
+    if (content) return parseAiVerdict(content);
+  }
+  const m = String(out).match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try {
+    return JSON.parse(m[0]);
+  } catch (_) {
+    return null;
+  }
+}
+
+const AI_CATEGORIES = new Set(["hate", "harassment", "threat", "sexual", "scam", "spam", "other"]);
+
 async function workersAiVerdict(env, { text, author, kind }) {
   const ai = env && env.AI;
   if (!ai || typeof ai.run !== "function") return null;
   try {
     const system = "You are a content moderator for a music community site. " +
       "Flag hate speech, harassment, threats, sexual content, scams, spam and " +
-      "off-platform sales pitches. Reply with ONLY a JSON object of the form " +
-      '{"category":"hate|harassment|threat|sexual|scam|spam|other",' +
-      '"confidence":0-1,"severity":"low|medium|high"}. Use "high" only for ' +
-      'clear, serious violations and "low" for benign content.';
-    const out = await ai.run("@cf/meta/llama-3.1-8b-instruct", {
+      "off-platform sales pitches. Reply with ONLY a JSON object. The category " +
+      "field must be exactly one word from: hate, harassment, threat, sexual, " +
+      "scam, spam, other. Example: " +
+      '{"category":"spam","confidence":0.8,"severity":"medium"}. ' +
+      '"confidence" is a number from 0 to 1. "severity" is low, medium or high. ' +
+      'Use "high" only for clear, serious violations and "low" for benign content.';
+    /* The old llama-3.1-8b-instruct alias was deprecated in May 2026; this is
+       its current on-platform replacement. */
+    const out = await ai.run("@cf/meta/llama-3.1-8b-fast-v2", {
       messages: [
         { role: "system", content: system },
         { role: "user", content: "Kind: " + String(kind || "post") + "\nAuthor: " + String(author || "") + "\nContent: " + String(text || "").slice(0, 2000) },
@@ -104,16 +131,15 @@ async function workersAiVerdict(env, { text, author, kind }) {
       max_tokens: 200,
       temperature: 0,
     });
-    const raw = typeof out === "string" ? out : (out && (out.response || out.result || JSON.stringify(out))) || "";
-    const m = String(raw).match(/\{[\s\S]*\}/);
-    if (!m) return null;
-    const d = JSON.parse(m[0]);
+    const d = parseAiVerdict(out);
+    if (!d || typeof d !== "object") return null;
     const conf = Number(d.confidence);
     const sev = String(d.severity || "").toLowerCase();
     if (isNaN(conf) || conf < 0 || conf > 1) return null;
     if (sev !== "low" && sev !== "medium" && sev !== "high") return null;
+    const rawCategory = String(d.category || "").toLowerCase().split(/[^a-z]/)[0];
     return {
-      category: String(d.category || "unclassified").slice(0, 40),
+      category: AI_CATEGORIES.has(rawCategory) ? rawCategory : "other",
       confidence: conf,
       severity: sev,
       recommended_action: "review",
