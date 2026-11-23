@@ -234,8 +234,10 @@
     });
 
     /* The player opens it. */
-    var btn = document.getElementById("song-comments-btn");
-    if (btn) btn.addEventListener("click", function () { setOpen(true); });
+    ["song-comments-btn", "player-comments-btn"].forEach(function (id) {
+      var btn = document.getElementById(id);
+      if (btn) btn.addEventListener("click", function () { setOpen(true); });
+    });
   }
 
   function showTab(name) {
@@ -407,7 +409,15 @@
     var body = el("div", "song-comment-body");
 
     var head = el("div", "song-comment-head");
-    head.appendChild(el("span", "song-comment-name", comment.authorName || "Member"));
+    var author = comment.authorUid
+      ? el("button", "song-comment-name song-comment-author", comment.authorName || "Member")
+      : el("span", "song-comment-name", comment.authorName || "Member");
+    if (comment.authorUid) {
+      author.type = "button";
+      author.setAttribute("data-profile-link", comment.authorUid);
+      author.title = "View profile";
+    }
+    head.appendChild(author);
     if (comment.createdAt) {
       head.appendChild(el("span", "song-comment-time", when(comment.createdAt)));
     }
@@ -492,12 +502,11 @@
     var count = document.getElementById("song-comments-tab-count");
     if (count) count.textContent = String(state.count || 0);
 
-    /* The count on the player's button. */
-    var badge = document.getElementById("song-comments-count");
-    if (badge) {
+    /* The count on both comment buttons - the WRLD Deck and the player. */
+    Array.prototype.forEach.call(document.querySelectorAll(".deck-badge[id$='song-comments-count'], [id='song-comments-count'], [id='player-comments-count']"), function (badge) {
       badge.textContent = String(state.count || 0);
       badge.classList.toggle("on", state.count > 0);
-    }
+    });
 
     if (!state.track) {
       var empty = el("p", "song-comments-empty", "Play a song to see its comments.");

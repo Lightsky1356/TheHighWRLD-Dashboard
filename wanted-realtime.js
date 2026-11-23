@@ -277,9 +277,15 @@
         replyToSnippet = raw.length > 80 ? raw.slice(0, 80) + '...' : raw;
       }
       if (replyToName) {
-        replyTo = '<span class="wanted-reply-to" data-scrollto="' + (r.p || '') + '" title="Click to jump to original">' +
-          '<i class="fas fa-reply text-[8px] mr-0.5"></i>Replied to ' + esc(replyToName) +
-          (replyToSnippet ? '<span class="wanted-reply-to-text">"' + esc(replyToSnippet) + '"</span>' : '') +
+        /* The name is a way to the person; the quoted snippet is a way back
+           to the original comment. They are separate targets. */
+        var toUid = (parentReply && (parentReply.d || parentReply.u)) || replyToName;
+        var toDiscord = !!(parentReply && parentReply.d);
+        replyTo = '<span class="wanted-reply-to">' +
+          '<i class="fas fa-reply text-[8px] mr-0.5"></i>Replied to ' +
+          '<button type="button" class="wanted-reply-to-name" data-profile-link="' + esc(toUid) + '"' +
+          (toDiscord ? ' data-profile-discord="1"' : '') + ' title="View profile">' + esc(replyToName) + '</button>' +
+          (replyToSnippet ? '<span class="wanted-reply-to-text" data-scrollto="' + (r.p || '') + '" title="Click to jump to original">"' + esc(replyToSnippet) + '"</span>' : '') +
           '</span>';
       }
     }

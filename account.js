@@ -3367,9 +3367,24 @@ function compactProfileViewHtml(d) {
       if (window.switchAppPage) switchAppPage("profile");
       return;
     }
-    _profilePage.self = false; _profilePage.key = target; _profilePage.byDiscord = !!byDiscord; _profilePage.data = null;
-    try { if (history.pushState) history.pushState({ profile: target }, "", profilePathFor(target)); } catch (e) {}
-    if (window.switchAppPage) switchAppPage("profile");
+    _profilePage.self = false; _profilePage.byDiscord = !!byDiscord; _profilePage.data = null;
+    /* A Discord id is not a handle. Links from the community board, wanted
+       vault and chat carry one with data-profile-discord="1"; looking it up
+       as a username showed an empty placeholder profile. Resolve it to the
+       member's handle first, then address it like any other profile. */
+    function openResolved(key) {
+      _profilePage.key = key;
+      try { if (history.pushState) history.pushState({ profile: key }, "", profilePathFor(key)); } catch (e) {}
+      if (window.switchAppPage) switchAppPage("profile");
+    }
+    if (byDiscord) {
+      fetch("/api/profile?discord=" + encodeURIComponent(target), { cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { openResolved((d && d.handle) || target); })
+        .catch(function () { openResolved(target); });
+      return;
+    }
+    openResolved(target);
   };
 window.profileSectionShown = function () {
     renderProfilePageBody();

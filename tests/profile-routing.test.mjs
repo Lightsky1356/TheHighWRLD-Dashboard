@@ -17,7 +17,8 @@ const check = (name, pass) => out.push(`${pass ? "PASS" : "FAIL"}  ${name}`);
 const account = read("account.js");
 check("profile addresses use the /@ prefix", /PROFILE_HANDLE_PREFIX\s*=\s*"\/@"/.test(account));
 check("the address is built by one helper", /function profilePathFor\(/.test(account));
-check("opening a member pushes the handle address", /pushState\([^;]*profilePathFor\(target\)/.test(account));
+check("opening a member pushes the handle address", /pushState\([^;]*profilePathFor\(/.test(account));
+check("Discord ids are resolved to a handle before navigating", /\/api\/profile\?discord=/.test(account) && /openResolved\(\(d && d\.handle\)/.test(account));
 check("no /Profile/<key> address is built any more", !/PROFILE_PATH_ROOT\s*\+\s*"\/"\s*\+/.test(account));
 
 const profile = read("profile.js");
