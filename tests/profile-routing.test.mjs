@@ -43,6 +43,7 @@ check("the profile card only shows earned badges", /var earned = MILESTONES\.fil
 /* Account dropdown head mirrors the rank ladder and streak. */
 check("account dropdown shows rank, level, XP bar and streak", /id="acctRankTitle"/.test(read("index.html")) && /id="acctXpFill"/.test(read("index.html")) && /id="acctStreakN"/.test(read("index.html")));
 check("account dropdown values come from the APIs", /function fillRank\(\)/.test(account) && /acctXpFill/.test(account) && /acctStreakN/.test(account));
+check("rank spans survive profile re-renders", !/acctTag\.textContent/.test(account) && /id="acctVerified"/.test(read("index.html")));
 const achApi = read("functions/_lib/achievements.js");
 check("there are no game achievements", !/cat: "Games"/.test(achApi) && !/id: "gm_/.test(achApi) && !/<h5>Games<\/h5>/.test(read("index.html")));
 check("level names use the vault's eras", /t: "JuiceTheKidd"/.test(profile) && /t: "Legends Never Die"/.test(profile) && /t: "Posthumous"/.test(profile));

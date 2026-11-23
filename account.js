@@ -239,8 +239,10 @@
     /* Desktop account dropdown: mirror the same head */
     var acctName = document.querySelector("#navAccountSignedIn .acct-name");
     if (acctName) acctName.textContent = sheetUsername || p.name || "THW Listener";
-    var acctTag = document.querySelector("#navAccountSignedIn .acct-tag");
-    if (acctTag) acctTag.textContent = (_data && _data.discord && _data.discord.linked) ? "Verified on TheHighWRLD" : "TheHighWRLD Listener";
+    /* Never rewrite .acct-tag with textContent: it carries the live rank and
+       level spans, and a blanket write used to wipe them on every render. */
+    var acctVerified = document.getElementById("acctVerified");
+    if (acctVerified) acctVerified.textContent = (_data && _data.discord && _data.discord.linked) ? " · Verified" : "";
     var n = document.getElementById("profileName"); if (n) n.textContent = p.name || "999_" + uidSuffix;
     var h = document.getElementById("profileHandle");
     if (h) h.innerHTML = "@" + esc(String(profileUsername() || p.name || "999").toLowerCase()) + ((_data && _data.discord && _data.discord.linked) ? ' <span class="disc-tag"><i class="fab fa-discord"></i> #' + uidSuffix + "</span>" : "");
