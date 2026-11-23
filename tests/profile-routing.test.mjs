@@ -39,6 +39,7 @@ const achApi = read("functions/_lib/achievements.js");
 check("there are no game achievements", !/cat: "Games"/.test(achApi) && !/id: "gm_/.test(achApi) && !/<h5>Games<\/h5>/.test(read("index.html")));
 check("level names use the vault's eras", /t: "JuiceTheKidd"/.test(profile) && /t: "Legends Never Die"/.test(profile) && /t: "Posthumous"/.test(profile));
 check("level card shows the rank name and its colour", /id="pv2LevelTitle"/.test(profile) && /paintLevelBadge\(lvl\)/.test(profile) && /function rankDot\(/.test(profile));
+check("listened stat formats hours and minutes without seconds", /function fmtDuration\(/.test(profile) && /h \+ "h " \+ m \+ "m"/.test(profile) && !/sec \+ "s"/.test(profile));
 check("the achievements overlay blurs the page", /#achievementsModal\.rank-overlay\{[^}]*backdrop-filter:blur\(8px\)/.test(read("profile.css")));
 check("level and strip cards refresh from the head poll", /refreshLiveCards\(d\)/.test(profile) && /id="pv2XpNote"/.test(profile) && /"Plays", "pv2StatPlays"/.test(profile));
 const rankCss = read("profile.css").match(/\.rank-shell\{[^}]*\}/)?.[0] || "";

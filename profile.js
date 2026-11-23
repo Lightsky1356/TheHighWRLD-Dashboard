@@ -15,6 +15,12 @@
     return n.toLocaleString();
   }
   function hoursToMin(h) { return Math.round((Number(h) || 0) * 60); }
+  /* Listening time as hours and minutes, from the raw seconds. */
+  function fmtDuration(seconds) {
+    var s = Math.max(0, Math.floor(Number(seconds) || 0));
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h ? (h + "h " + m + "m") : (m + "m");
+  }
   function ordinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
   /* ---------- era helpers ---------- */
@@ -528,6 +534,7 @@
       plays: Number(s.plays) || 0,
       unique: Number(s.unique != null ? s.unique : (s.unique_tracks != null ? s.unique_tracks : 0)) || 0,
       hours: Number(s.hours) || 0,
+      seconds: Number(s.seconds) || 0,
       streak: Number(d.streak) || 0,
       level: level,
       rank: rank
@@ -592,7 +599,7 @@
     html += '<div class="pv2-strip">';
     html += statBlock(isMe && rank != null ? ordinal(rank) : (rank != null ? ordinal(rank) : "-"), rank != null ? "Leaderboard" : "Unranked", "pv2StatRank");
     html += statBlock(fmtNum(stats.plays), "Plays", "pv2StatPlays");
-    html += statBlock(Math.round(hoursToMin(stats.hours)) + "m", "Listened", "pv2StatListened");
+    html += statBlock(fmtDuration(stats.seconds != null ? stats.seconds : hoursToMin(stats.hours) * 60), "Listened", "pv2StatListened");
     html += statBlock(fmtNum(stats.unique), "Songs", "pv2StatSongs");
     html += statBlock(fmtNum(stats.streak), "Day streak", "pv2StatStreak");
     html += '</div>';
@@ -1148,7 +1155,7 @@
     if (s) {
       if (x) setText("pv2StatRank", x.rank != null ? ordinal(x.rank) : "-");
       setText("pv2StatPlays", fmtNum(s.plays));
-      setText("pv2StatListened", Math.round(hoursToMin(s.hours)) + "m");
+      setText("pv2StatListened", fmtDuration(s.seconds != null ? s.seconds : hoursToMin(s.hours) * 60));
       setText("pv2StatSongs", fmtNum(s.unique));
       setText("pv2StatStreak", fmtNum(s.streak));
     }
@@ -1170,6 +1177,7 @@
         plays: s ? s.plays : (_profileStats.plays || 0),
         unique: s ? s.unique : (_profileStats.unique || 0),
         hours: s ? s.hours : (_profileStats.hours || 0),
+        seconds: s && s.seconds != null ? s.seconds : (_profileStats.seconds || 0),
         favorites: _profileStats.favorites || 0,
         streak: s ? s.streak : (_profileStats.streak || 0),
         level: x ? x.level : (_profileStats.level || 1),

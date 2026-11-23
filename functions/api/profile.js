@@ -197,6 +197,7 @@ export async function onRequestGet(context) {
         const ls = await listeningStats(db, uid, { topLimit: 1, unique: false, months: false, firstLast: false });
         headStats = {
           plays: Number(ls && ls.plays) || 0,
+          seconds: Math.round(Number(ls && ls.seconds) || 0),
           hours: Math.round(((Number(ls && ls.seconds) || 0) / 3600) * 10) / 10,
           unique: Number(ls && ls.uniqueTracks) || 0,
           streak: streakFromDays((ls && ls.days) || []),
@@ -401,6 +402,7 @@ export async function onRequestGet(context) {
       visibility: vis,
       stats: {
         plays: vis.stats ? listens.n || 0 : 0,
+        seconds: vis.stats ? Math.round(listens.s || 0) : 0,
         hours: vis.stats ? Math.round(((listens.s || 0) / 3600) * 10) / 10 : 0,
         favorites: vis.favorites ? favorites.n || 0 : 0,
         bookmarks: bookmarks.n || 0,
