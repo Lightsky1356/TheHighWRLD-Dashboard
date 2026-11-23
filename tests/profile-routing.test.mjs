@@ -35,7 +35,7 @@ check("achievement stats include the new real fields", /favorites: favs\.length/
 const achCount = (profile.match(/\{ id: "/g) || []).length;
 check("the profile has a large achievement set", achCount >= 120, `${achCount} achievements`);
 check("achievement rows are capped with a show-all toggle", /ACH_ROW_CAP = 25/.test(profile) && /id="achShowAll"/.test(profile));
-check("profile achievement badges are capped", /CARD_ACH_CAP = 24/.test(profile) && /id="pv2CardAchMore"/.test(profile));
+check("profile shows only the 8 most recent earned badges", /CARD_ACH_CAP = 8/.test(profile) && /achStampUnlocks/.test(profile) && /earned\.sort\(/.test(profile));
 check("achievements modal has latest, summary and category grids", /ach-latest/.test(profile) && /ach-summary-ring/.test(profile) && /ach-section-head/.test(profile) && /ach-cell/.test(profile));
 check("progress rings use real progress, no invented rarity", /achRing\(p, m\.icon\)/.test(profile) && !/Rare: \d+%/.test(profile + read("profile.css")));
 check("the achievements modal opens when .open is set", /#achievementsModal\.rank-overlay\.open\{display:flex\}/.test(read("profile.css")));

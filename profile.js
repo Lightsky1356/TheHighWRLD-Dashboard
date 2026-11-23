@@ -464,12 +464,34 @@
     return '<div class="pv2-hours">' + bars + '</div>' +
       '<p class="pv2-hours-note">Plays by hour of the day' + (note ? ' &middot; <b>' + esc2(note) + '</b>' : "") + '</p>';
   }
-  var CARD_ACH_CAP = 24, cardAchShowAll = false;
+  var CARD_ACH_CAP = 8, cardAchShowAll = false;
+  /* Unlock times are kept per profile on this device. Older unlocks have no
+     timestamp, so they fall back to goal size (the hardest ones were earned
+     most recently). Newly earned badges get a real time and lead the row. */
+  function achUnlockTimes(uid) {
+    try { return JSON.parse(localStorage.getItem("thw-ach-unlocked-" + (uid || "")) || "{}") || {}; } catch (e) { return {}; }
+  }
+  function achStampUnlocks(uid, earned) {
+    var times = achUnlockTimes(uid), changed = false;
+    earned.forEach(function (m) {
+      if (times[m.id] == null) { times[m.id] = Date.now(); changed = true; }
+    });
+    if (changed) {
+      try { localStorage.setItem("thw-ach-unlocked-" + (uid || ""), JSON.stringify(times)); } catch (e) {}
+    }
+    return times;
+  }
   function milestonesHTML(stats) {
     var earned = MILESTONES.filter(function (m) { return m.test(stats); });
     var unlockedCount = earned.length;
-    /* The card shows only badges the member actually has - the modal is where
-       locked achievements and their progress belong. */
+    var times = achStampUnlocks(stats.uid, earned);
+    earned.sort(function (a, b) {
+      var ta = Number(times[a.id]) || 0, tb = Number(times[b.id]) || 0;
+      if (ta !== tb) return tb - ta;
+      return achGoal(b) - achGoal(a);
+    });
+    /* The card shows only a short, most-recent row - the modal holds all of
+       them, including the locked ones and their progress. */
     var list = cardAchShowAll ? earned : earned.slice(0, CARD_ACH_CAP);
     var html = !earned.length
       ? '<p class="pv2-none">No achievements unlocked yet.</p>'
@@ -553,6 +575,7 @@
     /* Share with the achievements panel so it can render without a re-fetch. */
     try {
       _profileStats = {
+        uid: String(d.uid || ""),
         plays: stats.plays, unique: stats.unique, hours: stats.hours,
         favorites: favs.length, streak: stats.streak, level: stats.level,
         rank: rank, xp: xpTotal, weekXp: xpObj ? (Number(xpObj.week_xp) || 0) : 0
@@ -1260,6 +1283,7 @@
     }
     if (s || x) {
       _profileStats = {
+        uid: _profileStats.uid || "",
         plays: s ? s.plays : (_profileStats.plays || 0),
         unique: s ? s.unique : (_profileStats.unique || 0),
         hours: s ? s.hours : (_profileStats.hours || 0),
