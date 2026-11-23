@@ -464,14 +464,20 @@
     return '<div class="pv2-hours">' + bars + '</div>' +
       '<p class="pv2-hours-note">Plays by hour of the day' + (note ? ' &middot; <b>' + esc2(note) + '</b>' : "") + '</p>';
   }
+  var CARD_ACH_CAP = 24, cardAchShowAll = false;
   function milestonesHTML(stats) {
     var unlockedCount = MILESTONES.filter(function (m) { return m.test(stats); }).length;
+    var list = cardAchShowAll ? MILESTONES : MILESTONES.slice(0, CARD_ACH_CAP);
     var html = '<div class="pv2-ach-grid">';
-    MILESTONES.forEach(function (m) {
+    list.forEach(function (m) {
       var unlocked = m.test(stats);
       html += '<button type="button" class="pv2-ach' + (unlocked ? ' unlocked' : ' locked') + '" data-ach-id="' + esc2(m.id) + '" title="' + esc2(m.how) + '"><i class="fas ' + m.icon + '"></i><small>' + esc2(m.label) + '</small></button>';
     });
     html += '</div>';
+    if (MILESTONES.length > CARD_ACH_CAP) {
+      html += '<button type="button" class="pv2-ach-more" id="pv2CardAchMore">' +
+        (cardAchShowAll ? "Show fewer" : "Show all " + MILESTONES.length) + '</button>';
+    }
     html += '<p class="pv2-card-note" style="margin-top:10px">' + unlockedCount + ' of ' + MILESTONES.length + ' unlocked &middot; <a class="pv2-xp-link" href="#" id="pv2AchHow">How to unlock <i class="fas fa-arrow-right" style="font-size:9px"></i></a></p>';
     return html;
   }
@@ -894,23 +900,90 @@
   /* Stats bundle kept from the last render so the panel can show real state. */
   var _profileStats = { plays: 0, unique: 0, hours: 0, favorites: 0, streak: 0, level: 1, rank: null, xp: 0, weekXp: 0 };
   var ACH_ROW_CAP = 25, achShowAll = false;
+  var ACH_CATS = ["Listening", "Streaks", "Eras", "Collector", "Community", "Specials"];
+
+  /* Category and progress are derived from the badge's own id and wording,
+     so every badge stays honest against the numbers the profile loads. No
+     unlock dates or rarity percentages are stored, so none are invented. */
+  function achCategory(m) {
+    var id = m.id;
+    if (/^(streak|^s\d|str_)/.test(id)) return "Streaks";
+    if (/^(fav|^f\d)/.test(id)) return "Collector";
+    if (/^(xp|^w\d|^level|^l\d|^top|^r\d)/.test(id)) return "Specials";
+    if (/^era/.test(id)) return "Eras";
+    if (/^(com|vote|reply|comment)/.test(id)) return "Community";
+    return "Listening";
+  }
+  function achGoal(m) {
+    var n = /(\d[\d,]*)/.exec(m.how);
+    return n ? (Number(n[1].replace(/,/g, "")) || 1) : 1;
+  }
+  function achMetric(m) {
+    var h = String(m.how || "").toLowerCase();
+    if (/favourite/.test(h)) return "favorites";
+    if (/consecutive day|streak/.test(h)) return "streak";
+    if (/hour/.test(h)) return "hours";
+    if (/different song/.test(h)) return "unique";
+    if (/\bplay\b/.test(h)) return "plays";
+    if (/week/.test(h)) return "weekXp";
+    if (/all-time xp|earn \d+ xp/.test(h)) return "xp";
+    if (/level/.test(h)) return "level";
+    if (/top \d+|place/.test(h)) return "rank";
+    return null;
+  }
+  function achProgress(m, stats) {
+    if (m.test(stats)) return 1;
+    var key = achMetric(m), goal = achGoal(m);
+    if (!key || !goal) return 0;
+    var val = Number(stats[key]) || 0;
+    if (key === "rank") return val > 0 ? Math.min(1, goal / val) : 0;
+    return Math.min(1, val / goal);
+  }
+  function achRing(pct, icon) {
+    var deg = Math.round(Math.min(1, Math.max(0, pct)) * 360);
+    return '<span class="ach-ring" style="--ach-deg:' + deg + 'deg"><i class="fas ' + esc2(icon) + '"></i></span>';
+  }
   function renderAchievementsPanel(stats) {
     var host = document.getElementById("achievementsBody");
     if (!host) return;
-    var html = '';
-    var list = achShowAll ? MILESTONES : MILESTONES.slice(0, ACH_ROW_CAP);
-    list.forEach(function (m) {
-      var unlocked = m.test(stats);
-      html += '<div class="ach-row' + (unlocked ? ' unlocked' : '') + '">' +
-        '<span class="ach-row-icon"><i class="fas ' + esc2(m.icon) + '"></i></span>' +
-        '<span class="ach-row-meta"><b>' + esc2(m.label) + '</b><span>' + esc2(m.how) + '</span></span>' +
-        '<span class="ach-row-state">' + (unlocked ? '<i class="fas fa-check-circle" aria-hidden="true"></i>Unlocked' : '<i class="fas fa-lock" aria-hidden="true"></i>Locked') + '</span>' +
-      '</div>';
-    });
-    if (MILESTONES.length > ACH_ROW_CAP) {
-      html += '<button type="button" class="ach-more" id="achShowAll">' +
-        (achShowAll ? "Show fewer" : "Show all " + MILESTONES.length) + '</button>';
+    var unlocked = MILESTONES.filter(function (m) { return m.test(stats); });
+    var total = MILESTONES.length, nUnlocked = unlocked.length;
+    var next = null;
+    for (var i = 0; i < total; i++) {
+      if (!MILESTONES[i].test(stats)) { next = MILESTONES[i]; break; }
     }
+    var latest = unlocked.length ? unlocked[unlocked.length - 1] : null;
+    var pct = total ? nUnlocked / total : 0;
+    var html = '';
+
+    if (latest) {
+      html += '<div class="ach-latest">' + achRing(1, latest.icon) +
+        '<div class="ach-latest-meta"><small>Latest unlock</small><b>' + esc2(latest.label) + '</b>' +
+        '<span>' + esc2(latest.how) + '</span><em>Unlocked</em></div></div>';
+    }
+    html += '<div class="ach-summary"><div class="ach-summary-ring" style="--ach-deg:' +
+      Math.round(pct * 360) + 'deg"><b>' + nUnlocked + '</b><small>of ' + total + '</small></div>' +
+      '<div class="ach-summary-meta"><b>' + nUnlocked + ' of ' + total + ' unlocked</b>' +
+      (next ? '<span>Next: ' + esc2(next.label) + '</span>' : '<span>Every achievement unlocked</span>') +
+      '<div class="ach-summary-bar"><span style="width:' + Math.round(pct * 100) + '%"></span></div></div></div>';
+
+    ACH_CATS.forEach(function (cat) {
+      var list = MILESTONES.filter(function (m) { return achCategory(m) === cat; });
+      if (!list.length) return;
+      var got = list.filter(function (m) { return m.test(stats); }).length;
+      html += '<section class="ach-section"><div class="ach-section-head"><b>' + esc2(cat) +
+        '</b><span>' + got + ' of ' + list.length + '</span></div><div class="ach-grid">';
+      var rows = achShowAll ? list : list.slice(0, ACH_ROW_CAP);
+      rows.forEach(function (m) {
+        var p = achProgress(m, stats), on = m.test(stats);
+        html += '<button type="button" class="ach-cell' + (on ? ' unlocked' : '') + '" title="' + esc2(m.how) + '">' +
+          achRing(p, m.icon) + '<b>' + esc2(m.label) + '</b><small>' +
+          (on ? 'Unlocked' : Math.round(p * 100) + '%') + '</small></button>';
+      });
+      html += '</div></section>';
+    });
+    html += '<button type="button" class="ach-more" id="achShowAll">' +
+      (achShowAll ? "Show fewer" : "Show all " + total) + '</button>';
     host.innerHTML = html;
     var more = document.getElementById("achShowAll");
     if (more) more.addEventListener("click", function () {
@@ -931,6 +1004,13 @@
     hostEl.addEventListener("click", function (e) {
       var badge = e.target.closest ? e.target.closest(".pv2-ach") : null;
       var how = e.target.closest ? e.target.closest("#pv2AchHow") : null;
+      var more = e.target.closest ? e.target.closest("#pv2CardAchMore") : null;
+      if (more) {
+        cardAchShowAll = !cardAchShowAll;
+        var wrap = document.getElementById("pv2AchWrap");
+        if (wrap) wrap.innerHTML = milestonesHTML(_profileStats);
+        return;
+      }
       if (how) { e.preventDefault(); openAchievementsPanel(); return; }
       if (badge) { openAchievementsPanel(); }
     });
