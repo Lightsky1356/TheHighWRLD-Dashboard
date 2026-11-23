@@ -600,8 +600,8 @@
 
     /* Fan level + achievements card */
     html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-bolt"></i>Fan level &amp; achievements</h2><span class="pv2-card-note" id="pv2XpNote">' + fmtNum(xpTotal) + ' XP all time</span></div>';
-    html += '<div class="pv2-levelrow"><div class="pv2-level-badge"><b id="pv2LevelNum">' + esc2(String(level)) + '</b><span>Level</span></div>';
-    html += '<div class="pv2-level-meta"><div class="pv2-level-top"><span class="pv2-level-fan">Fan</span><span class="pv2-level-xp" id="pv2LevelXp">' + fmtNum(curXp) + ' / ' + fmtNum(nextXp) + ' XP</span></div>';
+    html += '<div class="pv2-levelrow"><div class="pv2-level-badge" id="pv2LevelBadge"><b id="pv2LevelNum">' + esc2(String(level)) + '</b><span>Level</span></div>';
+    html += '<div class="pv2-level-meta"><div class="pv2-level-top"><span class="pv2-level-fan" id="pv2LevelTitle">' + esc2(rankTitle(level)) + '</span><span class="pv2-level-xp" id="pv2LevelXp">' + fmtNum(curXp) + ' / ' + fmtNum(nextXp) + ' XP</span></div>';
     html += '<div class="pv2-level-bar"><span class="pv2-level-fill" id="pv2LevelFill" style="width:' + Math.round(Math.min(1, Math.max(0, prog)) * 100) + '%"></span></div>';
     html += '<div class="pv2-level-foot"><span class="pv2-level-next" id="pv2LevelNext">' + (level >= 10 ? "Max level fan in the vault" : (fmtNum(nextXp - curXp) + ' XP to level ' + (level + 1))) + '</span><a class="pv2-xp-link" href="#" onclick="if(window.openXpPanel)window.openXpPanel();return false">How XP works <i class="fas fa-arrow-right" style="font-size:9px"></i></a></div>';
     html += '</div></div>'; /* levelrow */
@@ -949,6 +949,19 @@
     for (var i = 0; i < LADDER.length; i++) { if (level >= LADDER[i].l) title = LADDER[i].t; }
     return title;
   }
+  function rankDot(level) {
+    var dot = LADDER[0].dot;
+    for (var i = 0; i < LADDER.length; i++) { if (level >= LADDER[i].l) dot = LADDER[i].dot; }
+    return dot;
+  }
+  function paintLevelBadge(level) {
+    var badge = document.getElementById("pv2LevelBadge");
+    if (!badge) return;
+    var c = rankDot(level);
+    badge.style.background = "radial-gradient(100% 100% at 30% 0%," + c + " 0%,#141a2b 100%)";
+    badge.style.borderColor = c;
+    badge.style.boxShadow = "0 10px 28px " + c + "66,inset 0 2px 0 rgba(255,255,255,.4)";
+  }
   function fmtInt(n) { return (Number(n) || 0).toLocaleString(); }
 
   function setModalOpen(id, open) {
@@ -1143,6 +1156,8 @@
       setText("pv2XpNote", fmtNum(x.xp) + " XP all time");
       setText("pv2LevelNum", String(x.level));
       var lvl = Math.max(1, Number(x.level) || 1);
+      setText("pv2LevelTitle", rankTitle(lvl));
+      paintLevelBadge(lvl);
       var base = 50 * (lvl - 1) * (lvl - 1), next = 50 * lvl * lvl;
       var cur = Math.max(0, x.xp - base), span = Math.max(1, next - base);
       setText("pv2LevelXp", fmtNum(cur) + " / " + fmtNum(next) + " XP");
@@ -1302,6 +1317,7 @@
 
   /* Kick off live bits once the page has rendered. */
   function afterMount() {
+    paintLevelBadge(_profileStats.level || 1);
     startHeadPoll();
     publishPresence();
     setInterval(publishPresence, 8000);
