@@ -216,11 +216,38 @@
     var parts = t.split(/\s+/);
     return ((parts[0] || "")[0] || "9").toUpperCase();
   }
+  /* Discord's custom-avatar URL goes stale when somebody changes their
+     picture. Try their default avatar (derivable from the id in the old URL),
+     then fall back to initials. Kept as a global so the inline handler stays
+     a simple call instead of nested escaped HTML. */
+  function discordDefaultAvatar(src) {
+    var m = /discordapp\.com\/avatars\/(\d+)\//.exec(String(src || ""));
+    if (!m) return "";
+    var id = Number(m[1]);
+    return isFinite(id) ? "https://cdn.discordapp.com/embed/avatars/" + (Math.floor(id / 4194304) % 6) + ".png" : "";
+  }
+  window.__thwAvatarError = function (img) {
+    if (!img || img.dataset.triedDefault === "1") return;
+    img.dataset.triedDefault = "1";
+    var fallback = discordDefaultAvatar(img.getAttribute("src") || "");
+    if (fallback) {
+      img.onerror = function () {
+        img.onerror = null;
+        img.outerHTML = '<div class="pv2-avatar-fallback" id="pv2HeroAvatar" aria-hidden="true">' +
+          esc2(img.dataset.initials || "?") + '</div>';
+      };
+      img.src = fallback;
+    } else {
+      img.onerror = null;
+      img.outerHTML = '<div class="pv2-avatar-fallback" id="pv2HeroAvatar" aria-hidden="true">' +
+        esc2(img.dataset.initials || "?") + '</div>';
+    }
+  };
   function avatarHtml(p) {
-    /* Discord CDN avatars can 403 or 404. Fall back to initials in place,
-       not to an empty hole where the face should be. */
-    if (p.avatar) return '<img class="pv2-avatar" id="pv2HeroAvatar" src="' + esc2(p.avatar) + '" alt="" decoding="async" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;pv2-avatar-fallback&quot; id=&quot;pv2HeroAvatar&quot; aria-hidden=&quot;true&quot;>' + esc2(initials(p.name)) + '</div>\'">';
-    return '<div class="pv2-avatar-fallback" id="pv2HeroAvatar" aria-hidden="true">' + esc2(initials(p.name)) + '</div>';
+    var initialsHTML = '<div class="pv2-avatar-fallback" id="pv2HeroAvatar" aria-hidden="true">' + esc2(initials(p.name)) + '</div>';
+    if (!p.avatar) return initialsHTML;
+    return '<img class="pv2-avatar" id="pv2HeroAvatar" src="' + esc2(p.avatar) + '" alt="" decoding="async" ' +
+      'data-initials="' + esc2(initials(p.name)) + '" onerror="window.__thwAvatarError(this)">';
   }
   function joinedStr(j) {
     if (!j) return "";
@@ -307,7 +334,7 @@
     html += '<p class="pv2-card-note" style="margin-top:10px">' + unlockedCount + ' of ' + MILESTONES.length + ' unlocked &middot; <a class="pv2-xp-link" href="#" id="pv2AchHow">How to unlock <i class="fas fa-arrow-right" style="font-size:9px"></i></a></p>';
     return html;
   }
-  function collageHTML(favorites) {
+  function collageHTML(favorites, editable) {
     if (!favorites || !favorites.length) return '<p class="pv2-none">No favourites yet.</p>';
     var picks = favorites.slice(0, 8).map(function (f) { return f && f.title; }).filter(Boolean);
     return '<div class="pv2-collage">' + picks.map(function (title) {
@@ -315,8 +342,10 @@
       return '<div class="pv2-fav-item" role="button" tabindex="0" data-fav-title="' + esc2(title) + '" aria-label="Play ' + esc2(title) + '">' +
         '<img src="' + esc2(cover) + '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'AlbumArt/999.jpg\'">' +
         '<span class="pv2-fav-name">' + esc2(title) + '</span>' +
-        '<button type="button" class="pv2-fav-info" data-fav-info="' + esc2(title) + '" aria-label="Info for ' + esc2(title) + '"><i class="fas fa-circle-info" aria-hidden="true"></i></button>' +
-        '<button type="button" class="pv2-fav-heart" data-unfav="' + esc2(title) + '" aria-label="Remove ' + esc2(title) + ' from favourites"><i class="fas fa-heart-circle-xmark" aria-hidden="true"></i></button></div>';
+        (editable
+          ? '<button type="button" class="pv2-fav-info" data-fav-info="' + esc2(title) + '" aria-label="Info for ' + esc2(title) + '"><i class="fas fa-circle-info" aria-hidden="true"></i></button>' +
+            '<button type="button" class="pv2-fav-heart" data-unfav="' + esc2(title) + '" aria-label="Remove ' + esc2(title) + ' from favourites"><i class="fas fa-heart-circle-xmark" aria-hidden="true"></i></button>'
+          : '') + '</div>';
     }).join("") + '</div>';
   }
 
@@ -459,7 +488,7 @@
         : '<p class="pv2-none">No public playlists yet.</p>') + '</div>';
 
     /* Favourites — always present, even when empty, and refreshed live. */
-    html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-heart"></i>Favourites</h2><span class="pv2-card-note" id="pv2FavCount">' + favs.length + ' saved</span></div><div id="pv2Fav">' + collageHTML(favs) + '</div></div>';
+    html += '<div class="pv2-card" style="margin-top:16px"><div class="pv2-card-h"><h2 class="pv2-card-title"><i class="fas fa-heart"></i>Favourites</h2><span class="pv2-card-note" id="pv2FavCount">' + favs.length + ' saved</span></div><div id="pv2Fav">' + collageHTML(favs, isMe) + '</div></div>';
 
     return html;
   }
@@ -570,7 +599,7 @@
           favs = Object.keys(map).filter(function (k) { return !!map[k]; }).map(function (k) { return { title: k }; });
         } catch (e) {}
       }
-      host.innerHTML = collageHTML(favs);
+      host.innerHTML = collageHTML(favs, isSelfView());
       var note = document.getElementById("pv2FavCount");
       if (note) note.textContent = favs.length + " saved";
       if (!host.__pv2FavWired) {
