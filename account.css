@@ -1583,26 +1583,27 @@ body[data-theme] .settings-section>.card.set-card{background:var(--ac-glass2,rgb
 }
 
 /* Notifications + guest state: calmer surfaces, clearer buttons */
-#account-page .settings-page .thw-push-head{padding:14px 15px;border-radius:14px;background:linear-gradient(135deg,rgba(167,139,250,.09),rgba(34,211,238,.04));border:1px solid rgba(167,139,250,.16)}
-#account-page .settings-page .thw-push-head-ico{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#a78bfa,#7c6cf0);color:#fff}
-#account-page .settings-page .thw-push-pill{font-size:10.5px;letter-spacing:.04em;padding:5px 11px;border-radius:9px}
-#account-page .settings-page .thw-push-status{margin:12px 0 !important;padding:11px 13px !important;border-radius:12px !important;font-size:11.5px !important;line-height:1.6 !important}
-#account-page .settings-page .thw-push-status--warn{background:rgba(251,191,36,.08) !important;border-color:rgba(251,191,36,.22) !important;color:#fde68a !important}
-#account-page .settings-page .thw-push-actions{gap:9px;margin-top:12px}
-#account-page .settings-page .thw-push-btn,
-#account-page .settings-page .thw-push-btn--on,
-#account-page .settings-page .thw-push-btn--off,
-#account-page .settings-page .thw-push-btn--test{min-height:38px;padding:0 15px;border-radius:11px;border:1px solid rgba(255,255,255,.14) !important;background:linear-gradient(135deg,#a78bfa,#7c6cf0) !important;color:#fff !important;font-family:inherit;font-size:11.5px;font-weight:800;box-shadow:0 6px 18px rgba(124,108,240,.22);cursor:pointer}
-#account-page .settings-page .thw-push-btn--off,
-#account-page .settings-page .thw-push-btn--test{background:rgba(255,255,255,.06) !important;box-shadow:none;color:rgba(255,255,255,.8) !important}
-#account-page .settings-page .guest-note{padding:12px 13px !important;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
-#account-page .settings-page .guest-note .btn{border-radius:10px;font-size:11.5px;padding:8px 14px}
-#account-page .settings-page .set-guest-banner{padding:13px 15px !important;border-radius:14px !important}
-#account-page .settings-page .set-guest-banner-ico{border-radius:11px}
-#account-page .settings-page .set-guest-banner-btn{border-radius:11px;padding:9px 15px;font-size:11.5px}
+#account-page.settings-page .thw-push-head{padding:14px 15px;border-radius:14px;background:linear-gradient(135deg,rgba(167,139,250,.09),rgba(34,211,238,.04));border:1px solid rgba(167,139,250,.16)}
+#account-page.settings-page .thw-push-head-ico{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#a78bfa,#7c6cf0);color:#fff}
+#account-page.settings-page .thw-push-pill{font-size:10.5px;letter-spacing:.04em;padding:5px 11px;border-radius:9px}
+#account-page.settings-page .thw-push-status{margin:12px 0 !important;padding:11px 13px !important;border-radius:12px !important;font-size:11.5px !important;line-height:1.6 !important}
+#account-page.settings-page .thw-push-status--warn{background:rgba(251,191,36,.08) !important;border-color:rgba(251,191,36,.22) !important;color:#fde68a !important}
+#account-page.settings-page .thw-push-actions{gap:9px;margin-top:12px}
+#account-page.settings-page .thw-push-btn,
+#account-page.settings-page .thw-push-btn--on,
+#account-page.settings-page .thw-push-btn--off,
+#account-page.settings-page .thw-push-btn--test{min-height:38px;padding:0 15px;border-radius:11px;border:1px solid rgba(255,255,255,.14) !important;background:linear-gradient(135deg,#a78bfa,#7c6cf0) !important;color:#fff !important;font-family:inherit;font-size:11.5px;font-weight:800;box-shadow:0 6px 18px rgba(124,108,240,.22);cursor:pointer}
+#account-page.settings-page .thw-push-btn--off,
+#account-page.settings-page .thw-push-btn--test{background:rgba(255,255,255,.06) !important;box-shadow:none;color:rgba(255,255,255,.8) !important}
+#account-page.settings-page .guest-note{padding:12px 13px !important;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+#account-page.settings-page .guest-note .btn{border-radius:10px;font-size:11.5px;padding:8px 14px}
+#account-page.settings-page .set-guest-banner{padding:13px 15px !important;border-radius:14px !important}
+#account-page.settings-page .set-guest-banner-ico{border-radius:11px}
+#account-page.settings-page .set-guest-banner-btn{border-radius:11px;padding:9px 15px;font-size:11.5px}
 @media (max-width:640px){
-  #account-page .settings-page .thw-push-pill{width:auto !important;max-width:none !important;order:0 !important;text-align:left !important;align-self:flex-start !important}
-  #account-page .settings-page .thw-push-btn{flex:1 1 100%}
-  #account-page .settings-page .guest-note{flex-wrap:wrap}
-  #account-page .settings-page .guest-note .btn{flex:1 1 100%;margin-left:0 !important;margin-top:4px}
+  #account-page.settings-page .thw-push-pill{width:auto !important;max-width:none !important;order:0 !important;text-align:left !important;align-self:flex-start !important}
+  #account-page.settings-page .thw-push-btn{flex:1 1 100%}
+  #account-page.settings-page .guest-note{flex-wrap:wrap}
+  #account-page.settings-page .guest-note .btn{flex:1 1 100%;margin-left:0 !important;margin-top:4px}
 }
+
