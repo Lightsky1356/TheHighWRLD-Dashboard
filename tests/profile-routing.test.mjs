@@ -37,6 +37,7 @@ check("the head read resolves a handle to the site uid", /head"\) === "1"[\s\S]{
    colour and a readable label, and the Links block needs a separator. */
 check("presence dot maps online/idle/offline to colours", /statusInfo\(status\)/.test(profile) && /#f59e0b/.test(profile) && /#64748b/.test(profile));
 check("presence dot keeps an accessible label but no hover tooltip", /aria-label="'\s*\+\s*esc2\(title\)/.test(profile) && !/pv2-dot[^>]*title=/.test(profile) && !/pv2-dot\{[^}]*cursor:help/.test(read("profile.css")));
+check("no separate visible status label", !/statusLabelHTML|pv2-status-label/.test(profile + read("profile.css")));
 check("links section has a separator", /border-top:1px solid var\(--pv-border-soft\)/.test(read("profile.css")));
 
 const social = read("social-panel.js");

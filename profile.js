@@ -267,10 +267,6 @@
     return '<span class="pv2-dot" id="pv2HeroStatusDot" style="background:' + info.color + ';box-shadow:0 0 14px ' + info.color +
       '" aria-label="' + esc2(title) + '" role="img"></span>';
   }
-  function statusLabelHTML(status) {
-    var info = statusInfo(status);
-    return '<span class="pv2-status-label" id="pv2HeroStatusLabel" style="color:' + info.color + '"><i class="fas fa-circle" aria-hidden="true"></i>' + esc2(info.label) + '</span>';
-  }
   function profileReportBtn(uid) {
     if (!uid) return "";
     return '<button type="button" class="pv2-report-field" data-report="PROFILE:u:' + esc2(uid) +
@@ -447,7 +443,7 @@
     html += '<div class="pv2-hero-mid"><div class="pv2-avatar-wrap">' + avatarHtml(p) +
       statusDotHTML(p.status, name, isMe) + '</div>';
     html += '<div class="pv2-meta"><h1 class="pv2-name" id="pv2HeroName">' + esc2(name) + '</h1>' +
-      '<p class="pv2-handle">@' + esc2(String(uname).toLowerCase()) + ' ' + statusLabelHTML(p.status) + '</p>';
+      '<p class="pv2-handle">@' + esc2(String(uname).toLowerCase()) + '</p>';
     html += '<p class="pv2-joined">' + (p.joined ? 'Joined ' + esc2(joinedStr(p.joined)) : '') + (dc.linked ? (p.joined ? ' &middot; ' : '') + 'Discord linked' : '') + '</p>';
     html += '<p class="pv2-bio' + (p.bio ? '' : ' hidden') + '" id="pv2HeroBio">' + esc2(p.bio || "") + '</p>';
     if (topEra) html += '<span class="pv2-era-chip"><i class="fas fa-crown"></i>' + esc2(eraLabel(topEra)) + '</span>';
@@ -1007,11 +1003,9 @@
     }
     changed = true;
     var n = document.getElementById("pv2HeroName"); if (n && d.name) n.textContent = d.name;
-    /* Keep the presence dot and its wording in step with the live status. */
+    /* Keep the presence dot in step with the live status. */
     var statusDot = document.getElementById("pv2HeroStatusDot");
     if (statusDot) statusDot.outerHTML = statusDotHTML(d.status, d.name, isSelfView());
-    var statusLbl = document.getElementById("pv2HeroStatusLabel");
-    if (statusLbl) statusLbl.outerHTML = statusLabelHTML(d.status);
     var b = document.getElementById("pv2HeroBio");
     if (b) {
       if (d.bio) { b.textContent = d.bio; b.classList.remove("hidden"); }
