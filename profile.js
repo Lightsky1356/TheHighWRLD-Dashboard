@@ -516,7 +516,9 @@
     html += '<div class="pv2-level-bar"><span class="pv2-level-fill" id="pv2LevelFill" style="width:' + Math.round(Math.min(1, Math.max(0, prog)) * 100) + '%"></span></div>';
     html += '<div class="pv2-level-foot"><span class="pv2-level-next">' + (level >= 10 ? "Max level fan in the vault" : (fmtNum(nextXp - curXp) + ' XP to level ' + (level + 1))) + '</span><a class="pv2-xp-link" href="#" onclick="if(window.openXpPanel)window.openXpPanel();return false">How XP works <i class="fas fa-arrow-right" style="font-size:9px"></i></a></div>';
     html += '</div></div>'; /* levelrow */
-    html += milestonesHTML(stats);
+    /* Use the enriched bundle so the badges and the modal agree on every
+       achievement (favourites, XP and weekly XP are not in `stats`). */
+    html += milestonesHTML(_profileStats);
     html += '</div>';
 
     /* Grid: top songs / top eras / hours / recent strip */
