@@ -2,12 +2,12 @@
  *
  * The same sheet the phone carries in its full-screen player, as a floating
  * panel on desktop: Like, Add to playlist, Change cover (this device only),
- * Share, Go to song, Other versions, Go to era, Edit this song, Credits,
- * Open queue, Playback settings, Show comments, Close player.
+ * Share, Go to song, Go to era, Credits, Playback settings, Show comments,
+ * Close player.
  *
  * Deliberately self-contained — it does not read from the phone's sheet —
  * and it drives the same globals the rest of the desktop player uses
- * (toggleFavorite, addToQueue, selectTrackFromList, toggleQueuePanel).
+ * (toggleFavorite, addToQueue, selectTrackFromList, closeDesktopPlayer).
  */
 (function () {
   "use strict";
@@ -120,14 +120,9 @@
       '<div class="thw-ctx-div"></div>' +
       '<button class="thw-ctx-item" data-act="share" role="menuitem"><i class="fas fa-share-nodes"></i><span>Share</span></button>' +
       '<button class="thw-ctx-item" data-act="song" role="menuitem"><i class="fas fa-music"></i><span>Go to song</span></button>' +
-      '<button class="thw-ctx-item" data-act="versions" role="menuitem"><i class="fas fa-code-branch"></i><span>Other versions</span></button>' +
       '<button class="thw-ctx-item thw-ctx-era" data-act="era" role="menuitem"><i class="fas fa-layer-group"></i><span><b>Go to era</b><span class="thw-ctx-sub thw-ctx-era-name"></span></span></button>' +
       '<div class="thw-ctx-div"></div>' +
-      '<button class="thw-ctx-item" data-act="edit" role="menuitem"><i class="fas fa-pen-to-square"></i><span>Edit this song<span class="thw-ctx-sub">Fix credits, dates or details</span></span></button>' +
-      '<div class="thw-ctx-div"></div>' +
       '<button class="thw-ctx-item" data-act="info" role="menuitem"><i class="fas fa-circle-info"></i><span>Info</span></button>' +
-      '<button class="thw-ctx-item" data-act="openqueue" role="menuitem"><i class="fas fa-list-ul"></i><span>Open queue</span></button>' +
-      '<button class="thw-ctx-item" data-act="eq" role="menuitem"><i class="fas fa-sliders"></i><span>Equalizer and reverb</span></button>' +
       '<button class="thw-ctx-item" data-act="settings" role="menuitem"><i class="fas fa-gear"></i><span>Playback settings</span></button>' +
       '<button class="thw-ctx-item" data-act="comments" role="menuitem"><i class="far fa-comment"></i><span>Show comments</span></button>' +
       '<div class="thw-ctx-div"></div>' +
@@ -189,8 +184,9 @@
 
     if (a === "share") { share(title); return; }
 
-    if (a === "song" || a === "versions" || a === "credits") {
+    if (a === "song" || a === "credits") {
       closeMenu();
+      closeSheet();
       if (window.openSongPage) window.openSongPage(title);
       return;
     }
@@ -198,47 +194,11 @@
     if (a === "era") {
       var code = eraCodeOf(t);
       closeMenu();
-      if (typeof window.switchAppPage === "function") window.switchAppPage("hub");
-      setTimeout(function () {
-        try {
-          var nodes = document.querySelectorAll(".era-node");
-          for (var i = 0; i < nodes.length; i++) {
-            var c = nodes[i].querySelector(".era-code");
-            if (c && String(c.textContent || "").trim().toUpperCase() === code) {
-              var btn = nodes[i].querySelector(".era-btn");
-              if (btn) btn.click();
-              nodes[i].scrollIntoView({ block: "center" });
-              return;
-            }
-          }
-        } catch (e) {}
-      }, 420);
+      closeSheet();
+      /* Open the era page itself, not the Vault's era explorer. */
+      if (typeof window.openEraPage === "function") window.openEraPage(code);
       return;
     }
-
-    if (a === "edit") {
-      closeMenu();
-      if (typeof window.switchAppPage === "function") window.switchAppPage("suggestions");
-      setTimeout(function () {
-        try {
-          var titleEl = document.getElementById("sugg-title");
-          var descEl = document.getElementById("sugg-desc");
-          var catEl = document.getElementById("sugg-category");
-          if (titleEl && !titleEl.value) titleEl.value = "Fix: " + title;
-          if (descEl && !descEl.value) descEl.value = "Song: " + title + "\n\nWhat needs fixing (credits, dates, details): ";
-          if (catEl) catEl.value = "bug_fix";
-        } catch (e) {}
-      }, 420);
-      return;
-    }
-
-    if (a === "openqueue") {
-      closeMenu();
-      if (typeof toggleQueuePanel === "function") toggleQueuePanel();
-      return;
-    }
-
-    if (a === "eq") { toast("Equalizer and reverb are not in this build yet", "info"); return; }
 
     if (a === "settings") {
       closeMenu();
@@ -254,6 +214,7 @@
     }
 
     if (a === "close") {
+      /* Stop playback AND remove the full-sheet player. */
       var au = document.querySelector("audio");
       if (au && !au.paused) {
         var p = document.getElementById("deck-play");
@@ -261,7 +222,7 @@
         else if (typeof window.shadowPause === "function") window.shadowPause();
       }
       closeMenu();
-      if (typeof window.switchAppPage === "function") window.switchAppPage("home");
+      closeSheet();
       return;
     }
 
@@ -404,6 +365,12 @@
       if (topAbove >= 8) { menu.style.top = topAbove + "px"; }
       else { menu.style.top = Math.max(8, Math.floor((window.innerHeight - menuHeight) / 2)) + "px"; }
     }
+  }
+
+  /* Navigation items must put the full-sheet player away; otherwise the
+     sheet stays over the page they just switched to. */
+  function closeSheet() {
+    try { if (typeof window.closeDesktopPlayer === "function") window.closeDesktopPlayer(); } catch (e) {}
   }
 
   function closeMenu() {
