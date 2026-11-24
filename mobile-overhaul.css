@@ -1,0 +1,63 @@
+/* ==========================================================================
+   MOBILE OVERHAUL — last in the cascade, phones only.
+   Deliberately contains NO nav rules: the bottom bar, pill nav, nav buttons
+   and profile sheet keep their existing styling.
+   ========================================================================== */
+
+@media (max-width:767px) {
+  /* ---- readable type: lift real labels above 11px ---- */
+  .text-gray-600,.text-gray-500,.text-gray-400,
+  .wanted-song-sub,.wanted-badge,.playlist-tag,.track-duration,
+  .lb-level-chip,.thw-sheet-item-s,.nmi-s,.srules-tag,.api-sec-tail,
+  .pv2-card-note,.pv2-none,.set-note,.rank-nextrank,.rank-week{
+    font-size:11px !important;
+  }
+  .wanted-badge{font-size:9.5px !important}
+  body{line-height:1.5}
+
+  /* ---- touch-friendly form controls, no iOS focus zoom ---- */
+  input,textarea,select{
+    max-width:100%;
+    font-size:16px !important;
+    border-radius:11px;
+  }
+  .btn,.thw-push-btn,.ach-more,.pv2-ach-more,.rank-close{
+    min-height:40px;
+    border-radius:11px;
+  }
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+    outline:2px solid #c4b5fd;
+    outline-offset:2px;
+  }
+
+  /* ---- content fills the screen, nothing spills sideways ---- */
+  #page-section-home>section,
+  #page-section-vault>section,
+  #page-section-wanted>section,
+  #page-section-suggestions>section,
+  #page-section-leaderboard>section,
+  #page-section-updates>section{max-width:100% !important;padding-left:14px !important;padding-right:14px !important}
+  .card,.hub-panel,.pv2-card,.set-card,.rank-shell{max-width:100% !important;box-sizing:border-box}
+  img,video,canvas{max-width:100%}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* ---- calmer panels: consistent gaps and radii ---- */
+  .pv2-grid,.set-body,.settings-layout,.thw-pick{gap:12px}
+  .pv2-card,.hub-panel,.card.set-card{border-radius:16px}
+  .pv2-collage{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .thw-tile--wide{min-height:64px}
+
+  /* ---- deck controls wrap instead of colliding ---- */
+  #deck-player .deck-row{display:flex;flex-wrap:wrap;gap:8px}
+  #deck-player .deck-actions{flex-wrap:wrap;justify-content:center}
+  #deck-player .deck-volume-slider{width:72px}
+  #deck-player .deck-time{max-width:100%}
+
+  /* ---- full-screen player: readable metadata, no clipped rows ---- */
+  #dplayer-ov .dpl-title{overflow-wrap:anywhere}
+  #dplayer-ov .dpl-meta,#dplayer-ov .dpl-actions,#dplayer-ov .dpl-prog{
+    max-width:100%;
+    box-sizing:border-box;
+  }
+  #dplayer-ov .dpl-times,#dplayer-ov .dpl-npcard-sub{font-size:11px}
+}
