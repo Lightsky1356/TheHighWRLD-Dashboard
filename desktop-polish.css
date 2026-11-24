@@ -1,0 +1,86 @@
+/* ==========================================================================
+   DESKTOP POLISH — loaded after mobile.css, wide screens only.
+   Everything here is scoped to >=1024px so the phone layout is untouched.
+   ========================================================================== */
+
+@media (min-width:1024px) {
+  /* Settings: the ID rule used to cap the page at 896px and beat the
+     .settings-page top padding, putting the heading under the fixed nav. */
+  #account-page.settings-page{
+    max-width:1240px !important;
+    padding:calc(var(--nav-offset,72px) + 22px) 24px 56px !important;
+  }
+  #page-section-account .settings-layout,
+  .settings-page-head{max-width:1180px !important;padding-left:0 !important;padding-right:0 !important}
+  #page-section-account .settings-layout{grid-template-columns:230px minmax(0,1fr);gap:20px}
+  .set-nav,.settings-section>.card.set-card{border-radius:18px !important}
+  .conn-card,.set-guest-banner{border-radius:14px !important}
+  .set-nav-item{font-size:13px;padding:10px 11px;border-radius:11px}
+  .set-nav-item:not(.active):hover{background:rgba(255,255,255,.1)}
+
+  /* WRLD Deck: the action cluster was shrinking into the transport column. */
+  #deck-player .deck-row{grid-template-columns:minmax(200px,1fr) minmax(280px,1.7fr) auto;gap:16px}
+  #deck-player .deck-actions{flex-wrap:nowrap;gap:6px}
+  #deck-player .deck-actions>.deck-btn{flex:0 0 34px}
+  #deck-player .deck-volume-slider{flex:0 0 72px;width:72px}
+
+  /* One active indicator in the nav pill: the bubble, not a second chip. */
+  #nav-pill .page-tab-btn.active{background:transparent !important;box-shadow:none !important}
+  #nav-pill .nav-bubble.visible+.page-tab-btn:hover{transform:none}
+
+  /* The frosted nav must stay frosted after the idle timer fires. */
+  html.is-idle #nav-pill{
+    backdrop-filter:blur(18px) saturate(1.3) !important;
+    -webkit-backdrop-filter:blur(18px) saturate(1.3) !important;
+  }
+
+  /* Give content pages the width of the monitor instead of a phone column. */
+  #page-section-wanted>section,
+  #page-section-suggestions>section{max-width:1040px}
+  .lb-page{max-width:1040px}
+  .api-docs{max-width:1280px}
+  #player-container{max-width:960px}
+
+  /* Profile: even badge density across the three-column grid. */
+  .pv2-ach-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .pv2-ach small{font-size:11px;max-width:none}
+  .pv2-collage{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pv2-level-badge{width:72px;height:72px}
+  .pv2-level-badge b{font-size:30px}
+
+  /* Readable labels on a big screen. */
+  .vault-release-card h3,.vault-fact-list strong{font-size:12.5px}
+  .vault-release-date,.vault-release-label,.vault-release-type,
+  .vault-fact-list span,.psp-desc,#deck-player .deck-tag,
+  #deck-player .deck-artist{font-size:11px}
+  #deck-player .deck-clock{font-size:11.5px}
+  #deck-player .deck-badge{font-size:9px}
+  html #dplayer-ov .dpl-times,
+  html #dplayer-ov .dpl-npcard-sub{font-size:11.5px !important}
+  html #dplayer-ov .dpl-tab small{font-size:10px !important}
+
+  /* Missing hover affordances. */
+  #player-settings-overlay .psp-row{padding-left:8px;padding-right:8px;border-radius:10px;transition:background .15s}
+  #player-settings-overlay .psp-row:hover{background:rgba(255,255,255,.05)}
+  .psp-desc{color:rgba(255,255,255,.55)}
+  .thw-social-close{transition:background .15s,color .15s}
+  .thw-social-close:hover,.thw-social-close:focus-visible{background:rgba(255,255,255,.14);color:#fff;outline:none}
+  .pv2-playlist{transition:background .15s,border-color .15s}
+  .pv2-playlist:hover{background:rgba(255,255,255,.08);border-color:rgba(34,211,238,.3)}
+  .lb-tab:hover{background:rgba(255,255,255,.06)}
+
+  /* The More menu used to run off the right edge at 1024-1279px. */
+  @media (max-width:1279px){
+    .nav-more-menu{left:auto;right:0;transform:translateY(-8px);min-width:min(600px,calc(100vw - 32px))}
+    .nav-more-wrap.open .nav-more-menu{transform:translateY(0)}
+  }
+}
+
+@media (min-width:1280px) {
+  .vault-release-grid,.vault-fact-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+@media (min-width:1024px) and (max-width:1200px) {
+  #deck-player #deck-keys-btn,
+  #deck-player #deck-settings-btn{display:none}
+}
