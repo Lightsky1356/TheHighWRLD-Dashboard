@@ -39,7 +39,6 @@
   #page-section-suggestions>section{max-width:1040px}
   .lb-page{max-width:1040px}
   .api-docs{max-width:1280px}
-  #player-container{max-width:960px}
 
   /* Profile: even badge density across the three-column grid. */
   .pv2-ach-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -83,4 +82,43 @@
 @media (min-width:1024px) and (max-width:1200px) {
   #deck-player #deck-keys-btn,
   #deck-player #deck-settings-btn{display:none}
+}
+
+/* Song Comments button: a clear violet action with a readable count badge. */
+#player-comments-btn{
+  width:38px;
+  height:38px;
+  position:relative;
+  background:rgba(167,139,250,.12);
+  border-color:rgba(167,139,250,.32);
+  color:#c4b5fd;
+}
+#player-comments-btn i{
+  background:linear-gradient(135deg,#c4b5fd,#a78bfa);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+#player-comments-btn:hover,
+#player-comments-btn:focus-visible{
+  background:rgba(167,139,250,.22);
+  border-color:rgba(167,139,250,.6);
+  box-shadow:0 0 18px rgba(167,139,250,.25);
+  transform:translateY(-1px);
+  outline:none;
+}
+#player-comments-btn .deck-badge{
+  position:absolute;
+  top:-5px;
+  right:-5px;
+  display:grid;
+  place-items:center;
+  min-width:17px;
+  height:17px;
+  padding:0 4px;
+  border-radius:999px;
+  background:#a78bfa;
+  color:#171029;
+  font:900 10px/1 system-ui,sans-serif;
+  box-shadow:0 2px 8px rgba(0,0,0,.45);
 }
