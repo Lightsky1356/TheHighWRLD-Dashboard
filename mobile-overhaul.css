@@ -63,4 +63,22 @@
     box-sizing:border-box;
   }
   #dplayer-ov .dpl-times,#dplayer-ov .dpl-npcard-sub{font-size:11px}
+
+  /* ---- Messages: an empty search result list must not eat the screen ---- */
+  .thw-social-root--page [data-view="friends"] .thw-social-list:empty{display:none}
+  .thw-social-root--page [data-view="friends"] .thw-social-search{padding:10px 12px}
+  .thw-social-root--page [data-view="friends"] .thw-social-search input{height:44px}
+  .thw-social-root--page .thw-social-gate{justify-content:center}
+  .thw-social-root--page .thw-social-gate-icon{width:60px;height:60px;border-radius:18px}
+  .thw-social-empty,.pv2-none{color:rgba(255,255,255,.6);font-size:12px}
+
+  /* ---- Top button clears the WRLD Deck handle, higher on Player/Vault ---- */
+  #scrollTopBtn{
+    bottom:calc(var(--mbn-h,54px) + 62px) !important;
+    z-index:10000 !important;
+  }
+  body:has(#page-section-player.active) #scrollTopBtn,
+  body:has(#page-section-vault.active) #scrollTopBtn{
+    bottom:calc(var(--mbn-h,54px) + 96px) !important;
+  }
 }
