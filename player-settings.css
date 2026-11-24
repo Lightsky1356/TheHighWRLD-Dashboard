@@ -4779,3 +4779,26 @@ body:has(#editProfileModal.open) #deck-handle{display:none!important}
 .api-copy.is-done{color:#6ee7b7;border-color:rgba(52,211,153,.4)}
 .api-foot{font-size:10px;color:rgba(255,255,255,.3);text-align:center;margin:0}
 @media (max-width:1023px){.api-docs{grid-template-columns:1fr;padding-top:96px}.api-side{position:static;flex-direction:row;flex-wrap:wrap;max-height:none;overflow-y:visible}.api-side-sub{display:none}.api-nav-item{flex:1 0 auto;text-align:center;border:1px solid rgba(255,255,255,.08);padding:8px 12px}.api-nav-item--sub{display:none}.api-sec-tail{display:none}}
+
+/* Visible hover/focus feedback for the phone chrome and its profile sheet. */
+.mbn-item:not(.active):hover,
+.mbn-item:not(.active):focus-visible{
+  color:#fff;
+  background:rgba(255,255,255,.1);
+  outline:none;
+}
+.mbn-item:hover i,
+.mbn-item:focus-visible i{color:#c4b5fd}
+.thw-sheet-item:hover,
+.thw-sheet-item:focus-visible{
+  background:rgba(167,139,250,.14);
+  border-color:rgba(167,139,250,.28);
+  color:#fff;
+  outline:none;
+}
+.thw-sheet-item--menu:hover,
+.thw-sheet-item--menu:focus-visible{background:rgba(167,139,250,.12)}
+.thw-sheet-item:hover>i,
+.thw-sheet-item:focus-visible>i{color:#c4b5fd}
+.thw-sheet-item:hover .thw-sheet-item-s,
+.thw-sheet-item:focus-visible .thw-sheet-item-s{color:rgba(255,255,255,.6)}
