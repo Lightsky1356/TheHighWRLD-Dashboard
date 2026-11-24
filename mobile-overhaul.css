@@ -81,9 +81,9 @@
     bottom:calc(var(--mbn-h,54px) + 62px) !important;
     z-index:10000 !important;
   }
-  body:has(#page-section-player.active) #scrollTopBtn,
-  body:has(#page-section-vault.active) #scrollTopBtn,
-  body:has(#page-section-hub.active) #scrollTopBtn{
+  body:has(#page-section-player.active):has(#deck-player) #scrollTopBtn,
+  body:has(#page-section-vault.active):has(#deck-player) #scrollTopBtn,
+  body:has(#page-section-hub.active):has(#deck-player) #scrollTopBtn{
     bottom:calc(var(--mbn-h,54px) + 96px) !important;
     z-index:10000 !important;
   }
