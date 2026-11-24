@@ -13,6 +13,8 @@
     font-size:11px !important;
   }
   .wanted-badge{font-size:9.5px !important}
+  /* The playlist rule uses two classes, so it needs an equally specific fix. */
+  .playlist-item .track-duration{font-size:11px !important}
   body{line-height:1.5}
 
   /* ---- touch-friendly form controls, no iOS focus zoom ---- */
