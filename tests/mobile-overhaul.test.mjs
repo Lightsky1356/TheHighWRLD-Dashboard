@@ -11,7 +11,7 @@ const sw = read("sw.js");
 const out = [];
 const check = (name, pass) => out.push(`${pass ? "PASS" : "FAIL"}  ${name}`);
 
-check("overhaul sheet is loaded last and precached", /mobile-overhaul\.css\?v=thw-v4/.test(html) && /'\.\/mobile-overhaul\.css\?v=thw-v4'/.test(sw));
+check("overhaul sheet is loaded last and precached", /mobile-overhaul\.css\?v=thw-v5/.test(html) && /'\.\/mobile-overhaul\.css\?v=thw-v5'/.test(sw));
 check("overhaul is phone-only", /@media \(max-width:767px\)/.test(css) && !/min-width/.test(css));
 check("nav is untouched", !/mobile-bottom-nav|\.mbn-item|#nav-pill|\.page-tab-btn|\.nav-more|\.nav-auth-btn|\.mobile-profile-popup|\.thw-sheet-panel/.test(css));
 check("messages empty space collapses and Top clears the deck", /\.thw-social-list:empty\{display:none\}/.test(css) && /#scrollTopBtn\{[\s\S]{0,120}bottom:calc/.test(css));

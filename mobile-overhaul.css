@@ -73,12 +73,17 @@
   .thw-social-empty,.pv2-none{color:rgba(255,255,255,.6);font-size:12px}
 
   /* ---- Top button clears the WRLD Deck handle, higher on Player/Vault ---- */
-  #scrollTopBtn{
+  body #scrollTopBtn{
+    bottom:calc(var(--mbn-h,54px) + 62px) !important;
+    z-index:10000 !important;
+  }
+  body:has(#deck-player:not(.hidden):not(.deck-away)) #scrollTopBtn{
     bottom:calc(var(--mbn-h,54px) + 62px) !important;
     z-index:10000 !important;
   }
   body:has(#page-section-player.active) #scrollTopBtn,
   body:has(#page-section-vault.active) #scrollTopBtn{
     bottom:calc(var(--mbn-h,54px) + 96px) !important;
+    z-index:10000 !important;
   }
 }
