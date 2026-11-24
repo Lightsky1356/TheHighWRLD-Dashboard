@@ -82,7 +82,8 @@
     z-index:10000 !important;
   }
   body:has(#page-section-player.active) #scrollTopBtn,
-  body:has(#page-section-vault.active) #scrollTopBtn{
+  body:has(#page-section-vault.active) #scrollTopBtn,
+  body:has(#page-section-hub.active) #scrollTopBtn{
     bottom:calc(var(--mbn-h,54px) + 96px) !important;
     z-index:10000 !important;
   }
