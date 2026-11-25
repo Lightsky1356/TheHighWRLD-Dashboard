@@ -57,8 +57,57 @@
     if (m) return "hsla(" + m[1] + "," + a + ")";
     m = c.match(/^rgb\(([^)]+)\)$/i);
     if (m) return "rgba(" + m[1] + "," + a + ")";
+    m = c.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (m) {
+      var h = m[1];
+      if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
+      var n = parseInt(h, 16);
+      return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+    }
     return c;
   }
+
+  /* "Auto" theme: the whole page background wears the current cover's
+     gradient, the same way the reference player does. The two hues come from
+     the real cover map, and the theme is reset the moment Auto is left. */
+  function currentCover() {
+    try {
+      if (typeof currentTrackIndex === "number" && typeof trackList !== "undefined" && trackList && trackList[currentTrackIndex]) {
+        return window.wrldCoverFor(trackList[currentTrackIndex]);
+      }
+    } catch (_) {}
+    return "";
+  }
+  function paintAutoTheme() {
+    try {
+      var root = document.documentElement;
+      if (root.getAttribute("data-theme") !== "auto") {
+        if (root.hasAttribute("data-auto-cover")) {
+          root.removeAttribute("data-auto-cover");
+          root.style.removeProperty("--th-bg");
+          root.style.removeProperty("--th-accent");
+          root.style.removeProperty("--th-accent2");
+        }
+        return;
+      }
+      var cover = currentCover();
+      if (!cover || root.getAttribute("data-auto-cover") === cover) return;
+      var raw = (typeof coverGradientRaw === "function") ? coverGradientRaw(cover)
+        : (typeof getCoverGradientValue === "function" ? getCoverGradientValue(cover) : "");
+      var cols = String(raw || "").match(/hsl\([^)]+\)|rgb\([^)]+\)|#[0-9a-fA-F]{3,8}/g) || [];
+      var c1 = cols[0] || "hsl(266,60%,58%)";
+      var c2 = cols[1] || "hsl(20,72%,30%)";
+      root.setAttribute("data-auto-cover", cover);
+      root.style.setProperty("--th-bg",
+        "radial-gradient(1200px 820px at 82% -12%, " + toAlpha(c1, 0.34) + " 0%, transparent 62%)," +
+        "radial-gradient(1000px 720px at -12% 24%, " + toAlpha(c2, 0.3) + " 0%, transparent 58%)," +
+        "radial-gradient(900px 640px at 50% 112%, " + toAlpha(c1, 0.12) + " 0%, transparent 55%)," +
+        "linear-gradient(180deg,#07040f 0%,#0a0616 52%,#06030d 100%)");
+      root.style.setProperty("--th-accent", c1);
+      root.style.setProperty("--th-accent2", c2);
+    } catch (_) {}
+  }
+  window.paintAutoTheme = paintAutoTheme;
 
   /* The gradient wash behind the WRLD Deck - the deck's own slice of
      Moving colours. Painted from the same two accent hues as the full
@@ -106,9 +155,13 @@
       var want = window.wrldCoverFor(cur);
       if (want && deck.getAttribute('src') !== want) deck.setAttribute('src', want);
       paintDeckWash();
+      paintAutoTheme();
     } catch (_) {}
   }
   window.paintDeckWash = paintDeckWash;
+  window.addEventListener('thw:appearance-changed', function () { paintDeckCover(); paintAutoTheme(); });
+  window.addEventListener('thw:trackplaying', paintAutoTheme);
+  paintAutoTheme();
   if (typeof MutationObserver === 'function') {
     try {
       var deck = document.getElementById('deck-cover');
@@ -116,7 +169,8 @@
         var mo = new MutationObserver(function () { paintDeckCover(); });
         mo.observe(deck, { attributes: true, attributeFilter: ['src'] });
       }
-      window.addEventListener('thw:appearance-changed', paintDeckCover);
+      var themeObserver = new MutationObserver(paintAutoTheme);
+      themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     } catch (_) {}
   }
 })();
