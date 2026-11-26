@@ -3234,5 +3234,16 @@ const trackList=[
     cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Fucked%20Up.png",
     producer: "DT & Nick Mira",
     year: "2018"
+  },
+  {
+    title: "Cite (Sessions)",
+    tag: "Star Of The Show (Cite) (Hold Hands) (Last Year) (Sessions) (GB&GR)",
+    artist: "Juice WRLD",
+    category: "sessions",
+    url: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Audio/Star%20Of%20The%20Show%20(Cite)%20(Hold%20Hands)%20(Last%20Year)%20(Sessions)%20(GB%26GR).mp3",
+    duration: 360,
+    cover: "https://raw.githubusercontent.com/Lightsky1356/TheHighWRLD/main/Covers/Star%20Of%20The%20Show.png",
+    producer: "Nick Mira",
+    year: "2018"
   }
 ];trackList.sort(function(e,t){var s={sessions:1,leaks:2,halloween:3};return(s[e.category]||99)-(s[t.category]||99)});
