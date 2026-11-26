@@ -1367,7 +1367,8 @@ html.scroll-locked,html.scroll-locked body{overflow:hidden}
        so both are hidden on desktop AND mobile. Derived from the existing
        .player-blank class via :has() - no extra state to keep in sync. ---- */
 #page-section-player:has(#player-panel.player-blank) #fav-btn,
-#page-section-player:has(#player-panel.player-blank) #info-btn{
+#page-section-player:has(#player-panel.player-blank) #info-btn,
+#page-section-player:has(#player-panel.player-blank) #player-comments-btn{
   display:none !important;
 }
 

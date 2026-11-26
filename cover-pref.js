@@ -155,13 +155,27 @@
       var want = window.wrldCoverFor(cur);
       if (want && deck.getAttribute('src') !== want) deck.setAttribute('src', want);
       paintDeckWash();
+      paintControlIcons();
       paintAutoTheme();
     } catch (_) {}
   }
+  /* The transport icons wear the current cover's gradient, darkened in CSS. */
+  function paintControlIcons() {
+    try {
+      var cover = currentCover();
+      if (!cover) return;
+      var raw = (typeof coverGradientRaw === "function") ? coverGradientRaw(cover)
+        : (typeof getCoverGradientValue === "function" ? getCoverGradientValue(cover) : "");
+      if (raw) document.documentElement.style.setProperty("--thw-cover-grad", String(raw));
+    } catch (_) {}
+  }
+  window.paintControlIcons = paintControlIcons;
+
   window.paintDeckWash = paintDeckWash;
   window.addEventListener('thw:appearance-changed', function () { paintDeckCover(); paintAutoTheme(); });
-  window.addEventListener('thw:trackplaying', paintAutoTheme);
+  window.addEventListener('thw:trackplaying', function () { paintAutoTheme(); paintControlIcons(); });
   paintAutoTheme();
+  paintControlIcons();
   if (typeof MutationObserver === 'function') {
     try {
       var deck = document.getElementById('deck-cover');

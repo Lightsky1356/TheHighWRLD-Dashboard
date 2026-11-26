@@ -84,41 +84,25 @@
   #deck-player #deck-settings-btn{display:none}
 }
 
-/* Song Comments button: a clear violet action with a readable count badge. */
+/* Song Comments stays neutral - no colour, no badge. It is hidden entirely
+   while the player is in its blank state (see player-settings.css). */
 #player-comments-btn{
-  width:38px;
-  height:38px;
+  width:34px;
+  height:34px;
   position:relative;
-  background:rgba(167,139,250,.12);
-  border-color:rgba(167,139,250,.32);
-  color:#c4b5fd;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.6);
 }
 #player-comments-btn i{
-  background:linear-gradient(135deg,#c4b5fd,#a78bfa);
-  -webkit-background-clip:text;
-  background-clip:text;
-  -webkit-text-fill-color:transparent;
+  background:none;
+  -webkit-text-fill-color:currentColor;
+  color:rgba(255,255,255,.6);
 }
 #player-comments-btn:hover,
 #player-comments-btn:focus-visible{
-  background:rgba(167,139,250,.22);
-  border-color:rgba(167,139,250,.6);
-  box-shadow:0 0 18px rgba(167,139,250,.25);
-  transform:translateY(-1px);
-  outline:none;
-}
-#player-comments-btn .deck-badge{
-  position:absolute;
-  top:-5px;
-  right:-5px;
-  display:grid;
-  place-items:center;
-  min-width:17px;
-  height:17px;
-  padding:0 4px;
-  border-radius:999px;
-  background:#a78bfa;
-  color:#171029;
-  font:900 10px/1 system-ui,sans-serif;
-  box-shadow:0 2px 8px rgba(0,0,0,.45);
+  background:rgba(255,255,255,.1);
+  border-color:rgba(255,255,255,.2);
+  box-shadow:none;
+  transform:none;
 }

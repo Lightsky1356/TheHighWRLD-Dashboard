@@ -15,6 +15,7 @@
     "tokens:bump": "node scripts/bump-token.mjs"
   },
   "devDependencies": {
-    "jimp": "^0.22.12"
+    "jimp": "^0.22.12",
+    "sharp": "^0.35.5"
   }
 }

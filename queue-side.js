@@ -214,6 +214,12 @@
           '<button type="button" class="qs-np-fav" data-qs="np-fav" aria-label="Favourite" aria-pressed="false"><i class="far fa-heart" aria-hidden="true"></i></button>' +
         '</div>' +
       '</div>' +
+      '<div class="qs-add">' +
+        '<i class="fas fa-magnifying-glass" aria-hidden="true"></i>' +
+        '<label class="sr-only" for="qs-add-search">Find a song to add to the queue</label>' +
+        '<input id="qs-add-search" type="search" autocomplete="off" placeholder="Add a song to the queue">' +
+        '<div class="qs-add-results" id="qs-add-results" hidden></div>' +
+      '</div>' +
       '<div class="qs-upnext">' +
         '<h3 class="qs-upnext-title">Up next<span class="qs-upnext-count" data-qs="count"></span></h3>' +
         '<button type="button" class="qs-clear" data-qs="clear">Clear</button>' +
@@ -340,8 +346,51 @@
   }
 
   /* ---- the interactions ---- */
+  /* ---- add-a-song search: real catalogue titles, appended to the queue ---- */
+  function renderAddResults(query, results) {
+    if (!results) return;
+    var q = String(query || "").trim().toLowerCase();
+    if (!q) { results.innerHTML = ""; results.hidden = true; return; }
+    var list = (typeof trackList !== "undefined" && trackList) ? trackList : [];
+    var hits = [];
+    for (var i = 0; i < list.length && hits.length < 8; i++) {
+      var t = list[i];
+      var hay = String((t && t.title) || "") + " " + String((t && t.tag) || "");
+      if (hay.toLowerCase().indexOf(q) !== -1) hits.push({ idx: i, track: t });
+    }
+    if (!hits.length) {
+      results.innerHTML = '<p class="qs-add-empty">No songs found.</p>';
+      results.hidden = false;
+      return;
+    }
+    results.innerHTML = hits.map(function (h) {
+      var cover = (h.track && h.track.cover) || "Juice-WRLD.png";
+      return '<button type="button" class="qs-add-row" data-idx="' + h.idx + '">' +
+        '<img src="' + cover + '" alt="" loading="lazy" decoding="async">' +
+        '<span><b>' + String((h.track && h.track.title) || "Track").replace(/</g, "&lt;") + '</b>' +
+        '<small>' + String((h.track && h.track.artist) || "Juice WRLD").replace(/</g, "&lt;") + '</small></span>' +
+        '<i class="fas fa-plus" aria-hidden="true"></i></button>';
+    }).join("");
+    results.hidden = false;
+  }
+
   function bind(pane) {
+    var addSearch = pane.querySelector("#qs-add-search");
+    var addResults = pane.querySelector("#qs-add-results");
+    if (addSearch && addResults) {
+      addSearch.addEventListener("input", function () { renderAddResults(addSearch.value, addResults); });
+      addSearch.addEventListener("focus", function () { if (addSearch.value.trim()) renderAddResults(addSearch.value, addResults); });
+    }
     pane.addEventListener("click", function (e) {
+      var addRow = e.target.closest ? e.target.closest(".qs-add-row") : null;
+      if (addRow) {
+        var addIdx = Number(addRow.getAttribute("data-idx"));
+        try { if (typeof window.addToQueue === "function") window.addToQueue(addIdx); } catch (err) {}
+        if (addSearch) addSearch.value = "";
+        if (addResults) { addResults.innerHTML = ""; addResults.hidden = true; }
+        render();
+        return;
+      }
       var grip = e.target.closest ? e.target.closest(".qs-grip") : null;
       var rm = e.target.closest ? e.target.closest("[data-remove]") : null;
       var row = e.target.closest ? e.target.closest(".qs-row") : null;
