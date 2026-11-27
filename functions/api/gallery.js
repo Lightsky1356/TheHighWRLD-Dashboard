@@ -127,6 +127,17 @@ export async function onRequestGet(context) {
       return json({ ok: true, items: rows.results || [] });
     }
 
+    /* One item as JSON - the lightbox uses this instead of refetching pages. */
+    const itemParam = Number(url.searchParams.get("item") || 0) || 0;
+    if (itemParam) {
+      const row = await db.prepare(
+        "SELECT id, uid, user_name, avatar, title, caption, mime, size, created_at, spoiler " +
+        "FROM gallery_items WHERE id = ? AND status = 'approved'"
+      ).bind(itemParam).first();
+      if (!row) return json({ ok: false, error: "not found" }, 404);
+      return json({ ok: true, item: row });
+    }
+
     if (url.searchParams.get("pending") === "1") {
       const secret = context.env.OWNER_PASSCODE || "";
       if (!secret || url.searchParams.get("code") !== secret) {
@@ -271,6 +282,25 @@ export async function onRequestPost(context) {
       }
       await db.prepare("DELETE FROM gallery_items WHERE id = ?").bind(id).run();
       return json({ ok: true });
+    }
+
+    if (action === "setSpoiler") {
+      /* Only the member who uploaded the art (or the owner) can change its
+         spoiler flag. Identity comes from the session, never the client. */
+      const me = await getSessionUser(db, context.request);
+      if (!me) return json({ ok: false, error: "not signed in" }, 401);
+      const id = Number(body.id) || 0;
+      if (!id) return json({ ok: false, error: "missing id" }, 400);
+      const row = await db.prepare("SELECT uid FROM gallery_items WHERE id = ?").bind(id).first();
+      if (!row) return json({ ok: false, error: "not found" }, 404);
+      const secret = context.env.OWNER_PASSCODE || "";
+      const isOwner = secret && String(body.code || "") === secret;
+      if (String(row.uid || "") !== String(me.uid) && !isOwner) {
+        return json({ ok: false, error: "forbidden" }, 403);
+      }
+      const spoiler = body.spoiler ? 1 : 0;
+      await db.prepare("UPDATE gallery_items SET spoiler = ? WHERE id = ?").bind(spoiler, id).run();
+      return json({ ok: true, spoiler });
     }
 
     if (action === "moderate") {

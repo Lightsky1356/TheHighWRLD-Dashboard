@@ -9,6 +9,11 @@
 
   var PAGE = 12;
   var page = 1, total = 0, loading = false;
+  var itemCache = {};
+  function myUid() {
+    try { return (JSON.parse(localStorage.getItem("wantedAuthUser") || "{}") || {}).uid || ""; }
+    catch (e) { return ""; }
+  }
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -90,8 +95,6 @@
   ".gal-flag i{font-size:8px}" +
   ".gal-check{display:flex;align-items:center;gap:8px;margin:2px 0 10px;font-size:11px;color:rgba(255,255,255,.65);cursor:pointer;user-select:none}" +
   ".gal-check input{width:14px;height:14px;accent-color:#f0abfc;cursor:pointer;flex-shrink:0}" +
-      ".gal-cap{padding:7px 9px;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-      ".gal-by{padding:0 9px 8px;font-size:10px;color:rgba(255,255,255,.5)}" +
       ".gal-more{display:block;margin:14px auto 0;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#fff;border-radius:9999px;padding:8px 22px;font-size:12px;cursor:pointer}" +
       ".gal-more:hover{border-color:rgba(240,171,252,.5);color:#f0abfc}" +
       ".gal-sec-t{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:18px 0 10px}" +
@@ -108,7 +111,19 @@
       ".gal-box h3{font-size:15px;color:#fff;margin:10px 0 2px}" +
   ".gal-spoiler-note{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;border:1px solid rgba(240,171,252,.5);background:rgba(240,171,252,.12);font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#f0abfc;vertical-align:middle}" +
       ".gal-box p{font-size:12px;color:rgba(255,255,255,.6);margin:0 0 10px}" +
-      ".gal-box .row{display:flex;gap:8px;flex-wrap:wrap}";
+      ".gal-box .row{display:flex;gap:8px;flex-wrap:wrap}" +
+      /* Cleaner controls and a calmer grid. */
+      ".gal-info{padding:2px 2px 0}" +
+      ".gal-ctl{display:flex;gap:4px;position:absolute;left:7px;bottom:7px;z-index:3;padding:3px;border-radius:9px;background:rgba(10,6,20,.86);border:1px solid rgba(255,255,255,.12)}" +
+      ".gal-ctl .gal-mini{border-radius:6px;padding:5px 7px;font-size:11px}" +
+      ".gal-mini.danger{color:#fda4a4}" +
+      ".gal-mini.danger:hover{color:#fecaca;background:rgba(248,113,113,.12)}" +
+      ".gal-btn.danger{border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.12);color:#fda4a4}" +
+      ".gal-btn.danger:hover{background:rgba(248,113,113,.22);color:#fff}" +
+      ".gal-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}" +
+      ".gal-empty{grid-column:1/-1;text-align:center;padding:36px 16px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03);color:rgba(255,255,255,.6);font-size:13px}" +
+      "@media (max-width:640px){.gal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.gal-cap{font-size:12.5px}.gal-by{font-size:11px}.gal-box{padding:12px}}" +
+      "@media (prefers-reduced-motion:reduce){.gal-cell,.gal-shot img,.gal-open,.gal-upload-toggle{transition:none!important;transform:none!important}}";
     (document.head || document.documentElement).appendChild(st);
   }
 
@@ -304,15 +319,24 @@
   function cardHTML(it) {
     var sp = !!(Number(it.spoiler) || 0);
     var label = esc(it.title || "Untitled");
+    var mine = !!it.uid && String(it.uid) === String(myUid());
+    var controls = mine
+      ? '<div class="gal-ctl">' +
+          '<button type="button" class="gal-mini" data-gal-spoiler="' + it.id + '" aria-pressed="' + (sp ? "true" : "false") +
+            '" title="' + (sp ? "Remove spoiler mark" : "Mark as spoiler") + '"><i class="fas fa-eye-slash"></i></button>' +
+          '<button type="button" class="gal-mini danger" data-gal-del="' + it.id + '" title="Delete this post"><i class="fas fa-trash"></i></button>' +
+        '</div>'
+      : "";
     return '<div class="gal-cell' + (sp ? " is-spoiler" : "") + '" data-gal="' + it.id + '">' +
       '<button type="button" class="gal-shot' + (sp ? " is-spoiler" : "") + '" data-gal-shot="' + it.id + '"' +
       (sp ? ' aria-pressed="false" aria-label="Spoiler image: ' + label + '. Show or hide this image."' : ' aria-label="Open ' + label + '"') + ">" +
       (sp ? '<span class="gal-flag"><i class="fas fa-eye-slash"></i>Spoiler</span>' : "") +
       '<img decoding="async" src="/api/gallery?id=' + it.id + '" alt="" loading="lazy">' +
       "</button>" +
-      '<div class="gal-cap">' + label + "</div>" +
-      '<div class="gal-by">by ' + esc(it.user_name || "anon") + "</div>" +
+      '<div class="gal-info"><div class="gal-cap">' + label + "</div>" +
+      '<div class="gal-by">by ' + esc(it.user_name || "anon") + "</div></div>" +
       '<button type="button" class="gal-open" data-gal-open="' + it.id + '" aria-label="Open ' + label + '"><i class="fas fa-expand"></i></button>' +
+      controls +
       "</div>";
   }
 
@@ -330,7 +354,11 @@
         loading = false;
         if (!d || d.ok !== true) return;
         total = d.total || 0;
+        if (reset && total === 0 && !(d.items || []).length) {
+          grid.innerHTML = '<div class="gal-empty"><i class="fas fa-images" style="font-size:24px;display:block;margin-bottom:8px;opacity:.5"></i>No art here yet. Be the first to share something.</div>';
+        }
         (d.items || []).forEach(function (it) {
+          itemCache[it.id] = it;
           if (!grid.querySelector('[data-gal="' + it.id + '"]')) {
             var tmp = document.createElement("div");
             tmp.innerHTML = cardHTML(it);
@@ -389,22 +417,24 @@
     }).then(function () { loadQueue(); loadPage(true); }).catch(function () {});
   }
 
-  function lightbox(id) {    var old = document.getElementById("gal-ov");
+  function lightbox(id) {
+    var old = document.getElementById("gal-ov");
     if (old) old.remove();
-    fetch("/api/gallery?page=1&limit=" + PAGE * page, { cache: "no-store" })
-      .then(function (r) { return r.json(); }).catch(function () { return { ok: false }; })
-      .then(function (d) {
-        var it = null;
-        ((d && d.items) || []).forEach(function (x) { if (String(x.id) === String(id)) it = x; });
-        var ov = document.createElement("div");
-        ov.className = "gal-ov";
-        ov.id = "gal-ov";
-        var inner = it
-          ? '<img decoding="async" src="/api/gallery?id=' + it.id + '" alt=""><h3>' + esc(it.title || "Untitled") + (Number(it.spoiler) ? ' <span class="gal-spoiler-note">spoiler</span>' : "") + "</h3><p>by " + esc(it.user_name || "anon") + (it.caption ? " — " + esc(it.caption) : "") + "</p>"
-          : '<img decoding="async" src="/api/gallery?id=' + esc(String(id)) + '" alt="">';
-        ov.innerHTML = '<div class="gal-box">' + inner +
-          '<div class="row"><button type="button" class="gal-btn" data-gal-x="1">Close</button>' +
-          (it ? '<button type="button" class="gal-btn" data-gal-rep="' + it.id + '"><i class="fas fa-flag"></i> Report</button>' : "") + "</div></div>";
+    var cached = itemCache[id];
+    var done = function (it) {
+      var ov = document.createElement("div");
+      ov.className = "gal-ov";
+      ov.id = "gal-ov";
+      var mine = !!it && !!it.uid && String(it.uid) === String(myUid());
+      var inner = it
+        ? '<img decoding="async" src="/api/gallery?id=' + it.id + '" alt=""><h3>' + esc(it.title || "Untitled") + (Number(it.spoiler) ? ' <span class="gal-spoiler-note">spoiler</span>' : "") + "</h3><p>by " + esc(it.user_name || "anon") + (it.caption ? " — " + esc(it.caption) : "") + "</p>"
+        : '<img decoding="async" src="/api/gallery?id=' + esc(String(id)) + '" alt="">';
+      ov.innerHTML = '<div class="gal-box">' + inner +
+        '<div class="row"><button type="button" class="gal-btn" data-gal-x="1">Close</button>' +
+        (it ? '<button type="button" class="gal-btn" data-gal-rep="' + it.id + '"><i class="fas fa-flag"></i> Report</button>' : "") +
+        (mine ? '<button type="button" class="gal-btn" data-gal-spoiler="' + it.id + '" aria-pressed="' + (Number(it.spoiler) ? "true" : "false") + '"><i class="fas fa-eye-slash"></i> ' + (Number(it.spoiler) ? "Remove spoiler" : "Mark spoiler") + '</button>' +
+                '<button type="button" class="gal-btn danger" data-gal-del="' + it.id + '"><i class="fas fa-trash"></i> Delete</button>' : "") +
+        "</div></div>";
         ov.addEventListener("click", function (e) {
           if (e.target === ov || (e.target.closest && e.target.closest('[data-gal-x]'))) { ov.remove(); return; }
           var rp = e.target.closest ? e.target.closest("[data-gal-rep]") : null;
@@ -434,7 +464,11 @@
           }
         });
         document.body.appendChild(ov);
-      });
+      };
+    if (cached) { done(cached); return; }
+    fetch("/api/gallery?item=" + encodeURIComponent(id), { cache: "no-store" })
+      .then(function (r) { return r.json(); }).catch(function () { return { ok: false }; })
+      .then(function (d) { done(d && d.ok ? d.item : null); });
   }
 
   function boot() {
@@ -449,6 +483,23 @@
       if (ok) { mod(Number(ok.getAttribute("data-gal-ok")), "approved"); return; }
       var no = e.target.closest ? e.target.closest("[data-gal-no]") : null;
       if (no) { mod(Number(no.getAttribute("data-gal-no")), "rejected"); return; }
+      var spoilerBtn = e.target.closest ? e.target.closest("[data-gal-spoiler]") : null;
+      if (spoilerBtn) {
+        var sid = Number(spoilerBtn.getAttribute("data-gal-spoiler"));
+        var nowOn = spoilerBtn.getAttribute("aria-pressed") !== "true";
+        fetch("/api/gallery", {
+          method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+          body: JSON.stringify({ action: "setSpoiler", id: sid, spoiler: nowOn ? 1 : 0 })
+        }).then(function (r) { return r.json(); }).then(function (d) {
+          if (!d || d.ok !== true) return;
+          if (itemCache[sid]) itemCache[sid].spoiler = d.spoiler ? 1 : 0;
+          var ovNow = document.getElementById("gal-ov");
+          if (ovNow) ovNow.remove();
+          loadMine();
+          loadPage(true);
+        }).catch(function () {});
+        return;
+      }
       var del = e.target.closest ? e.target.closest("[data-gal-del]") : null;
       if (del) {
         var go = false;
