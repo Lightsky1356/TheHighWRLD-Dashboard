@@ -182,7 +182,7 @@
   /* The first paint can run before script.js has built coverGradientMap, so
      the cover lookup throws and nothing is painted. Repaint once the DOM is
      ready and every gradient helper exists. */
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootPaint, { once: true });
+  if (document.readyState !== "complete") document.addEventListener("DOMContentLoaded", bootPaint, { once: true });
   if (typeof MutationObserver === 'function') {
     try {
       var deck = document.getElementById('deck-cover');

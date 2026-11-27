@@ -16,6 +16,7 @@ check("all five pattern settings are read", ["coverDots", "coverWave", "coverLiq
 check("dots, waves and liquid paint a layer for every colour", /for \(var d = 0; d < n; d\+\+\)/.test(script) && /for \(var v = 0; v < n; v\+\+\)/.test(script) && /for \(var q = 0; q < n; q\+\+\)/.test(script) && /cols\[d\]/.test(script) && /cols\[v\]/.test(script) && /cols\[q\]/.test(script));
 check("each layer gets its own background size", /sizes\.push\(step \+ "px " \+ step \+ "px"\)/.test(script) && /--th-bg-size/.test(script));
 check("the fixed theme layer honours those sizes", /background:var\(--th-bg\);background-size:var\(--th-bg-size,auto\)/.test(css));
+check("every pattern is animated, with a still switch", /animation:thwPatternDrift/.test(css) && /@keyframes thwPatternDrift\{from\{transform:translate3d/.test(css) && /@keyframes thwPatternBreathe/.test(css) && /html\[data-motion="still"\] body::before\{animation:none!important\}/.test(css));
 check("appearance page exposes Dots, Wave, Liquid, Glow and Wash", ["coverDotsToggle", "coverWaveToggle", "coverLiquidToggle", "coverGlowToggle", "coverWashToggle"].every((id) => html.includes(`id="${id}"`)) && !html.includes("coverLinesToggle"));
 check("toggles are saved and repaint Auto", /\["coverDotsToggle", "coverDots", false\]/.test(account) && /settingsSet\(t\[1\], this\.checked\)/.test(account) && /window\.paintAutoTheme\(\)/.test(account));
 check("every cover contributes at least two colours", /out\.length === 1\) out\.push\(_thwDarken/.test(script) && /out\.slice\(0, want\)/.test(script));
