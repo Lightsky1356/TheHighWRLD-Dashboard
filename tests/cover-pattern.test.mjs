@@ -17,6 +17,7 @@ check("palette controls the background layers", /palette !== "blobs" && palette 
 check("wave and liquid remap the cover colours", /palette === "liquid"/.test(script) && /_thwMix\(cols\[m\], cols\[\(m \+ 1\) % n\], \.5\)/.test(script) && /palette === "wave"/.test(script));
 check("palette changes repaint Auto", /settingsSet\("coverPalette", this\.value\)/.test(account) && /function repaintAuto/.test(account));
 check("nothing playing falls back to the site theme", /else \{ _thwClearAmbient\(\); \}/.test(script) && /if \(!cover\) \{[\s\S]{0,120}thwClearAmbient/.test(read("cover-pref.js")));
+check("a playing track survives palette changes", /var list = \(typeof trackList !== "undefined" && trackList\)/.test(script));
 check("no background toggles remain", !html.includes("coverBlobsToggle") && !html.includes("coverGlowToggle") && !html.includes("coverWashToggle"));
 check("the fixed theme layer honours its sizes", /background:var\(--th-bg\);background-size:var\(--th-bg-size,auto\)/.test(css));
 check("the theme layer drifts cheaply and has a still switch", /animation:thwPatternDrift 24s/.test(css) && !/thwPatternBreathe/.test(css) && /html\[data-motion="still"\] body::before\{animation:none!important\}/.test(css));

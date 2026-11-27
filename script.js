@@ -523,8 +523,9 @@ window.thwPaintAmbientSync = function (v) {
     if (pick === "default") {
       /* Only a playing track supplies a cover palette. With nothing playing,
          Default means the site's own theme, so clear every inline override. */
+      var list = (typeof trackList !== "undefined" && trackList) ? trackList : window.trackList;
       var cur = (typeof currentTrackIndex === "number" && currentTrackIndex >= 0 &&
-        window.trackList && window.trackList[currentTrackIndex]) ? window.trackList[currentTrackIndex] : null;
+        list && list[currentTrackIndex]) ? list[currentTrackIndex] : null;
       if (cur && cur.cover) { window.thwPaintAmbient((window.wrldCoverFor ? window.wrldCoverFor(cur) : cur.cover)); }
       else { _thwClearAmbient(); }
     } else {
