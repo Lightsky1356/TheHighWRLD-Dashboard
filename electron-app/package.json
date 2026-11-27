@@ -1,7 +1,7 @@
 {
   "name": "thehighwrld-dashboard",
   "productName": "TheHighWRLD Dashboard",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "TheHighWRLD Dashboard desktop app",
   "main": "main.js",
   "author": "TheHighWRLD",
@@ -21,6 +21,8 @@
   "build": {
     "appId": "com.thehighwrld.dashboard",
     "productName": "TheHighWRLD Dashboard",
+    "compression": "maximum",
+    "asar": true,
     "files": [
       "main.js",
       "preload.js",
@@ -34,7 +36,8 @@
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
