@@ -20,6 +20,7 @@ check("nothing playing falls back to the site theme", /else \{ _thwClearAmbient\
 check("no background toggles remain", !html.includes("coverBlobsToggle") && !html.includes("coverGlowToggle") && !html.includes("coverWashToggle"));
 check("the fixed theme layer honours its sizes", /background:var\(--th-bg\);background-size:var\(--th-bg-size,auto\)/.test(css));
 check("the theme layer drifts cheaply and has a still switch", /animation:thwPatternDrift 24s/.test(css) && !/thwPatternBreathe/.test(css) && /html\[data-motion="still"\] body::before\{animation:none!important\}/.test(css));
+check("Wave and Liquid animate the playing cover's gradient", /setAttribute\("data-cover-palette", palette\)/.test(script) && /html\[data-cover-palette="wave"\] body::before\{animation:thwWaveFlow/.test(css) && /html\[data-cover-palette="liquid"\] body::before\{animation:thwLiquidFlow/.test(css) && /@keyframes thwWaveFlow/.test(css) && /@keyframes thwLiquidFlow/.test(css));
 check("every cover contributes at least two colours", /out\.length === 1\) out\.push\(_thwDarken/.test(script) && /out\.slice\(0, want\)/.test(script));
 check("palettes stay within 2-4 colours", /out\.length > 4\) out = out\.slice\(0, 4\)/.test(script) && /Math\.min\(4, Number\(v\)/.test(script));
 check("the picker offers 2, 3, 4 or all", /id="coverColorCount"/.test(html) && ['<option value="2">2</option>', '<option value="3">3</option>', '<option value="4">4</option>'].every((o) => html.includes(o)));

@@ -452,6 +452,7 @@ function _thwClearAmbient() {
       "--ac-purple", "--ac-pink", "--ac-cyan", "--ac-grad-brand", "--ac-grad-purple",
       "--ac-grad-pink", "--ds-accent", "--ds-accent-2", "--ds-line-strong"];
     for (var i = 0; i < props.length; i++) H.style.removeProperty(props[i]);
+    H.removeAttribute("data-cover-palette");
   } catch (e) {}
 }
 window.thwClearAmbient = _thwClearAmbient;
@@ -477,6 +478,7 @@ window.thwPaintAmbient = function (url) {
     }
     var first = themeCols[0], last = themeCols[themeCols.length - 1];
     var H = document.documentElement;
+    H.setAttribute("data-cover-palette", palette);
     H.style.setProperty("--th-accent", first);
     H.style.setProperty("--th-accent2", last);
     H.style.setProperty("--th-glow", _thwHslRgba(first, .22));
