@@ -168,8 +168,12 @@
   window.paintDeckWash = paintDeckWash;
   window.addEventListener('thw:appearance-changed', function () { paintDeckCover(); paintAutoTheme(); });
   window.addEventListener('thw:trackplaying', function () { paintAutoTheme(); paintControlIcons(); });
-  paintAutoTheme();
-  paintControlIcons();
+  function bootPaint() { paintAutoTheme(); paintControlIcons(); }
+  bootPaint();
+  /* The first paint can run before script.js has built coverGradientMap, so
+     the cover lookup throws and nothing is painted. Repaint once the DOM is
+     ready and every gradient helper exists. */
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootPaint, { once: true });
   if (typeof MutationObserver === 'function') {
     try {
       var deck = document.getElementById('deck-cover');

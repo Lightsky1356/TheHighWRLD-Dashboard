@@ -48,6 +48,8 @@ const GROUPS = [
   { name: "asset-tokens", file: "./asset-tokens.test.mjs", needsServer: false },
   { name: "cover-thumbs", file: "./cover-thumbs.test.mjs", needsServer: false },
   { name: "era-palettes", file: "./era-palettes.test.mjs", needsServer: false },
+  { name: "settings-route", file: "./settings-route.test.mjs", needsServer: false },
+  { name: "cover-colors", file: "./cover-colors.test.mjs", needsServer: false },
   { name: "social-modal", file: "./social-modal.test.mjs", needsServer: false },
   { name: "signin-window", file: "./signin-window.test.mjs", needsServer: false },
   { name: "profile-routing", file: "./profile-routing.test.mjs", needsServer: false },

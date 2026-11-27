@@ -3,7 +3,7 @@
  * Only destinations that actually exist are listed. Verified against the live
  * markup before writing this: /TOS, /PP and /DMCA are real page sections
  * (page-section-tos / -pp / -dmca, routed by account.js NAV_URL), /roadmap and
- * /account are real routes, and /delete-request is a real Pages Function page.
+ * /settings are real routes, and /delete-request is a real Pages Function page.
  *
  * Deliberately absent, because no such page exists and this must not link to
  * something fake: Community Guidelines and Moderation Policy (both exist only as
@@ -78,7 +78,7 @@
 
   /* Auth-aware label for the account row.
    *
-   * "Account Settings" is the honest label: /account has no privacy controls.
+   * "Account Settings" is the honest label: /settings has no privacy controls.
    * Profile visibility lives on the self profile page and messaging privacy
    * lives in the Friends & Messages panel, so promising "& Privacy" here sent
    * people to a page that does not deliver it.
@@ -102,7 +102,7 @@
     /* Signed out, the href must not navigate to the account editor. The click
        handler intercepts it, but removing the href also means it is not a
        broken link if the handler is ever absent. */
-    if (on) link.setAttribute("href", "/account");
+    if (on) link.setAttribute("href", "/settings");
     else link.removeAttribute("href");
     link.setAttribute("data-legal-signed-in", on ? "1" : "0");
   }
@@ -168,7 +168,7 @@
     var SPROUTES = {
       "/TOS": "tos", "/PP": "pp", "/DMCA": "dmca", "/Copyright": "copyright",
       "/wanted": "wanted", "/suggestions": "suggestions",
-      "/account": "account", "/roadmap": "roadmap"
+      "/settings": "account", "/roadmap": "roadmap"
     };
     overlay().addEventListener("click", function (e) {
       var link = e.target.closest ? e.target.closest(".legal-info-link") : null;

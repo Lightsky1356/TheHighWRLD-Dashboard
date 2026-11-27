@@ -3748,7 +3748,8 @@ window.profileSectionShown = function () {
     /* Cover pattern: each toggle is saved locally and repaints Auto from the
        same cover colours, so dots/lines/glow/wash show every colour stop. */
     [["coverDotsToggle", "coverDots", false],
-     ["coverLinesToggle", "coverLines", false],
+     ["coverWaveToggle", "coverWave", false],
+     ["coverLiquidToggle", "coverLiquid", false],
      ["coverGlowToggle", "coverGlow", true],
      ["coverWashToggle", "coverWash", true]].forEach(function (t) {
       var el = document.getElementById(t[0]);
@@ -3761,6 +3762,16 @@ window.profileSectionShown = function () {
         try { window.dispatchEvent(new Event("thw:appearance-changed")); } catch (e) {}
       });
     });
+
+    var colorCount = document.getElementById("coverColorCount");
+    if (colorCount) {
+      colorCount.value = String(Number(settingsGet("coverColorCount", 0)) || 0);
+      colorCount.addEventListener("change", function () {
+        settingsSet("coverColorCount", Number(this.value) || 0);
+        try { window.paintAutoTheme(); } catch (e) {}
+        try { window.dispatchEvent(new Event("thw:appearance-changed")); } catch (e) {}
+      });
+    }
 
     var covers = document.querySelectorAll('input[name="appearanceCovers"]');
     Array.prototype.forEach.call(covers, function (r) {
@@ -4073,7 +4084,7 @@ window.profileSectionShown = function () {
    meant two sources of truth for the same job. _navPillFor already resolves both
    to their real nav buttons (page-nav-about, page-nav-partner), so nothing else
    needed changing to highlight them. */
-var NAV_URL = { home: "/",  developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/account", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register", era: "/era", leaderboard: "/leaderboard", stats: "/stats", updates: "/updates", tracker: "/tracker", messages: "/messages" };
+var NAV_URL = { home: "/",  developers: "/developers", player: "/player", hub: "/vault", wanted: "/wanted", suggestions: "/suggestions", roadmap: "/roadmap", account: "/settings", owner: "/owner", tos: "/TOS", pp: "/PP", dmca: "/DMCA", copyright: "/Copyright", about: "/about", partner: "/partner", gallery: "/gallery", credits: "/credits", downloads: "/downloads", failed: "/failed", login: "/login", register: "/register", era: "/era", leaderboard: "/leaderboard", stats: "/stats", updates: "/updates", tracker: "/tracker", messages: "/messages" };
   var NAV_URL_REV = {};
   Object.keys(NAV_URL).forEach(function (k) { NAV_URL_REV[NAV_URL[k]] = k; });
   /* The router, for a link that has to be a link but must not reload the
