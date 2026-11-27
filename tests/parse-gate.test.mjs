@@ -203,7 +203,8 @@ if (!curAbout || (baseline.ok && !baseAbout)) {
     ['releases/download/v1\\.0\\.3', 0],
     ['releases/download/v1\\.0\\.4', 0],
     ['releases/download/v1\\.0\\.5', 2],
-    ['releases/download/v1\\.0\\.6', 1],
+    ['releases/download/v1\\.0\\.6', 0],
+    ['releases/download/v1\\.0\\.7', 1],
     ['class="abp-card-top abp-link"', 0],
   ];
   let contentOk = true;
