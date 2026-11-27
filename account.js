@@ -3785,8 +3785,7 @@ window.profileSectionShown = function () {
       });
     }
 
-    /* Background toggles: Blobs, Glow and Wash only. Wave and Liquid are
-       palettes in the picker below, never background patterns. */
+    /* One palette picker owns how the playing cover becomes the theme. */
     function repaintAuto() {
       try {
         if (window.thwPaintAmbientSync) window.thwPaintAmbientSync(document.documentElement.getAttribute("data-theme") || "default");
@@ -3794,20 +3793,6 @@ window.profileSectionShown = function () {
       } catch (e) {}
       try { window.dispatchEvent(new Event("thw:appearance-changed")); } catch (e) {}
     }
-    document.documentElement.setAttribute("data-blobs", settingsGet("coverBlobs", true) === false ? "off" : "on");
-    [["coverBlobsToggle", "coverBlobs", true],
-     ["coverGlowToggle", "coverGlow", true],
-     ["coverWashToggle", "coverWash", true]].forEach(function (t) {
-      var el = document.getElementById(t[0]);
-      if (!el) return;
-      var saved = settingsGet(t[1], t[2]);
-      el.checked = saved === true || (t[2] === true && saved !== false);
-      el.addEventListener("change", function () {
-        settingsSet(t[1], this.checked);
-        if (t[1] === "coverBlobs") document.documentElement.setAttribute("data-blobs", this.checked ? "on" : "off");
-        repaintAuto();
-      });
-    });
 
     var colorCount = document.getElementById("coverColorCount");
     if (colorCount) {

@@ -455,9 +455,9 @@ function _thwClearAmbient() {
   } catch (e) {}
 }
 window.thwClearAmbient = _thwClearAmbient;
-/* Hybrid Auto: every colour in the cover gradient becomes the theme. The
-   palette choice decides how those colours are mapped (default, Wave or
-   Liquid); Blobs, Glow and Wash are the remaining background toggles. */
+/* Auto: every colour in the playing cover becomes the theme. The palette
+   choice decides how those colours are shown - Default, Blobs, Glow, Wash,
+   Wave or Liquid. With nothing playing the site's own theme stays in charge. */
 window.thwPaintAmbient = function (url) {
   var theme = "default";
   try { theme = document.documentElement.getAttribute("data-theme") || "default"; } catch (e) {}
@@ -491,7 +491,7 @@ window.thwPaintAmbient = function (url) {
     H.style.setProperty("--ds-accent-2", last);
     H.style.setProperty("--ds-line-strong", _thwHslRgba(first, .36));
     var layers = [], sizes = [];
-    if (_thwFlag("coverGlow", true)) {
+    if (palette !== "blobs" && palette !== "wash") {
       for (var g = 0; g < n; g++) {
         var x = n === 1 ? 50 : Math.round(8 + (g * 84) / (n - 1));
         /* Wave flows high, low, high, low across the page. Liquid pools sit
@@ -502,7 +502,7 @@ window.thwPaintAmbient = function (url) {
         sizes.push("auto");
       }
     }
-    if (_thwFlag("coverWash", true)) {
+    if (palette !== "blobs" && palette !== "glow") {
       var stops = [];
       for (var w = 0; w < n; w++) stops.push(_thwHslRgba(themeCols[w], .24));
       if (palette === "wave") stops.push(_thwHslRgba(themeCols[0], .24));
@@ -519,12 +519,12 @@ window.thwPaintAmbientSync = function (v) {
   try {
     var pick = v === "auto" ? "default" : v;
     if (pick === "default") {
-      /* Prefer the track that is already loaded; fall back to track zero. */
-      var cur = (typeof currentTrackIndex !== "undefined" && window.trackList && typeof currentTrackIndex === "number" && window.trackList[currentTrackIndex])
-        ? window.trackList[currentTrackIndex]
-        : (typeof trackList !== "undefined" && trackList && trackList[0]) ? trackList[0] : null;
+      /* Only a playing track supplies a cover palette. With nothing playing,
+         Default means the site's own theme, so clear every inline override. */
+      var cur = (typeof currentTrackIndex === "number" && currentTrackIndex >= 0 &&
+        window.trackList && window.trackList[currentTrackIndex]) ? window.trackList[currentTrackIndex] : null;
       if (cur && cur.cover) { window.thwPaintAmbient((window.wrldCoverFor ? window.wrldCoverFor(cur) : cur.cover)); }
-      else { window.thwPaintAmbient("Juice-WRLD.png"); }
+      else { _thwClearAmbient(); }
     } else {
       _thwClearAmbient();
     }

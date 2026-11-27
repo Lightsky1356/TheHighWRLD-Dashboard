@@ -175,9 +175,6 @@ input[type="text"]:focus,input[type="search"]:focus,textarea:focus,select:focus{
 .qs-add-row i{font-size:10px;color:#c4b5fd}
 .qs-add-empty{margin:0;padding:10px;font-size:11px;color:var(--ds-muted)}
 
-/* The drifting cover-coloured circles can be switched off in Appearance. */
-html[data-blobs="off"] .th-blob{display:none!important}
-
 /* Language picker in the footer. */
 .foot-langs{position:relative;display:flex;align-items:center;gap:10px}
 .foot-lang-btn{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.05);color:#e8e6f5;font:600 11px system-ui;cursor:pointer}
