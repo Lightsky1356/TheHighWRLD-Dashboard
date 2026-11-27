@@ -452,7 +452,9 @@ function _thwClearAmbient() {
       "--ac-purple", "--ac-pink", "--ac-cyan", "--ac-grad-brand", "--ac-grad-purple",
       "--ac-grad-pink", "--ds-accent", "--ds-accent-2", "--ds-line-strong"];
     for (var i = 0; i < props.length; i++) H.style.removeProperty(props[i]);
+    H.style.removeProperty("--thw-drift-speed");
     H.removeAttribute("data-cover-palette");
+    H.removeAttribute("data-cover-drift");
   } catch (e) {}
 }
 window.thwClearAmbient = _thwClearAmbient;
@@ -479,6 +481,11 @@ window.thwPaintAmbient = function (url) {
     var first = themeCols[0], last = themeCols[themeCols.length - 1];
     var H = document.documentElement;
     H.setAttribute("data-cover-palette", palette);
+    var drift = "normal";
+    try { drift = (window.wrldPlayerSettings && window.wrldPlayerSettings.get("coverDrift")) || "normal"; } catch (e) {}
+    var speed = drift === "off" ? "0s" : drift === "slow" ? "40s" : drift === "fast" ? "10s" : "24s";
+    H.setAttribute("data-cover-drift", drift);
+    H.style.setProperty("--thw-drift-speed", speed);
     H.style.setProperty("--th-accent", first);
     H.style.setProperty("--th-accent2", last);
     H.style.setProperty("--th-glow", _thwHslRgba(first, .22));

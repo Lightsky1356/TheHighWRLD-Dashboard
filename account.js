@@ -3803,11 +3803,11 @@ window.profileSectionShown = function () {
       });
     }
 
-    var paletteSel = document.getElementById("coverPalette");
-    if (paletteSel) {
-      paletteSel.value = settingsGet("coverPalette", "default") || "default";
-      paletteSel.addEventListener("change", function () {
-        settingsSet("coverPalette", this.value);
+    var driftSel = document.getElementById("coverDrift");
+    if (driftSel) {
+      driftSel.value = settingsGet("coverDrift", "normal") || "normal";
+      driftSel.addEventListener("change", function () {
+        settingsSet("coverDrift", this.value);
         repaintAuto();
       });
     }
