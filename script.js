@@ -388,10 +388,28 @@ function _thwNormColor(c) {
   if (c.charAt(0) === "#") return _thwHexToHsl(c) || "hsl(265,45%,36%)";
   return "hsl(265,45%,36%)";
 }
-function _thwGradientPair(url) {
+/* Every colour stop in the cover gradient, not just the two ends. A cover
+   with three or more hues contributes all of them to the page theme. */
+function _thwGradientColors(url) {
   var t = String(coverGradientRaw(url) || "");
   var cols = t.match(/hsla?\([^)]+\)|rgba?\([^)]+\)|#[0-9a-fA-F]{3,8}/g) || [];
-  return [ _thwNormColor(cols[0] || "hsl(280,55%,46%)"), _thwNormColor(cols[cols.length - 1] || "hsl(320,50%,36%)") ];
+  var out = [];
+  for (var i = 0; i < cols.length; i++) {
+    var c = _thwNormColor(cols[i]);
+    if (out.indexOf(c) === -1) out.push(c);
+  }
+  if (!out.length) out = ["hsl(280,55%,46%)", "hsl(320,50%,36%)"];
+  return out;
+}
+function _thwGradientPair(url) {
+  var c = _thwGradientColors(url);
+  return [c[0], c[c.length - 1]];
+}
+function _thwFlag(k, d) {
+  try {
+    var v = window.wrldPlayerSettings && window.wrldPlayerSettings.get(k);
+    return v === undefined ? d : v !== false && v !== 0;
+  } catch (e) { return d; }
 }
 function _thwHslRgba(hsl, alpha) {
   var m = String(hsl || "").match(/hsl\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/);
@@ -406,43 +424,71 @@ function _thwHslRgba(hsl, alpha) {
 function _thwClearAmbient() {
   try {
     var H = document.documentElement;
-    var props = ["--th-accent", "--th-accent2", "--th-bg", "--th-glow", "--th-glow2",
+    var props = ["--th-accent", "--th-accent2", "--th-bg", "--th-bg-size", "--th-glow", "--th-glow2",
       "--ac-purple", "--ac-pink", "--ac-cyan", "--ac-grad-brand", "--ac-grad-purple",
       "--ac-grad-pink", "--ds-accent", "--ds-accent-2", "--ds-line-strong"];
     for (var i = 0; i < props.length; i++) H.style.removeProperty(props[i]);
   } catch (e) {}
 }
 window.thwClearAmbient = _thwClearAmbient;
-/* Hybrid Auto: the cover's two hues wash the whole fixed background at low
-   opacity, stronger radial pools pick out the corners, and every UI accent
-   follows the same colours. The dark base keeps text readable on pale covers. */
+/* Hybrid Auto: every colour in the cover gradient appears in the background,
+   with optional dot grids, fine lines, glow pools and a low-opacity wash.
+   The dark base keeps text readable on pale covers. */
 window.thwPaintAmbient = function (url) {
   var theme = "default";
   try { theme = document.documentElement.getAttribute("data-theme") || "default"; } catch (e) {}
-  if (theme !== "default" && theme !== "auto") { _thwClearAmbient(); return; } /* Auto owns the page only under default */
+  if (theme !== "default" && theme !== "auto") { _thwClearAmbient(); return; }
   try {
-    var pr = _thwGradientPair(url);
-    var c1 = pr[0], c2 = pr[1];
+    var cols = _thwGradientColors(url);
+    var n = cols.length;
+    var first = cols[0], last = cols[n - 1];
     var H = document.documentElement;
-    H.style.setProperty("--th-accent", c1);
-    H.style.setProperty("--th-accent2", c2);
-    H.style.setProperty("--th-glow", _thwHslRgba(c1, .22));
-    H.style.setProperty("--th-glow2", _thwHslRgba(c2, .16));
-    H.style.setProperty("--ac-purple", c1);
-    H.style.setProperty("--ac-pink", c2);
-    H.style.setProperty("--ac-cyan", c2);
-    H.style.setProperty("--ac-grad-brand", "linear-gradient(120deg," + c1 + "," + c2 + "," + c1 + ")");
-    H.style.setProperty("--ac-grad-purple", "linear-gradient(135deg," + c1 + "," + c2 + ")");
-    H.style.setProperty("--ac-grad-pink", "linear-gradient(135deg," + c2 + "," + c1 + ")");
-    H.style.setProperty("--ds-accent", c1);
-    H.style.setProperty("--ds-accent-2", c2);
-    H.style.setProperty("--ds-line-strong", _thwHslRgba(c1, .36));
-    H.style.setProperty("--th-bg",
-      "radial-gradient(1200px 820px at 82% -12%, " + _thwHslRgba(c1, .45) + ", transparent 62%)," +
-      "radial-gradient(1000px 720px at -12% 24%, " + _thwHslRgba(c2, .40) + ", transparent 58%)," +
-      "radial-gradient(900px 640px at 50% 112%, " + _thwHslRgba(c1, .16) + ", transparent 55%)," +
-      "linear-gradient(135deg," + _thwHslRgba(c1, .24) + "," + _thwHslRgba(c2, .24) + ")," +
-      "linear-gradient(180deg,#07080f 0%,#0a0b13 100%)");
+    H.style.setProperty("--th-accent", first);
+    H.style.setProperty("--th-accent2", last);
+    H.style.setProperty("--th-glow", _thwHslRgba(first, .22));
+    H.style.setProperty("--th-glow2", _thwHslRgba(last, .16));
+    H.style.setProperty("--ac-purple", first);
+    H.style.setProperty("--ac-pink", last);
+    H.style.setProperty("--ac-cyan", last);
+    H.style.setProperty("--ac-grad-brand", "linear-gradient(120deg," + cols.join(",") + "," + first + ")");
+    H.style.setProperty("--ac-grad-purple", "linear-gradient(135deg," + cols.join(",") + ")");
+    H.style.setProperty("--ac-grad-pink", "linear-gradient(135deg," + cols.slice().reverse().join(",") + ")");
+    H.style.setProperty("--ds-accent", first);
+    H.style.setProperty("--ds-accent-2", last);
+    H.style.setProperty("--ds-line-strong", _thwHslRgba(first, .36));
+    var layers = [], sizes = [];
+    if (_thwFlag("coverDots", false)) {
+      for (var d = 0; d < n; d++) {
+        var step = 20 + d * 9;
+        layers.push("radial-gradient(circle," + _thwHslRgba(cols[d], .32) + " 1px,transparent 1.6px)");
+        sizes.push(step + "px " + step + "px");
+      }
+    }
+    if (_thwFlag("coverLines", false)) {
+      for (var l = 0; l < n; l++) {
+        var gap = 28 + l * 12;
+        layers.push("repeating-linear-gradient(135deg,transparent 0 " + gap + "px," + _thwHslRgba(cols[l], .16) + " " + gap + "px " + (gap + 1) + "px)");
+        sizes.push("auto");
+      }
+    }
+    if (_thwFlag("coverGlow", true)) {
+      for (var g = 0; g < n; g++) {
+        var x = n === 1 ? 50 : Math.round(8 + (g * 84) / (n - 1));
+        var y = g % 2 ? 24 : -12;
+        layers.push("radial-gradient(1100px 760px at " + x + "% " + y + "%," + _thwHslRgba(cols[g], .42) + ",transparent 62%)");
+        sizes.push("auto");
+      }
+    }
+    if (_thwFlag("coverWash", true)) {
+      var stops = [];
+      for (var w = 0; w < n; w++) stops.push(_thwHslRgba(cols[w], .24));
+      layers.push("linear-gradient(135deg," + stops.join(",") + ")");
+      sizes.push("auto");
+    }
+    layers.push("linear-gradient(180deg,#07080f 0%,#0a0b13 100%)");
+    sizes.push("auto");
+    H.style.setProperty("--th-bg", layers.join(","));
+    H.style.setProperty("--th-bg-size", sizes.join(","));
   } catch (e) {}
 };
 window.thwPaintAmbientSync = function (v) {

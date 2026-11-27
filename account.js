@@ -3745,6 +3745,23 @@ window.profileSectionShown = function () {
       });
     }
 
+    /* Cover pattern: each toggle is saved locally and repaints Auto from the
+       same cover colours, so dots/lines/glow/wash show every colour stop. */
+    [["coverDotsToggle", "coverDots", false],
+     ["coverLinesToggle", "coverLines", false],
+     ["coverGlowToggle", "coverGlow", true],
+     ["coverWashToggle", "coverWash", true]].forEach(function (t) {
+      var el = document.getElementById(t[0]);
+      if (!el) return;
+      var saved = settingsGet(t[1], t[2]);
+      el.checked = saved === true || (t[2] === true && saved !== false);
+      el.addEventListener("change", function () {
+        settingsSet(t[1], this.checked);
+        try { window.paintAutoTheme(); } catch (e) {}
+        try { window.dispatchEvent(new Event("thw:appearance-changed")); } catch (e) {}
+      });
+    });
+
     var covers = document.querySelectorAll('input[name="appearanceCovers"]');
     Array.prototype.forEach.call(covers, function (r) {
       r.checked = (r.value === settingsGet("coversPref", "song"));

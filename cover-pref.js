@@ -85,11 +85,14 @@
   function paintAutoTheme() {
     try {
       var theme = document.documentElement.getAttribute("data-theme") || "default";
-      var cover = currentCover();
-      if ((theme !== "default" && theme !== "auto") || !cover) {
+      if (theme !== "default" && theme !== "auto") {
         if (window.thwClearAmbient) window.thwClearAmbient();
         return;
       }
+      /* No cover yet at boot is not a reason to clear - script.js may have
+         just painted from the loaded track. Leave the palette alone. */
+      var cover = currentCover();
+      if (!cover) return;
       if (window.thwPaintAmbient) window.thwPaintAmbient(cover);
     } catch (_) {}
   }
