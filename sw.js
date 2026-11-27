@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v592';
+const VERSION = 'thw-v594';
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -36,7 +36,7 @@ const PRECACHE = [
   './crypto-js.min.js?v=thw-v2',
   './qrcode.min.js?v=thw-v2',
   './toast.js?v=thw-v1',
-  './tracks.js?v=thw-v20',
+  './tracks.js?v=thw-v21',
   './browser-id3-writer.js?v=thw-v3',
   './bootstrap-client.js?v=thw-v3',
   './account.js?v=thw-v108',
@@ -77,7 +77,7 @@ const PRECACHE = [
   './mobile.css?v=thw-v2',
   './desktop-polish.css?v=thw-v3',
   './mobile-overhaul.css?v=thw-v7',
-  './design-system.css?v=thw-v3',
+  './design-system.css?v=thw-v4',
   './tailwind.css?v=thw-v2',
   './themes.css?v=thw-v23',
   './css2.css?v=thw-v2',
@@ -133,7 +133,7 @@ const PRECACHE = [
   './player-settings.js?v=thw-v22',
   './profile.js?v=thw-v64',
   './profile.css?v=thw-v32',
-  './cover-pref.js?v=thw-v6',
+  './cover-pref.js?v=thw-v7',
   './assets/settings-era/JUTE.webp',
   './assets/settings-era/AFF.webp',
   './assets/settings-era/HIH.webp',
@@ -170,7 +170,7 @@ const PRECACHE = [
   './wrldlog.css?v=thw-v3',
   './wrldlog-data.js?v=thw-v10',
   './wrldlog.js?v=thw-v8',
-  './gallery.js?v=thw-v12',
+  './gallery.js?v=thw-v14',
   './failed-projects-data.js?v=thw-v13',
   './failed-projects.js?v=thw-v13',
   './community-themes.js?v=thw-v5',

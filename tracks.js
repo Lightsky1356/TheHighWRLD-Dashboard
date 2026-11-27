@@ -3236,7 +3236,7 @@ const trackList=[
     year: "2018"
   },
   {
-    title: "Cite (Sessions)",
+    title: "Star Of The Show (Sessions)",
     tag: "Star Of The Show (Cite) (Hold Hands) (Last Year) (Sessions) (GB&GR)",
     artist: "Juice WRLD",
     category: "sessions",

@@ -166,7 +166,12 @@
       if (!cover) return;
       var raw = (typeof coverGradientRaw === "function") ? coverGradientRaw(cover)
         : (typeof getCoverGradientValue === "function" ? getCoverGradientValue(cover) : "");
-      if (raw) document.documentElement.style.setProperty("--thw-cover-grad", String(raw));
+      if (!raw) return;
+      var root = document.documentElement;
+      root.style.setProperty("--thw-cover-grad", String(raw));
+      var cols = String(raw).match(/hsl\([^)]+\)|rgb\([^)]+\)|#[0-9a-fA-F]{3,8}/g) || [];
+      if (cols[0]) root.style.setProperty("--thw-cover-c1", cols[0]);
+      if (cols[1]) root.style.setProperty("--thw-cover-c2", cols[1]);
     } catch (_) {}
   }
   window.paintControlIcons = paintControlIcons;

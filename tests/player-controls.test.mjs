@@ -11,7 +11,7 @@ const queue = read("queue-side.js");
 const out = [];
 const check = (name, pass) => out.push(`${pass ? "PASS" : "FAIL"}  ${name}`);
 
-check("transport icons use the cover gradient, darkened", /--thw-cover-grad/.test(cover) && /#deck-shuffle-btn i,#deck-repeat-btn i,#deck-play i/.test(css) && /brightness\(\.62\)/.test(css));
+check("transport icons are white with a cover-coloured glow", /--thw-cover-c1/.test(cover) && /#deck-shuffle-btn i,#deck-repeat-btn i,#deck-play i/.test(css) && /-webkit-text-fill-color:#fff/.test(css) && !/brightness\(\.62\)/.test(css));
 check("icon gradient follows track changes", /paintControlIcons\(\)/.test(cover) && /thw:trackplaying/.test(cover));
 check("queue has a search field", /qs-add-search/.test(queue) && /Add a song to the queue/.test(queue));
 check("queue search uses real catalogue and appends", /trackList/.test(queue) && /window\.addToQueue/.test(queue) && /qs-add-row/.test(queue));

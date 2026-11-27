@@ -127,6 +127,39 @@ export async function onRequestGet(context) {
       return json({ ok: true, items: rows.results || [] });
     }
 
+    /* Community snapshot - real counts from the approved gallery. */
+    if (url.searchParams.get("community") === "1") {
+      try {
+        const pieces = await db.prepare("SELECT COUNT(*) AS n FROM gallery_items WHERE status = 'approved'").first();
+        const artists = await db.prepare("SELECT COUNT(DISTINCT uid) AS n FROM gallery_items WHERE status = 'approved'").first();
+        const newest = await db.prepare(
+          "SELECT title, created_at FROM gallery_items WHERE status = 'approved' ORDER BY id DESC LIMIT 1"
+        ).first();
+        return json({
+          ok: true,
+          pieces: pieces ? pieces.n : 0,
+          artists: artists ? artists.n : 0,
+          newest: newest || null,
+        });
+      } catch (_) {
+        return json({ ok: true, pieces: 0, artists: 0, newest: null });
+      }
+    }
+
+    /* Comments on one artwork - the gallery's community chat. */
+    const commentItem = Number(url.searchParams.get("comments") || 0) || 0;
+    if (commentItem) {
+      try {
+        const rows = await db.prepare(
+          "SELECT id, uid, author_name, author_avatar, body, created_at, deleted_at " +
+          "FROM gallery_comments WHERE item_id = ? ORDER BY id ASC LIMIT 200"
+        ).bind(commentItem).all();
+        return json({ ok: true, comments: rows.results || [] });
+      } catch (_) {
+        return json({ ok: true, comments: [] });
+      }
+    }
+
     /* One item as JSON - the lightbox uses this instead of refetching pages. */
     const itemParam = Number(url.searchParams.get("item") || 0) || 0;
     if (itemParam) {
@@ -281,6 +314,67 @@ export async function onRequestPost(context) {
         return json({ ok: false, error: "forbidden" }, 403);
       }
       await db.prepare("DELETE FROM gallery_items WHERE id = ?").bind(id).run();
+      return json({ ok: true });
+    }
+
+    if (action === "commentCreate") {
+      const me = await getSessionUser(db, context.request);
+      if (!me) return json({ ok: false, error: "not signed in" }, 401);
+      try {
+        const rej = await banRejection(db, me.uid);
+        if (rej) return rej.response;
+      } catch (_) {}
+      const itemId = Number(body.id) || 0;
+      const text = String(body.body || "").trim().slice(0, 500);
+      if (!itemId) return json({ ok: false, error: "missing id" }, 400);
+      if (!text) return json({ ok: false, error: "a message is required" }, 400);
+      const item = await db.prepare(
+        "SELECT id FROM gallery_items WHERE id = ? AND status = 'approved'"
+      ).bind(itemId).first();
+      if (!item) return json({ ok: false, error: "not found" }, 404);
+      try {
+        const recent = await db.prepare(
+          "SELECT COUNT(*) AS n FROM gallery_comments WHERE uid = ? AND created_at >= datetime('now','-10 minutes')"
+        ).bind(me.uid).first();
+        if (recent && Number(recent.n) >= 10) {
+          return json({ ok: false, error: "slow down a little" }, 429);
+        }
+      } catch (_) {}
+      var who = null;
+      try {
+        who = await db.prepare(
+          "SELECT COALESCE(NULLIF(p.name,''),NULLIF(d.display_name,''),u.name,'Member') AS name, " +
+          "COALESCE(NULLIF(p.avatar,''),NULLIF(d.avatar,''),u.avatar,'') AS avatar " +
+          "FROM users u LEFT JOIN user_profiles p ON p.site_uid = u.uid " +
+          "LEFT JOIN discord_links d ON d.site_uid = u.uid WHERE u.uid = ?"
+        ).bind(me.uid).first();
+      } catch (_) {}
+      let ins;
+      try {
+        ins = await db.prepare(
+          "INSERT INTO gallery_comments (item_id, uid, author_name, author_avatar, body) VALUES (?, ?, ?, ?, ?)"
+        ).bind(itemId, me.uid, (who && who.name) || "Member", (who && who.avatar) || "", text).run();
+      } catch (_) {
+        return json({ ok: false, error: "comments are not ready yet" }, 503);
+      }
+      return json({ ok: true, id: ins.meta && ins.meta.last_row_id ? Number(ins.meta.last_row_id) : 0 });
+    }
+
+    if (action === "commentDelete") {
+      const me = await getSessionUser(db, context.request);
+      if (!me) return json({ ok: false, error: "not signed in" }, 401);
+      const cid = Number(body.id) || 0;
+      if (!cid) return json({ ok: false, error: "missing id" }, 400);
+      const row = await db.prepare("SELECT uid FROM gallery_comments WHERE id = ?").bind(cid).first().catch(() => null);
+      if (!row) return json({ ok: false, error: "not found" }, 404);
+      const secret = context.env.OWNER_PASSCODE || "";
+      const isOwner = secret && String(body.code || "") === secret;
+      if (String(row.uid || "") !== String(me.uid) && !isOwner) {
+        return json({ ok: false, error: "forbidden" }, 403);
+      }
+      await db.prepare(
+        "UPDATE gallery_comments SET deleted_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), body = '' WHERE id = ?"
+      ).bind(cid).run().catch(() => null);
       return json({ ok: true });
     }
 

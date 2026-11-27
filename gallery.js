@@ -106,8 +106,8 @@
       ".gal-mini{border:none;background:transparent;color:rgba(255,255,255,.5);cursor:pointer;font-size:12px;padding:3px 6px}" +
       ".gal-mini:hover{color:#fb7185}" +
       ".gal-ov{position:fixed;inset:0;z-index:10002;display:flex;align-items:center;justify-content:center;background:rgba(4,2,12,.8);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:16px}" +
-      ".gal-box{max-width:min(640px,94vw);max-height:90vh;overflow:auto;background:#14101f;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:16px}" +
-      ".gal-box img{width:100%;border-radius:12px;background:#1c1530}" +
+      ".gal-box{max-width:min(760px,94vw);max-height:none;overflow:hidden;background:#14101f;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:16px}" +
+      ".gal-box img{display:block;max-width:100%;max-height:min(68vh,640px);width:auto;margin:0 auto;border-radius:12px;background:#1c1530;object-fit:contain}" +
       ".gal-box h3{font-size:15px;color:#fff;margin:10px 0 2px}" +
   ".gal-spoiler-note{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;border:1px solid rgba(240,171,252,.5);background:rgba(240,171,252,.12);font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#f0abfc;vertical-align:middle}" +
       ".gal-box p{font-size:12px;color:rgba(255,255,255,.6);margin:0 0 10px}" +
@@ -123,7 +123,32 @@
       ".gal-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}" +
       ".gal-empty{grid-column:1/-1;text-align:center;padding:36px 16px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03);color:rgba(255,255,255,.6);font-size:13px}" +
       "@media (max-width:640px){.gal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.gal-cap{font-size:12.5px}.gal-by{font-size:11px}.gal-box{padding:12px}}" +
-      "@media (prefers-reduced-motion:reduce){.gal-cell,.gal-shot img,.gal-open,.gal-upload-toggle{transition:none!important;transform:none!important}}";
+      "@media (prefers-reduced-motion:reduce){.gal-cell,.gal-shot img,.gal-open,.gal-upload-toggle{transition:none!important;transform:none!important}}" +
+      /* Community strip, layout control and the artwork conversation. */
+      ".gal-community{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}" +
+      ".gal-stat{padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.03);text-align:center}" +
+      ".gal-stat b{display:block;font-size:18px;color:#f0abfc;line-height:1.2}" +
+      ".gal-stat span{display:block;margin-top:3px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.5)}" +
+      ".gal-sec-row{display:flex;align-items:center;justify-content:space-between;gap:12px}" +
+      ".gal-layout{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);padding:5px 12px;font:700 10px system-ui;cursor:pointer}" +
+      ".gal-layout:hover{border-color:rgba(240,171,252,.5);color:#f0abfc}" +
+      ".gal-grid.is-roomy{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}" +
+      ".gal-thread{margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}" +
+      ".gal-thread-empty{margin:0;font-size:11.5px;color:rgba(255,255,255,.5)}" +
+      ".gal-thread-title{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}" +
+      ".gal-msg{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}" +
+      ".gal-msg img{width:26px;height:26px;flex:0 0 26px;border-radius:50%;object-fit:cover;background:rgba(255,255,255,.08)}" +
+      ".gal-msg>div{flex:1;min-width:0}" +
+      ".gal-msg b{font-size:11px;color:#fff}" +
+      ".gal-msg p{margin:1px 0 0;font-size:12px;line-height:1.45;color:rgba(255,255,255,.72);overflow-wrap:anywhere}" +
+      ".gal-msg.is-deleted p{font-style:italic;color:rgba(255,255,255,.4)}" +
+      ".gal-msg-del{border:0;background:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:11px;padding:2px 5px}" +
+      ".gal-msg-del:hover{color:#fb7185}" +
+      ".gal-compose{display:flex;gap:7px;margin-top:10px}" +
+      ".gal-compose input{flex:1;min-width:0;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.05);color:#fff;padding:9px 11px;font-size:12px;outline:none;font-family:inherit}" +
+      ".gal-compose input:focus{border-color:rgba(240,171,252,.5)}" +
+      ".gal-compose button{width:40px;border:0;border-radius:10px;background:rgba(240,171,252,.18);color:#f0abfc;cursor:pointer}" +
+      "@media (max-width:640px){.gal-community{gap:6px}.gal-stat{padding:9px}.gal-stat b{font-size:15px}.gal-grid.is-roomy{grid-template-columns:repeat(2,minmax(0,1fr))}}";
     (document.head || document.documentElement).appendChild(st);
   }
 
@@ -154,7 +179,9 @@
       '<p class="gal-note" id="gal-note">JPG / PNG / WebP / GIF · auto-resized · max 800KB · published as soon as you submit.</p></div>' +
       '<div id="gal-own-wrap"></div>' +
       '<div id="gal-queue-wrap"></div>' +
-      '<div class="gal-sec-t">Fresh from the community</div>' +
+      '<div class="gal-community" id="gal-community" hidden></div>' +
+      '<div class="gal-sec-row"><div class="gal-sec-t">Fresh from the community</div>' +
+      '<button type="button" class="gal-layout" id="gal-layout" aria-pressed="false" title="Toggle compact or roomy layout"><i class="fas fa-grip" aria-hidden="true"></i><span>Roomy</span></button></div>' +
       '<div class="gal-grid" id="gal-grid"></div>' +
       '<button type="button" class="gal-more" id="gal-more" hidden>Load more</button>';
     var host = sec.querySelector("section") || sec;
@@ -340,6 +367,24 @@
       "</div>";
   }
 
+  function loadCommunity() {
+    var host = document.getElementById("gal-community");
+    if (!host) return;
+    fetch("/api/gallery?community=1", { cache: "no-store" })
+      .then(function (r) { return r.json(); }).catch(function () { return { ok: false }; })
+      .then(function (d) {
+        if (!d || d.ok !== true || !Number(d.pieces)) return;
+        var newest = d.newest && d.newest.created_at
+          ? new Date(d.newest.created_at).toLocaleDateString([], { month: "short", day: "numeric" })
+          : "";
+        host.innerHTML =
+          '<div class="gal-stat"><b>' + Number(d.pieces) + '</b><span>pieces of art</span></div>' +
+          '<div class="gal-stat"><b>' + Number(d.artists) + '</b><span>artists</span></div>' +
+          '<div class="gal-stat"><b>' + esc(newest || "—") + '</b><span>newest upload</span></div>';
+        host.hidden = false;
+      });
+  }
+
   function loadPage(reset) {
     if (loading) return;
     var grid = document.getElementById("gal-grid");
@@ -417,6 +462,31 @@
     }).then(function () { loadQueue(); loadPage(true); }).catch(function () {});
   }
 
+  function loadThread(itemId) {
+    var box = document.getElementById("galThread");
+    if (!box) return;
+    fetch("/api/gallery?comments=" + encodeURIComponent(itemId), { cache: "no-store" })
+      .then(function (r) { return r.json(); }).catch(function () { return { ok: false }; })
+      .then(function (d) {
+        var list = (d && d.comments) || [];
+        if (!list.length) {
+          box.innerHTML = '<p class="gal-thread-empty">No comments yet. Start the conversation.</p>';
+          return;
+        }
+        var me = String(myUid());
+        box.innerHTML = '<div class="gal-thread-title"><i class="fas fa-comments"></i> Conversation</div>' +
+          list.slice(-6).map(function (c) {
+            var owned = !!me && String(c.uid || "") === me;
+            return '<div class="gal-msg' + (c.deleted_at ? " is-deleted" : "") + '">' +
+              (c.author_avatar ? '<img src="' + esc(c.author_avatar) + '" alt="" decoding="async">' : '') +
+              '<div><b>' + esc(c.author_name || "Member") + '</b>' +
+              '<p>' + (c.deleted_at ? '<em>Message deleted</em>' : esc(c.body)) + '</p></div>' +
+              (owned && !c.deleted_at ? '<button type="button" class="gal-msg-del" data-gal-cdel="' + c.id + '" aria-label="Delete comment"><i class="fas fa-trash"></i></button>' : '') +
+              "</div>";
+          }).join("");
+      });
+  }
+
   function lightbox(id) {
     var old = document.getElementById("gal-ov");
     if (old) old.remove();
@@ -430,6 +500,10 @@
         ? '<img decoding="async" src="/api/gallery?id=' + it.id + '" alt=""><h3>' + esc(it.title || "Untitled") + (Number(it.spoiler) ? ' <span class="gal-spoiler-note">spoiler</span>' : "") + "</h3><p>by " + esc(it.user_name || "anon") + (it.caption ? " — " + esc(it.caption) : "") + "</p>"
         : '<img decoding="async" src="/api/gallery?id=' + esc(String(id)) + '" alt="">';
       ov.innerHTML = '<div class="gal-box">' + inner +
+        '<div class="gal-thread" id="galThread"><p class="gal-thread-empty">Loading conversation&hellip;</p></div>' +
+        (myUid() ? '<form class="gal-compose" id="galCompose"><label class="sr-only" for="galComposeInput">Comment on this artwork</label>' +
+          '<input id="galComposeInput" type="text" maxlength="500" placeholder="Say something about this art&hellip;" autocomplete="off">' +
+          '<button type="submit" aria-label="Post comment"><i class="fas fa-paper-plane"></i></button></form>' : '') +
         '<div class="row"><button type="button" class="gal-btn" data-gal-x="1">Close</button>' +
         (it ? '<button type="button" class="gal-btn" data-gal-rep="' + it.id + '"><i class="fas fa-flag"></i> Report</button>' : "") +
         (mine ? '<button type="button" class="gal-btn" data-gal-spoiler="' + it.id + '" aria-pressed="' + (Number(it.spoiler) ? "true" : "false") + '"><i class="fas fa-eye-slash"></i> ' + (Number(it.spoiler) ? "Remove spoiler" : "Mark spoiler") + '</button>' +
@@ -437,6 +511,14 @@
         "</div></div>";
         ov.addEventListener("click", function (e) {
           if (e.target === ov || (e.target.closest && e.target.closest('[data-gal-x]'))) { ov.remove(); return; }
+          var cd = e.target.closest ? e.target.closest("[data-gal-cdel]") : null;
+          if (cd) {
+            fetch("/api/gallery", {
+              method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+              body: JSON.stringify({ action: "commentDelete", id: Number(cd.getAttribute("data-gal-cdel")) })
+            }).then(function () { loadThread(id); }).catch(function () {});
+            return;
+          }
           var rp = e.target.closest ? e.target.closest("[data-gal-rep]") : null;
           if (rp) {
             /* Reporting goes through the site's own panel - the same one the
@@ -464,6 +546,22 @@
           }
         });
         document.body.appendChild(ov);
+        loadThread(id);
+        var form = document.getElementById("galCompose");
+        if (form) form.addEventListener("submit", function (ev) {
+          ev.preventDefault();
+          var input = document.getElementById("galComposeInput");
+          if (!input || !input.value.trim()) return;
+          var value = input.value.trim();
+          fetch("/api/gallery", {
+            method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+            body: JSON.stringify({ action: "commentCreate", id: Number(id), body: value })
+          }).then(function (r) { return r.json(); }).then(function (d) {
+            if (!d || d.ok !== true) return;
+            input.value = "";
+            loadThread(id);
+          }).catch(function () {});
+        });
       };
     if (cached) { done(cached); return; }
     fetch("/api/gallery?item=" + encodeURIComponent(id), { cache: "no-store" })
@@ -479,6 +577,16 @@
     root.addEventListener("click", function (e) {
       var more = e.target.closest ? e.target.closest("#gal-more") : null;
       if (more) { loadPage(false); return; }
+      var layout = e.target.closest ? e.target.closest("#gal-layout") : null;
+      if (layout) {
+        var roomy = layout.getAttribute("aria-pressed") !== "true";
+        layout.setAttribute("aria-pressed", roomy ? "true" : "false");
+        var span = layout.querySelector("span");
+        if (span) span.textContent = roomy ? "Compact" : "Roomy";
+        var g = document.getElementById("gal-grid");
+        if (g) g.classList.toggle("is-roomy", roomy);
+        return;
+      }
       var ok = e.target.closest ? e.target.closest("[data-gal-ok]") : null;
       if (ok) { mod(Number(ok.getAttribute("data-gal-ok")), "approved"); return; }
       var no = e.target.closest ? e.target.closest("[data-gal-no]") : null;
@@ -541,6 +649,7 @@
       if (fired) return;
       fired = true;
       loadPage(true);
+      loadCommunity();
       loadMine();
       loadQueue();
     };
