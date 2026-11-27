@@ -168,7 +168,16 @@
   window.paintDeckWash = paintDeckWash;
   window.addEventListener('thw:appearance-changed', function () { paintDeckCover(); paintAutoTheme(); });
   window.addEventListener('thw:trackplaying', function () { paintAutoTheme(); paintControlIcons(); });
-  function bootPaint() { paintAutoTheme(); paintControlIcons(); }
+  function bootPaint() {
+    /* Nothing may be playing on load. thwPaintAmbientSync falls back to the
+       first catalogue cover, so Auto still has a real palette to wear. */
+    if (typeof window.thwPaintAmbientSync === "function") {
+      try { window.thwPaintAmbientSync(document.documentElement.getAttribute("data-theme") || "default"); } catch (e) {}
+    } else {
+      paintAutoTheme();
+    }
+    paintControlIcons();
+  }
   bootPaint();
   /* The first paint can run before script.js has built coverGradientMap, so
      the cover lookup throws and nothing is painted. Repaint once the DOM is
