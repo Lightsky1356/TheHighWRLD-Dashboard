@@ -370,6 +370,13 @@ function injectTitlebar() {
     st.textContent='#thw-exe-bar{position:fixed;top:0;left:0;right:0;height:36px;z-index:100000;display:flex;align-items:center;justify-content:space-between;padding:0 10px;background:#0d0d12;border-bottom:1px solid rgba(255,255,255,.09);color:#e6e4f0;font:12px system-ui;user-select:none;-webkit-app-region:drag}.thw-exe-side{display:flex;align-items:center;gap:5px}#thw-exe-bar button{-webkit-app-region:no-drag;width:30px;height:26px;border:0;border-radius:6px;background:transparent;color:#b9b6c9;font-size:14px;cursor:pointer}#thw-exe-bar button:hover{background:rgba(255,255,255,.1);color:#fff}.thw-exe-logo{background:#7c3aed;color:#fff;border-radius:6px;padding:3px 6px;font-weight:800;font-size:10px}.thw-exe-title{font-weight:700;margin-right:6px}body{padding-top:36px!important}nav{top:42px!important}#app-breadcrumb{top:84px!important}';
     document.head.appendChild(st); document.body.appendChild(bar);
     bar.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;var api=window.highwrld&&window.highwrld.win;if(!api)return;var a=b.getAttribute('data-a');if(api[a])api[a]();});
+    document.addEventListener('keydown',function(e){
+      if(e.code!=='Space'||e.repeat||e.altKey||e.ctrlKey||e.metaKey)return;
+      var t=e.target; if(t&&(/INPUT|TEXTAREA|SELECT|BUTTON/.test(t.tagName)||t.isContentEditable))return;
+      var b=document.getElementById('deck-play')||document.querySelector('[data-dpl="play"]');
+      if(!b)return;
+      e.preventDefault(); b.click();
+    },true);
   })();`;
   mainWindow.webContents.executeJavaScript(code).catch(function () {});
 }

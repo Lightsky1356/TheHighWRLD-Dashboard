@@ -263,6 +263,7 @@
   function paintBackground(ov) {
     var t = currentTrack();
     var cover = t && t.cover ? String(t.cover) : "Juice-WRLD.png";
+    if (window.wrldCoverFor) { try { cover = window.wrldCoverFor(t) || cover; } catch (e) {} }
     if (cover === lastBg) return;
     lastBg = cover;
     var gradient = null;
@@ -272,15 +273,15 @@
     var seekFill = ov.querySelector(".dpl-prog-fill");
     if (seekFill && gradient) seekFill.style.background = gradient;
     var cols = gradient ? (gradient.match(/hsl\([^)]+\)|rgb\([^)]+\)|#[0-9a-fA-F]{3,8}/g) || []) : [];
-    var c1 = cols[0] || "hsl(266,60%,58%)";
-    var c2 = cols[1] || "hsl(20,72%,30%)";
+    if (!cols.length) cols = ["hsl(266,60%,58%)", "hsl(20,72%,30%)"];
     var bg = ov.querySelector(".dpl-bg");
     if (!bg) return;
-    bg.style.background =
-      "radial-gradient(130% 70% at 28% 45%, " + toAlpha(c1, 0.7) + " 0%, transparent 60%)," +
-      "radial-gradient(100% 60% at 78% 15%, " + toAlpha(c2, 0.38) + " 0%, transparent 55%)," +
-      "radial-gradient(80% 55% at 10% 15%, " + toAlpha(c2, 0.28) + " 0%, transparent 55%)," +
-      "linear-gradient(180deg,#17120f 0%,#100d0b 55%,#0b0908 100%)";
+    var pools = [], xs = [28, 78, 10, 55], ys = [45, 15, 15, 70];
+    for (var i = 0; i < cols.length; i++) {
+      pools.push("radial-gradient(130% 70% at " + xs[i % 4] + "% " + ys[i % 4] + "%," + toAlpha(cols[i], i === 0 ? 0.7 : Math.max(0.2, 0.38 - i * 0.04)) + " 0%, transparent 60%)");
+    }
+    pools.push("linear-gradient(180deg,#17120f 0%,#100d0b 55%,#0b0908 100%)");
+    bg.style.background = pools.join(",");
     try {
       var on = !window.movingColors || window.movingColors();
       bg.classList.toggle("thw-moving-gradient", !!on);

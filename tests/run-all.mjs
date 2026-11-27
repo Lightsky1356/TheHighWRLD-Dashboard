@@ -53,6 +53,8 @@ const GROUPS = [
   { name: "era-covers", file: "./era-covers.test.mjs", needsServer: false },
   { name: "desktop-shell", file: "./desktop-shell.test.mjs", needsServer: false },
   { name: "footer-lang", file: "./footer-lang.test.mjs", needsServer: false },
+  { name: "download-link", file: "./download-link.test.mjs", needsServer: false },
+  { name: "cover-gradient-sheets", file: "./cover-gradient-sheets.test.mjs", needsServer: false },
   { name: "social-modal", file: "./social-modal.test.mjs", needsServer: false },
   { name: "signin-window", file: "./signin-window.test.mjs", needsServer: false },
   { name: "profile-routing", file: "./profile-routing.test.mjs", needsServer: false },

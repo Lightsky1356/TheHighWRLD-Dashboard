@@ -189,6 +189,12 @@ html[data-blobs="off"] .th-blob{display:none!important}
 .foot-lang-menu button[aria-selected="true"]{background:rgba(167,139,250,.20);color:#fff}
 
 @media (max-width:767px){
+  /* The Top button must never cover the profile sheet or the WRLD Deck. */
+  body:has(#mobile-profile-popup:not(.hidden)) #scrollTopBtn{display:none!important}
+  body:has(#deck-player:not(.hidden):not(.deck-away)) #scrollTopBtn{bottom:calc(var(--mbn-h,54px) + 134px)!important}
+}
+
+@media (max-width:767px){
   /* Only the selected social tab owns the screen on a phone. */
   .thw-social-view:not(.active){display:none !important}
   .thw-social-search input{height:44px}

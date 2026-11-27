@@ -634,19 +634,21 @@
     if (cover === lastBgCover) return;
     lastBgCover = cover;
     var gradient = null;
+    /* cover is era-resolved by coverOf(), so the sheet follows the art the
+       listener actually sees, including with "Era covers" on. */
     try {
-      if (typeof getCoverGradientValue === "function") gradient = getCoverGradientValue(originalCoverOf());
+      if (typeof getCoverGradientValue === "function") gradient = getCoverGradientValue(cover);
     } catch (e) {}
     var cols = gradient ? (gradient.match(/hsl\([^)]+\)|rgb\([^)]+\)|#[0-9a-fA-F]{3,8}/g) || []) : [];
-    var c1 = cols[0] || "hsl(266,60%,58%)";
-    var c2 = cols[1] || "hsl(20,72%,30%)";
+    if (!cols.length) cols = ["hsl(266,60%,58%)", "hsl(20,72%,30%)"];
     var bg = ov.querySelector(".mp2-bg");
     if (!bg) return;
-    bg.style.background =
-      "radial-gradient(130% 62% at 50% -12%, " + toAlpha(c1, 0.78) + " 0%, transparent 62%)," +
-      "radial-gradient(105% 55% at 88% 26%, " + toAlpha(c2, 0.42) + " 0%, transparent 55%)," +
-      "radial-gradient(85% 55% at 6% 52%, " + toAlpha(c2, 0.3) + " 0%, transparent 58%)," +
-      "linear-gradient(180deg,#1a1512 0%,#110d0b 58%,#0c0908 100%)";
+    var pools = [], xs = [50, 88, 6, 32], ys = [-12, 26, 52, 82];
+    for (var i = 0; i < cols.length; i++) {
+      pools.push("radial-gradient(130% 62% at " + xs[i % 4] + "% " + ys[i % 4] + "%," + toAlpha(cols[i], i === 0 ? 0.78 : Math.max(0.2, 0.42 - i * 0.05)) + " 0%, transparent 62%)");
+    }
+    pools.push("linear-gradient(180deg,#1a1512 0%,#110d0b 58%,#0c0908 100%)");
+    bg.style.background = pools.join(",");
     try {
       var on = !window.movingColors || window.movingColors();
       bg.classList.toggle("thw-moving-gradient", !!on);

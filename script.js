@@ -480,19 +480,27 @@ window.thwPaintAmbient = function (url) {
     var layers = [], sizes = [];
     if (_thwFlag("coverWave", false)) {
       for (var v = 0; v < n; v++) {
-        var mid = 44 + v * 5, hi = 10 + v * 4, lo = 78 - v * 4;
+        var mid = 45 + v * 3;
+        var top = mid - 28 - v * 3, bottom = mid + 28 + v * 3;
+        /* Two mirrored cubics with matching end slopes: a continuous sine,
+           no cusps and no seam where the tile repeats. */
         var wave = "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='90' viewBox='0 0 240 90'>" +
-          "<path d='M0 " + mid + " C 30 " + hi + ", 90 " + lo + ", 120 " + mid + " S 210 " + hi + ", 240 " + mid + "' fill='none' stroke='" + _thwHslRgba(cols[v], .28) + "' stroke-width='2.5'/></svg>";
+          "<path d='M0 " + mid + " C 40 " + top + ", 80 " + top + ", 120 " + mid + " C 160 " + bottom + ", 200 " + bottom + ", 240 " + mid + "' fill='none' stroke='" + _thwHslRgba(cols[v], .30) + "' stroke-width='2.5' stroke-linecap='round'/></svg>";
         layers.push(_thwSvg(wave));
         sizes.push("240px 90px");
       }
     }
     if (_thwFlag("coverLiquid", false)) {
       for (var q = 0; q < n; q++) {
-        var y1 = 44 + q * 9, y2 = y1 + 28;
+        var y1 = 52 + q * 8, y2 = y1 + 26;
+        var other = cols[(q + 1) % n];
+        /* Seamless swell waves filled with a downward fade - running water,
+           not a flat block with a wavy top edge. */
         var liquid = "<svg xmlns='http://www.w3.org/2000/svg' width='320' height='160' viewBox='0 0 320 160'>" +
-          "<path d='M0 " + y1 + " C 40 " + (y1 - 24) + ", 80 " + (y1 + 24) + ", 160 " + y1 + " S 280 " + (y1 - 24) + ", 320 " + y1 + " L320 160 L0 160Z' fill='" + _thwHslRgba(cols[q], .22) + "'/>" +
-          "<path d='M0 " + y2 + " C 50 " + (y2 - 20) + ", 110 " + (y2 + 20) + ", 160 " + y2 + " S 270 " + (y2 - 20) + ", 320 " + y2 + " L320 160 L0 160Z' fill='" + _thwHslRgba(cols[(q + 1) % n], .16) + "'/></svg>";
+          "<defs><linearGradient id='a' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='" + _thwHslRgba(cols[q], .50) + "'/><stop offset='1' stop-color='" + _thwHslRgba(cols[q], 0) + "'/></linearGradient>" +
+          "<linearGradient id='b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='" + _thwHslRgba(other, .34) + "'/><stop offset='1' stop-color='" + _thwHslRgba(other, 0) + "'/></linearGradient></defs>" +
+          "<path d='M0 " + y1 + " C 53 " + (y1 - 30) + ", 107 " + (y1 - 30) + ", 160 " + y1 + " C 213 " + (y1 + 30) + ", 267 " + (y1 + 30) + ", 320 " + y1 + " L320 160 L0 160Z' fill='url(#a)'/>" +
+          "<path d='M0 " + y2 + " C 53 " + (y2 - 24) + ", 107 " + (y2 - 24) + ", 160 " + y2 + " C 213 " + (y2 + 24) + ", 267 " + (y2 + 24) + ", 320 " + y2 + " L320 160 L0 160Z' fill='url(#b)'/></svg>";
         layers.push(_thwSvg(liquid));
         sizes.push("320px 160px");
       }
