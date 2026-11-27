@@ -39,6 +39,14 @@ ipcRenderer.on("highwrld:playback-shortcut", function (_event, payload) {
   each(playbackListeners, function (fn) { fn(payload); });
 });
 
+/* Tray state: pause every page animation while the window is hidden. */
+ipcRenderer.on("highwrld:exe-hidden", function () {
+  try { document.documentElement.classList.add("exe-hidden"); } catch (e) {}
+});
+ipcRenderer.on("highwrld:exe-shown", function () {
+  try { document.documentElement.classList.remove("exe-hidden"); } catch (e) {}
+});
+
 contextBridge.exposeInMainWorld("highwrld", {
   /* what the app can do, so the page can hide controls it cannot reach */
   isDesktop: true,

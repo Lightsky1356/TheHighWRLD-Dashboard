@@ -10,7 +10,10 @@
     ["glow", "Glow", "colour pools"],
     ["wash", "Wash", "full gradient"],
     ["wave", "Wave", "flowing"],
-    ["liquid", "Liquid", "blended"]
+    ["liquid", "Liquid", "cover flow"],
+    ["ripple", "Ripple", "colour rings"],
+    ["prism", "Prism", "angled bands"],
+    ["sunrise", "Sunrise", "bottom up"]
   ];
   var root = null, current = "default";
 
@@ -49,7 +52,26 @@
         "radial-gradient(ellipse at 75% 65%," + c[2] + ",transparent 65%)," +
         "linear-gradient(135deg," + c.join(",") + ")";
     }
+    if (id === "ripple") {
+      return "radial-gradient(circle at 50% 50%," + c[0] + " 0 18%,transparent 20%)," +
+        "radial-gradient(circle at 50% 50%," + c[1] + " 0 34%,transparent 36%)," +
+        "radial-gradient(circle at 50% 50%," + c[2] + " 0 50%,transparent 52%),#151020";
+    }
+    if (id === "prism") {
+      return "linear-gradient(120deg," + c[0] + " 0 25%," + c[1] + " 25% 50%," + c[2] + " 50% 75%," + c[3] + " 75% 100%)";
+    }
+    if (id === "sunrise") return "linear-gradient(0deg," + c.slice().reverse().join(",") + ")";
     return c.join(",");
+  }
+
+  function paintCount() {
+    var sel = document.getElementById("coverColorCount");
+    var box = document.getElementById("colorCountPreview");
+    if (!sel || !box) return;
+    var c = colors();
+    var want = Number(sel.value) || c.length;
+    var use = c.slice(0, Math.max(2, Math.min(c.length, want)));
+    box.innerHTML = use.map(function (x) { return '<span style="background:' + x + '"></span>'; }).join("");
   }
 
   function paint() {
@@ -59,6 +81,7 @@
       var pv = b.querySelector(".palette-preview");
       if (pv) pv.style.background = preview(b.getAttribute("data-palette"), c);
     });
+    paintCount();
   }
 
   function repaint() {
@@ -97,6 +120,8 @@
       var b = e.target.closest ? e.target.closest("[data-palette]") : null;
       if (b) select(b.getAttribute("data-palette"));
     });
+    var countSel = document.getElementById("coverColorCount");
+    if (countSel) countSel.addEventListener("change", paintCount);
     try { current = window.wrldPlayerSettings.get("coverPalette") || "default"; } catch (e) {}
     paint();
     mark();

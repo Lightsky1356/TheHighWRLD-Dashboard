@@ -453,8 +453,10 @@ function _thwClearAmbient() {
       "--ac-grad-pink", "--ds-accent", "--ds-accent-2", "--ds-line-strong"];
     for (var i = 0; i < props.length; i++) H.style.removeProperty(props[i]);
     H.style.removeProperty("--thw-drift-speed");
+    H.style.removeProperty("--thw-palette-speed");
     H.removeAttribute("data-cover-palette");
     H.removeAttribute("data-cover-drift");
+    H.removeAttribute("data-cover-palette-speed");
   } catch (e) {}
 }
 window.thwClearAmbient = _thwClearAmbient;
@@ -470,22 +472,22 @@ window.thwPaintAmbient = function (url) {
     var n = cols.length;
     var palette = "default";
     try { palette = (window.wrldPlayerSettings && window.wrldPlayerSettings.get("coverPalette")) || "default"; } catch (e) {}
-    /* Wave keeps the cover's own order and lets the progression flow back on
-       itself; Liquid melts each neighbouring pair into a softer shade of the
-       same artwork. Both are palettes, never background decorations. */
+    /* Every palette uses the playing cover's own colour stops - no invented
+       shades. Only their arrangement and motion differ. */
     var themeCols = cols;
-    if (palette === "liquid") {
-      themeCols = [];
-      for (var m = 0; m < n; m++) themeCols.push(_thwMix(cols[m], cols[(m + 1) % n], .5));
-    }
     var first = themeCols[0], last = themeCols[themeCols.length - 1];
     var H = document.documentElement;
     H.setAttribute("data-cover-palette", palette);
     var drift = "normal";
     try { drift = (window.wrldPlayerSettings && window.wrldPlayerSettings.get("coverDrift")) || "normal"; } catch (e) {}
-    var speed = drift === "off" ? "0s" : drift === "slow" ? "40s" : drift === "fast" ? "10s" : "24s";
+    var speed = drift === "off" ? "0s" : drift === "slow" ? "60s" : drift === "fast" ? "6s" : "24s";
     H.setAttribute("data-cover-drift", drift);
     H.style.setProperty("--thw-drift-speed", speed);
+    var pspeed = "normal";
+    try { pspeed = (window.wrldPlayerSettings && window.wrldPlayerSettings.get("coverPaletteSpeed")) || "normal"; } catch (e) {}
+    var pspeedValue = pspeed === "off" ? "0s" : pspeed === "slow" ? "48s" : pspeed === "fast" ? "5s" : "18s";
+    H.setAttribute("data-cover-palette-speed", pspeed);
+    H.style.setProperty("--thw-palette-speed", pspeedValue);
     H.style.setProperty("--th-accent", first);
     H.style.setProperty("--th-accent2", last);
     H.style.setProperty("--th-glow", _thwHslRgba(first, .22));
@@ -515,8 +517,29 @@ window.thwPaintAmbient = function (url) {
       var stops = [];
       for (var w = 0; w < n; w++) stops.push(_thwHslRgba(themeCols[w], .24));
       if (palette === "wave") stops.push(_thwHslRgba(themeCols[0], .24));
-      layers.push("linear-gradient(135deg," + stops.join(",") + ")");
+      if (palette === "sunrise") {
+        stops.length = 0;
+        var rev = themeCols.slice().reverse();
+        for (var s = 0; s < rev.length; s++) stops.push(_thwHslRgba(rev[s], .28));
+        layers.push("linear-gradient(0deg," + stops.join(",") + ")");
+      } else {
+        layers.push("linear-gradient(135deg," + stops.join(",") + ")");
+      }
       sizes.push("auto");
+    }
+    if (palette === "ripple") {
+      for (var r = 0; r < n; r++) {
+        var sz = 380 + r * 260;
+        layers.push("radial-gradient(circle at 50% 45%," + _thwHslRgba(themeCols[r], .26) + " 0 " + sz + "px,transparent " + (sz + 180) + "px)");
+        sizes.push("auto");
+      }
+    }
+    if (palette === "prism") {
+      for (var p = 0; p < n; p++) {
+        var pos = Math.round((p * 100) / n);
+        layers.push("linear-gradient(" + (110 + p * 18) + "deg,transparent " + pos + "%," + _thwHslRgba(themeCols[p], .20) + " " + (pos + 18) + "%,transparent " + (pos + 36) + "%)");
+        sizes.push("auto");
+      }
     }
     layers.push("linear-gradient(180deg,#07080f 0%,#0a0b13 100%)");
     sizes.push("auto");

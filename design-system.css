@@ -185,6 +185,10 @@ input[type="text"]:focus,input[type="search"]:focus,textarea:focus,select:focus{
 .foot-lang-menu button:hover{background:rgba(167,139,250,.14)}
 .foot-lang-menu button[aria-selected="true"]{background:rgba(167,139,250,.20);color:#fff}
 
+/* Desktop app: fewer composited blob layers, and no work while in the tray. */
+html.is-desktop .th-blob:nth-child(n+4){display:none!important}
+html.exe-hidden *,html.exe-hidden *::before,html.exe-hidden *::after{animation-play-state:paused!important}
+
 .palette-pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .palette-btn{display:flex;flex-direction:column;gap:5px;padding:7px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03);color:#e6e4f0;cursor:pointer;text-align:left;font-family:inherit}
 .palette-btn:hover{border-color:rgba(167,139,250,.45)}
@@ -192,6 +196,8 @@ input[type="text"]:focus,input[type="search"]:focus,textarea:focus,select:focus{
 .palette-preview{display:block;width:100%;height:34px;border-radius:8px;background:#151020;border:1px solid rgba(255,255,255,.08)}
 .palette-name{font-size:11px;font-weight:700}
 .palette-sub{font-size:9.5px;color:rgba(255,255,255,.5)}
+.count-preview{display:flex;gap:4px;height:18px;align-items:center;margin-top:6px}
+.count-preview span{flex:1;height:18px;border-radius:5px;border:1px solid rgba(255,255,255,.12)}
 @media (max-width:640px){.palette-pick{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 @media (max-width:767px){

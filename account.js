@@ -3811,6 +3811,14 @@ window.profileSectionShown = function () {
         repaintAuto();
       });
     }
+    var palSpeedSel = document.getElementById("coverPaletteSpeed");
+    if (palSpeedSel) {
+      palSpeedSel.value = settingsGet("coverPaletteSpeed", "normal") || "normal";
+      palSpeedSel.addEventListener("change", function () {
+        settingsSet("coverPaletteSpeed", this.value);
+        repaintAuto();
+      });
+    }
 
     var covers = document.querySelectorAll('input[name="appearanceCovers"]');
     Array.prototype.forEach.call(covers, function (r) {

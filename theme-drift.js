@@ -119,7 +119,8 @@
    * the two stay in step. */
   function paused() {
     var root = document.documentElement;
-    return root.classList.contains("is-scrolling") || root.classList.contains("is-idle");
+    return root.classList.contains("is-scrolling") || root.classList.contains("is-idle") ||
+      root.classList.contains("exe-hidden");
   }
 
   var last = 0;

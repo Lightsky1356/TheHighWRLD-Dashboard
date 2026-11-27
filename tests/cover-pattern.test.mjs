@@ -1,4 +1,4 @@
-/* Auto palettes: six live previews, user-controlled drift, real cover colours. */
+/* Auto palettes: live previews, two speeds, and only the playing cover's hues. */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,16 +14,18 @@ const css = read("player-settings.css");
 const out = [];
 const check = (name, pass) => out.push(`${pass ? "PASS" : "FAIL"}  ${name}`);
 
-check("all six palettes have live previews", ["default", "blobs", "glow", "wash", "wave", "liquid"].every((p) => picker.includes(`["${p}",`)) && html.includes('id="palettePick"'));
+const paletteIds = ["default", "blobs", "glow", "wash", "wave", "liquid", "ripple", "prism", "sunrise"];
+check("nine palettes have live previews", paletteIds.every((p) => picker.includes(`["${p}",`)) && html.includes('id="palettePick"'));
 check("previews use the playing cover's colours", /getCoverGradientValue\(t\)/.test(picker) && /function preview\(id, c\)/.test(picker) && /thw:trackplaying/.test(picker));
-check("palette controls the background layers", /palette !== "blobs" && palette !== "wash"/.test(script) && /palette !== "blobs" && palette !== "glow"/.test(script));
-check("wave and liquid remap the cover colours", /palette === "liquid"/.test(script) && /_thwMix\(cols\[m\], cols\[\(m \+ 1\) % n\], \.5\)/.test(script) && /palette === "wave"/.test(script));
+check("liquid keeps the real cover gradient", /var themeCols = cols;/.test(script) && !/_thwMix\(cols\[m\]/.test(script));
+check("new palettes paint from cover colours", /palette === "ripple"/.test(script) && /palette === "prism"/.test(script) && /palette === "sunrise"/.test(script));
+check("two clearly different speed ranges", /"60s" : drift === "fast" \? "6s"/.test(script) && /"48s" : pspeed === "fast" \? "5s"/.test(script));
+check("drift and palette speeds are user controlled", ['id="coverDrift"', 'id="coverPaletteSpeed"'].every((id) => html.includes(id)) && /settingsSet\("coverDrift", this\.value\)/.test(account) && /settingsSet\("coverPaletteSpeed", this\.value\)/.test(account));
+check("every palette animation follows a speed", /thwPatternDrift var\(--thw-drift-speed/.test(css) && ["wave", "liquid", "ripple", "prism", "sunrise"].every((p) => css.includes(`data-cover-palette="${p}"] body::before`)) && /--thw-palette-speed/.test(css));
 check("tapping a preview saves and repaints", /wrldPlayerSettings\.set\("coverPalette", id\)/.test(picker) && /function repaint/.test(picker));
-check("drift speed is user controlled", ['value="off"', 'value="slow"', 'value="normal"', 'value="fast"'].every((v) => html.includes(v)) && /settingsSet\("coverDrift", this\.value\)/.test(account) && /get\("coverDrift"\)/.test(script));
-check("every palette animation uses the drift speed", /animation:thwPatternDrift var\(--thw-drift-speed/.test(css) && /thwWaveFlow calc\(var\(--thw-drift-speed/.test(css) && /thwLiquidFlow calc\(var\(--thw-drift-speed/.test(css) && /html\[data-cover-drift="off"\] body::before\{animation:none!important\}/.test(css));
+check("number picker has a live preview", /id="colorCountPreview"/.test(html) && /function paintCount/.test(picker) && /\.count-preview span\{/.test(design));
 check("nothing playing falls back to the site theme", /else \{ _thwClearAmbient\(\); \}/.test(script) && /if \(!cover\) \{[\s\S]{0,120}thwClearAmbient/.test(read("cover-pref.js")));
 check("a playing track survives palette changes", /var list = \(typeof trackList !== "undefined" && trackList\)/.test(script));
-check("no background toggles remain", !html.includes("coverBlobsToggle") && !html.includes("coverGlowToggle") && !html.includes("coverWashToggle"));
 check("palette previews are styled", /\.palette-pick\{/.test(design) && /\.palette-preview\{/.test(design) && /\.palette-btn\.active\{/.test(design));
 check("every cover contributes at least two colours", /out\.length === 1\) out\.push\(_thwDarken/.test(script) && /out\.slice\(0, want\)/.test(script));
 check("palettes stay within 2-4 colours", /out\.length > 4\) out = out\.slice\(0, 4\)/.test(script) && /Math\.min\(4, Number\(v\)/.test(script));

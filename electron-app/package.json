@@ -1,7 +1,7 @@
 {
   "name": "thehighwrld-dashboard",
   "productName": "TheHighWRLD Dashboard",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "TheHighWRLD Dashboard desktop app",
   "main": "main.js",
   "author": "TheHighWRLD",
