@@ -93,10 +93,14 @@ input[type="text"]:focus,input[type="search"]:focus,textarea:focus,select:focus{
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
 
-/* The WRLD Player sits directly on the site theme - drop its extra ambient
-   gradient layer so there is no second background behind the player card. */
+/* One theme background for the WRLD Player. player-settings.css paints a
+   scroll-attached copy of the gradient on this section while body::before
+   paints the same theme as a fixed layer; the two render differently on a
+   tall page and leave dark strips at the section's top and bottom edges.
+   Keep only the fixed layer so the cover theme shows evenly everywhere. */
 #page-section-player::before,
 #page-section-player::after{display:none !important}
+#page-section-player{background:transparent !important}
 
 /* Server Rules uses the same full panel width as the Comps card, with
    readable copy instead of a narrow 11px column. */
@@ -122,11 +126,38 @@ input[type="text"]:focus,input[type="search"]:focus,textarea:focus,select:focus{
 #deck-play,#dplayer-ov [data-dpl="play"]{
   box-shadow:0 0 18px var(--thw-cover-c1,#a78bfa) !important;
 }
-#deck-shuffle-btn.on i,#deck-repeat-btn.on i,
+/* OFF: dim, no glow, flat button. ON: white icon with the cover-coloured glow
+   and a tinted button so the state is unmistakable at a glance. */
+#deck-shuffle-btn i.text-white\/40,
+#deck-repeat-btn i.text-white\/40,
+#dplayer-ov [data-dpl="shuffle"][aria-pressed="false"] i,
+#dplayer-ov [data-dpl="repeat"][aria-pressed="false"] i,
+#queue-side [data-qs="shuffle"][aria-pressed="false"] i,
+#queue-side [data-qs="repeat"][aria-pressed="false"] i{
+  color:rgba(255,255,255,.4) !important;
+  -webkit-text-fill-color:rgba(255,255,255,.4) !important;
+  filter:none !important;
+}
+#deck-shuffle-btn,#deck-repeat-btn{background:transparent !important;border-color:rgba(255,255,255,.12) !important;box-shadow:none !important}
+#deck-shuffle-btn i.text-cyan-400,
+#deck-repeat-btn i.text-cyan-400,
 #dplayer-ov [data-dpl="shuffle"][aria-pressed="true"] i,
-#dplayer-ov [data-dpl="repeat"][aria-pressed="true"] i{
-  filter:drop-shadow(0 0 9px var(--thw-cover-c2,#7c6cf0));
-
+#dplayer-ov [data-dpl="repeat"][aria-pressed="true"] i,
+#queue-side [data-qs="shuffle"][aria-pressed="true"] i,
+#queue-side [data-qs="repeat"][aria-pressed="true"] i{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  filter:drop-shadow(0 0 9px var(--thw-cover-c1,#a78bfa)) !important;
+}
+#deck-shuffle-btn:has(i.text-cyan-400),
+#deck-repeat-btn:has(i.text-cyan-400),
+#dplayer-ov [data-dpl="shuffle"][aria-pressed="true"],
+#dplayer-ov [data-dpl="repeat"][aria-pressed="true"],
+#queue-side [data-qs="shuffle"][aria-pressed="true"],
+#queue-side [data-qs="repeat"][aria-pressed="true"]{
+  background:rgba(167,139,250,.16) !important;
+  border-color:var(--thw-cover-c1,#a78bfa) !important;
+  box-shadow:0 0 14px var(--thw-cover-c1,#a78bfa) !important;
 }
 
 /* Queue panel: search the real catalogue and append a song to the queue. */
