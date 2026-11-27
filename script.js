@@ -406,24 +406,42 @@ function _thwHslRgba(hsl, alpha) {
 function _thwClearAmbient() {
   try {
     var H = document.documentElement;
-    H.style.removeProperty("--th-accent");
-    H.style.removeProperty("--th-accent2");
-    H.style.removeProperty("--th-bg");
+    var props = ["--th-accent", "--th-accent2", "--th-bg", "--th-glow", "--th-glow2",
+      "--ac-purple", "--ac-pink", "--ac-cyan", "--ac-grad-brand", "--ac-grad-purple",
+      "--ac-grad-pink", "--ds-accent", "--ds-accent-2", "--ds-line-strong"];
+    for (var i = 0; i < props.length; i++) H.style.removeProperty(props[i]);
   } catch (e) {}
 }
 window.thwClearAmbient = _thwClearAmbient;
+/* Hybrid Auto: the cover's two hues wash the whole fixed background at low
+   opacity, stronger radial pools pick out the corners, and every UI accent
+   follows the same colours. The dark base keeps text readable on pale covers. */
 window.thwPaintAmbient = function (url) {
   var theme = "default";
   try { theme = document.documentElement.getAttribute("data-theme") || "default"; } catch (e) {}
-  if (theme !== "default") { _thwClearAmbient(); return; } /* Auto owns the page only under default */
+  if (theme !== "default" && theme !== "auto") { _thwClearAmbient(); return; } /* Auto owns the page only under default */
   try {
     var pr = _thwGradientPair(url);
+    var c1 = pr[0], c2 = pr[1];
     var H = document.documentElement;
-    H.style.setProperty("--th-accent", pr[0]);
-    H.style.setProperty("--th-accent2", pr[1]);
+    H.style.setProperty("--th-accent", c1);
+    H.style.setProperty("--th-accent2", c2);
+    H.style.setProperty("--th-glow", _thwHslRgba(c1, .22));
+    H.style.setProperty("--th-glow2", _thwHslRgba(c2, .16));
+    H.style.setProperty("--ac-purple", c1);
+    H.style.setProperty("--ac-pink", c2);
+    H.style.setProperty("--ac-cyan", c2);
+    H.style.setProperty("--ac-grad-brand", "linear-gradient(120deg," + c1 + "," + c2 + "," + c1 + ")");
+    H.style.setProperty("--ac-grad-purple", "linear-gradient(135deg," + c1 + "," + c2 + ")");
+    H.style.setProperty("--ac-grad-pink", "linear-gradient(135deg," + c2 + "," + c1 + ")");
+    H.style.setProperty("--ds-accent", c1);
+    H.style.setProperty("--ds-accent-2", c2);
+    H.style.setProperty("--ds-line-strong", _thwHslRgba(c1, .36));
     H.style.setProperty("--th-bg",
-      "radial-gradient(1000px 700px at 85% -10%, " + _thwHslRgba(pr[1], .30) + ", transparent 60%)," +
-      "radial-gradient(900px 650px at -10% 20%, " + _thwHslRgba(pr[0], .28) + ", transparent 55%)," +
+      "radial-gradient(1200px 820px at 82% -12%, " + _thwHslRgba(c1, .45) + ", transparent 62%)," +
+      "radial-gradient(1000px 720px at -12% 24%, " + _thwHslRgba(c2, .40) + ", transparent 58%)," +
+      "radial-gradient(900px 640px at 50% 112%, " + _thwHslRgba(c1, .16) + ", transparent 55%)," +
+      "linear-gradient(135deg," + _thwHslRgba(c1, .24) + "," + _thwHslRgba(c2, .24) + ")," +
       "linear-gradient(180deg,#07080f 0%,#0a0b13 100%)");
   } catch (e) {}
 };

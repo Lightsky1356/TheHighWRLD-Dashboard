@@ -78,33 +78,19 @@
     } catch (_) {}
     return "";
   }
+  /* script.js owns the Auto palette (it has the cover-map colour helpers and
+     repaints on every track change). This module only tells it which cover is
+     actually on screen, so "Era covers" and song covers stay in sync and no
+     second writer fights over the theme variables. */
   function paintAutoTheme() {
     try {
-      var root = document.documentElement;
-      if (root.getAttribute("data-theme") !== "auto") {
-        if (root.hasAttribute("data-auto-cover")) {
-          root.removeAttribute("data-auto-cover");
-          root.style.removeProperty("--th-bg");
-          root.style.removeProperty("--th-accent");
-          root.style.removeProperty("--th-accent2");
-        }
+      var theme = document.documentElement.getAttribute("data-theme") || "default";
+      var cover = currentCover();
+      if ((theme !== "default" && theme !== "auto") || !cover) {
+        if (window.thwClearAmbient) window.thwClearAmbient();
         return;
       }
-      var cover = currentCover();
-      if (!cover || root.getAttribute("data-auto-cover") === cover) return;
-      var raw = (typeof coverGradientRaw === "function") ? coverGradientRaw(cover)
-        : (typeof getCoverGradientValue === "function" ? getCoverGradientValue(cover) : "");
-      var cols = String(raw || "").match(/hsl\([^)]+\)|rgb\([^)]+\)|#[0-9a-fA-F]{3,8}/g) || [];
-      var c1 = cols[0] || "hsl(266,60%,58%)";
-      var c2 = cols[1] || "hsl(20,72%,30%)";
-      root.setAttribute("data-auto-cover", cover);
-      root.style.setProperty("--th-bg",
-        "radial-gradient(1200px 820px at 82% -12%, " + toAlpha(c1, 0.34) + " 0%, transparent 62%)," +
-        "radial-gradient(1000px 720px at -12% 24%, " + toAlpha(c2, 0.3) + " 0%, transparent 58%)," +
-        "radial-gradient(900px 640px at 50% 112%, " + toAlpha(c1, 0.12) + " 0%, transparent 55%)," +
-        "linear-gradient(180deg,#07040f 0%,#0a0616 52%,#06030d 100%)");
-      root.style.setProperty("--th-accent", c1);
-      root.style.setProperty("--th-accent2", c2);
+      if (window.thwPaintAmbient) window.thwPaintAmbient(cover);
     } catch (_) {}
   }
   window.paintAutoTheme = paintAutoTheme;
