@@ -17,20 +17,27 @@
   "use strict";
 
   var ERA_ART = {
-    "GB&GR": "AlbumArt/goodbye.jpg",
-    "DRFL": "AlbumArt/death.jpg",
+    "GB&GR": "assets/settings-era/GBGR.webp",
+    "WOD": "assets/settings-era/WOD.webp",
+    "DRFL": "assets/settings-era/DRFL.webp",
     "JW3": "AlbumArt/legends.jpg",
-    "POST": "AlbumArt/party.jpg",
-    "999": "AlbumArt/999.jpg",
-    "JW999": "AlbumArt/999.jpg"
+    "POST": "assets/settings-era/POST.webp",
+    "999": "assets/settings-era/JW999.webp",
+    "JW999": "assets/settings-era/JW999.webp",
+    "OUT": "assets/settings-era/OUT.webp",
+    "AF": "assets/settings-era/AFF.webp",
+    "ND": "assets/settings-era/ND.webp",
+    "BDM": "assets/settings-era/BDM.webp",
+    "HIH": "assets/settings-era/HIH.webp",
+    "JUTE": "assets/settings-era/JUTE.webp"
   };
   /* Strip the ANSI leftovers some tags carry, then take era tags - the
      form is do"..." (title words) ... (ERA) with spaces between. */
   function eraOf(track) {
     if (!track) return null;
     var tag = String(track.tag || track.title || "").replace(/\[?\d+m/g, "");
-    var m = tag.match(/\((999|JW999|GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|HIH)\)(?:\s*[)\]]?)*\s*$/i);
-    if (!m) m = tag.match(/\((999|JW999|GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|HIH)\)/i);
+    var m = tag.match(/\((999|JW999|GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|HIH|JUTE)\)(?:\s*[)\]]?)*\s*$/i);
+    if (!m) m = tag.match(/\((999|JW999|GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|HIH|JUTE)\)/i);
     return m ? m[1].toUpperCase().replace(/^JW999$/, "999") : null;
   }
 
@@ -115,7 +122,7 @@
       var cls = "thw-moving-gradient";
       if (!on) { wash.classList.remove("on"); wash.classList.remove(cls); wash.style.background = "none"; return; }
       var gradient = null;
-      try { if (typeof getCoverGradientValue === "function") gradient = getCoverGradientValue(cur.cover); } catch (_) {}
+      try { if (typeof getCoverGradientValue === "function") gradient = getCoverGradientValue(window.wrldCoverFor(cur)); } catch (_) {}
       var cols = gradient ? (String(gradient).match(/hsl\([^)]+\)|rgb\([^)]+\)|#[0-9a-fA-F]{3,8}/g) || []) : [];
       var c1 = cols[0] || "hsl(266,60%,58%)";
       var c2 = cols[1] || "hsl(20,72%,30%)";

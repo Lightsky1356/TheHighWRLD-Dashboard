@@ -2292,6 +2292,46 @@ function compactProfileViewHtml(d) {
     bindModeSel(document.getElementById("setMode"));
     bindLangSel(lg);
     syncLang(_lang);
+
+    /* The footer picker drives the same select (and therefore the same save
+       and apply path) as the old settings field did. */
+    var flBtn = document.getElementById("foot-lang-btn");
+    var flMenu = document.getElementById("foot-lang-menu");
+    var flLabel = document.getElementById("foot-lang-label");
+    if (flBtn && flMenu) {
+      var paintLangMenu = function () {
+        var cur = (lg && lg.value) || _lang || "en";
+        flMenu.innerHTML = LANGS.map(function (x) {
+          var on = x[0] === cur;
+          return '<button type="button" role="option" data-lang="' + x[0] + '" aria-selected="' + (on ? "true" : "false") + '">' + x[1] + (on ? ' <i class="fas fa-check"></i>' : "") + "</button>";
+        }).join("");
+        var hit = LANGS.filter(function (x) { return x[0] === cur; })[0];
+        if (flLabel && hit) flLabel.textContent = hit[1];
+      };
+      flBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var open = flMenu.hidden;
+        flMenu.hidden = !open;
+        flBtn.setAttribute("aria-expanded", open ? "true" : "false");
+        if (open) paintLangMenu();
+      });
+      flMenu.addEventListener("click", function (e) {
+        var b = e.target.closest ? e.target.closest("[data-lang]") : null;
+        if (!b) return;
+        e.stopPropagation();
+        if (lg) { lg.value = b.getAttribute("data-lang"); lg.dispatchEvent(new Event("change", { bubbles: true })); }
+        flMenu.hidden = true;
+        flBtn.setAttribute("aria-expanded", "false");
+      });
+      document.addEventListener("click", function (e) {
+        if (!flMenu.hidden && !(e.target.closest && e.target.closest("#foot-langs"))) {
+          flMenu.hidden = true;
+          flBtn.setAttribute("aria-expanded", "false");
+        }
+      });
+      if (lg) lg.addEventListener("change", paintLangMenu);
+      paintLangMenu();
+    }
   }
 
   /* ---------- Profile persistence ---------- */
@@ -3747,7 +3787,8 @@ window.profileSectionShown = function () {
 
     /* Cover pattern: each toggle is saved locally and repaints Auto from the
        same cover colours, so dots/lines/glow/wash show every colour stop. */
-    [["coverDotsToggle", "coverDots", false],
+    document.documentElement.setAttribute("data-blobs", settingsGet("coverBlobs", true) === false ? "off" : "on");
+    [["coverBlobsToggle", "coverBlobs", true],
      ["coverWaveToggle", "coverWave", false],
      ["coverLiquidToggle", "coverLiquid", false],
      ["coverGlowToggle", "coverGlow", true],
@@ -3758,6 +3799,7 @@ window.profileSectionShown = function () {
       el.checked = saved === true || (t[2] === true && saved !== false);
       el.addEventListener("change", function () {
         settingsSet(t[1], this.checked);
+        if (t[1] === "coverBlobs") document.documentElement.setAttribute("data-blobs", this.checked ? "on" : "off");
         try { window.paintAutoTheme(); } catch (e) {}
         try { window.dispatchEvent(new Event("thw:appearance-changed")); } catch (e) {}
       });

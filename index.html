@@ -355,7 +355,7 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
 <link rel="stylesheet" href="./mobile.css?v=thw-v2">
 <link rel="stylesheet" href="./desktop-polish.css?v=thw-v3">
 <link rel="stylesheet" href="./mobile-overhaul.css?v=thw-v7">
-<link rel="stylesheet" href="./design-system.css?v=thw-v5">
+<link rel="stylesheet" href="./design-system.css?v=thw-v6">
 <style>
   body.night-light::before { content:''; position:fixed; inset:0; background:rgba(120,60,0,.18); pointer-events:none; z-index:99999; }
   body.night-light::after { content:''; position:fixed; inset:0; background:rgba(180,100,20,.08); pointer-events:none; z-index:99999; mix-blend-mode:multiply; }
@@ -380,13 +380,13 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
 <script src="./bootstrap-client.js?v=thw-v3" defer></script>
 <script src="./player-settings.js?v=thw-v22" defer=""></script>
 <script src="./effects.js?v=thw-v2" defer=""></script><script src="./theme-drift.js?v=thw-v9" defer=""></script>
-<script src="./account.js?v=thw-v111" defer=""></script>
+<script src="./account.js?v=thw-v112" defer=""></script>
 <script src="./profile.js?v=thw-v64" defer=""></script>
 <script src="./user-relations.js?v=thw-v2" defer=""></script>
 <script src="./user-menu.js?v=thw-v7" defer=""></script>
 <script src="./i18n.js?v=11" defer=""></script>
-<script src="./cover-pref.js?v=thw-v12" defer=""></script>
-<script src="./script.js?v=thw-v120" defer=""></script>
+<script src="./cover-pref.js?v=thw-v13" defer=""></script>
+<script src="./script.js?v=thw-v121" defer=""></script>
 <script src="./cover-artists.js?v=thw-v95" defer></script>
 <script src="./credits-wall.js?v=thw-v17" defer></script>
 <script src="./suggestions.js?v=thw-v3" defer=""></script>
@@ -798,9 +798,9 @@ TheHighWRLD.Dashboard-1.0.5.AppImage          A3410D57965F2C54A94AB4368EA843AD19
     <div class="set-block set-block--divided">
       <div class="set-legend">Cover pattern</div>
       <p class="set-note">Auto only. Every colour stop in the playing cover&rsquo;s gradient is used.</p>
-      <label class="toggle-row" for="coverDotsToggle">
-        <span style="min-width:0"><span class="toggle-label">Dots</span><span class="toggle-sub">A soft dot grid in the cover&rsquo;s colours. Off for a clean wash.</span></span>
-        <span class="switch"><input type="checkbox" id="coverDotsToggle"><span class="slider"></span></span>
+      <label class="toggle-row" for="coverBlobsToggle">
+        <span style="min-width:0"><span class="toggle-label">Blobs</span><span class="toggle-sub">The drifting colour circles in the page background.</span></span>
+        <span class="switch"><input type="checkbox" id="coverBlobsToggle" checked><span class="slider"></span></span>
       </label>
       <label class="toggle-row" for="coverWaveToggle">
         <span style="min-width:0"><span class="toggle-label">Wave</span><span class="toggle-sub">Soft waves in every cover colour, instead of lines.</span></span>
@@ -859,7 +859,9 @@ TheHighWRLD.Dashboard-1.0.5.AppImage          A3410D57965F2C54A94AB4368EA843AD19
     <div class="set-block set-block--divided">
       <div class="set-legend">Language &amp; mode</div>
       <div class="settings-grid-simple">
-        <div class="field"><label data-i18n="language" for="setLang">Language</label><select id="setLang" data-filled="1"><option value="en">English</option><option value="es">Spanish</option><option value="fr">French</option><option value="de">German</option><option value="pt">Portuguese</option><option value="it">Italian</option><option value="nl">Dutch</option><option value="pl">Polish</option><option value="ru">Russian</option><option value="uk">Ukrainian</option><option value="sv">Swedish</option><option value="no">Norwegian</option><option value="da">Danish</option><option value="fi">Finnish</option><option value="cs">Czech</option><option value="el">Greek</option><option value="hu">Hungarian</option><option value="ro">Romanian</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="hi">Hindi</option><option value="th">Thai</option><option value="vi">Vietnamese</option><option value="id">Indonesian</option><option value="ja">Japanese</option><option value="ko">Korean</option><option value="zh">Chinese</option></select></div>
+        <!-- Language lives in the footer picker now; this select is the
+             single source of truth the app already saves and applies. -->
+        <select id="setLang" hidden aria-hidden="true"></select>
         <div class="field"><label data-i18n="siteMode" for="setMode">Mode</label><select id="setMode" data-filled="1"><option value="dark">Dark</option><option value="glass">Glass</option></select></div>
       </div>
     </div>
@@ -2212,6 +2214,10 @@ TheHighWRLD.Dashboard-1.0.5.AppImage          A3410D57965F2C54A94AB4368EA843AD19
         
       </div>
       <div class="foot-meta">
+        <div class="foot-langs" id="foot-langs">
+          <button type="button" class="foot-lang-btn" id="foot-lang-btn" aria-haspopup="listbox" aria-expanded="false"><span id="foot-lang-label">English</span><i class="fas fa-chevron-up" aria-hidden="true"></i></button>
+          <div class="foot-lang-menu" id="foot-lang-menu" role="listbox" hidden></div>
+        </div>
         <span>Updated <span id="foot-updated">2026-11-11</span></span>
         <span class="foot-bookmark-hint">Press <kbd>Ctrl</kbd> <kbd>D</kbd> to bookmark TheHighWRLD Dashboard</span>
       </div>

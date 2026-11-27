@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, ipcMain, globalShortcut } = require("electron");
+const { app, BrowserWindow, Menu, shell, ipcMain, globalShortcut, Tray, Notification } = require("electron");
 const path = require("path");
 
 /* ------------------------------------------------------------------ CONFIG
@@ -29,6 +29,9 @@ const APP_ORIGIN = new URL(APP_URL).origin;
 const CLIENT_ID = String(process.env.THWRD_DRP_CLIENT_ID || CONFIG.clientId || "").trim();
 
 let mainWindow = null;
+let tray = null;
+let quitting = false;
+let trayNoticeShown = false;
 
 /* ---------------------------------------------------------------- Discord
  * Discord Rich Presence talks over a local IPC socket to the Discord desktop
@@ -300,6 +303,77 @@ handle("highwrld:drp-clear", function () {
 });
 
 /* ------------------------------------------------------------------- window */
+function showWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) { createWindow(); return; }
+  mainWindow.show();
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.focus();
+}
+
+/* Closing the window means "minimise to the tray", not quit. The notice is
+   custom so it says exactly where the app went and how to leave it. */
+function hideToTray() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.hide();
+  if (trayNoticeShown) return;
+  trayNoticeShown = true;
+  try {
+    new Notification({
+      title: "TheHighWRLD Dashboard",
+      body: "It's in the tray by the clock, and your Discord status keeps showing what you play. To quit, right-click its icon there and choose Quit.",
+      icon: path.join(__dirname, "build", "icon.png"),
+    }).show();
+  } catch (e) { /* notifications are optional */ }
+}
+
+function createTray() {
+  try {
+    if (!tray) tray = new Tray(path.join(__dirname, "build", "icon.png"));
+    tray.setToolTip("TheHighWRLD Dashboard");
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: "Show TheHighWRLD Dashboard", click: showWindow },
+      { type: "separator" },
+      { label: "Quit", click: function () { quitting = true; app.quit(); } },
+    ]));
+    tray.on("double-click", showWindow);
+  } catch (e) { tray = null; }
+}
+
+/* A browser-like bar drawn inside the page so the EXE has its own back,
+   forward, reload and window controls instead of the OS title bar. */
+ipcMain.on("highwrld:win-minimize", function () {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.minimize();
+});
+ipcMain.on("highwrld:win-maximize", function () {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMaximized()) mainWindow.unmaximize();
+  else mainWindow.maximize();
+});
+ipcMain.on("highwrld:win-close", hideToTray);
+ipcMain.on("highwrld:win-back", function () {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.goBack();
+});
+ipcMain.on("highwrld:win-forward", function () {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.goForward();
+});
+ipcMain.on("highwrld:win-reload", function () {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
+});
+
+function injectTitlebar() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const code = `(function(){
+    if (document.getElementById('thw-exe-bar')) return;
+    var bar=document.createElement('div'); bar.id='thw-exe-bar';
+    bar.innerHTML='<div class="thw-exe-side"><span class="thw-exe-logo">999</span><span class="thw-exe-title">TheHighWRLD Dashboard</span><button data-a="back" title="Back">&#8592;</button><button data-a="forward" title="Forward">&#8594;</button><button data-a="reload" title="Reload">&#8635;</button></div><div class="thw-exe-side"><button data-a="min" title="Minimize">&#8722;</button><button data-a="max" title="Maximize">&#9633;</button><button data-a="close" title="Close">&#10005;</button></div>';
+    var st=document.createElement('style'); st.id='thw-exe-style';
+    st.textContent='#thw-exe-bar{position:fixed;top:0;left:0;right:0;height:36px;z-index:100000;display:flex;align-items:center;justify-content:space-between;padding:0 10px;background:#0d0d12;border-bottom:1px solid rgba(255,255,255,.09);color:#e6e4f0;font:12px system-ui;user-select:none;-webkit-app-region:drag}.thw-exe-side{display:flex;align-items:center;gap:5px}#thw-exe-bar button{-webkit-app-region:no-drag;width:30px;height:26px;border:0;border-radius:6px;background:transparent;color:#b9b6c9;font-size:14px;cursor:pointer}#thw-exe-bar button:hover{background:rgba(255,255,255,.1);color:#fff}.thw-exe-logo{background:#7c3aed;color:#fff;border-radius:6px;padding:3px 6px;font-weight:800;font-size:10px}.thw-exe-title{font-weight:700;margin-right:6px}body{padding-top:36px!important}nav{top:42px!important}#app-breadcrumb{top:84px!important}';
+    document.head.appendChild(st); document.body.appendChild(bar);
+    bar.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;var api=window.highwrld&&window.highwrld.win;if(!api)return;var a=b.getAttribute('data-a');if(api[a])api[a]();});
+  })();`;
+  mainWindow.webContents.executeJavaScript(code).catch(function () {});
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -307,6 +381,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 620,
     show: false,
+    frame: false,
     backgroundColor: "#0a0a0a",
     autoHideMenuBar: true,
     title: "TheHighWRLD Dashboard",
@@ -325,6 +400,7 @@ function createWindow() {
     try {
       mainWindow.webContents.send("highwrld:status", status());
     } catch (e) { /* nothing listening yet */ }
+    injectTitlebar();
   });
 
   mainWindow.once("ready-to-show", function () {
@@ -345,8 +421,14 @@ function createWindow() {
     }
   });
 
+  mainWindow.on("close", function (e) {
+    if (quitting) return;
+    e.preventDefault();
+    hideToTray();
+  });
+
   mainWindow.on("closed", function () {
-    teardown();
+    if (!quitting) teardown();
     mainWindow = null;
   });
 
@@ -370,17 +452,17 @@ if (!gotLock) {
     if (process.platform === "win32") {
       app.setAppUserModelId("com.thehighwrld.dashboard");
     }
+    createTray();
     createWindow();
     applyShortcuts();
 
     app.on("activate", function () {
-      if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
-      }
+      showWindow();
     });
   });
 
   app.on("window-all-closed", function () {
+    if (!quitting && tray) return; /* closed to the tray, not quit */
     teardown();
     if (process.platform !== "darwin") {
       app.quit();
@@ -389,7 +471,9 @@ if (!gotLock) {
 
   /* never leave a presence showing after the app is gone */
   app.on("before-quit", function () {
+    quitting = true;
     teardown();
     try { globalShortcut.unregisterAll(); } catch (e) {}
+    try { if (tray) tray.destroy(); } catch (e) {}
   });
 }

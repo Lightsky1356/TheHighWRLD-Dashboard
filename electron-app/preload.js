@@ -89,4 +89,14 @@ contextBridge.exposeInMainWorld("highwrld", {
     playbackListeners.add(fn);
     return function () { playbackListeners.delete(fn); };
   },
+
+  /* The custom EXE title bar calls these instead of being given node access. */
+  win: {
+    minimize: function () { ipcRenderer.send("highwrld:win-minimize"); },
+    maximize: function () { ipcRenderer.send("highwrld:win-maximize"); },
+    close: function () { ipcRenderer.send("highwrld:win-close"); },
+    back: function () { ipcRenderer.send("highwrld:win-back"); },
+    forward: function () { ipcRenderer.send("highwrld:win-forward"); },
+    reload: function () { ipcRenderer.send("highwrld:win-reload"); },
+  },
 });
