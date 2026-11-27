@@ -17,7 +17,7 @@ const check = (name, pass) => out.push(`${pass ? "PASS" : "FAIL"}  ${name}`);
 check("full sheets paint from the displayed cover", /getCoverGradientValue\(cover\)/.test(mobile) && /window\.wrldCoverFor\(t\)/.test(desktop));
 check("full sheets use every colour stop", /for \(var i = 0; i < cols\.length; i\+\+\)/.test(mobile) && /for \(var i = 0; i < cols\.length; i\+\+\)/.test(desktop));
 check("deck progress wears the cover gradient", /\.deck-progress-bar\{[^}]*background:var\(--thw-cover-grad/.test(css));
-check("wave is a seamless sine, liquid fades like water", /C 40 " \+ top \+ ", 80 " \+ top/.test(script) && /linearGradient id='a'/.test(script) && /stop-color='" \+ _thwHslRgba\(cols\[q\], 0\)/.test(script));
+check("wave and liquid are colour palettes, not SVG patterns", /palette === "wave"/.test(script) && /palette === "liquid"/.test(script) && !script.includes('_thwFlag("coverWave"') && !script.includes('_thwFlag("coverLiquid"'));
 check("Top button clears the deck and hides on profile sheet", /mobile-profile-popup:not\(\.hidden\)\) #scrollTopBtn\{display:none!important\}/.test(design) && /deck-player:not\(\.hidden\):not\(\.deck-away\)\) #scrollTopBtn/.test(design));
 check("EXE Space toggles playback", /e\.code!=='Space'/.test(main) && /getElementById\('deck-play'\)/.test(main));
 

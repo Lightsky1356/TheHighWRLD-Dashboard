@@ -15,6 +15,7 @@ check("close hides to the tray with the custom notice", /function hideToTray/.te
 check("notice is named TheHighWRLD Dashboard", /title: "TheHighWRLD Dashboard"/.test(main) && !/juicewrl d\.io/.test(main));
 check("custom bar replaces the OS title bar", /frame: false/.test(main) && /thw-exe-bar/.test(main) && /highwrld:win-maximize/.test(main));
 check("preload exposes the bar controls", /win: \{/.test(preload) && ["minimize", "maximize", "close", "back", "forward", "reload"].every((k) => preload.includes(`${k}: function`)));
+check("fullscreen and minimize are enabled", /setFullScreen\(!mainWindow\.isFullScreen\(\)\)/.test(main) && /setMinimizable\(true\)/.test(main) && /setMaximizable\(true\)/.test(main));
 
 console.log(out.join("\n"));
 if (out.some((l) => l.startsWith("FAIL"))) process.exit(1);

@@ -3785,12 +3785,17 @@ window.profileSectionShown = function () {
       });
     }
 
-    /* Cover pattern: each toggle is saved locally and repaints Auto from the
-       same cover colours, so dots/lines/glow/wash show every colour stop. */
+    /* Background toggles: Blobs, Glow and Wash only. Wave and Liquid are
+       palettes in the picker below, never background patterns. */
+    function repaintAuto() {
+      try {
+        if (window.thwPaintAmbientSync) window.thwPaintAmbientSync(document.documentElement.getAttribute("data-theme") || "default");
+        else window.paintAutoTheme();
+      } catch (e) {}
+      try { window.dispatchEvent(new Event("thw:appearance-changed")); } catch (e) {}
+    }
     document.documentElement.setAttribute("data-blobs", settingsGet("coverBlobs", true) === false ? "off" : "on");
     [["coverBlobsToggle", "coverBlobs", true],
-     ["coverWaveToggle", "coverWave", false],
-     ["coverLiquidToggle", "coverLiquid", false],
      ["coverGlowToggle", "coverGlow", true],
      ["coverWashToggle", "coverWash", true]].forEach(function (t) {
       var el = document.getElementById(t[0]);
@@ -3800,8 +3805,7 @@ window.profileSectionShown = function () {
       el.addEventListener("change", function () {
         settingsSet(t[1], this.checked);
         if (t[1] === "coverBlobs") document.documentElement.setAttribute("data-blobs", this.checked ? "on" : "off");
-        try { window.paintAutoTheme(); } catch (e) {}
-        try { window.dispatchEvent(new Event("thw:appearance-changed")); } catch (e) {}
+        repaintAuto();
       });
     });
 
@@ -3810,8 +3814,16 @@ window.profileSectionShown = function () {
       colorCount.value = String(Number(settingsGet("coverColorCount", 0)) || 0);
       colorCount.addEventListener("change", function () {
         settingsSet("coverColorCount", Number(this.value) || 0);
-        try { window.paintAutoTheme(); } catch (e) {}
-        try { window.dispatchEvent(new Event("thw:appearance-changed")); } catch (e) {}
+        repaintAuto();
+      });
+    }
+
+    var paletteSel = document.getElementById("coverPalette");
+    if (paletteSel) {
+      paletteSel.value = settingsGet("coverPalette", "default") || "default";
+      paletteSel.addEventListener("change", function () {
+        settingsSet("coverPalette", this.value);
+        repaintAuto();
       });
     }
 

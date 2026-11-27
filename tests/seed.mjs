@@ -76,6 +76,11 @@ statements.push(`DELETE FROM push_subscriptions WHERE uid IN (${UIDS});`);
 statements.push(`DELETE FROM user_notification_prefs WHERE uid IN (${UIDS});`);
 statements.push(`DELETE FROM community_notifications WHERE recipient_uid IN (${UIDS});`);
 statements.push(`DELETE FROM follows WHERE follower_uid IN (${UIDS}) OR followed_uid IN (${UIDS});`);
+/* Rate limits share this action log. Attachment uploads accumulate rows for
+   the seeded accounts, so a later run gets 429 with no code change behind it. */
+statements.push(`DELETE FROM user_action_log WHERE actor_uid IN (${UIDS});`);
+/* Daily attachment quota is counted from rows in dm_attachments itself. */
+statements.push(`DELETE FROM dm_attachments WHERE uid IN (${UIDS});`);
 /* Reports too, and for the same reason.
  *
  * The gallery suite files a report against its own upload, and the reports API

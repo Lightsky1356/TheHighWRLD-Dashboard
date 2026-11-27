@@ -346,8 +346,7 @@ ipcMain.on("highwrld:win-minimize", function () {
 });
 ipcMain.on("highwrld:win-maximize", function () {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  if (mainWindow.isMaximized()) mainWindow.unmaximize();
-  else mainWindow.maximize();
+  mainWindow.setFullScreen(!mainWindow.isFullScreen());
 });
 ipcMain.on("highwrld:win-close", hideToTray);
 ipcMain.on("highwrld:win-back", function () {
@@ -365,7 +364,7 @@ function injectTitlebar() {
   const code = `(function(){
     if (document.getElementById('thw-exe-bar')) return;
     var bar=document.createElement('div'); bar.id='thw-exe-bar';
-    bar.innerHTML='<div class="thw-exe-side"><span class="thw-exe-logo">999</span><span class="thw-exe-title">TheHighWRLD Dashboard</span><button data-a="back" title="Back">&#8592;</button><button data-a="forward" title="Forward">&#8594;</button><button data-a="reload" title="Reload">&#8635;</button></div><div class="thw-exe-side"><button data-a="min" title="Minimize">&#8722;</button><button data-a="max" title="Maximize">&#9633;</button><button data-a="close" title="Close">&#10005;</button></div>';
+    bar.innerHTML='<div class="thw-exe-side"><span class="thw-exe-logo">999</span><span class="thw-exe-title">TheHighWRLD Dashboard</span><button data-a="back" title="Back">&#8592;</button><button data-a="forward" title="Forward">&#8594;</button><button data-a="reload" title="Reload">&#8635;</button></div><div class="thw-exe-side"><button data-a="min" title="Minimize">&#8722;</button><button data-a="max" title="Fullscreen">&#9974;</button><button data-a="close" title="Close">&#10005;</button></div>';
     var st=document.createElement('style'); st.id='thw-exe-style';
     st.textContent='#thw-exe-bar{position:fixed;top:0;left:0;right:0;height:36px;z-index:100000;display:flex;align-items:center;justify-content:space-between;padding:0 10px;background:#0d0d12;border-bottom:1px solid rgba(255,255,255,.09);color:#e6e4f0;font:12px system-ui;user-select:none;-webkit-app-region:drag}.thw-exe-side{display:flex;align-items:center;gap:5px}#thw-exe-bar button{-webkit-app-region:no-drag;width:30px;height:26px;border:0;border-radius:6px;background:transparent;color:#b9b6c9;font-size:14px;cursor:pointer}#thw-exe-bar button:hover{background:rgba(255,255,255,.1);color:#fff}.thw-exe-logo{background:#7c3aed;color:#fff;border-radius:6px;padding:3px 6px;font-weight:800;font-size:10px}.thw-exe-title{font-weight:700;margin-right:6px}body{padding-top:36px!important}nav{top:42px!important}#app-breadcrumb{top:84px!important}';
     document.head.appendChild(st); document.body.appendChild(bar);
@@ -401,6 +400,9 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
     },
   });
+  /* Frameless windows still need these enabled for the custom bar to work. */
+  mainWindow.setMinimizable(true);
+  mainWindow.setMaximizable(true);
 
   /* the page may ask about the presence before it has finished booting */
   mainWindow.webContents.on("did-finish-load", function () {

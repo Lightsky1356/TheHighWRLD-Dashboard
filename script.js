@@ -423,8 +423,11 @@ function _thwGradientPair(url) {
   return [c[0], c[c.length - 1]];
 }
 /* SVG patterns are built from the cover's own colours, never stock colours. */
-function _thwSvg(svg) {
-  return 'url("data:image/svg+xml,' + encodeURIComponent(svg).replace(/'/g, "%27") + '")';
+function _thwMix(a, b, t) {
+  var pa = (_thwHslRgba(a, 1).match(/\d+/g) || []).slice(0, 3);
+  var pb = (_thwHslRgba(b, 1).match(/\d+/g) || []).slice(0, 3);
+  if (pa.length < 3 || pb.length < 3) return a;
+  return "rgb(" + pa.map(function (v, i) { return Math.round(+v + (+pb[i] - +v) * t); }).join(",") + ")";
 }
 function _thwFlag(k, d) {
   try {
@@ -452,9 +455,9 @@ function _thwClearAmbient() {
   } catch (e) {}
 }
 window.thwClearAmbient = _thwClearAmbient;
-/* Hybrid Auto: every colour in the cover gradient appears in the background,
-   with optional dot grids, fine lines, glow pools and a low-opacity wash.
-   The dark base keeps text readable on pale covers. */
+/* Hybrid Auto: every colour in the cover gradient becomes the theme. The
+   palette choice decides how those colours are mapped (default, Wave or
+   Liquid); Blobs, Glow and Wash are the remaining background toggles. */
 window.thwPaintAmbient = function (url) {
   var theme = "default";
   try { theme = document.documentElement.getAttribute("data-theme") || "default"; } catch (e) {}
@@ -462,7 +465,17 @@ window.thwPaintAmbient = function (url) {
   try {
     var cols = _thwGradientColors(url);
     var n = cols.length;
-    var first = cols[0], last = cols[n - 1];
+    var palette = "default";
+    try { palette = (window.wrldPlayerSettings && window.wrldPlayerSettings.get("coverPalette")) || "default"; } catch (e) {}
+    /* Wave keeps the cover's own order and lets the progression flow back on
+       itself; Liquid melts each neighbouring pair into a softer shade of the
+       same artwork. Both are palettes, never background decorations. */
+    var themeCols = cols;
+    if (palette === "liquid") {
+      themeCols = [];
+      for (var m = 0; m < n; m++) themeCols.push(_thwMix(cols[m], cols[(m + 1) % n], .5));
+    }
+    var first = themeCols[0], last = themeCols[themeCols.length - 1];
     var H = document.documentElement;
     H.style.setProperty("--th-accent", first);
     H.style.setProperty("--th-accent2", last);
@@ -471,51 +484,28 @@ window.thwPaintAmbient = function (url) {
     H.style.setProperty("--ac-purple", first);
     H.style.setProperty("--ac-pink", last);
     H.style.setProperty("--ac-cyan", last);
-    H.style.setProperty("--ac-grad-brand", "linear-gradient(120deg," + cols.join(",") + "," + first + ")");
-    H.style.setProperty("--ac-grad-purple", "linear-gradient(135deg," + cols.join(",") + ")");
-    H.style.setProperty("--ac-grad-pink", "linear-gradient(135deg," + cols.slice().reverse().join(",") + ")");
+    H.style.setProperty("--ac-grad-brand", "linear-gradient(120deg," + themeCols.join(",") + "," + first + ")");
+    H.style.setProperty("--ac-grad-purple", "linear-gradient(135deg," + themeCols.join(",") + ")");
+    H.style.setProperty("--ac-grad-pink", "linear-gradient(135deg," + themeCols.slice().reverse().join(",") + ")");
     H.style.setProperty("--ds-accent", first);
     H.style.setProperty("--ds-accent-2", last);
     H.style.setProperty("--ds-line-strong", _thwHslRgba(first, .36));
     var layers = [], sizes = [];
-    if (_thwFlag("coverWave", false)) {
-      for (var v = 0; v < n; v++) {
-        var mid = 45 + v * 3;
-        var top = mid - 28 - v * 3, bottom = mid + 28 + v * 3;
-        /* Two mirrored cubics with matching end slopes: a continuous sine,
-           no cusps and no seam where the tile repeats. */
-        var wave = "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='90' viewBox='0 0 240 90'>" +
-          "<path d='M0 " + mid + " C 40 " + top + ", 80 " + top + ", 120 " + mid + " C 160 " + bottom + ", 200 " + bottom + ", 240 " + mid + "' fill='none' stroke='" + _thwHslRgba(cols[v], .30) + "' stroke-width='2.5' stroke-linecap='round'/></svg>";
-        layers.push(_thwSvg(wave));
-        sizes.push("240px 90px");
-      }
-    }
-    if (_thwFlag("coverLiquid", false)) {
-      for (var q = 0; q < n; q++) {
-        var y1 = 52 + q * 8, y2 = y1 + 26;
-        var other = cols[(q + 1) % n];
-        /* Seamless swell waves filled with a downward fade - running water,
-           not a flat block with a wavy top edge. */
-        var liquid = "<svg xmlns='http://www.w3.org/2000/svg' width='320' height='160' viewBox='0 0 320 160'>" +
-          "<defs><linearGradient id='a' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='" + _thwHslRgba(cols[q], .50) + "'/><stop offset='1' stop-color='" + _thwHslRgba(cols[q], 0) + "'/></linearGradient>" +
-          "<linearGradient id='b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='" + _thwHslRgba(other, .34) + "'/><stop offset='1' stop-color='" + _thwHslRgba(other, 0) + "'/></linearGradient></defs>" +
-          "<path d='M0 " + y1 + " C 53 " + (y1 - 30) + ", 107 " + (y1 - 30) + ", 160 " + y1 + " C 213 " + (y1 + 30) + ", 267 " + (y1 + 30) + ", 320 " + y1 + " L320 160 L0 160Z' fill='url(#a)'/>" +
-          "<path d='M0 " + y2 + " C 53 " + (y2 - 24) + ", 107 " + (y2 - 24) + ", 160 " + y2 + " C 213 " + (y2 + 24) + ", 267 " + (y2 + 24) + ", 320 " + y2 + " L320 160 L0 160Z' fill='url(#b)'/></svg>";
-        layers.push(_thwSvg(liquid));
-        sizes.push("320px 160px");
-      }
-    }
     if (_thwFlag("coverGlow", true)) {
       for (var g = 0; g < n; g++) {
         var x = n === 1 ? 50 : Math.round(8 + (g * 84) / (n - 1));
-        var y = g % 2 ? 24 : -12;
-        layers.push("radial-gradient(1100px 760px at " + x + "% " + y + "%," + _thwHslRgba(cols[g], .42) + ",transparent 62%)");
+        /* Wave flows high, low, high, low across the page. Liquid pools sit
+           closer together and wider, so neighbouring shades melt together. */
+        var y = palette === "wave" ? (g % 2 ? 78 : -14) : (g % 2 ? 24 : -12);
+        var rx = palette === "liquid" ? 1400 : 1100, ry = palette === "liquid" ? 900 : 760;
+        layers.push("radial-gradient(" + rx + "px " + ry + "px at " + x + "% " + y + "%," + _thwHslRgba(themeCols[g], .42) + ",transparent 62%)");
         sizes.push("auto");
       }
     }
     if (_thwFlag("coverWash", true)) {
       var stops = [];
-      for (var w = 0; w < n; w++) stops.push(_thwHslRgba(cols[w], .24));
+      for (var w = 0; w < n; w++) stops.push(_thwHslRgba(themeCols[w], .24));
+      if (palette === "wave") stops.push(_thwHslRgba(themeCols[0], .24));
       layers.push("linear-gradient(135deg," + stops.join(",") + ")");
       sizes.push("auto");
     }
