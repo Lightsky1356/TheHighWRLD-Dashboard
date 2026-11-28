@@ -160,6 +160,13 @@
     });
     var stage = document.getElementById("paletteStage");
     if (stage) stage.style.background = preview(current, c);
+    var wrap = document.getElementById("thw-wrap-layer");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = "thw-wrap-layer";
+      document.body.appendChild(wrap);
+    }
+    wrap.style.backgroundImage = "linear-gradient(135deg," + alpha(c[0], .22) + "," + alpha(c[1], .18) + "," + alpha(c[2], .22) + "," + alpha(c[3], .16) + ")";
     paintCount();
     syncVisibleControls();
   }
