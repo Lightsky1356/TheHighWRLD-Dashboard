@@ -9,7 +9,7 @@
 
   function grids() {
     var out = [];
-    ["pvFavGrid", "favGrid"].forEach(function (id) {
+    ["pvFavGrid", "favGrid", "pv2Fav"].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) out.push(el);
     });
@@ -33,9 +33,11 @@
 
   function mount() {
     var panels = Array.prototype.slice.call(document.querySelectorAll('.cmp-sec-card[data-pnl="favorites"]'));
-    Array.prototype.forEach.call(document.querySelectorAll(".cmp-sec-title"), function (title) {
-      if (title.textContent.indexOf("favorites") < 0 && title.textContent.indexOf("Favorites") < 0) return;
-      var card = title.closest(".cmp-sec-card");
+    Array.prototype.forEach.call(document.querySelectorAll(".cmp-sec-title, .pv2-card-h"), function (title) {
+      var text = title.textContent || "";
+      if (text.indexOf("favorites") < 0 && text.indexOf("Favorites") < 0 &&
+          text.indexOf("favourites") < 0 && text.indexOf("Favourites") < 0) return;
+      var card = title.closest(".cmp-sec-card, .pv2-card");
       if (!card || card.querySelector(".fav-layout-btn")) return;
       var btn = document.createElement("button");
       btn.type = "button";

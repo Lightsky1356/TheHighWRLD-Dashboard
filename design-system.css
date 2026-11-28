@@ -212,6 +212,9 @@ html[data-motion="still"] .palette-stage .stage-blob{animation:none!important}
 .cmp-fav-grid.fav-compact .fav-info-btn{top:5px;right:5px;width:24px;height:24px;border-radius:7px;font-size:10px}
 .cmp-fav-grid.fav-compact .fav-play-btn{width:32px;height:32px;font-size:11px}
 .cmp-fav-grid.fav-compact .fav-initials{font-size:18px}
+#pv2Fav.fav-compact .pv2-collage{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+#pv2Fav.fav-compact .pv2-fav-item{aspect-ratio:1/1;border-radius:10px;overflow:hidden}
+#pv2Fav.fav-compact .pv2-fav-name{font-size:9px}
 /* Info button on favourite cards appears on hover/focus. */
 .fav-card .fav-info-btn{opacity:0;transition:opacity .18s ease}
 .fav-card:hover .fav-info-btn,
