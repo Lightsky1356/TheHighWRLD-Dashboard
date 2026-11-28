@@ -78,7 +78,8 @@ html[data-mode="flat"] :is(.app-page,.panel,.card,.hub-panel,.set-card,.info-pan
 html[data-mode="light"] :is(.app-page,.panel,.card,.hub-panel,.set-card,.info-panel,.foot-inner,.thw-sheet-panel,.nav-more-menu,.acct-menu,.palette-stage,.sheet-palettes,nav,#nav-pill,#app-breadcrumb,.set-guest-banner,.wanted-item,.playlist-item,.sugg-card,.lb-row){background-color:var(--mode-light-surface)!important;border-color:var(--mode-light-border)!important;box-shadow:var(--mode-light-shadow)!important}
 html[data-mode="flat"] :is(.pill,.badge,.chip,.tag,.thw-theme-chip,.set-note,.foot-link,.toggle-row){background-color:var(--mode-flat-surface2)!important}
 html[data-mode="light"] :is(.pill,.badge,.chip,.tag,.thw-theme-chip,.set-note,.foot-link,.toggle-row){background-color:var(--mode-light-surface2)!important}
-html[data-mode="flat"] .th-blob,html[data-mode="light"] .th-blob{opacity:.18!important;filter:none!important}
+html[data-mode="flat"] .th-blob{opacity:.7!important}
+html[data-mode="light"] .th-blob{opacity:.5!important}
 
 /* The last four elements that kept their own hard-coded colours. */
 html[data-mode="light"] #nightLightToggle{background:#ffffff!important;color:#1c1c30!important;border-color:rgba(20,20,45,.16)!important}

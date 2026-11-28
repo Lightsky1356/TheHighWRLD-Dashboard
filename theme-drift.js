@@ -26,8 +26,16 @@
   var blobs = Array.prototype.slice.call(document.querySelectorAll(".th-blob"));
   if (!blobs.length) return;
 
+  /* Drift Speed is the user's throttle for these circles. */
+  function driftFactor() {
+    var v = "normal";
+    try { v = (window.wrldPlayerSettings && window.wrldPlayerSettings.get("coverDrift")) || "normal"; } catch (e) {}
+    return v === "off" ? 0 : (v === "fast" ? 4 : (v === "slow" ? 0.35 : 1));
+  }
+
   function motionOk() {
     try {
+      if (driftFactor() === 0) return false;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
       /* Moving colours off in Settings > Appearance: the circles still paint,
          but they never drift. The early boot code sets data-motion=still on
@@ -144,7 +152,7 @@
       }
       s.wobble += dt * 0.7;
 
-      var want = s.speed;
+      var want = s.speed * driftFactor();
       var wob = Math.sin(s.wobble) * 0.7;
       var hx = Math.cos(s.heading + wob);
       var hy = Math.sin(s.heading + wob);

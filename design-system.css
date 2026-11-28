@@ -198,6 +198,9 @@ html.exe-hidden *,html.exe-hidden *::before,html.exe-hidden *::after{animation-p
 .speed-badge{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:rgba(167,139,250,.18);color:#d8c7ff;font-size:9px;letter-spacing:.04em;text-transform:uppercase}
 .palette-meta{display:block;font-size:9px;color:#c4b5fd;letter-spacing:.03em}
 html[data-motion="still"] .palette-stage .stage-blob{animation:none!important}
+/* Cover blobs: bright, soft and clearly moving in the background. */
+.th-blob{opacity:.9!important;filter:saturate(1.4) brightness(1.2)!important}
+.th-blob::after{content:"";position:absolute;inset:18%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--th-accent,#a78bfa) 70%,transparent) 0%,transparent 72%);filter:blur(12px)}
 .palette-pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .palette-btn{display:flex;flex-direction:column;gap:5px;padding:7px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03);color:#e6e4f0;cursor:pointer;text-align:left;font-family:inherit}
 .palette-btn:hover{border-color:rgba(167,139,250,.45)}

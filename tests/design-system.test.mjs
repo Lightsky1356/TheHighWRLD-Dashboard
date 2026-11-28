@@ -11,7 +11,7 @@ const sw = read("sw.js");
 const out = [];
 const check = (name, pass) => out.push(`${pass ? "PASS" : "FAIL"}  ${name}`);
 
-check("design system is loaded last and precached", /design-system\.css\?v=thw-v15/.test(html) && /'\.\/design-system\.css\?v=thw-v15'/.test(sw));
+check("design system is loaded last and precached", /design-system\.css\?v=thw-v16/.test(html) && /'\.\/design-system\.css\?v=thw-v16'/.test(sw));
 check("design tokens and focus states exist", /--ds-radius:16px/.test(css) && /:focus-visible\{outline:2px solid var\(--ds-accent\)/.test(css));
 check("surfaces and rows share one radius", /\.card,\.hub-panel,\.pv2-card,\.set-card,\.rank-shell/.test(css) && /\.playlist-item,\.wanted-item,\.sugg-card,\.lb-row/.test(css));
 check("motion and scrollbars are consistent", /prefers-reduced-motion/.test(css) && /::-webkit-scrollbar-thumb/.test(css));
