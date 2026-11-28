@@ -20,8 +20,9 @@ check("all nine palettes animate", driftPalettes.every((p) =>
   ["thwWaveFlow", "thwLiquidFlow", "thwRippleFlow", "thwPrismFlow", "thwSunriseFlow"].every((k) =>
     new RegExp(`@keyframes ${k}\\{from\\{transform:[^}]+\\}to\\{transform:`).test(css)));
 
-check("drift speed has four distinct values", ["0s", "60s", "24s", "6s"].every((v) => script.includes(`"${v}"`)) && /drift === "slow" \? "60s" : drift === "fast" \? "6s" : "24s"/.test(script));
-check("palette speed has four distinct values", /pspeed === "off" \? "0s" : pspeed === "slow" \? "48s" : pspeed === "fast" \? "5s" : "18s"/.test(script));
+check("drift speed has four distinct values", ["0s", "40s", "12s", "3s"].every((v) => script.includes(`"${v}"`)) && /drift === "slow" \? "40s" : drift === "fast" \? "3s" : "12s"/.test(script));
+check("palette speed has four distinct values", /pspeed === "off" \? "0s" : pspeed === "slow" \? "32s" : pspeed === "fast" \? "3s" : "10s"/.test(script));
+check("motion is visibly large", /translate3d\(-7%,-5%,0\) scale\(1\.22\)/.test(css) && /translate3d\(-9%,6%,0\)/.test(css) && /rotate\(-2deg\)/.test(css) && /scale\(1\.34\)/.test(css));
 check("both speed selectors expose all four options", ["coverDrift", "coverPaletteSpeed"].every((id) => {
   const at = html.indexOf(`id="${id}"`);
   const block = html.slice(at, html.indexOf("</select>", at));
