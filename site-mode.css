@@ -45,6 +45,8 @@ html[data-theme][data-mode="flat"]{
   --ac-border2:var(--mode-flat-border);--th-border:var(--mode-flat-border);
   --th-border2:var(--mode-flat-border);--ac-shadow:var(--mode-flat-shadow);
   --th-bg:var(--mode-flat-bg);
+  --thw-card-bg:var(--mode-flat-surface);
+  --thw-panel-bg:var(--mode-flat-surface);
 }
 html[data-theme][data-mode="light"]{
   --ac-bg0:var(--mode-light-bg);--ac-bg1:var(--mode-light-bg2);
@@ -55,6 +57,8 @@ html[data-theme][data-mode="light"]{
   --ac-border2:var(--mode-light-border);--th-border:var(--mode-light-border);
   --th-border2:var(--mode-light-border);--ac-shadow:var(--mode-light-shadow);
   --th-bg:var(--mode-light-bg);
+  --thw-card-bg:var(--mode-light-surface);
+  --thw-panel-bg:var(--mode-light-surface);
 }
 
 /* -------- ONE APPLICATION PASS -------- */

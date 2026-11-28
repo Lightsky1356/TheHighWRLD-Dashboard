@@ -1844,7 +1844,7 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
   background-image:none!important;
-  background-color:rgba(7,9,20,.92)!important;
+  background-color:var(--thw-card-bg,rgba(7,9,20,.92))!important;
 }
 #features-section .lobby-panel.card::before,
 #features-section .lobby-panel.card::after{display:none!important}
