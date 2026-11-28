@@ -202,6 +202,13 @@ html[data-motion="still"] .palette-stage .stage-blob{animation:none!important}
 .fav-layout-btn{margin-left:8px;padding:3px 9px;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:rgba(255,255,255,.06);color:#d7d3ea;font:700 9px system-ui;letter-spacing:.04em;cursor:pointer;text-transform:uppercase}
 .fav-layout-btn:hover{border-color:rgba(167,139,250,.5);color:#fff}
 .fav-layout-btn[aria-pressed="true"]{background:rgba(167,139,250,.2);border-color:rgba(167,139,250,.5)}
+.cmp-fav-grid:not(.fav-compact){grid-template-columns:repeat(auto-fill,minmax(150px,1fr))!important;gap:10px!important}
+.cmp-fav-grid:not(.fav-compact) .fav-info{padding:7px 9px 9px}
+.cmp-fav-grid:not(.fav-compact) .fav-name{font-size:12px;line-height:1.3;-webkit-line-clamp:2;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical}
+.cmp-fav-grid:not(.fav-compact) .fav-tag,
+.cmp-fav-grid:not(.fav-compact) .fav-sub{display:none}
+.cmp-fav-grid:not(.fav-compact) .fav-like,
+.cmp-fav-grid:not(.fav-compact) .fav-info-btn{top:6px;right:6px;width:26px;height:26px;border-radius:7px;font-size:10px}
 .cmp-fav-grid.fav-compact{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))!important;gap:8px!important}
 .cmp-fav-grid.fav-compact .fav-card{border-radius:10px}
 .cmp-fav-grid.fav-compact .fav-info{padding:6px 8px 8px}
@@ -212,6 +219,7 @@ html[data-motion="still"] .palette-stage .stage-blob{animation:none!important}
 .cmp-fav-grid.fav-compact .fav-info-btn{top:5px;right:5px;width:24px;height:24px;border-radius:7px;font-size:10px}
 .cmp-fav-grid.fav-compact .fav-play-btn{width:32px;height:32px;font-size:11px}
 .cmp-fav-grid.fav-compact .fav-initials{font-size:18px}
+#pv2Fav:not(.fav-compact) .pv2-collage{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))!important;gap:10px}
 #pv2Fav.fav-compact .pv2-collage{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
 #pv2Fav.fav-compact .pv2-fav-item{aspect-ratio:1/1;border-radius:10px;overflow:hidden}
 #pv2Fav.fav-compact .pv2-fav-name{font-size:9px}
