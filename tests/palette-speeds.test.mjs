@@ -38,6 +38,7 @@ check("all palettes follow the palette speed", /body::before\{[^}]*animation:thw
 check("no wrap layer or square seams remain", !css.includes("thw-wrap-layer") && !readFileSync(join(ROOT, "palette-picker.js"), "utf8").includes("thw-wrap-layer"));
 check("palette drift endpoints are random", ["--thw-rx1", "--thw-ry1", "--thw-rx2", "--thw-ry2", "--thw-rs1", "--thw-rs2", "--thw-rh"].every((k) => script.includes(`"${k}"`)) && /var\(--thw-rx1/.test(css) && /var\(--thw-rh/.test(css));
 check("blobs drift even on an idle page", !readFileSync(join(ROOT, "theme-drift.js"), "utf8").includes('contains("is-idle")'));
+check("drift never freezes on a transient pause", /A transient pause must not kill the loop/.test(readFileSync(join(ROOT, "theme-drift.js"), "utf8")) && !/if \(!motionOk\(\)\) \{ running = false/.test(readFileSync(join(ROOT, "theme-drift.js"), "utf8")));
 check("Drift Speed controls blob speed", /driftFactor\(\)/.test(readFileSync(join(ROOT, "theme-drift.js"), "utf8")) && /get\("coverDrift"\)/.test(readFileSync(join(ROOT, "theme-drift.js"), "utf8")) && /s\.speed \* driftFactor\(\)/.test(readFileSync(join(ROOT, "theme-drift.js"), "utf8")));
 check("blobs are subtle", /\.th-blob\{opacity:\.42!important/.test(readFileSync(join(ROOT, "design-system.css"), "utf8")));
 check("blobs bounce off each other", /Equal-mass bounces/.test(readFileSync(join(ROOT, "theme-drift.js"), "utf8")) && /var rel = \(C\.vx - A\.vx\)/.test(readFileSync(join(ROOT, "theme-drift.js"), "utf8")));

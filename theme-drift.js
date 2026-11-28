@@ -128,7 +128,7 @@
    * the two stay in step. */
   function paused() {
     var root = document.documentElement;
-    return root.classList.contains("is-scrolling") || root.classList.contains("exe-hidden");
+    return document.hidden || root.classList.contains("is-scrolling") || root.classList.contains("exe-hidden");
   }
 
   var last = 0;
@@ -136,7 +136,13 @@
 
   function frame(now) {
     if (!running) return;
-    if (!motionOk()) { running = false; return; }
+    /* A transient pause must not kill the loop - just skip this frame, so
+       there is no freeze while an event waits to restart it. */
+    if (paused() || !motionOk()) {
+      last = 0;
+      requestAnimationFrame(frame);
+      return;
+    }
     var dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
     last = now;
 
@@ -226,14 +232,12 @@
      within the next frame instead of waiting for a reload. */
   if (window.MutationObserver) {
     new MutationObserver(function () {
-      if (paused() || !motionOk()) stop(); else start();
+      start();
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-motion"] });
   }
 
   if (window.addEventListener) {
-    window.addEventListener("thw:appearance-changed", function () {
-      if (paused() || !motionOk()) stop(); else start();
-    });
+    window.addEventListener("thw:appearance-changed", start);
   }
 
   function stop() {
@@ -280,7 +284,5 @@
   }, { passive: true });
 
   /* A tab nobody is looking at does not need a background drifting. */
-  document.addEventListener("visibilitychange", function () {
-    if (document.hidden) stop(); else start();
-  });
+  document.addEventListener("visibilitychange", start);
 })();
