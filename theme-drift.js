@@ -176,8 +176,33 @@
       else if (s.y > window.innerHeight + s.size) s.y = -s.size;
     }
 
-    /* No separation fence: each circle roams the whole viewport and wraps
-       to the opposite edge when it leaves, the way the moving palettes do. */
+    /* Equal-mass bounces: when two circles touch they exchange velocity
+       along the collision line and push clear, then keep roaming. */
+    for (var a = 0; a < state.length; a++) {
+      for (var c = a + 1; c < state.length; c++) {
+        var A = state[a], C = state[c];
+        var dx = C.x - A.x, dy = C.y - A.y;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d >= A.r + C.r || d < 0.001) continue;
+        var ux = dx / d, uy = dy / d;
+        var overlap = (A.r + C.r - d) / 2;
+        A.x -= ux * overlap; A.y -= uy * overlap;
+        C.x += ux * overlap; C.y += uy * overlap;
+        var rel = (C.vx - A.vx) * ux + (C.vy - A.vy) * uy;
+        if (rel < 0) {
+          A.vx += rel * ux; A.vy += rel * uy;
+          C.vx -= rel * ux; C.vy -= rel * uy;
+        }
+      }
+    }
+    /* A bounce can shove a circle past an edge; wrap it to the far side. */
+    for (var e = 0; e < state.length; e++) {
+      var S = state[e];
+      if (S.x < -S.size) S.x = window.innerWidth + S.size;
+      else if (S.x > window.innerWidth + S.size) S.x = -S.size;
+      if (S.y < -S.size) S.y = window.innerHeight + S.size;
+      else if (S.y > window.innerHeight + S.size) S.y = -S.size;
+    }
 
     /* Put them where they belong. */
     for (var w = 0; w < state.length; w++) {
