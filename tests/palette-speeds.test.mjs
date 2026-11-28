@@ -35,7 +35,7 @@ check("both speed selectors expose all four options", ["coverDrift", "coverPalet
 check("Palette Off stops every palette", /html\[data-cover-palette-speed="off"\] body::before\{animation:none!important\}/.test(css) && !/data-cover-drift="off"/.test(css));
 check("all palettes follow the palette speed", /body::before\{[^}]*animation:thwPatternDrift var\(--thw-palette-speed/.test(css) && ["blobs", "glow", "wash"].every((p) => css.includes(`[data-cover-palette="${p}"] body::before{animation:thw`)) && !css.includes("var(--thw-drift-speed"));
 
-check("wrap layer re-enters on the opposite side", /#thw-wrap-layer\{[^}]*background-repeat:repeat[^}]*animation:thwWrapSlide/.test(css) && /@keyframes thwWrapSlide\{from\{background-position:0 0\}to\{background-position:50vw 50vh\}/.test(css));
+check("wrap layer re-enters with no square seams", /#thw-wrap-layer\{[^}]*background-repeat:repeat[^}]*background-size:50vw 100%/.test(css) && /@keyframes thwWrapSlide\{from\{background-position:0 0\}to\{background-position:50vw 0\}/.test(css) && /First and last stops match/.test(readFileSync(join(ROOT, "palette-picker.js"), "utf8")));
 check("reduced motion still overrides", /html\[data-motion="still"\] body::before\{animation:none!important\}/.test(css));
 
 console.log(out.join("\n"));

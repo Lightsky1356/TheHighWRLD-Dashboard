@@ -166,7 +166,8 @@
       wrap.id = "thw-wrap-layer";
       document.body.appendChild(wrap);
     }
-    wrap.style.backgroundImage = "linear-gradient(135deg," + alpha(c[0], .22) + "," + alpha(c[1], .18) + "," + alpha(c[2], .22) + "," + alpha(c[3], .16) + ")";
+    /* First and last stops match, so the repeating band has no square seams. */
+    wrap.style.backgroundImage = "linear-gradient(90deg," + alpha(c[0], .20) + "," + alpha(c[1], .17) + "," + alpha(c[2], .17) + "," + alpha(c[3], .14) + "," + alpha(c[0], .20) + ")";
     paintCount();
     syncVisibleControls();
   }
