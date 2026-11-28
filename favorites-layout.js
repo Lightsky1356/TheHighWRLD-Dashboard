@@ -4,6 +4,7 @@
   "use strict";
 
   var KEY = "favLayout";
+  var seen = new WeakSet();
   var mode = "compact";
   try { mode = (window.wrldPlayerSettings && window.wrldPlayerSettings.get(KEY)) || "compact"; } catch (e) {}
 
@@ -25,8 +26,10 @@
       var card = g.closest(".cmp-sec-card") || g.parentElement;
       var btn = card && card.querySelector(".fav-layout-btn");
       if (btn) {
-        btn.textContent = mode === "compact" ? "Grid" : "Compact";
-        btn.setAttribute("aria-pressed", mode === "compact" ? "true" : "false");
+        var label = mode === "compact" ? "Grid" : "Compact";
+        var pressed = mode === "compact" ? "true" : "false";
+        if (btn.textContent !== label) btn.textContent = label;
+        if (btn.getAttribute("aria-pressed") !== pressed) btn.setAttribute("aria-pressed", pressed);
       }
     });
   }
@@ -38,7 +41,8 @@
       if (text.indexOf("favorites") < 0 && text.indexOf("Favorites") < 0 &&
           text.indexOf("favourites") < 0 && text.indexOf("Favourites") < 0) return;
       var card = title.closest(".cmp-sec-card, .pv2-card");
-      if (!card || card.querySelector(".fav-layout-btn")) return;
+      if (!card || seen.has(title) || card.querySelector(".fav-layout-btn")) return;
+      seen.add(title);
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "fav-layout-btn";
