@@ -868,15 +868,10 @@ TheHighWRLD.Dashboard-1.0.5.AppImage          A3410D57965F2C54A94AB4368EA843AD19
       <p class="set-note">Every list, the player and the Now Playing card follow it.</p>
     </div>
 
-    <div class="set-block set-block--divided">
-      <div class="set-legend">Language &amp; mode</div>
-      <div class="settings-grid-simple">
-        <!-- Language lives in the footer picker now; this select is the
-             single source of truth the app already saves and applies. -->
-        <select id="setLang" hidden aria-hidden="true"></select>
-        <div class="field"><label data-i18n="siteMode" for="setMode">Mode</label><select id="setMode" data-filled="1"><option value="dark">Dark Glass</option><option value="glass">Normal Glass</option><option value="flat">Dark</option><option value="light">Light</option></select></div>
-      </div>
-    </div>
+    <!-- Language and mode are owned by the app state now. These two selects
+         stay as the single source of truth the existing code saves/applies. -->
+    <select id="setLang" hidden aria-hidden="true"></select>
+    <select id="setMode" hidden aria-hidden="true"><option value="dark">Dark Glass</option><option value="glass">Normal Glass</option></select>
 
   </div>
 </section>

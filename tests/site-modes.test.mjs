@@ -10,7 +10,8 @@ const css = read("site-mode.css");
 const out = [];
 const check = (name, pass) => out.push(`${pass ? "PASS" : "FAIL"}  ${name}`);
 
-check("four modes are offered with the new labels", ['value="dark">Dark Glass', 'value="glass">Normal Glass', 'value="flat">Dark', 'value="light">Light'].every((o) => html.includes(o)));
+check("mode menu keeps only Dark Glass and Normal Glass", ['value="dark">Dark Glass', 'value="glass">Normal Glass'].every((o) => html.includes(o)) && !html.includes('value="flat"') && !html.includes('value="light"'));
+check("Language and mode block is removed from Appearance", !html.includes('Language &amp; mode') && !html.includes('id="setMode" data-filled') && /<select id="setMode" hidden/.test(html));
 check("Normal Glass keeps its frosted tokens", /html\[data-theme\]\[data-mode="glass"\]/.test(css) && /--ac-glass:rgba\(255,255,255,\.10\)/.test(css));
 check("Dark Glass is the theme's own surfaces", /mode="dark"/.test(css) && !/\[data-mode="dark"\]\{/.test(css));
 check("both full modes share one token set", ["flat", "light"].every((m) =>
