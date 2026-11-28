@@ -11,8 +11,9 @@ const sw = read("sw.js");
 const out = [];
 const check = (name, pass) => out.push(`${pass ? "PASS" : "FAIL"}  ${name}`);
 
-check("design system is loaded last and precached", /design-system\.css\?v=thw-v19/.test(html) && /'\.\/design-system\.css\?v=thw-v19'/.test(sw));
-check("profile favorites use a compact grid", /data-pnl="favorites"\] \.cmp-fav-grid/.test(css) && /minmax\(104px,1fr\)/.test(css) && /data-pnl="favorites"\] \.fav-tag,/.test(css));
+check("design system is loaded last and precached", /design-system\.css\?v=thw-v20/.test(html) && /'\.\/design-system\.css\?v=thw-v20'/.test(sw));
+check("favorites can switch between Grid and Compact", /favorites-layout\.js/.test(html) && /fav-layout-btn/.test(css) && /\.cmp-fav-grid\.fav-compact/.test(css) && /minmax\(104px,1fr\)/.test(css));
+check("favorite hearts and info buttons show on hover", css.includes(".playlist-item:hover .fav-btn,") && css.includes(".fav-card:hover .fav-info-btn,") && css.includes(".playlist-item .fav-btn.on{opacity:1}"));
 check("design tokens and focus states exist", /--ds-radius:16px/.test(css) && /:focus-visible\{outline:2px solid var\(--ds-accent\)/.test(css));
 check("surfaces and rows share one radius", /\.card,\.hub-panel,\.pv2-card,\.set-card,\.rank-shell/.test(css) && /\.playlist-item,\.wanted-item,\.sugg-card,\.lb-row/.test(css));
 check("motion and scrollbars are consistent", /prefers-reduced-motion/.test(css) && /::-webkit-scrollbar-thumb/.test(css));
