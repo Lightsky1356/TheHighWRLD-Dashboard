@@ -17,13 +17,14 @@
   "use strict";
 
   var ERA_ART = {
-    "GB&GR": "assets/settings-era/GBGR.webp",
+    "GB&GR": "AlbumArt/goodbye.jpg",
     "WOD": "assets/settings-era/WOD.webp",
-    "DRFL": "assets/settings-era/DRFL.webp",
-    "JW3": "AlbumArt/legends.jpg",
-    "POST": "assets/settings-era/POST.webp",
-    "999": "assets/settings-era/JW999.webp",
+    "DRFL": "AlbumArt/death.jpg",
+    /* The asset named JW999 is the JW3 (Legends Never Die) cover. */
+    "JW3": "assets/settings-era/JW999.webp",
     "JW999": "assets/settings-era/JW999.webp",
+    "POST": "AlbumArt/party.jpg",
+    "999": "AlbumArt/999.jpg",
     "OUT": "assets/settings-era/OUT.webp",
     "AF": "assets/settings-era/AFF.webp",
     "ND": "assets/settings-era/ND.webp",
@@ -38,7 +39,7 @@
     var tag = String(track.tag || track.title || "").replace(/\[?\d+m/g, "");
     var m = tag.match(/\((999|JW999|GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|HIH|JUTE)\)(?:\s*[)\]]?)*\s*$/i);
     if (!m) m = tag.match(/\((999|JW999|GB&GR|WOD|DRFL|JW3|POST|OUT|AF|ND|BDM|HIH|JUTE)\)/i);
-    return m ? m[1].toUpperCase().replace(/^JW999$/, "999") : null;
+    return m ? m[1].toUpperCase().replace(/^JW999$/, "JW3") : null;
   }
 
   function pref() {

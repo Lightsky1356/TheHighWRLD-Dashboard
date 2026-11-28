@@ -74,6 +74,37 @@
     box.innerHTML = use.map(function (x) { return '<span style="background:' + x + '"></span>'; }).join("");
   }
 
+  function speedLabel() {
+    var d = "normal", p = "normal";
+    try {
+      d = window.wrldPlayerSettings.get("coverDrift") || "normal";
+      p = window.wrldPlayerSettings.get("coverPaletteSpeed") || "normal";
+    } catch (e) {}
+    return { drift: d, palette: p };
+  }
+
+  function syncVisibleControls() {
+    var s = speedLabel();
+    var db = document.getElementById("driftBadge");
+    var pb = document.getElementById("paletteSpeedBadge");
+    if (db) db.textContent = s.drift;
+    if (pb) pb.textContent = s.palette;
+    var label = document.getElementById("paletteStageLabel");
+    if (label) {
+      label.textContent = current.toUpperCase() + " · " +
+        (current === "default" || current === "blobs" || current === "glow" || current === "wash"
+          ? "Drift " + s.drift : "Palette " + s.palette);
+    }
+    if (root) Array.prototype.forEach.call(root.children, function (b) {
+      var meta = b.querySelector(".palette-meta");
+      if (!meta) return;
+      var id = b.getAttribute("data-palette");
+      var isPaletteMotion = ["wave", "liquid", "ripple", "prism", "sunrise"].indexOf(id) >= 0;
+      var blob = id === "blobs" ? "BLOBS · " : (isPaletteMotion ? "PALETTE · " : "DRIFT · ");
+      meta.textContent = blob + (isPaletteMotion ? s.palette : s.drift);
+    });
+  }
+
   function paint() {
     if (!root) return;
     var c = colors();
@@ -81,7 +112,10 @@
       var pv = b.querySelector(".palette-preview");
       if (pv) pv.style.background = preview(b.getAttribute("data-palette"), c);
     });
+    var stage = document.getElementById("paletteStage");
+    if (stage) stage.style.background = preview(current, c);
     paintCount();
+    syncVisibleControls();
   }
 
   function repaint() {
@@ -114,7 +148,8 @@
       return '<button type="button" class="palette-btn" data-palette="' + p[0] + '" aria-pressed="false">' +
         '<span class="palette-preview" aria-hidden="true"></span>' +
         '<span class="palette-name">' + p[1] + '</span>' +
-        '<span class="palette-sub">' + p[2] + '</span></button>';
+        '<span class="palette-sub">' + p[2] + '</span>' +
+        '<span class="palette-meta"></span></button>';
     }).join("");
     root.addEventListener("click", function (e) {
       var b = e.target.closest ? e.target.closest("[data-palette]") : null;
@@ -122,6 +157,10 @@
     });
     var countSel = document.getElementById("coverColorCount");
     if (countSel) countSel.addEventListener("change", paintCount);
+    ["coverDrift", "coverPaletteSpeed"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener("change", function () { setTimeout(syncVisibleControls, 0); });
+    });
     try { current = window.wrldPlayerSettings.get("coverPalette") || "default"; } catch (e) {}
     paint();
     mark();

@@ -2,7 +2,7 @@
  *
  * WHY THIS EXISTS
  * Opening the site asked for a dozen separate things: the announcements,
- * the drops, the trending tracks, the submission rules, the sign-in
+ * the trending tracks, the submission rules, the sign-in
  * configuration, the session, the account, the notifications, the recent
  * plays, the notification settings, the push state and the presence.
  *
@@ -15,7 +15,7 @@
  * database is read once rather than once per thing.
  *
  * WHAT IS IN IT
- * The parts that are the same for everybody - the announcements, the drops,
+ * The parts that are the same for everybody - the announcements,
  * the trending tracks, the submission rules, the sign-in configuration -
  * are answered from a copy that is remembered for a minute, so a hundred
  * visitors in a minute cost one read rather than a hundred.
@@ -46,7 +46,7 @@ function json(data, status = 200) {
 
 /* The part that is the same for everybody.
  *
- * It is remembered for a minute: the announcements, the drops and the
+ * It is remembered for a minute: the announcements and the
  * trending tracks change a few times a day, and a hundred visitors in a
  * minute should cost one read rather than a hundred. */
 let shared = null;
@@ -83,30 +83,6 @@ async function sharedParts(env) {
       read: true,
       ts: r.created_at || "",
     }));
-  } catch (_) {}
-
-  /* The drops, in the shape the client reads them in: the ones that
-     are live now, the ones coming up, and the ones that have been. */
-  let drops = { live: [], upcoming: [], past: [] };
-  try {
-    const rows = await db.prepare("SELECT * FROM drops ORDER BY starts_at DESC LIMIT 25").all();
-    const now = Date.now();
-    const live = [], upcoming = [], past = [];
-    for (const d of rows.results || []) {
-      const start = Date.parse(d.starts_at || "");
-      const end = Date.parse(d.ends_at || "");
-      if (Number.isFinite(start) && Number.isFinite(end)) {
-        if (now >= start && now < end) live.push(d);
-        else if (now < start) upcoming.push(d);
-        else past.push(d);
-      } else {
-        upcoming.push(d);
-      }
-    }
-    /* The "ok" is what the client looks for before it draws anything, and
-       the drops endpoint answers with it - so the bootstrap does too.
-       Without it the whole Drops & Events section was thrown away. */
-    drops = { ok: true, live, upcoming, past };
   } catch (_) {}
 
   /* The trending tracks, in the shape the trending endpoint answers in.
@@ -148,7 +124,6 @@ async function sharedParts(env) {
      same way whichever it got. */
   shared = {
     announcements,
-    drops,
     trending: { ok: true, days: 7, trending, total_listens: totalListens },
     totalListens,
   };
@@ -260,7 +235,6 @@ export async function onRequestGet(context) {
       ok: true,
       // the same for everybody
       announcements: sharedPartsResult.announcements,
-      drops: sharedPartsResult.drops,
       trending: sharedPartsResult.trending,
       totalListens: sharedPartsResult.totalListens,
       submissionRules: publicRuleSet(),

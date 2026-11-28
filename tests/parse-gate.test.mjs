@@ -2312,31 +2312,17 @@ function safeDecode4(v) {
 }
 
 /* ---------------------------------------------------------------------------
-   The bootstrap answers in the same shapes as the endpoints it stands in
-
-   The bootstrap was asked for the answers the endpoints give, so that one
-   request could carry several of them. But the shapes drifted: the
-   bootstrap handed over a bare list of trending rows and a drops object
-   without its "ok", and the clients - which look for that "ok" before they
-   draw anything - threw both sections away.
-
-   So the trending strip and the Drops & Events section were simply not on
-   the page, and nothing said why. The gate below is the shape check, and
-   the clients were made to read either shape rather than throw the section
-   away over it. */
+   The bootstrap answers in the same shapes as the endpoints it stands in.
+   The trending strip used to vanish when the bootstrap handed over a bare
+   list instead of the endpoint's { ok, ... } shape, so this gate keeps it. */
 {
   const bootstrap = readFileSync(join(ROOT, "functions/api/bootstrap.js"), "utf8");
   const trending = readFileSync(join(ROOT, "trending.js"), "utf8");
-  const drops = readFileSync(join(ROOT, "drops.js"), "utf8");
 
   if (!/trending: \{ ok: true, days: 7, trending, total_listens: totalListens \}/.test(bootstrap)) {
     structureFail("the bootstrap does not answer with the trending endpoint's shape");
-  } else if (!/drops = \{ ok: true, live, upcoming, past \}/.test(bootstrap)) {
-    structureFail("the bootstrap does not answer with the drops endpoint's shape");
   } else if (!/Array\.isArray\(d\)/.test(trending)) {
     structureFail("the trending section is thrown away over a shape");
-  } else if (!/d\.ok === false/.test(drops)) {
-    structureFail("the drops section is thrown away over a shape");
   } else {
     structureOk("the bootstrap answers in the shapes the endpoints answer in");
   }

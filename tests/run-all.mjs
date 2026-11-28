@@ -55,6 +55,8 @@ const GROUPS = [
   { name: "footer-lang", file: "./footer-lang.test.mjs", needsServer: false },
   { name: "download-link", file: "./download-link.test.mjs", needsServer: false },
   { name: "cover-gradient-sheets", file: "./cover-gradient-sheets.test.mjs", needsServer: false },
+  { name: "drops-removed", file: "./drops-removed.test.mjs", needsServer: false },
+  { name: "era-art-colors", file: "./era-art-colors.test.mjs", needsServer: false },
   { name: "social-modal", file: "./social-modal.test.mjs", needsServer: false },
   { name: "signin-window", file: "./signin-window.test.mjs", needsServer: false },
   { name: "profile-routing", file: "./profile-routing.test.mjs", needsServer: false },

@@ -395,7 +395,7 @@
     function scopeFilter(d) {
       var scope = _scope || "all";
       if (scope === "all" || !d) return d;
-      var out = { tracks: [], users: [], playlists: [], wanted: [], suggestions: [], community: [], gallery: [], drops: [], leaks: [], releases: [], posts: [], results: d.results };
+      var out = { tracks: [], users: [], playlists: [], wanted: [], suggestions: [], community: [], gallery: [], leaks: [], releases: [], posts: [], results: d.results };
       if (scope === "tracks") out.tracks = d.tracks || [];
       else if (d[scope]) out[scope] = d[scope];
       if (scope === "community") { out.leaks = d.leaks || []; out.releases = d.releases || []; out.posts = d.posts || []; }
@@ -596,18 +596,6 @@
         });
         h += '</div>';
       }
-      var drps = d.drops || [];
-      if ((_scope === "all" || !_scope) && drps.length) {
-        any = true;
-        h += '<div class="gs-group"><div class="gs-group-title">' + esc(_tt("gsDrops", "Drops & Events")) + ' <span class="gs-count">' + drps.length + '</span></div>';
-        drps.slice(0, 5).forEach(function (dp) {
-          h += '<button type="button" class="gs-row" data-gs-drop="' + (dp.id || "") + '">' +
-            '<span class="gs-art dr"><i class="fas fa-gift"></i></span>' +
-            '<span class="gs-row-txt"><b>' + esc(dp.title || "Drop") + '</b><span class="gs-row-sub">' + esc(dp.track_title || dp.description || "") + '</span></span><i class="fas fa-angle-right gs-row-go"></i></button>';
-        });
-        h += '</div>';
-      }
-
       if (!any) {
         h = '<p class="gs-empty">' + esc(_tt("gsNone", "No results for \u201c") + q + esc(_tt("gsNoneEnd", "\u201d"))) + '</p>';
       } else {
@@ -728,23 +716,6 @@
         if (window.switchAppPage) { try { window.switchAppPage("gallery"); } catch (err) {} }
         setTimeout(function () {
           try { if (window.openGalleryItem) window.openGalleryItem(galId); } catch (err2) {}
-        }, 450);
-        return;
-      }
-      /* drop hit: open home and flash the drop card */
-      var dropId = row.getAttribute("data-gs-drop");
-      if (dropId) {
-        close();
-        if (window.switchAppPage) { try { window.switchAppPage("home"); } catch (err) {} }
-        setTimeout(function () {
-          try {
-            var card = document.querySelector('[data-drop-card="' + dropId + '"]');
-            if (card) {
-              card.scrollIntoView({ behavior: "smooth", block: "center" });
-              card.style.outline = "2px solid #f0abfc";
-              setTimeout(function () { card.style.outline = ""; }, 2200);
-            }
-          } catch (err2) {}
         }, 450);
         return;
       }

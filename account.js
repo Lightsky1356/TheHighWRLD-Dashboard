@@ -650,16 +650,6 @@ function compactProfileViewHtml(d) {
       if (window.openSharedPlaylistById) { try { window.openSharedPlaylistById(Number(n.post_id)); } catch (e) {} }
       return;
     }
-    if (n.type === "drop") {
-      if (window.switchAppPage) switchAppPage("home");
-      setTimeout(function () {
-        try {
-          var sec = document.getElementById("drops-sec");
-          if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
-        } catch (e) {}
-      }, 400);
-      return;
-    }
     if (n.post_id) {
       if (window.switchAppPage) switchAppPage("community");
       if (window.openCommunityPost) { try { window.openCommunityPost(n.post_id, n.reply_id || null); } catch (e) {} }
@@ -1730,7 +1720,7 @@ function compactProfileViewHtml(d) {
     ["easter", "Easter"], ["july4", "Fourth of July"], ["halloween", "Halloween"], ["thanksgiving", "Thanksgiving"], ["christmas", "Christmas"],
     /* The era themes, named the way their era names itself. */
     ["era-jute", "JUICED UP THE EP"], ["era-aff", "affliction"], ["era-hih", "Heartbroken In Hollywood 9 9 9"],
-    ["era-jw999", "JuiceWRLD 9 9 9"], ["era-bdm", "BINGEDRINKINGMUSIC"], ["era-nd", "NOTHING'S DIFFERENT </3"],
+    ["era-jw999", "JW3 (Legends Never Die)"], ["era-bdm", "BINGEDRINKINGMUSIC"], ["era-nd", "NOTHING'S DIFFERENT </3"],
     ["era-gbgr", "Goodbye & Good Riddance"], ["era-wod", "WRLD ON DRUGS"], ["era-drfl", "Death Race For Love"],
     ["era-out", "Outsiders"], ["era-post", "Posthumous"]
   ];

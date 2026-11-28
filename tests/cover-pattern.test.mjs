@@ -23,6 +23,7 @@ check("two clearly different speed ranges", /"60s" : drift === "fast" \? "6s"/.t
 check("drift and palette speeds are user controlled", ['id="coverDrift"', 'id="coverPaletteSpeed"'].every((id) => html.includes(id)) && /settingsSet\("coverDrift", this\.value\)/.test(account) && /settingsSet\("coverPaletteSpeed", this\.value\)/.test(account));
 check("every palette animation follows a speed", /thwPatternDrift var\(--thw-drift-speed/.test(css) && ["wave", "liquid", "ripple", "prism", "sunrise"].every((p) => css.includes(`data-cover-palette="${p}"] body::before`)) && /--thw-palette-speed/.test(css));
 check("tapping a preview saves and repaints", /wrldPlayerSettings\.set\("coverPalette", id\)/.test(picker) && /function repaint/.test(picker));
+check("blobs, drift and speeds are visible on the palettes", /id="paletteStage"/.test(html) && /stage-blob/.test(html) && /id="driftBadge"/.test(html) && /id="paletteSpeedBadge"/.test(html) && /palette-meta/.test(picker) && /syncVisibleControls/.test(picker) && /\.palette-stage\{/.test(design) && /\.speed-badge\{/.test(design));
 check("number picker has a live preview", /id="colorCountPreview"/.test(html) && /function paintCount/.test(picker) && /\.count-preview span\{/.test(design));
 check("nothing playing falls back to the site theme", /else \{ _thwClearAmbient\(\); \}/.test(script) && /if \(!cover\) \{[\s\S]{0,120}thwClearAmbient/.test(read("cover-pref.js")));
 check("a playing track survives palette changes", /var list = \(typeof trackList !== "undefined" && trackList\)/.test(script));

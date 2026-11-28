@@ -154,7 +154,7 @@ export async function onRequestGet(context) {
     const cap = Math.max(1, Math.min(LIMIT_CAP, Number(url.searchParams.get("limit")) || LIMIT));
     const prefix = like(q) + "%";
 
-    const [users, playlists, wantedPosts, suggestions, communityPosts, trackRows, galleryRows, dropRows] = await Promise.all([
+    const [users, playlists, wantedPosts, suggestions, communityPosts, trackRows, galleryRows] = await Promise.all([
       // --- users: linked Discord accounts (+ site name fallback) ---
       sql(
         `SELECT l.site_uid, l.display_name, l.avatar, p.name AS site_name, u.name AS email_name,
@@ -226,15 +226,6 @@ export async function onRequestGet(context) {
       )
         .bind(...wordParams(["title", "caption"], ws), q, prefix, cap)
         .all(),
-      // --- drops & events ---
-      sql(
-        `SELECT id, title, description, track_title, starts_at
-         FROM drops
-         WHERE ${anyColWordLike(["title", "description"], ws)}
-         ORDER BY ${rankLead("title")}, id DESC LIMIT ?`
-      )
-        .bind(...wordParams(["title", "description"], ws), q, prefix, cap)
-        .all(),
     ]);
 
     const results = {
@@ -299,13 +290,6 @@ export async function onRequestGet(context) {
         caption: (r.caption || "").slice(0, 120),
         user_name: r.user_name || "",
       })),
-      drops: (dropRows.results || []).map((r) => ({
-        id: r.id,
-        title: r.title || "",
-        description: (r.description || "").slice(0, 120),
-        track_title: r.track_title || "",
-        starts_at: r.starts_at || "",
-      })),
     };
 
     // Block/mute filtering: signed-in users never see content from accounts
@@ -351,7 +335,7 @@ export async function onRequestGet(context) {
     // a logging failure must never break the search response itself).
     const totalHits = results.users.length + results.playlists.length +
       results.wanted.length + results.suggestions.length + results.community.length +
-      (results.gallery || []).length + (results.drops || []).length;
+      (results.gallery || []).length;
     try {
       const logP = db.prepare(
         "INSERT INTO search_logs (q, results) VALUES (?, ?)"
@@ -378,7 +362,6 @@ export async function onRequestGet(context) {
       suggestions: results.suggestions,
       community: results.community,
       gallery: results.gallery,
-      drops: results.drops,
     });
   } catch (err) {
     return json({ error: String(err && err.message || err) }, 500);
