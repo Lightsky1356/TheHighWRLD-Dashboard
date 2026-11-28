@@ -167,7 +167,7 @@
       document.body.appendChild(wrap);
     }
     /* First and last stops match, so the repeating band has no square seams. */
-    wrap.style.backgroundImage = "linear-gradient(90deg," + alpha(c[0], .20) + "," + alpha(c[1], .17) + "," + alpha(c[2], .17) + "," + alpha(c[3], .14) + "," + alpha(c[0], .20) + ")";
+    wrap.style.backgroundImage = "linear-gradient(90deg," + alpha(c[0], .06) + "," + alpha(c[1], .05) + "," + alpha(c[2], .05) + "," + alpha(c[3], .04) + "," + alpha(c[0], .06) + ")";
     paintCount();
     syncVisibleControls();
   }
