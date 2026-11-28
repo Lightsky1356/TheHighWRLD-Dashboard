@@ -160,14 +160,6 @@
     });
     var stage = document.getElementById("paletteStage");
     if (stage) stage.style.background = preview(current, c);
-    var wrap = document.getElementById("thw-wrap-layer");
-    if (!wrap) {
-      wrap = document.createElement("div");
-      wrap.id = "thw-wrap-layer";
-      document.body.appendChild(wrap);
-    }
-    /* First and last stops match, so the repeating band has no square seams. */
-    wrap.style.backgroundImage = "linear-gradient(90deg," + alpha(c[0], .06) + "," + alpha(c[1], .05) + "," + alpha(c[2], .05) + "," + alpha(c[3], .04) + "," + alpha(c[0], .06) + ")";
     paintCount();
     syncVisibleControls();
   }

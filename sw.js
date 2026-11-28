@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v634';
+const VERSION = 'thw-v635';
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -42,10 +42,10 @@ const PRECACHE = [
   './account.js?v=thw-v119',
   './stats-page.js?v=thw-v1',
   './effects.js?v=thw-v2',
-  './theme-drift.js?v=thw-v10',
+  './theme-drift.js?v=thw-v11',
   './i18n.js?v=11',
-  './script.js?v=thw-v132',
-  './palette-picker.js?v=thw-v8',
+  './script.js?v=thw-v133',
+  './palette-picker.js?v=thw-v9',
   './suggestions.js?v=thw-v3',
   './submission-rules-ui.js?v=thw-v2',
   './auth.js?v=thw-v19',
@@ -72,13 +72,13 @@ const PRECACHE = [
   './all.min.css?v=thw-v2',
   './account.css?v=thw-v31',
   './account-shared.css?v=thw-v6',
-  './player-settings.css?v=thw-v234',
+  './player-settings.css?v=thw-v235',
   './style.css?v=thw-v55',
   './site-mode.css?v=thw-v8',
   './mobile.css?v=thw-v2',
   './desktop-polish.css?v=thw-v3',
   './mobile-overhaul.css?v=thw-v7',
-  './design-system.css?v=thw-v14',
+  './design-system.css?v=thw-v15',
   './tailwind.css?v=thw-v2',
   './themes.css?v=thw-v24',
   './css2.css?v=thw-v2',

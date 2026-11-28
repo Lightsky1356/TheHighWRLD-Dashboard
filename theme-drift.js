@@ -48,7 +48,7 @@
 
   /* How fast each circle drifts, in pixels a second. Faster than before
      so the movement is clearly visible instead of a slow creep. */
-  var SPEEDS = [22, 28, 18, 26, 30, 24];
+  var SPEEDS = [64, 78, 52, 70, 86, 60];
 
   var state = blobs.map(function (el, i) {
     var size = el.offsetWidth || 300;
@@ -168,48 +168,8 @@
       else if (s.y > window.innerHeight + s.size) s.y = -s.size;
     }
 
-    /* Keep them apart. A few rounds, because moving one can push it into
-       another. */
-    for (var pass = 0; pass < 5; pass++) {
-      for (var a = 0; a < state.length; a++) {
-        for (var c = a + 1; c < state.length; c++) {
-          var A = state[a];
-          var C = state[c];
-          var dx = C.x - A.x;
-          var dy = C.y - A.y;
-          var d = Math.sqrt(dx * dx + dy * dy);
-          var need = A.r + C.r;
-          if (d >= need || d < 0.001) {
-            /* Dead on top of each other: push them apart in some
-               direction rather than dividing by zero. */
-            if (d < 0.001) { dx = 1; dy = 0; d = 1; }
-            continue;
-          }
-          var push = (need - d) / 2;
-          var ux = dx / d;
-          var uy = dy / d;
-          A.x -= ux * push;
-          A.y -= uy * push;
-          C.x += ux * push;
-          C.y += uy * push;
-          /* The nudge is taken off the heading, so the circles do not
-             fight the push and end up jittering. */
-          A.vx -= ux * push * 4;
-          A.vy -= uy * push * 4;
-          C.vx += ux * push * 4;
-          C.vy += uy * push * 4;
-        }
-      }
-      /* Separation can shove a circle past an edge; the same wrap rule
-         applies to a shove as to a drift. */
-      for (var e = 0; e < state.length; e++) {
-        var S = state[e];
-        if (S.x < -S.size) S.x = window.innerWidth + S.size;
-        else if (S.x > window.innerWidth + S.size) S.x = -S.size;
-        if (S.y < -S.size) S.y = window.innerHeight + S.size;
-        else if (S.y > window.innerHeight + S.size) S.y = -S.size;
-      }
-    }
+    /* No separation fence: each circle roams the whole viewport and wraps
+       to the opposite edge when it leaves, the way the moving palettes do. */
 
     /* Put them where they belong. */
     for (var w = 0; w < state.length; w++) {

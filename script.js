@@ -454,6 +454,7 @@ function _thwClearAmbient() {
     for (var i = 0; i < props.length; i++) H.style.removeProperty(props[i]);
     H.style.removeProperty("--thw-drift-speed");
     H.style.removeProperty("--thw-palette-speed");
+    ["--thw-rx1", "--thw-ry1", "--thw-rx2", "--thw-ry2", "--thw-rs1", "--thw-rs2", "--thw-rh"].forEach(function (k) { H.style.removeProperty(k); });
     H.removeAttribute("data-cover-palette");
     H.removeAttribute("data-cover-drift");
     H.removeAttribute("data-cover-palette-speed");
@@ -488,6 +489,15 @@ window.thwPaintAmbient = function (url) {
     var pspeedValue = pspeed === "off" ? "0s" : pspeed === "slow" ? "16s" : pspeed === "fast" ? "1s" : "4s";
     H.setAttribute("data-cover-palette-speed", pspeed);
     H.style.setProperty("--thw-palette-speed", pspeedValue);
+    /* Random drift endpoints each repaint, the way the blobs pick a heading. */
+    var rnd = function (a, b) { return Math.round(a + Math.random() * (b - a)); };
+    H.style.setProperty("--thw-rx1", rnd(-13, -8) + "%");
+    H.style.setProperty("--thw-ry1", rnd(4, 10) + "%");
+    H.style.setProperty("--thw-rx2", rnd(8, 13) + "%");
+    H.style.setProperty("--thw-ry2", rnd(-10, -4) + "%");
+    H.style.setProperty("--thw-rs1", (1.4 + Math.random() * .08).toFixed(2));
+    H.style.setProperty("--thw-rs2", (1.45 + Math.random() * .2).toFixed(2));
+    H.style.setProperty("--thw-rh", Math.round(18 + Math.random() * 44) + "deg");
     H.style.setProperty("--th-accent", first);
     H.style.setProperty("--th-accent2", last);
     H.style.setProperty("--th-glow", _thwHslRgba(first, .22));

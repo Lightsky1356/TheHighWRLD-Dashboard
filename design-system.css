@@ -186,7 +186,6 @@ input[type="text"]:focus,input[type="search"]:focus,textarea:focus,select:focus{
 .foot-lang-menu button[aria-selected="true"]{background:rgba(167,139,250,.20);color:#fff}
 
 /* Desktop app: fewer composited blob layers, and no work while in the tray. */
-html.is-desktop .th-blob:nth-child(n+4){display:none!important}
 html.exe-hidden *,html.exe-hidden *::before,html.exe-hidden *::after{animation-play-state:paused!important}
 
 .palette-stage{position:relative;height:76px;margin:8px 0 10px;border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden;background:#151020}
