@@ -25,6 +25,7 @@ check("one application pass covers surfaces, borders, text and shadows",
     css.includes(`html[data-mode="${m}"] :is(.app-page,.panel,.card,.hub-panel,.set-card,.info-panel,.foot-inner,.thw-sheet-panel,.nav-more-menu,.acct-menu,.palette-stage,.sheet-palettes,nav,#nav-pill,#app-breadcrumb,.set-guest-banner,.wanted-item,.playlist-item,.sugg-card,.lb-row){background-color:var(--mode-${m}-surface)!important;border-color:var(--mode-${m}-border)!important;box-shadow:var(--mode-${m}-shadow)!important}`)));
 check("no blur or glow survives in either full mode", /backdrop-filter:none!important/.test(css) && /body::before\{background:var\(--th-bg\)!important;filter:none!important;animation:none!important\}/.test(css) && /\.th-blob\{opacity:\.18!important;filter:none!important\}/.test(css));
 check("high-specificity card rules obey the mode", ["flat", "light"].every((m) => css.includes(`--thw-card-bg:var(--mode-${m}-surface)`) && css.includes(`--thw-panel-bg:var(--mode-${m}-surface)`)) && readFileSync(join(ROOT, "player-settings.css"), "utf8").includes("var(--thw-card-bg,rgba(7,9,20,.92))") && readFileSync(join(ROOT, "account.css"), "utf8").includes("var(--thw-panel-bg,linear-gradient("));
+check("last hard-coded light leftovers are fixed", ["#nightLightToggle", "#app-breadcrumb", ".settings-section", ".tile-swatch--auto"].every((s) => css.includes(`html[data-mode="light"] ${s}`)));
 
 console.log(out.join("\n"));
 if (out.some((l) => l.startsWith("FAIL"))) process.exit(1);

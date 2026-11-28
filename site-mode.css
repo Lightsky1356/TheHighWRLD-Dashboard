@@ -79,3 +79,11 @@ html[data-mode="light"] :is(.app-page,.panel,.card,.hub-panel,.set-card,.info-pa
 html[data-mode="flat"] :is(.pill,.badge,.chip,.tag,.thw-theme-chip,.set-note,.foot-link,.toggle-row){background-color:var(--mode-flat-surface2)!important}
 html[data-mode="light"] :is(.pill,.badge,.chip,.tag,.thw-theme-chip,.set-note,.foot-link,.toggle-row){background-color:var(--mode-light-surface2)!important}
 html[data-mode="flat"] .th-blob,html[data-mode="light"] .th-blob{opacity:.18!important;filter:none!important}
+
+/* The last four elements that kept their own hard-coded colours. */
+html[data-mode="light"] #nightLightToggle{background:#ffffff!important;color:#1c1c30!important;border-color:rgba(20,20,45,.16)!important}
+html[data-mode="light"] #app-breadcrumb,
+html[data-mode="light"] #app-breadcrumb *{color:#1c1c30!important}
+html[data-mode="light"] .settings-section,
+html[data-mode="light"] #account-page .section{background-color:#ffffff!important;border-color:rgba(20,20,45,.12)!important}
+html[data-mode="light"] .tile-swatch--auto{background:linear-gradient(135deg,#c4b5fd,#99f6e4)!important;border-color:rgba(20,20,45,.16)!important}
