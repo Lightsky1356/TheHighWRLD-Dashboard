@@ -74,3 +74,26 @@ html[data-mode="light"] nav,
 html[data-mode="light"] #nav-pill,
 html[data-mode="light"] #app-breadcrumb,
 html[data-mode="light"] .set-guest-banner{background:rgba(255,255,255,.84)!important;color:#17172b!important;border-color:rgba(20,20,45,.12)!important}
+
+/* DARK: no blur anywhere, opaque surfaces, and the same treatment on every
+   panel, row and sheet - not just the token layer. */
+html[data-mode="flat"] body::before{filter:none!important;animation:none!important}
+html[data-mode="flat"] *,
+html[data-mode="flat"] *::before,
+html[data-mode="flat"] *::after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html[data-mode="flat"] .th-blob,
+html[data-mode="flat"] body.blur-active nav,
+html[data-mode="flat"] body.blur-active #scrollTopBtn{filter:none!important}
+html[data-mode="flat"] :is(.panel,.card,.hub-panel,.set-card,.info-panel,.thw-sheet-panel,.nav-more-menu,.acct-menu,.palette-stage,.sheet-palettes){background:#11111c!important;border-color:rgba(255,255,255,.1)!important}
+
+/* LIGHT: one consistent pale surface and one dark ink colour across the
+   whole site. The earlier pass only touched tokens, leaving dark cards and
+   white copy behind, which is why the page looked half-converted. */
+html[data-mode="light"] body,
+html[data-mode="light"] html{background:#f6f7fd!important}
+html[data-mode="light"] body::before{background:linear-gradient(180deg,#f8f9fe 0%,#eef0fa 60%,#e7eaf6 100%)!important;filter:none!important;animation:none!important}
+html[data-mode="light"] :is(.app-page,section,.hero-bg,.foot,.foot-inner,.panel,.card,.hub-panel,.set-card,.info-panel,.thw-sheet-panel,.nav-more-menu,.acct-menu,.palette-stage,.sheet-palettes){background:transparent!important}
+html[data-mode="light"] :is(.panel,.card,.hub-panel,.set-card,.info-panel,.thw-sheet-panel,.nav-more-menu,.acct-menu,.palette-stage,.sheet-palettes,.foot-inner,.nav,.nav-pill,#app-breadcrumb,#nav-pill,.set-guest-banner,.hub-panel,.wanted-item,.playlist-item,.sugg-card,.lb-row){background:#ffffff!important;border-color:rgba(20,20,45,.12)!important;box-shadow:0 12px 34px rgba(30,30,70,.10)!important}
+html[data-mode="light"] :is(p,span,h1,h2,h3,h4,h5,h6,li,label,b,small,em,strong,div,button,a,input,select,textarea){color:#1c1c30!important}
+html[data-mode="light"] :is(.brand-text,.vault-text,.text-white,[class*="text-gray-"]){color:#3a3a55!important}
+html[data-mode="light"] :is(.th-blob){opacity:.35!important}
