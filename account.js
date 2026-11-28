@@ -3778,6 +3778,14 @@ window.profileSectionShown = function () {
     }
 
     /* One palette picker owns how the playing cover becomes the theme. */
+    var blobsToggle = document.getElementById("blobsToggle");
+    if (blobsToggle) {
+      blobsToggle.checked = settingsGet("blobsEnabled", true) !== false;
+      blobsToggle.addEventListener("change", function () {
+        settingsSet("blobsEnabled", this.checked);
+        document.documentElement.setAttribute("data-blobs", this.checked ? "on" : "off");
+      });
+    }
     function repaintAuto() {
       try {
         if (window.thwPaintAmbientSync) window.thwPaintAmbientSync(document.documentElement.getAttribute("data-theme") || "default");

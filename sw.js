@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'thw-v637';
+const VERSION = 'thw-v638';
 
 /* The shell cache is NOT versioned, and that stays deliberate (the site hit
  * the plan's daily request limit once already; precaching the whole shell on
@@ -39,12 +39,12 @@ const PRECACHE = [
   './tracks.js?v=thw-v21',
   './browser-id3-writer.js?v=thw-v3',
   './bootstrap-client.js?v=thw-v3',
-  './account.js?v=thw-v119',
+  './account.js?v=thw-v120',
   './stats-page.js?v=thw-v1',
   './effects.js?v=thw-v2',
-  './theme-drift.js?v=thw-v13',
+  './theme-drift.js?v=thw-v14',
   './i18n.js?v=11',
-  './script.js?v=thw-v133',
+  './script.js?v=thw-v134',
   './palette-picker.js?v=thw-v9',
   './suggestions.js?v=thw-v3',
   './submission-rules-ui.js?v=thw-v2',
@@ -78,7 +78,7 @@ const PRECACHE = [
   './mobile.css?v=thw-v2',
   './desktop-polish.css?v=thw-v3',
   './mobile-overhaul.css?v=thw-v7',
-  './design-system.css?v=thw-v16',
+  './design-system.css?v=thw-v17',
   './tailwind.css?v=thw-v2',
   './themes.css?v=thw-v24',
   './css2.css?v=thw-v2',

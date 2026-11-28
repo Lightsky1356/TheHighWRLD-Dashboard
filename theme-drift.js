@@ -35,6 +35,7 @@
 
   function motionOk() {
     try {
+      if (document.documentElement.getAttribute("data-blobs") === "off") return false;
       if (driftFactor() === 0) return false;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
       /* Moving colours off in Settings > Appearance: the circles still paint,

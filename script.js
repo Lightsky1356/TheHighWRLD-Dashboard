@@ -517,8 +517,8 @@ window.thwPaintAmbient = function (url) {
         var x = n === 1 ? 50 : Math.round(8 + (g * 84) / (n - 1));
         /* Wave flows high, low, high, low across the page. Liquid pools sit
            closer together and wider, so neighbouring shades melt together. */
-        var y = palette === "wave" ? (g % 2 ? 78 : -14) : (g % 2 ? 24 : -12);
-        var rx = palette === "liquid" ? 1400 : 1100, ry = palette === "liquid" ? 900 : 760;
+        var y = palette === "wave" ? (g % 2 ? 78 : -18) : (g % 2 ? 70 : -20);
+        var rx = palette === "liquid" ? 1800 : 1500, ry = palette === "liquid" ? 1200 : 1000;
         layers.push("radial-gradient(" + rx + "px " + ry + "px at " + x + "% " + y + "%," + _thwHslRgba(themeCols[g], .42) + ",transparent 62%)");
         sizes.push("auto");
       }

@@ -40,6 +40,8 @@ check("palette drift endpoints are random", ["--thw-rx1", "--thw-ry1", "--thw-rx
 check("blobs drift even on an idle page", !readFileSync(join(ROOT, "theme-drift.js"), "utf8").includes('contains("is-idle")'));
 check("Drift Speed controls blob speed", /driftFactor\(\)/.test(readFileSync(join(ROOT, "theme-drift.js"), "utf8")) && /get\("coverDrift"\)/.test(readFileSync(join(ROOT, "theme-drift.js"), "utf8")) && /s\.speed \* driftFactor\(\)/.test(readFileSync(join(ROOT, "theme-drift.js"), "utf8")));
 check("blobs are clearly visible", /\.th-blob\{opacity:\.9!important/.test(readFileSync(join(ROOT, "design-system.css"), "utf8")));
+check("blob toggle hides and saves them", /id="blobsToggle"/.test(html) && /html\[data-blobs="off"\] \.th-blob\{display:none!important/.test(readFileSync(join(ROOT, "design-system.css"), "utf8")) && /settingsSet\("blobsEnabled"/.test(readFileSync(join(ROOT, "account.js"), "utf8")) && /data-blobs/.test(readFileSync(join(ROOT, "theme-drift.js"), "utf8")));
+check("palette pools spread across the whole viewport", /rx = palette === "liquid" \? 1800 : 1500, ry = palette === "liquid" \? 1200 : 1000/.test(script));
 check("reduced motion still overrides", /html\[data-motion="still"\] body::before\{animation:none!important\}/.test(css));
 
 console.log(out.join("\n"));
