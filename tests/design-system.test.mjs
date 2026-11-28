@@ -11,10 +11,10 @@ const sw = read("sw.js");
 const out = [];
 const check = (name, pass) => out.push(`${pass ? "PASS" : "FAIL"}  ${name}`);
 
-check("design system is loaded last and precached", /design-system\.css\?v=thw-v23/.test(html) && /'\.\/design-system\.css\?v=thw-v23'/.test(sw));
+check("design system is loaded last and precached", /design-system\.css\?v=thw-v24/.test(html) && /'\.\/design-system\.css\?v=thw-v24'/.test(sw));
 check("favorites can switch between Grid and Compact", /favorites-layout\.js/.test(html) && /fav-layout-btn/.test(css) && /\.cmp-fav-grid\.fav-compact/.test(css) && /minmax\(104px,1fr\)/.test(css) && /pv2Fav/.test(readFileSync(join(ROOT, "favorites-layout.js"), "utf8")) && /#pv2Fav\.fav-compact/.test(css));
 check("both favorite layouts are sized", /\.cmp-fav-grid:not\(\.fav-compact\)\{grid-template-columns:repeat\(auto-fill,minmax\(185px,1fr\)\)/.test(css) && /#pv2Fav:not\(\.fav-compact\) \.pv2-collage\{grid-template-columns:repeat\(auto-fill,minmax\(135px,1fr\)\)/.test(css));
-check("rules scrollbar fills its panel", /lobby-panel-rules>div\.flex-grow\{max-height:none!important/.test(css));
+check("rules scrollbar is contained like Comps", /lobby-panel-rules > div\.flex-grow\{max-height:460px !important/.test(css) && /lobby-panel-rules > div\.flex-grow::-webkit-scrollbar\{width:6px\}/.test(css));
 check("favorite hearts and info buttons show on hover", css.includes(".playlist-item:hover .fav-btn,") && css.includes(".fav-card:hover .fav-info-btn,") && css.includes(".playlist-item .fav-btn.on{opacity:1}"));
 check("design tokens and focus states exist", /--ds-radius:16px/.test(css) && /:focus-visible\{outline:2px solid var\(--ds-accent\)/.test(css));
 check("surfaces and rows share one radius", /\.card,\.hub-panel,\.pv2-card,\.set-card,\.rank-shell/.test(css) && /\.playlist-item,\.wanted-item,\.sugg-card,\.lb-row/.test(css));

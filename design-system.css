@@ -104,7 +104,21 @@ input[type="text"]:focus,input[type="search"]:focus,textarea:focus,select:focus{
 
 /* Server Rules uses the same full panel width as the Comps card, with
    readable copy instead of a narrow 11px column. */
-#features-section .lobby-panel-rules > div.flex-grow{padding-right:0 !important}
+/* Desktop & mobile notification panel. */
+.app-notif-body{margin-top:4px}
+.app-notif-body .toggle-row{padding:9px 4px}
+.app-notif-body .toggle-label{font-size:12px}
+.app-notif-body .toggle-sub{font-size:10.5px}
+.toggle-row.is-off .toggle-label,.toggle-row.is-off .toggle-sub{opacity:.55}
+.app-notif-test{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 4px;font-size:10.5px;color:var(--ds-muted)}
+.app-notif-test .btn{flex:0 0 auto}
+
+/* Server Rules: a contained scroll region like the Comps panel, sized to the
+   neighbouring cards so the panel keeps its own height and the bar fits. */
+#features-section .lobby-panel-rules{display:flex;flex-direction:column}
+#features-section .lobby-panel-rules > div.flex-grow{max-height:460px !important;padding-right:6px !important;flex:1 1 auto;overflow-y:auto}
+#features-section .lobby-panel-rules > div.flex-grow::-webkit-scrollbar{width:6px}
+#features-section .lobby-panel-rules > div.flex-grow::-webkit-scrollbar-thumb{border-radius:6px;background:rgba(52,211,153,.4)}
 #features-section .lobby-panel-rules p{font-size:12px !important;line-height:1.6 !important}
 #features-section .lobby-panel-rules b,
 #features-section .lobby-panel-rules strong{color:#c4b5fd}
@@ -232,11 +246,6 @@ html[data-motion="still"] .palette-stage .stage-blob{animation:none!important}
 .playlist-item:hover .fav-btn,
 .playlist-item:focus-within .fav-btn,
 .playlist-item .fav-btn.on{opacity:1}
-
-/* Server Rules: the scroll region fills the whole panel instead of stopping
-   at the old 320px cap. */
-#features-section .lobby-panel-rules{display:flex;flex-direction:column;height:100%;min-height:0}
-#features-section .lobby-panel-rules>div.flex-grow{max-height:none!important;flex:1 1 auto;min-height:0;overflow-y:auto;height:100%}
 
 html[data-blobs="off"] .th-blob{display:none!important}
 /* Cover blobs: bright, soft and clearly moving in the background. */

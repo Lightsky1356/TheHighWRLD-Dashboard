@@ -59,6 +59,7 @@ const GROUPS = [
   { name: "era-art-colors", file: "./era-art-colors.test.mjs", needsServer: false },
   { name: "palette-speeds", file: "./palette-speeds.test.mjs", needsServer: false },
   { name: "site-modes", file: "./site-modes.test.mjs", needsServer: false },
+  { name: "desktop-mobile-notifications", file: "./desktop-mobile-notifications.test.mjs", needsServer: false },
   { name: "social-modal", file: "./social-modal.test.mjs", needsServer: false },
   { name: "signin-window", file: "./signin-window.test.mjs", needsServer: false },
   { name: "profile-routing", file: "./profile-routing.test.mjs", needsServer: false },

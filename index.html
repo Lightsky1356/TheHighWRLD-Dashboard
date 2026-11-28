@@ -359,7 +359,7 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
 <link rel="stylesheet" href="./mobile.css?v=thw-v2">
 <link rel="stylesheet" href="./desktop-polish.css?v=thw-v3">
 <link rel="stylesheet" href="./mobile-overhaul.css?v=thw-v7">
-<link rel="stylesheet" href="./design-system.css?v=thw-v23">
+<link rel="stylesheet" href="./design-system.css?v=thw-v24">
 <style>
   body.night-light::before { content:''; position:fixed; inset:0; background:rgba(120,60,0,.18); pointer-events:none; z-index:99999; }
   body.night-light::after { content:''; position:fixed; inset:0; background:rgba(180,100,20,.08); pointer-events:none; z-index:99999; mix-blend-mode:multiply; }
@@ -393,6 +393,7 @@ html.is-idle #nightLightToggle{backdrop-filter:blur(6px) saturate(1.1)!important
 <script src="./script.js?v=thw-v134" defer=""></script>
 <script src="./palette-picker.js?v=thw-v9" defer></script>
 <script src="./favorites-layout.js?v=thw-v3" defer></script>
+<script src="./desktop-mobile-notifications.js?v=thw-v1" defer></script>
 <script src="./cover-artists.js?v=thw-v95" defer></script>
 <script src="./credits-wall.js?v=thw-v17" defer></script>
 <script src="./suggestions.js?v=thw-v3" defer=""></script>
@@ -930,7 +931,7 @@ TheHighWRLD.Dashboard-1.0.5.AppImage          A3410D57965F2C54A94AB4368EA843AD19
     <div><div class="sec-title" data-i18n="notifications">Notifications</div><div class="sec-sub" data-i18n="notifPrefsSub">Choose what you hear about, and how it reaches you</div></div>
   </div>
   <div class="card set-card">
-    <div class="set-block">
+    <div class="set-block" id="notifAppBlock">
       <div class="thw-push-head">
         <span class="thw-push-head-ico" aria-hidden="true"><i class="fas fa-bell"></i></span>
         <span class="thw-push-head-text">
@@ -938,7 +939,33 @@ TheHighWRLD.Dashboard-1.0.5.AppImage          A3410D57965F2C54A94AB4368EA843AD19
           <span class="thw-push-head-device">This device</span>
           <span class="thw-push-head-note">Get notified from Announcements, Replies from Wanted Vault, Suggestions and Comment Replies.</span>
         </span>
-        <span class="thw-push-pill thw-push-pill--off" id="thwPushPill" role="status">Notifications Disabled</span>
+        <span class="thw-push-pill thw-push-pill--off" id="notifAppPill" role="status">Notifications Disabled</span>
+      </div>
+      <div class="app-notif-body">
+        <label class="toggle-row">
+          <span style="min-width:0"><span class="toggle-label">Show notifications</span><span class="toggle-sub">Windows shows them while the app is open: messages at once, unless you're reading that conversation, and the site's news while you're in another window.</span></span>
+          <span class="switch"><input type="checkbox" id="notifApp-show" checked><span class="slider"></span></span>
+        </label>
+        <label class="toggle-row">
+          <span style="min-width:0"><span class="toggle-label">Messages and replies</span><span class="toggle-sub">Sign in to get your messages and replies.</span></span>
+          <span class="switch"><input type="checkbox" id="notifApp-messages"><span class="slider"></span></span>
+        </label>
+        <label class="toggle-row">
+          <span style="min-width:0"><span class="toggle-label">New leaks</span><span class="toggle-sub">Songs as they leak.</span></span>
+          <span class="switch"><input type="checkbox" id="notifApp-leaks" checked><span class="slider"></span></span>
+        </label>
+        <label class="toggle-row">
+          <span style="min-width:0"><span class="toggle-label">Group buys</span><span class="toggle-sub">A group buy as it starts.</span></span>
+          <span class="switch"><input type="checkbox" id="notifApp-groupBuys" checked><span class="slider"></span></span>
+        </label>
+        <label class="toggle-row">
+          <span style="min-width:0"><span class="toggle-label">New snippets</span><span class="toggle-sub">Snippets as they're added.</span></span>
+          <span class="switch"><input type="checkbox" id="notifApp-snippets" checked><span class="slider"></span></span>
+        </label>
+        <div class="app-notif-test">
+          <button type="button" class="btn btn-ghost btn-sm" id="notifAppTest">Send a test notification</button>
+          <span>Sent. It shows at the corner of your screen, or in the notification list while Do not disturb is on.</span>
+        </div>
       </div>
       <div id="thw-push-section"></div>
     </div>
