@@ -198,6 +198,19 @@ html.exe-hidden *,html.exe-hidden *::before,html.exe-hidden *::after{animation-p
 .speed-badge{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:rgba(167,139,250,.18);color:#d8c7ff;font-size:9px;letter-spacing:.04em;text-transform:uppercase}
 .palette-meta{display:block;font-size:9px;color:#c4b5fd;letter-spacing:.03em}
 html[data-motion="still"] .palette-stage .stage-blob{animation:none!important}
+/* Profile Favorites: compact tile grid instead of large aspect-video cards. */
+#profilePageBody .cmp-sec-card[data-pnl="favorites"] .cmp-fav-grid,
+#profilePageBody .pp-shelf .cmp-sec-card[data-pnl="favorites"] .cmp-fav-grid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+#profilePageBody .cmp-sec-card[data-pnl="favorites"] .fav-card{border-radius:10px}
+#profilePageBody .cmp-sec-card[data-pnl="favorites"] .fav-info{padding:6px 8px 8px}
+#profilePageBody .cmp-sec-card[data-pnl="favorites"] .fav-name{font-size:10.5px;line-height:1.3;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;min-height:26px}
+#profilePageBody .cmp-sec-card[data-pnl="favorites"] .fav-tag,
+#profilePageBody .cmp-sec-card[data-pnl="favorites"] .fav-sub{display:none}
+#profilePageBody .cmp-sec-card[data-pnl="favorites"] .fav-like,
+#profilePageBody .cmp-sec-card[data-pnl="favorites"] .fav-info-btn{top:5px;right:5px;width:24px;height:24px;border-radius:7px;font-size:10px}
+#profilePageBody .cmp-sec-card[data-pnl="favorites"] .fav-play-btn{width:32px;height:32px;font-size:11px}
+#profilePageBody .cmp-sec-card[data-pnl="favorites"] .fav-initials{font-size:18px}
+
 html[data-blobs="off"] .th-blob{display:none!important}
 /* Cover blobs: bright, soft and clearly moving in the background. */
 .th-blob{opacity:.42!important;filter:saturate(1.15)!important}
