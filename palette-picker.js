@@ -116,6 +116,37 @@
     if (stage) stage.style.background = preview(current, c);
     paintCount();
     syncVisibleControls();
+    paintSheets();
+  }
+
+  function paintSheets() {
+    var c = colors();
+    Array.prototype.forEach.call(document.querySelectorAll(".sheet-palette"), function (b) {
+      var id = b.getAttribute("data-sheet-palette");
+      var dot = b.querySelector("span");
+      if (dot) dot.style.background = preview(id, c);
+      var on = id === current;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+
+  function mountSheets() {
+    ["mplayer-ov", "dplayer-ov"].forEach(function (id) {
+      var ov = document.getElementById(id);
+      if (!ov || ov.querySelector(".sheet-palettes")) return;
+      var bar = document.createElement("div");
+      bar.className = "sheet-palettes";
+      bar.innerHTML = PALETTES.map(function (p) {
+        return '<button type="button" class="sheet-palette" data-sheet-palette="' + p[0] + '" aria-label="' + p[1] + ' palette" title="' + p[1] + '"><span></span></button>';
+      }).join("");
+      ov.appendChild(bar);
+      bar.addEventListener("click", function (e) {
+        var b = e.target.closest ? e.target.closest("[data-sheet-palette]") : null;
+        if (b) { e.stopPropagation(); select(b.getAttribute("data-sheet-palette")); }
+      });
+    });
+    paintSheets();
   }
 
   function repaint() {
@@ -138,6 +169,7 @@
     current = id;
     try { window.wrldPlayerSettings.set("coverPalette", id); } catch (e) {}
     mark();
+    paintSheets();
     repaint();
   }
 
@@ -166,8 +198,11 @@
     mark();
   }
 
-  if (document.readyState !== "loading") mount();
-  else document.addEventListener("DOMContentLoaded", mount);
+  if (document.readyState !== "loading") { mount(); mountSheets(); }
+  else document.addEventListener("DOMContentLoaded", function () { mount(); mountSheets(); });
+  if (typeof MutationObserver === "function") {
+    new MutationObserver(function () { mountSheets(); }).observe(document.body, { childList: true });
+  }
   window.addEventListener("thw:trackplaying", function () { setTimeout(paint, 50); });
   window.addEventListener("thw:appearance-changed", function () { setTimeout(paint, 50); });
 })();

@@ -198,6 +198,10 @@ html.exe-hidden *,html.exe-hidden *::before,html.exe-hidden *::after{animation-p
 @keyframes stageDrift{from{transform:translate3d(-8px,4px,0) scale(1)}to{transform:translate3d(12px,-8px,0) scale(1.25)}}
 .speed-badge{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:rgba(167,139,250,.18);color:#d8c7ff;font-size:9px;letter-spacing:.04em;text-transform:uppercase}
 .palette-meta{display:block;font-size:9px;color:#c4b5fd;letter-spacing:.03em}
+.sheet-palettes{position:absolute;top:14px;left:14px;z-index:6;display:flex;gap:5px;padding:4px;border-radius:999px;background:rgba(10,8,18,.72);border:1px solid rgba(255,255,255,.12)}
+.sheet-palette{width:24px;height:24px;padding:0;border:1px solid rgba(255,255,255,.2);border-radius:50%;background:transparent;cursor:pointer;overflow:hidden}
+.sheet-palette span{display:block;width:100%;height:100%;border-radius:50%}
+.sheet-palette.active{border-color:#fff;box-shadow:0 0 0 2px rgba(167,139,250,.5)}
 html[data-motion="still"] .palette-stage .stage-blob{animation:none!important}
 .palette-pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .palette-btn{display:flex;flex-direction:column;gap:5px;padding:7px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03);color:#e6e4f0;cursor:pointer;text-align:left;font-family:inherit}

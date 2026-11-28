@@ -1,31 +1,21 @@
 /* ============================================================================
-   THEHIGHWRLD - SITE MODE (Dark / Glass)
+   THEHIGHWRLD - SITE MODE
    ----------------------------------------------------------------------------
-   Dark and Glass, layered on top of whichever of the 32 themes is active.
+   Four modes, layered on top of whichever theme is active:
 
-   Dark is deliberately NOT defined. It is the absence of an override, so
-   switching back to dark reverts exactly to the theme's own colours with no
-   reset block that can drift out of date.
+     Dark Glass (mode=dark)  - the theme's own dark frosted surfaces. No
+                               override block, so it can never drift away
+                               from the theme it sits on.
+     Normal Glass (mode=glass) - frosted pale panels over the theme gradient.
+     Dark (mode=flat)          - opaque dark surfaces, no backdrop blur.
+     Light (mode=light)        - pale surfaces and dark copy site-wide.
 
-   Glass overrides only surface and border tokens, so text keeps the colours
-   the active theme gave it. That is deliberate: an earlier Light mode also had
-   to override text, because this UI paints copy through hundreds of hardcoded
-   #fff and slate values rather than through the tokens -- --ac-text is read 39
-   times against 983 uses of text-gray-* in the markup. A contrast audit of the
-   running site found 117 elements below 3:1 once the page background was
-   flipped, and closing them meant per-component work across the whole UI, so
-   Light was removed rather than shipped half-legible. Glass needs none of that.
-
-   The token block uses html[data-theme][data-mode=glass] rather than a bare
-   [data-mode=glass] because themes.css writes its themes as
-   html[data-theme=x], which is specificity 0,1,1. A bare [data-mode=x] at 0,1,0
-   would lose to it and the mode would do nothing.
+   The token blocks use html[data-theme][data-mode=...] because themes.css
+   writes its themes as html[data-theme=x] (specificity 0,1,1). A bare
+   [data-mode=x] at 0,1,0 would lose and the mode would appear broken.
    ========================================================================= */
-/* -------- GLASS --------
-/* Frosted panels over whatever is behind them: the theme gradient, the
-   #bg-motion orbs, the lobby artwork. Text stays whatever the theme set,
-   which is why this mode needs no per-component text overrides. */
-html[data-theme][data-mode=glass]{
+/* -------- NORMAL GLASS -------- */
+html[data-theme][data-mode="glass"]{
   --ac-glass:rgba(255,255,255,.10);
   --ac-glass2:rgba(255,255,255,.18);
   --th-glass:rgba(255,255,255,.08);
@@ -39,3 +29,48 @@ html[data-theme][data-mode=glass]{
   --ac-dim:rgba(238,235,255,.5);
   --ac-shadow:0 30px 80px rgba(0,0,0,.42);
 }
+
+/* DARK GLASS is mode=dark: no override block at all. The theme's own dark
+   frosted surfaces show through exactly as before the rename. */
+
+/* -------- DARK (flat) -------- */
+html[data-theme][data-mode="flat"]{
+  --ac-glass:rgba(16,16,26,.96);
+  --ac-glass2:rgba(22,22,34,.98);
+  --th-glass:rgba(12,12,22,.94);
+  --th-glass2:rgba(18,18,30,.97);
+  --ac-border:rgba(255,255,255,.08);
+  --ac-border2:rgba(255,255,255,.14);
+  --th-border:rgba(255,255,255,.07);
+  --th-border2:rgba(255,255,255,.14);
+  --ac-shadow:0 20px 50px rgba(0,0,0,.6);
+}
+html[data-mode="flat"] *,html[data-mode="flat"] *::before,html[data-mode="flat"] *::after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+
+/* -------- LIGHT -------- */
+html[data-theme][data-mode="light"]{
+  --ac-bg0:#f4f5fb;--ac-bg1:#ffffff;
+  --ac-text:#17172b;--ac-muted:#4a4a63;--ac-dim:#6d6d84;
+  --ac-glass:rgba(255,255,255,.82);--ac-glass2:rgba(255,255,255,.94);
+  --th-glass:rgba(255,255,255,.78);--th-glass2:rgba(255,255,255,.92);
+  --ac-border:rgba(20,20,45,.12);--ac-border2:rgba(20,20,45,.2);
+  --th-border:rgba(20,20,45,.1);--th-border2:rgba(20,20,45,.2);
+  --ac-shadow:0 20px 50px rgba(30,30,70,.14);
+  --th-bg:linear-gradient(180deg,#f6f7fd 0%,#eef0fa 55%,#e8eaf6 100%);
+}
+html[data-mode="light"] body,
+html[data-mode="light"] .app-page,
+html[data-mode="light"] p,
+html[data-mode="light"] span,
+html[data-mode="light"] h1,html[data-mode="light"] h2,
+html[data-mode="light"] h3,html[data-mode="light"] h4,
+html[data-mode="light"] li,html[data-mode="light"] b,html[data-mode="light"] strong,
+html[data-mode="light"] button,html[data-mode="light"] a,
+html[data-mode="light"] label,html[data-mode="light"] input,
+html[data-mode="light"] select{color:#17172b}
+html[data-mode="light"] .text-white,
+html[data-mode="light"] [class*="text-gray-"]{color:#3a3a55!important}
+html[data-mode="light"] nav,
+html[data-mode="light"] #nav-pill,
+html[data-mode="light"] #app-breadcrumb,
+html[data-mode="light"] .set-guest-banner{background:rgba(255,255,255,.84)!important;color:#17172b!important;border-color:rgba(20,20,45,.12)!important}
