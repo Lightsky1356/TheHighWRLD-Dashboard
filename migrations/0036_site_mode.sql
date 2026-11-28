@@ -6,4 +6,4 @@
 --
 -- Default 'dark' because dark is the absence of a mode override, so existing
 -- accounts keep exactly the appearance they have today with no write.
-ALTER TABLE user_profiles ADD COLUMN site_mode TEXT NOT NULL DEFAULT 'dark';
+ALTER TABLE user_profiles ADD COLUMN site_mode TEXT NOT NULL DEFAULT 'glass';

@@ -13,6 +13,8 @@
   try { _cachedTheme = localStorage.getItem("wantedTheme") || "default"; } catch (e) {}
   var _cachedLang = "en";
   try { _cachedLang = localStorage.getItem("wantedLang") || "en"; } catch (e) {}
+  var _cachedMode = "glass";
+  try { _cachedMode = localStorage.getItem("wantedMode") || "glass"; } catch (e) {}
   var _themeTarget = document.documentElement;
   function _hexRgba(hex, alpha) {
     var m = String(hex || "").trim().match(/^#([0-9a-fA-F]{6})$/);

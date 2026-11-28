@@ -257,7 +257,7 @@ async function loadAccountState(env, db, uid, req, session) {
       },
     } : {}),
     theme: (prof && prof.theme) || "default",
-    site_mode: (prof && prof.site_mode) || "dark",
+    site_mode: (prof && prof.site_mode) || "glass",
     language: (prof && prof.language) || "en",
     stats: {
       plays: listens.n || 0,
