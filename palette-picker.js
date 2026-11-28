@@ -74,6 +74,52 @@
     box.innerHTML = use.map(function (x) { return '<span style="background:' + x + '"></span>'; }).join("");
   }
 
+  function alpha(c, a) {
+    var m = /^hsl\(([^)]+)\)$/i.exec(String(c || ""));
+    if (m) return "hsla(" + m[1] + "," + a + ")";
+    m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i.exec(String(c || ""));
+    if (m) return "rgba(" + m[1] + "," + m[2] + "," + m[3] + "," + a + ")";
+    m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(c || ""));
+    if (m) {
+      var h = m[1];
+      if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+      var n = parseInt(h, 16);
+      return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+    }
+    return c;
+  }
+
+  /* The full-sheet players call this so the selected palette is the actual
+     sheet background, not a row of buttons floating over it. */
+  window.thwSheetPaletteBg = function (cols, base) {
+    var p = "default";
+    try { p = (window.wrldPlayerSettings && window.wrldPlayerSettings.get("coverPalette")) || "default"; } catch (e) {}
+    var c = cols || [], n = c.length, layers = [], i;
+    if (!n) return base;
+    if (p === "wash") {
+      layers.push("linear-gradient(135deg," + c.join(",") + ")");
+    } else if (p === "prism") {
+      for (i = 0; i < n; i++) layers.push("linear-gradient(" + (110 + i * 18) + "deg,transparent " + (i * 100 / n) + "%," + alpha(c[i], .35) + " " + (i * 100 / n + 18) + "%,transparent " + (i * 100 / n + 36) + "%)");
+    } else if (p === "sunrise") {
+      layers.push("linear-gradient(0deg," + c.slice().reverse().join(",") + ")");
+    } else if (p === "ripple") {
+      for (i = 0; i < n; i++) layers.push("radial-gradient(circle at 50% 45%," + alpha(c[i], .34) + " 0 " + (280 + i * 220) + "px,transparent " + (460 + i * 220) + "px)");
+    } else if (p === "liquid") {
+      for (i = 0; i < n; i++) layers.push("radial-gradient(ellipse 70% 50% at " + (15 + i * 25) + "% " + (28 + i * 16) + "%," + alpha(c[i], .46) + ",transparent 68%)");
+    } else if (p === "blobs") {
+      for (i = 0; i < n; i++) layers.push("radial-gradient(circle at " + (20 + i * 20) + "% " + (28 + i * 12) + "%," + alpha(c[i], .52) + " 0 18%,transparent 32%)");
+    } else if (p === "wave") {
+      for (i = 0; i < n; i++) layers.push("radial-gradient(ellipse 120% 45% at " + (i * 30) + "% " + (i % 2 ? 76 : -6) + "%," + alpha(c[i], .44) + ",transparent 60%)");
+      layers.push("linear-gradient(135deg," + c.join(",") + "," + c[0] + ")");
+    } else {
+      var xs = [50, 88, 6, 32], ys = [-12, 26, 52, 82];
+      for (i = 0; i < n; i++) layers.push("radial-gradient(130% 62% at " + xs[i % 4] + "% " + ys[i % 4] + "%," + alpha(c[i], i === 0 ? .78 : .4) + " 0%,transparent 62%)");
+      if (p !== "glow") layers.push("linear-gradient(135deg," + c.map(function (x) { return alpha(x, .18); }).join(",") + ")");
+    }
+    layers.push(base || "linear-gradient(180deg,#17120f,#100d0b)");
+    return layers.join(",");
+  };
+
   function speedLabel() {
     var d = "normal", p = "normal";
     try {
@@ -116,37 +162,6 @@
     if (stage) stage.style.background = preview(current, c);
     paintCount();
     syncVisibleControls();
-    paintSheets();
-  }
-
-  function paintSheets() {
-    var c = colors();
-    Array.prototype.forEach.call(document.querySelectorAll(".sheet-palette"), function (b) {
-      var id = b.getAttribute("data-sheet-palette");
-      var dot = b.querySelector("span");
-      if (dot) dot.style.background = preview(id, c);
-      var on = id === current;
-      b.classList.toggle("active", on);
-      b.setAttribute("aria-pressed", on ? "true" : "false");
-    });
-  }
-
-  function mountSheets() {
-    ["mplayer-ov", "dplayer-ov"].forEach(function (id) {
-      var ov = document.getElementById(id);
-      if (!ov || ov.querySelector(".sheet-palettes")) return;
-      var bar = document.createElement("div");
-      bar.className = "sheet-palettes";
-      bar.innerHTML = PALETTES.map(function (p) {
-        return '<button type="button" class="sheet-palette" data-sheet-palette="' + p[0] + '" aria-label="' + p[1] + ' palette" title="' + p[1] + '"><span></span></button>';
-      }).join("");
-      ov.appendChild(bar);
-      bar.addEventListener("click", function (e) {
-        var b = e.target.closest ? e.target.closest("[data-sheet-palette]") : null;
-        if (b) { e.stopPropagation(); select(b.getAttribute("data-sheet-palette")); }
-      });
-    });
-    paintSheets();
   }
 
   function repaint() {
@@ -169,7 +184,6 @@
     current = id;
     try { window.wrldPlayerSettings.set("coverPalette", id); } catch (e) {}
     mark();
-    paintSheets();
     repaint();
   }
 
@@ -198,11 +212,8 @@
     mark();
   }
 
-  if (document.readyState !== "loading") { mount(); mountSheets(); }
-  else document.addEventListener("DOMContentLoaded", function () { mount(); mountSheets(); });
-  if (typeof MutationObserver === "function") {
-    new MutationObserver(function () { mountSheets(); }).observe(document.body, { childList: true });
-  }
+  if (document.readyState !== "loading") mount();
+  else document.addEventListener("DOMContentLoaded", mount);
   window.addEventListener("thw:trackplaying", function () { setTimeout(paint, 50); });
   window.addEventListener("thw:appearance-changed", function () { setTimeout(paint, 50); });
 })();

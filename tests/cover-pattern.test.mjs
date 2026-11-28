@@ -25,7 +25,7 @@ check("every palette animation follows a speed", /thwPatternDrift var\(--thw-dri
 check("tapping a preview saves and repaints", /wrldPlayerSettings\.set\("coverPalette", id\)/.test(picker) && /function repaint/.test(picker));
 check("blobs, drift and speeds are visible on the palettes", /id="paletteStage"/.test(html) && /stage-blob/.test(html) && /id="driftBadge"/.test(html) && /id="paletteSpeedBadge"/.test(html) && /palette-meta/.test(picker) && /syncVisibleControls/.test(picker) && /\.palette-stage\{/.test(design) && /\.speed-badge\{/.test(design));
 check("number picker has a live preview", /id="colorCountPreview"/.test(html) && /function paintCount/.test(picker) && /\.count-preview span\{/.test(design));
-check("palettes appear in both full sheets", /mplayer-ov/.test(picker) && /dplayer-ov/.test(picker) && /className = "sheet-palettes"/.test(picker) && /\.sheet-palettes\{/.test(design) && /\.sheet-palette\.active\{/.test(design));
+check("palette strip is gone from the full sheets", !picker.includes("sheet-palettes") && !design.includes(".sheet-palettes"));
 check("footer has a Settings link", /<a href="\/settings" class="foot-link">Settings<\/a>/.test(html));
 check("nothing playing falls back to the site theme", /else \{ _thwClearAmbient\(\); \}/.test(script) && /if \(!cover\) \{[\s\S]{0,120}thwClearAmbient/.test(read("cover-pref.js")));
 check("a playing track survives palette changes", /var list = \(typeof trackList !== "undefined" && trackList\)/.test(script));

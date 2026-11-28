@@ -643,12 +643,8 @@
     if (!cols.length) cols = ["hsl(266,60%,58%)", "hsl(20,72%,30%)"];
     var bg = ov.querySelector(".mp2-bg");
     if (!bg) return;
-    var pools = [], xs = [50, 88, 6, 32], ys = [-12, 26, 52, 82];
-    for (var i = 0; i < cols.length; i++) {
-      pools.push("radial-gradient(130% 62% at " + xs[i % 4] + "% " + ys[i % 4] + "%," + toAlpha(cols[i], i === 0 ? 0.78 : Math.max(0.2, 0.42 - i * 0.05)) + " 0%, transparent 62%)");
-    }
-    pools.push("linear-gradient(180deg,#1a1512 0%,#110d0b 58%,#0c0908 100%)");
-    bg.style.background = pools.join(",");
+    var base = "linear-gradient(180deg,#1a1512 0%,#110d0b 58%,#0c0908 100%)";
+    bg.style.background = window.thwSheetPaletteBg ? window.thwSheetPaletteBg(cols, base) : base;
     try {
       var on = !window.movingColors || window.movingColors();
       bg.classList.toggle("thw-moving-gradient", !!on);
