@@ -19,7 +19,7 @@ check("nine palettes have live previews", paletteIds.every((p) => picker.include
 check("previews use the playing cover's colours", /getCoverGradientValue\(t\)/.test(picker) && /function preview\(id, c\)/.test(picker) && /thw:trackplaying/.test(picker));
 check("liquid keeps the real cover gradient", /var themeCols = cols;/.test(script) && !/_thwMix\(cols\[m\]/.test(script));
 check("new palettes paint from cover colours", /palette === "ripple"/.test(script) && /palette === "prism"/.test(script) && /palette === "sunrise"/.test(script));
-check("two clearly different speed ranges", /"40s" : drift === "fast" \? "3s"/.test(script) && /"32s" : pspeed === "fast" \? "3s"/.test(script));
+check("two clearly different speed ranges", /"30s" : drift === "fast" \? "2s"/.test(script) && /"24s" : pspeed === "fast" \? "2s"/.test(script));
 check("drift and palette speeds are user controlled", ['id="coverDrift"', 'id="coverPaletteSpeed"'].every((id) => html.includes(id)) && /settingsSet\("coverDrift", this\.value\)/.test(account) && /settingsSet\("coverPaletteSpeed", this\.value\)/.test(account));
 check("every palette animation follows a speed", /thwPatternDrift var\(--thw-drift-speed/.test(css) && ["wave", "liquid", "ripple", "prism", "sunrise"].every((p) => css.includes(`data-cover-palette="${p}"] body::before`)) && /--thw-palette-speed/.test(css));
 check("tapping a preview saves and repaints", /wrldPlayerSettings\.set\("coverPalette", id\)/.test(picker) && /function repaint/.test(picker));

@@ -480,12 +480,12 @@ window.thwPaintAmbient = function (url) {
     H.setAttribute("data-cover-palette", palette);
     var drift = "normal";
     try { drift = (window.wrldPlayerSettings && window.wrldPlayerSettings.get("coverDrift")) || "normal"; } catch (e) {}
-    var speed = drift === "off" ? "0s" : drift === "slow" ? "40s" : drift === "fast" ? "3s" : "12s";
+    var speed = drift === "off" ? "0s" : drift === "slow" ? "30s" : drift === "fast" ? "2s" : "8s";
     H.setAttribute("data-cover-drift", drift);
     H.style.setProperty("--thw-drift-speed", speed);
     var pspeed = "normal";
     try { pspeed = (window.wrldPlayerSettings && window.wrldPlayerSettings.get("coverPaletteSpeed")) || "normal"; } catch (e) {}
-    var pspeedValue = pspeed === "off" ? "0s" : pspeed === "slow" ? "32s" : pspeed === "fast" ? "3s" : "10s";
+    var pspeedValue = pspeed === "off" ? "0s" : pspeed === "slow" ? "24s" : pspeed === "fast" ? "2s" : "7s";
     H.setAttribute("data-cover-palette-speed", pspeed);
     H.style.setProperty("--thw-palette-speed", pspeedValue);
     H.style.setProperty("--th-accent", first);
