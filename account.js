@@ -1889,7 +1889,7 @@ function compactProfileViewHtml(d) {
     ensureMemberThemeCss(theme);
     /* With the theme now known, so an out-of-season choice stays listed. */
     syncSeasonalThemes(theme);
-    var mode = _data && _data.site_mode ? _data.site_mode : (_cachedMode || "dark");
+    var mode = _data && _data.site_mode ? _data.site_mode : (_cachedMode || "glass");
     syncMode(mode);
     applyMode(mode);
     /* wantedTheme / wantedLang belong to this DEVICE and are what a guest
@@ -1907,8 +1907,8 @@ function compactProfileViewHtml(d) {
     var theme = "default", lang = "en";
     try { theme = localStorage.getItem("wantedTheme") || "default"; } catch (e) {}
     try { lang = localStorage.getItem("wantedLang") || "en"; } catch (e) {}
-    var mode = "dark";
-    try { mode = localStorage.getItem("wantedMode") || "dark"; } catch (e) {}
+    var mode = "glass";
+    try { mode = localStorage.getItem("wantedMode") || "glass"; } catch (e) {}
     _lang = lang;
     applyTheme(theme);
     ensureMemberThemeCss(theme);
@@ -1942,7 +1942,7 @@ function compactProfileViewHtml(d) {
      theme's own colours with no reset block that can drift out of date. */
   var SITE_MODES = ["dark", "glass"];
   function applyMode(mode) {
-    if (SITE_MODES.indexOf(mode) === -1) mode = "dark";
+    if (SITE_MODES.indexOf(mode) === -1) mode = "glass";
     document.documentElement.setAttribute("data-mode", mode);
     document.body.setAttribute("data-mode", mode);
     var ap = document.getElementById("account-page");

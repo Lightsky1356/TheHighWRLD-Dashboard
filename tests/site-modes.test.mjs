@@ -11,6 +11,7 @@ const out = [];
 const check = (name, pass) => out.push(`${pass ? "PASS" : "FAIL"}  ${name}`);
 
 check("mode menu keeps only Dark Glass and Normal Glass", ['value="dark">Dark Glass', 'value="glass">Normal Glass'].every((o) => html.includes(o)) && !html.includes('value="flat"') && !html.includes('value="light"'));
+check("Normal Glass is the default everywhere", /wantedMode"\)\|\|"glass"/.test(html) && readFileSync(join(ROOT, "account.js"), "utf8").includes('(_cachedMode || "glass")') && readFileSync(join(ROOT, "account.js"), "utf8").includes('localStorage.getItem("wantedMode") || "glass"') && readFileSync(join(ROOT, "account.js"), "utf8").includes('SITE_MODES.indexOf(mode) === -1) mode = "glass"'));
 check("Language and mode block is removed from Appearance", !html.includes('Language &amp; mode') && !html.includes('id="setMode" data-filled') && /<select id="setMode" hidden/.test(html));
 check("Normal Glass keeps its frosted tokens", /html\[data-theme\]\[data-mode="glass"\]/.test(css) && /--ac-glass:rgba\(255,255,255,\.10\)/.test(css));
 check("Dark Glass is the theme's own surfaces", /mode="dark"/.test(css) && !/\[data-mode="dark"\]\{/.test(css));
